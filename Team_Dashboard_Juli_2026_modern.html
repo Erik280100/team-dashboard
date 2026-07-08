@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>finova — Team Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0B1F2A;
+    --navy2:#122C3A;
+    --teal:#155767;
+    --mint:#64DDA3;
+    --mint2:#3FCB8E;
+    --bg:#F5F7F8;
+    --card:#FFFFFF;
+    --grey:#5B6B70;
+    --grey-light:#8FA1A6;
+    --border:#E7ECED;
+    --red:#E2685B;
+    --amber:#E7A94C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--navy);
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    display:grid;
+    grid-template-columns: 264px 1fr;
+    min-height:100vh;
+  }
+  @media (max-width:860px){ .app{ grid-template-columns:1fr; } .sidebar{ position:relative; width:100%; } }
+
+  /* SIDEBAR */
+  .sidebar{
+    background: linear-gradient(180deg, var(--navy) 0%, var(--navy2) 100%);
+    color:#fff;
+    padding:28px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    position:sticky;
+    top:0;
+    height:100vh;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:2px;
+    font-size:26px;
+    font-weight:800;
+    margin-bottom:6px;
+    padding:0 6px;
+  }
+  .brand .fi{ color:var(--mint); font-style:italic; font-weight:800; }
+  .brand-sub{
+    font-size:11px;
+    color:#8FA1A6;
+    padding:0 6px 26px;
+    letter-spacing:.04em;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 14px;
+    border-radius:12px;
+    color:#C7D6D3;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+    border:none;
+    background:transparent;
+    text-align:left;
+    width:100%;
+    font-family:inherit;
+  }
+  .nav-item .ico{
+    width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+  }
+  .nav-item:hover{ background:rgba(255,255,255,.06); color:#fff; }
+  .nav-item.active{
+    background: linear-gradient(135deg, rgba(100,221,163,.18), rgba(100,221,163,.06));
+    color:#fff;
+    box-shadow: inset 0 0 0 1px rgba(100,221,163,.35);
+  }
+  .sidebar-footer{
+    margin-top:auto;
+    padding:14px;
+    border-radius:14px;
+    background:rgba(255,255,255,.05);
+    font-size:12px;
+    color:#93A6A2;
+    line-height:1.5;
+  }
+  .sidebar-footer strong{ color:#fff; display:block; margin-bottom:2px; font-size:13px;}
+
+  /* MAIN */
+  main{
+    padding:32px 40px 60px;
+    max-width:1180px;
+  }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:26px;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+  .topbar h1{
+    font-size:24px;
+    font-weight:800;
+    margin:0 0 4px;
+    letter-spacing:-.01em;
+  }
+  .topbar p{
+    margin:0;
+    color:var(--grey-light);
+    font-size:13.5px;
+  }
+  .topbar-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  #saveStatus{ font-size:12px; color:var(--mint2); font-weight:600; min-width:100px; text-align:right; }
+  .btn{
+    border:none;
+    border-radius:10px;
+    padding:10px 16px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+    transition:transform .1s ease, box-shadow .15s ease;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn-primary{
+    background: linear-gradient(135deg, var(--mint), var(--mint2));
+    color:var(--navy);
+    box-shadow:0 4px 14px rgba(63,203,142,.35);
+  }
+  .btn-ghost{
+    background:#fff;
+    color:var(--navy);
+    border:1px solid var(--border);
+  }
+  .btn-ghost:hover{ background:#fafcfc; }
+  .btn-small{ padding:7px 12px; font-size:12.5px; border-radius:8px; }
+
+  .section{ display:none; }
+  .section.active{ display:block; }
+
+  /* GOAL CARD */
+  .goal-card{
+    background: linear-gradient(135deg, var(--navy) 0%, var(--teal) 130%);
+    border-radius:20px;
+    padding:28px 30px;
+    color:#fff;
+    display:grid;
+    grid-template-columns:1fr 1.1fr;
+    gap:30px;
+    align-items:center;
+    margin-bottom:24px;
+    box-shadow:0 10px 30px -8px rgba(11,31,42,.4);
+  }
+  @media (max-width:760px){ .goal-card{ grid-template-columns:1fr; } }
+  .goal-eyebrow{
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    color:var(--mint);
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .goal-input-row{ display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
+  .goal-number{
+    font-size:36px;
+    font-weight:800;
+    color:#fff;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:12px;
+    padding:8px 16px;
+    width:180px;
+    font-family:inherit;
+  }
+  .goal-number:focus{ outline:none; border-color:var(--mint); background:rgba(255,255,255,.15); }
+  .goal-unit{ color:#B9D6CE; font-size:13.5px; }
+  .goal-note{
+    width:100%;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:10px;
+    padding:9px 12px;
+    color:#fff;
+    font-size:13px;
+    font-family:inherit;
+  }
+  .goal-note::placeholder{ color:#7FA097; }
+  .goal-note:focus{ outline:none; border-color:var(--mint); background:rgba(255,255,255,.15); }
+  .goal-progress-label{ font-size:14px; margin-bottom:10px; display:flex; justify-content:space-between; }
+  .goal-pct{ color:var(--mint); font-weight:800; font-size:16px; }
+  .goal-bar{
+    background:rgba(255,255,255,.16);
+    height:10px;
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .goal-bar .fill{ height:100%; background:linear-gradient(90deg, var(--mint2), var(--mint)); border-radius:6px; transition:width .3s ease; }
+  .goal-remaining{ margin-top:10px; font-size:12.5px; color:#A9C7BF; }
+  .period-row{
+    display:flex;
+    gap:14px;
+    margin-top:16px;
+    flex-wrap:wrap;
+  }
+  .period-field label{
+    display:block;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:#8FA1A6;
+    font-weight:700;
+    margin-bottom:5px;
+  }
+  .period-field input[type=date]{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:8px;
+    padding:7px 10px;
+    color:#fff;
+    font-size:12.5px;
+    font-family:inherit;
+    color-scheme:dark;
+  }
+  .period-field input[type=date]:hover{ border-color:rgba(255,255,255,.4); }
+  .period-field input[type=date]:focus{ outline:none; border-color:var(--mint); background:rgba(255,255,255,.15); }
+
+  /* KPI GRID */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:14px;
+    margin-bottom:26px;
+  }
+  .kpi-card{
+    background: linear-gradient(160deg, #16323F 0%, #0B1F2A 100%);
+    border-radius:16px;
+    padding:18px 20px;
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:0 8px 20px -10px rgba(0,0,0,.5);
+    transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .kpi-card:hover{ box-shadow:0 10px 26px -8px rgba(0,0,0,.6); transform:translateY(-2px); }
+  .kpi-card.recruit-kpi{
+    border:1px solid rgba(100,221,163,.3);
+    grid-column: span 2;
+  }
+  @media (max-width:600px){ .kpi-card.recruit-kpi{ grid-column: span 1; } }
+  .kpi-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .kpi-icon{
+    width:34px;height:34px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+    background:rgba(100,221,163,.15);
+  }
+  .kpi-label{ font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:#8FA1A6; font-weight:700; margin-bottom:6px; }
+  .kpi-value{ font-size:26px; font-weight:800; color:#fff; }
+  .kpi-sub{ font-size:12px; color:#8FA1A6; margin-top:3px; }
+  .recruit-kpi-inputs{
+    display:flex;
+    gap:16px;
+    margin-top:4px;
+  }
+  .recruit-kpi-field{ flex:1; }
+  .recruit-kpi-field label{
+    display:block;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:#8FA1A6;
+    font-weight:700;
+    margin-bottom:5px;
+  }
+  .recruit-kpi-field input{
+    width:100%;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:8px;
+    padding:8px 10px;
+    color:#fff;
+    font-size:20px;
+    font-weight:800;
+    font-family:inherit;
+  }
+  .recruit-kpi-field input:hover{ border-color:rgba(255,255,255,.35); }
+  .recruit-kpi-field input:focus{ outline:none; border-color:var(--mint); background:rgba(255,255,255,.1); }
+  .recruit-kpi-field.actual input{ color:var(--mint); }
+
+  .charts-grid{
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:16px;
+    margin-bottom:10px;
+  }
+  .charts-grid.wide-bar{ grid-template-columns:1.7fr 1fr; }
+  @media (max-width:760px){ .charts-grid{ grid-template-columns:1fr; } }
+
+  .recruit-card{
+    background: linear-gradient(135deg, #16323F 0%, #0B1F2A 100%);
+    margin-bottom:24px;
+  }
+  .goal-number.small{ font-size:30px; width:110px; padding:7px 12px; }
+  .recruit-list{
+    margin-top:14px;
+    max-height:150px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .recruit-list .recruit-item{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:#DCEAE6;
+    background:rgba(255,255,255,.05);
+    border-radius:8px;
+    padding:6px 10px;
+  }
+  .recruit-list .recruit-item .rd{ color:#8FA1A6; }
+  .recruit-empty{ font-size:12.5px; color:#8FA1A6; margin-top:14px; }
+  .panel{
+    background:var(--card);
+    border-radius:16px;
+    padding:22px 24px;
+    border:1px solid var(--border);
+  }
+  .panel h2{ margin:0 0 16px; font-size:15px; font-weight:700; }
+
+  .panel-dark{
+    background: radial-gradient(120% 160% at 0% 0%, #16323F 0%, #0B1F2A 60%, #0A1A23 100%);
+    border-radius:16px;
+    padding:22px 24px;
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:0 12px 30px -12px rgba(0,0,0,.5);
+    color:#fff;
+  }
+  .panel-dark h2{
+    margin:0 0 4px;
+    font-size:15px;
+    font-weight:700;
+    color:#fff;
+  }
+  .panel-dark .panel-sub{
+    margin:0 0 16px;
+    font-size:12px;
+    color:#8FA1A6;
+  }
+  .panel-dark .panel-sub.wide{ margin-bottom:18px; }
+  .timeline-panel{ margin-top:16px; }
+  .timeline-legend{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-top:14px;
+    font-size:11.5px;
+    color:#B9C7C4;
+  }
+  .timeline-legend span{ display:flex; align-items:center; gap:6px; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .dot.ist{ background:var(--mint); }
+  .dot.path{ background:#5B7C8A; }
+  .dot.forecast{ background:var(--amber); }
+  .forecast-line{
+    margin-top:14px;
+    padding:12px 14px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;
+    font-size:13px;
+    color:#DCEAE6;
+  }
+  .forecast-line strong{ color:var(--mint); }
+
+  /* TABLE */
+  .toolbar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .toolbar input[type=text]{
+    flex:1; min-width:180px;
+    padding:10px 14px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:13px;
+    font-family:inherit;
+    background:#fff;
+  }
+  .toolbar select{
+    padding:10px 14px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:13px;
+    background:#fff;
+    font-family:inherit;
+  }
+  .emp-list{ display:flex; flex-direction:column; gap:8px; max-height:600px; overflow-y:auto; padding-right:4px; }
+  .emp-row{
+    display:grid;
+    grid-template-columns: 2fr 0.7fr repeat(5, 0.5fr) 0.8fr 0.8fr 1.3fr 40px;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  @media (max-width:1000px){ .emp-row{ grid-template-columns: 1fr; } .emp-row > div{ display:flex; justify-content:space-between; } }
+  .emp-name-wrap{ display:flex; align-items:center; gap:10px; }
+  .avatar{
+    width:32px;height:32px;border-radius:50%;
+    background:linear-gradient(135deg, var(--mint), var(--teal));
+    color:#fff; font-size:12px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .emp-name-input{
+    font-weight:700;
+    border:1px solid var(--border);
+    background:#FBFCFC;
+    padding:7px 9px;
+    border-radius:8px;
+    font-size:13px;
+    width:100%;
+    font-family:inherit;
+    color:var(--navy);
+  }
+  .emp-name-input:hover{ border-color:#c9d3d2; }
+  .emp-name-input:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); background:#fff; }
+  .status-badge{
+    border:none;
+    border-radius:20px;
+    padding:5px 10px;
+    font-size:10.5px;
+    font-weight:800;
+    cursor:pointer;
+    background:#EAF9F1;
+    color:#1E9C63;
+    white-space:nowrap;
+  }
+  .status-badge.off{ background:#EEF1F1; color:#8FA1A6; }
+  .col-label{ font-size:9.5px; color:var(--grey-light); text-transform:uppercase; font-weight:700; text-align:center; margin-bottom:2px; }
+  .num-input{
+    width:100%;
+    text-align:center;
+    border:1px solid var(--border);
+    background:#FBFCFC;
+    padding:7px 4px;
+    border-radius:8px;
+    font-size:13px;
+    font-family:inherit;
+    color:var(--navy);
+  }
+  .num-input:hover{ border-color:#c9d3d2; }
+  .num-input:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); background:#fff; }
+  .num-input.wide{ font-weight:800; }
+  .prog-cell{ display:flex; align-items:center; gap:8px; }
+  .prog-bar{ flex:1; height:7px; background:#EDF1F1; border-radius:5px; overflow:hidden; }
+  .prog-fill{ height:100%; border-radius:5px; background:var(--teal); }
+  .prog-fill.low{ background:var(--red); }
+  .prog-fill.high{ background:var(--mint2); }
+  .prog-pct{ font-size:11.5px; font-weight:800; color:var(--teal); width:34px; text-align:right; }
+  .del-btn{
+    background:transparent; border:none; color:var(--red);
+    font-size:16px; cursor:pointer; border-radius:8px; padding:4px 8px;
+  }
+  .del-btn:hover{ background:#FDECEA; }
+  .col-headers{
+    display:grid;
+    grid-template-columns: 2fr 0.7fr repeat(5, 0.5fr) 0.8fr 0.8fr 1.3fr 40px;
+    gap:8px;
+    padding:0 12px;
+    margin-bottom:8px;
+  }
+  @media (max-width:1000px){ .col-headers{ display:none; } }
+  .col-headers span{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--grey-light); font-weight:700; text-align:center;
+  }
+  .col-headers span:first-child{ text-align:left; }
+  .add-row{ margin-top:16px; display:flex; align-items:center; gap:10px; }
+  .hint{ font-size:11.5px; color:var(--grey-light); }
+  .banner{
+    background:#FFF6E9;
+    border:1px solid #F3DDA8;
+    color:#8A5A00;
+    font-size:12.5px;
+    padding:11px 16px;
+    border-radius:12px;
+    margin-bottom:22px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="brand"><span class="fi">fi</span><span>nova</span></div>
+    <div class="brand-sub">GST Kögerl · Team Dashboard</div>
+
+    <button class="nav-item active" data-section="overview"><span class="ico">◈</span> Übersicht</button>
+    <button class="nav-item" data-section="team"><span class="ico">◎</span> Mitarbeiter</button>
+
+    <div class="sidebar-footer">
+      <strong>Grenzgasse 1</strong>
+      8010 Graz, Austria
+    </div>
+  </div>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h1>Team Dashboard</h1>
+        <p>Ziele & Fortschritt — laufender Monat</p>
+      </div>
+      <div class="topbar-actions">
+        <span id="saveStatus"></span>
+        <button class="btn btn-ghost" id="exportBtn">Export</button>
+        <label class="btn btn-ghost" style="cursor:pointer;">
+          Import
+          <input type="file" id="importFile" accept="application/json" style="display:none;">
+        </label>
+        <button class="btn btn-primary" id="saveBtn">Speichern</button>
+      </div>
+    </div>
+
+    <div class="banner">
+      Alle Werte sind direkt editierbar. Änderungen werden in diesem Browser gespeichert — für ein Backup „Export" nutzen.
+    </div>
+
+    <!-- OVERVIEW SECTION -->
+    <section class="section active" id="section-overview">
+      <div class="goal-card">
+        <div>
+          <div class="goal-eyebrow">Team-Ziel</div>
+          <div class="goal-input-row">
+            <input type="number" id="teamGoalInput" class="goal-number" value="0">
+            <span class="goal-unit">Einheiten</span>
+          </div>
+          <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
+          <div class="period-row">
+            <div class="period-field">
+              <label for="periodStartInput">Umsatzmonat Start</label>
+              <input type="date" id="periodStartInput">
+            </div>
+            <div class="period-field">
+              <label for="periodEndInput">Umsatzmonat Ende</label>
+              <input type="date" id="periodEndInput">
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="goal-progress-label">
+            <span><span id="goalIstLabel">0</span> von <span id="goalTargetLabel">0</span> Einheiten</span>
+            <span class="goal-pct" id="goalPct">0%</span>
+          </div>
+          <div class="goal-bar"><div class="fill" id="goalFill" style="width:0%"></div></div>
+          <div class="goal-remaining" id="goalRemaining"></div>
+        </div>
+      </div>
+
+      <div class="goal-card recruit-card">
+        <div>
+          <div class="goal-eyebrow">Mitarbeiter-Aufbau</div>
+          <div class="goal-input-row">
+            <input type="number" id="recruitGoalInput" class="goal-number small" value="0">
+            <span class="goal-unit">neue Mitarbeiter (Ziel)</span>
+          </div>
+          <p class="panel-sub wide" style="margin-top:10px;">Zählt alle aktuell als „NEU" markierten Mitarbeiter im gewählten Zeitraum.</p>
+        </div>
+        <div>
+          <div class="goal-progress-label">
+            <span><span id="recruitCountLabel">0</span> von <span id="recruitTargetLabel">0</span> neuen Mitarbeitern</span>
+            <span class="goal-pct" id="recruitPct">0%</span>
+          </div>
+          <div class="goal-bar"><div class="fill" id="recruitFill" style="width:0%"></div></div>
+          <div class="recruit-list" id="recruitList"></div>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="summaryCards"></div>
+
+      <div class="charts-grid wide-bar">
+        <div class="panel-dark">
+          <h2>Einheiten — Soll vs. Ist pro Mitarbeiter</h2>
+          <p class="panel-sub">Aktueller Stand je Mitarbeiter</p>
+          <canvas id="barChart" height="230"></canvas>
+        </div>
+        <div class="panel-dark">
+          <h2>Team-Fortschritt</h2>
+          <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
+          <canvas id="doughnutChart" height="230"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-dark timeline-panel">
+        <h2>Zielverlauf & Prognose</h2>
+        <p class="panel-sub wide">Wann erreichen wir das Team-Ziel bei aktuellem Tempo?</p>
+        <canvas id="timelineChart" height="180"></canvas>
+        <div class="timeline-legend">
+          <span><span class="dot ist"></span> Ist-Verlauf</span>
+          <span><span class="dot path"></span> Ziel-Pfad (linear)</span>
+          <span><span class="dot forecast"></span> Prognose</span>
+        </div>
+        <div class="forecast-line" id="forecastLine"></div>
+      </div>
+    </section>
+
+    <!-- TEAM SECTION -->
+    <section class="section" id="section-team">
+      <div class="panel">
+        <h2>Mitarbeiter-Übersicht</h2>
+        <div class="toolbar">
+          <input type="text" id="searchInput" placeholder="Name suchen…">
+          <select id="filterSelect">
+            <option value="all">Alle Mitarbeiter</option>
+            <option value="new">Nur neue MA</option>
+            <option value="existing">Nur bestehendes Team</option>
+          </select>
+          <select id="sortSelect">
+            <option value="name">Sortieren: Name (A–Z)</option>
+            <option value="progress-desc">Fortschritt (hoch → niedrig)</option>
+            <option value="progress-asc">Fortschritt (niedrig → hoch)</option>
+            <option value="einheiten-desc">Einheiten Ist (absteigend)</option>
+          </select>
+        </div>
+
+        <div class="col-headers">
+          <span>Name</span><span>Status</span><span>AT</span><span>BT</span><span>ET</span><span>MA</span><span>ST</span><span>Soll</span><span>Ist</span><span>Fortschritt</span><span></span>
+        </div>
+        <div class="emp-list" id="tableBody"></div>
+
+        <div class="add-row">
+          <button class="btn btn-small btn-primary" id="addRowBtn">+ Mitarbeiter hinzufügen</button>
+          <span class="hint">Neue Zeile wird unten angehängt.</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const STORAGE_KEY = 'finova_dashboard_data_v1';
+const GOAL_KEY = 'finova_dashboard_goal_v1';
+function defaultPeriod(){
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  const toISO = d => d.toISOString().slice(0,10);
+  return { periodStart: toISO(first), periodEnd: toISO(last) };
+}
+const STARTER_GOAL = { target: 0, note: '', recruitGoal: 6, recruitActual: null, ...defaultPeriod() };
+const STARTER_JOIN_DATE = defaultPeriod().periodStart;
+
+const STARTER_DATA = [
+  {name:"Georg Kögerl", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Elias Karner", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Michael Posch", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Tobias Zika", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Tobias Trinker", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"David Lanicsek", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Theresa Wagner", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Isabella Zöhrer", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Floria Cotirla", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Delia Podlipnig", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Sito Eckelhardt", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Valentino Kahr", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Denise Stickl", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Madeleine Zugschwert", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Kevin Hödl", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"Luis Simhandel", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
+  {name:"David Schrey", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Erik Bindar", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Lisa Simeon", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Noah Vanek", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Nico Kiem", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Josef Nagel", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE}
+];
+
+const HISTORY_KEY = 'finova_dashboard_history_v1';
+
+let rows = loadData();
+let teamGoal = loadGoal();
+let history = loadHistory();
+
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)) return parsed;
+    }
+  }catch(e){ console.warn('Konnte Verlauf nicht laden', e); }
+  return [];
+}
+
+function saveHistory(){
+  try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); }
+  catch(err){ console.warn('Speichern des Verlaufs fehlgeschlagen', err); }
+}
+
+function recordSnapshot(){
+  const today = new Date().toISOString().slice(0,10);
+  const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
+  const existing = history.find(h=>h.date===today);
+  if(existing){ existing.ist = totalIst; }
+  else { history.push({date:today, ist:totalIst}); }
+  history.sort((a,b)=>a.date.localeCompare(b.date));
+  saveHistory();
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length) return parsed;
+    }
+  }catch(e){ console.warn('Konnte gespeicherte Daten nicht laden', e); }
+  return JSON.parse(JSON.stringify(STARTER_DATA));
+}
+
+function loadGoal(){
+  try{
+    const raw = localStorage.getItem(GOAL_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object'){
+        const def = defaultPeriod();
+        return {
+          target: Number(parsed.target)||0,
+          note: parsed.note||'',
+          recruitGoal: parsed.recruitGoal!==undefined ? Number(parsed.recruitGoal)||0 : STARTER_GOAL.recruitGoal,
+          recruitActual: (parsed.recruitActual === null || parsed.recruitActual === undefined) ? null : Number(parsed.recruitActual),
+          periodStart: parsed.periodStart || def.periodStart,
+          periodEnd: parsed.periodEnd || def.periodEnd
+        };
+      }
+    }
+  }catch(e){ console.warn('Konnte Team-Ziel nicht laden', e); }
+  return { ...STARTER_GOAL };
+}
+
+function saveData(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); }
+  catch(err){ console.warn('Speichern fehlgeschlagen', err); }
+  recordSnapshot();
+}
+
+function saveGoal(){
+  try{ localStorage.setItem(GOAL_KEY, JSON.stringify(teamGoal)); }
+  catch(err){ console.warn('Speichern fehlgeschlagen', err); }
+}
+
+function flashSaved(){
+  const el = document.getElementById('saveStatus');
+  el.textContent = 'Gespeichert ✓  ' + new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+  setTimeout(()=>{ if(el.textContent.startsWith('Gespeichert')) el.textContent=''; }, 4000);
+}
+
+function fmt(n){ return Number(n||0).toLocaleString('de-AT'); }
+function pctOf(r){ return r.soll>0 ? Math.round((r.ist/r.soll)*100) : 0; }
+function progressClass(pct){
+  if(pct < 50) return 'low';
+  if(pct >= 90) return 'high';
+  return '';
+}
+function initials(name){
+  const parts = name.trim().split(' ').filter(Boolean);
+  if(parts.length===0) return '?';
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+
+function recruitActualValue(){
+  const newHiresCount = rows.filter(r=>r.isNew).length;
+  return (teamGoal.recruitActual !== null && teamGoal.recruitActual !== undefined && teamGoal.recruitActual !== '')
+    ? Number(teamGoal.recruitActual)
+    : newHiresCount;
+}
+
+function renderSummary(){
+  const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
+  const target = Number(teamGoal.target||0);
+  const pct = target>0 ? Math.round((totalIst/target)*100) : 0;
+  const onTrack = rows.filter(r=>pctOf(r)>=70).length;
+
+  const cards = [
+    {icon:'◆', label:'Einheiten Ziel', value: fmt(target), sub:'Team gesamt'},
+    {icon:'✓', label:'Einheiten Ist', value: fmt(totalIst), sub:'aktueller Stand'},
+    {icon:'%', label:'Zielerreichung', value: pct+'%', sub: target===0?'kein Ziel gesetzt':(pct>=70?'im Plan':'Aufholbedarf')},
+    {icon:'◎', label:'Mitarbeiter', value: rows.length, sub:'im Team'},
+    {icon:'★', label:'≥ 70% erreicht', value: onTrack, sub:'von '+rows.length+' MA'},
+  ];
+  const cardsHtml = cards.map(c=>`
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icon">${c.icon}</div>
+      </div>
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>
+  `).join('');
+
+  const recruitGoal = Number(teamGoal.recruitGoal||0);
+  const recruitHtml = `
+    <div class="kpi-card recruit-kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-label" style="margin:0;">Recruiting</div>
+      </div>
+      <div class="recruit-kpi-inputs">
+        <div class="recruit-kpi-field">
+          <label for="kpiRecruitGoal">Ziel</label>
+          <input type="number" id="kpiRecruitGoal" value="${recruitGoal}">
+        </div>
+        <div class="recruit-kpi-field actual">
+          <label for="kpiRecruitActual">Tatsächlich</label>
+          <input type="number" id="kpiRecruitActual" value="${recruitActualValue()}" placeholder="auto">
+        </div>
+      </div>
+      <div class="kpi-sub" style="margin-top:10px;">Tatsächlich überschreibt die automatische Zählung „NEU"-markierter Mitarbeiter — Feld leeren, um wieder automatisch zu zählen.</div>
+    </div>
+  `;
+
+  document.getElementById('summaryCards').innerHTML = cardsHtml + recruitHtml;
+
+  document.getElementById('kpiRecruitGoal').addEventListener('change', (e)=>{
+    teamGoal.recruitGoal = Number(e.target.value) || 0;
+    saveGoal(); flashSaved();
+    const goalInput = document.getElementById('recruitGoalInput');
+    if(goalInput) goalInput.value = teamGoal.recruitGoal;
+    renderRecruitPanel();
+  });
+  document.getElementById('kpiRecruitActual').addEventListener('change', (e)=>{
+    teamGoal.recruitActual = e.target.value === '' ? null : Number(e.target.value);
+    saveGoal(); flashSaved();
+    renderRecruitPanel();
+  });
+}
+
+function getFilteredSorted(){
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filter = document.getElementById('filterSelect').value;
+  const sort = document.getElementById('sortSelect').value;
+
+  let list = rows.map((r,i)=>({...r, _idx:i})).filter(r => r.name.toLowerCase().includes(search));
+  if(filter==='new') list = list.filter(r=>r.isNew);
+  if(filter==='existing') list = list.filter(r=>!r.isNew);
+
+  if(sort==='name') list.sort((a,b)=>a.name.localeCompare(b.name,'de'));
+  if(sort==='progress-desc') list.sort((a,b)=>pctOf(b)-pctOf(a));
+  if(sort==='progress-asc') list.sort((a,b)=>pctOf(a)-pctOf(b));
+  if(sort==='einheiten-desc') list.sort((a,b)=>b.ist-a.ist);
+  return list;
+}
+
+function fieldInput(idx, field, value, wide){
+  return `<input type="number" class="num-input ${wide?'wide':''}" data-idx="${idx}" data-field="${field}" value="${value}">`;
+}
+
+function renderTable(){
+  const list = getFilteredSorted();
+  document.getElementById('tableBody').innerHTML = list.map(r=>{
+    const i = r._idx;
+    const pct = pctOf(r);
+    return `
+    <div class="emp-row">
+      <div class="emp-name-wrap">
+        <div class="avatar">${initials(r.name)}</div>
+        <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}">
+      </div>
+      <div><button class="status-badge ${r.isNew?'':'off'}" data-idx="${i}" data-action="toggle-new">${r.isNew?'NEU':'Bestand'}</button></div>
+      <div>${fieldInput(i,'at',r.at)}</div>
+      <div>${fieldInput(i,'bt',r.bt)}</div>
+      <div>${fieldInput(i,'et',r.et)}</div>
+      <div>${fieldInput(i,'ma',r.ma)}</div>
+      <div>${fieldInput(i,'st',r.st)}</div>
+      <div>${fieldInput(i,'soll',r.soll,true)}</div>
+      <div>${fieldInput(i,'ist',r.ist,true)}</div>
+      <div class="prog-cell">
+        <div class="prog-bar"><div class="prog-fill ${progressClass(pct)}" style="width:${Math.min(pct,100)}%"></div></div>
+        <div class="prog-pct">${pct}%</div>
+      </div>
+      <div><button class="del-btn" data-idx="${i}" data-action="delete" title="Entfernen">✕</button></div>
+    </div>
+  `;
+  }).join('');
+
+  document.querySelectorAll('#tableBody input[data-field]').forEach(inp=>{
+    inp.addEventListener('change', onFieldChange);
+  });
+  document.querySelectorAll('#tableBody button[data-action="toggle-new"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = Number(btn.dataset.idx);
+      rows[idx].isNew = !rows[idx].isNew;
+      if(rows[idx].isNew && !rows[idx].joinDate){
+        rows[idx].joinDate = new Date().toISOString().slice(0,10);
+      }
+      saveData(); flashSaved();
+      renderAll();
+    });
+  });
+  document.querySelectorAll('#tableBody button[data-action="delete"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx = Number(btn.dataset.idx);
+      if(confirm('„' + rows[idx].name + '" wirklich entfernen?')){
+        rows.splice(idx,1);
+        saveData(); flashSaved();
+        renderAll();
+      }
+    });
+  });
+}
+
+function onFieldChange(e){
+  const idx = Number(e.target.dataset.idx);
+  const field = e.target.dataset.field;
+  let value = e.target.value;
+  if(field !== 'name'){ value = Number(value) || 0; }
+  rows[idx][field] = value;
+  saveData(); flashSaved();
+  renderSummary();
+  renderCharts();
+  renderGoalProgress();
+  renderTable();
+  renderRecruitPanel();
+}
+
+const DARK_GRID = 'rgba(255,255,255,.08)';
+const DARK_TICK = { color:'#9FB3AF', font:{size:10} };
+const DARK_LEGEND = { labels:{ color:'#DCEAE6', boxWidth:12, font:{size:11} }, position:'top' };
+
+const centerTextPlugin = {
+  id: 'centerText',
+  afterDraw(chart){
+    const opts = chart.config.options.plugins && chart.config.options.plugins.centerText;
+    if(!opts || !opts.text) return;
+    const {ctx, chartArea} = chart;
+    if(!chartArea) return;
+    const cx = (chartArea.left + chartArea.right) / 2;
+    const cy = (chartArea.top + chartArea.bottom) / 2;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = "700 30px Inter, -apple-system, sans-serif";
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(opts.text, cx, cy - 8);
+    if(opts.sub){
+      ctx.font = "600 11px Inter, -apple-system, sans-serif";
+      ctx.fillStyle = '#9FB3AF';
+      ctx.fillText(opts.sub, cx, cy + 16);
+    }
+    ctx.restore();
+  }
+};
+
+let barChart, doughnutChart, timelineChart;
+function renderCharts(){
+  const sorted = [...rows].sort((a,b)=>b.ist-a.ist);
+  const ctx1 = document.getElementById('barChart').getContext('2d');
+  if(barChart) barChart.destroy();
+  barChart = new Chart(ctx1, {
+    type:'bar',
+    data:{
+      labels: sorted.map(r=>{
+        const parts = r.name.split(' ');
+        return parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : '');
+      }),
+      datasets:[
+        {label:'Soll', data: sorted.map(r=>r.soll), backgroundColor:'rgba(255,255,255,.12)', borderRadius:4},
+        {label:'Ist', data: sorted.map(r=>r.ist), backgroundColor:'#64DDA3', borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend: DARK_LEGEND },
+      scales:{
+        x:{ grid:{display:false}, ticks:{ ...DARK_TICK, maxRotation:60, minRotation:60 } },
+        y:{ beginAtZero:true, ticks: DARK_TICK, grid:{color:DARK_GRID} }
+      }
+    }
+  });
+
+  const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
+  const target = Number(teamGoal.target||0);
+  const rest = Math.max(target-totalIst,0);
+  const pct = target>0 ? Math.round((totalIst/target)*100) : 0;
+  const hasData = target>0 || totalIst>0;
+  const ctx2 = document.getElementById('doughnutChart').getContext('2d');
+  if(doughnutChart) doughnutChart.destroy();
+  doughnutChart = new Chart(ctx2, {
+    type:'doughnut',
+    data:{
+      labels:['Erreicht (Ist)','Offen bis Ziel'],
+      datasets:[{
+        data: hasData ? [totalIst, rest] : [1,0],
+        backgroundColor: hasData ? ['#64DDA3','rgba(255,255,255,.12)'] : ['rgba(255,255,255,.12)','rgba(255,255,255,.12)'],
+        borderWidth:0
+      }]
+    },
+    plugins:[centerTextPlugin],
+    options:{
+      responsive:true,
+      cutout:'72%',
+      plugins:{
+        legend:{ labels:{ color:'#DCEAE6', boxWidth:12, font:{size:11} }, position:'bottom' },
+        centerText: hasData
+          ? { text: pct+'%', sub: fmt(totalIst)+' / '+fmt(target) }
+          : { text: '—', sub: 'Kein Ziel gesetzt' }
+      }
+    }
+  });
+}
+
+function parseISODate(str){
+  // parse 'YYYY-MM-DD' as a local date (avoids UTC off-by-one)
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function toISODate(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function addDays(d, n){
+  const r = new Date(d);
+  r.setDate(r.getDate()+n);
+  return r;
+}
+
+function renderTimeline(){
+  const def = defaultPeriod();
+  const startStr = teamGoal.periodStart || def.periodStart;
+  const endStr = teamGoal.periodEnd || def.periodEnd;
+  let start = parseISODate(startStr);
+  let end = parseISODate(endStr);
+  const target = Number(teamGoal.target||0);
+  const forecastLineEl = document.getElementById('forecastLine');
+
+  if(!(end > start)){
+    document.getElementById('timelineChart').getContext('2d');
+    if(timelineChart){ timelineChart.destroy(); timelineChart=null; }
+    forecastLineEl.innerHTML = 'Ende des Zeitraums muss nach dem Start liegen — bitte Datum oben prüfen.';
+    return;
+  }
+
+  const now = new Date(); now.setHours(0,0,0,0);
+  const totalDays = Math.round((end-start)/86400000) + 1;
+  // heutiger Tag innerhalb des Zeitraums (1-basiert), geclamped
+  let todayIdx;
+  if(now < start) todayIdx = 0;
+  else if(now > end) todayIdx = totalDays - 1;
+  else todayIdx = Math.round((now-start)/86400000);
+
+  const dateList = Array.from({length:totalDays}, (_,i)=> addDays(start,i));
+  const labels = dateList.map(d=> d.toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit'}));
+
+  // Ziel-Pfad: linear von 0 (Start) auf target (Ende)
+  const idealPath = dateList.map((_,i)=> target>0 ? Math.round((target/(totalDays-1||1))*i) : null);
+
+  // Ist-Verlauf: aus history, vorwärts aufgefüllt bis heute, danach null
+  const histByISO = {};
+  history.forEach(h=>{ histByISO[h.date] = h.ist; });
+  let lastKnown = 0, lastKnownIdx = null;
+  const actualSeries = dateList.map((d,i)=>{
+    if(i > todayIdx) return null;
+    const iso = toISODate(d);
+    if(histByISO[iso] !== undefined){ lastKnown = histByISO[iso]; lastKnownIdx = i; }
+    return lastKnown;
+  });
+
+  // Prognose: vom letzten bekannten Punkt bis Zeitraumende, basierend auf Tages-Durchschnitt seit Start
+  let forecastSeries = dateList.map(()=>null);
+  let forecastText = 'Noch keine Verlaufsdaten — Wert wird bei jedem Speichern automatisch erfasst.';
+  if(lastKnownIdx !== null && lastKnown > 0){
+    const elapsedDays = lastKnownIdx + 1; // Tage seit Start bis letztem bekannten Punkt
+    const dailyRate = lastKnown / elapsedDays;
+    for(let i=lastKnownIdx; i<totalDays; i++){
+      forecastSeries[i] = Math.round(dailyRate * (i+1));
+    }
+    if(target>0){
+      if(dailyRate<=0){
+        forecastText = 'Bei aktuellem Tempo (0 Einheiten/Tag) wird das Ziel im gewählten Zeitraum nicht erreicht.';
+      } else {
+        const projectedIdx = Math.ceil(target/dailyRate) - 1;
+        if(projectedIdx <= totalDays-1){
+          const projDate = addDays(start, projectedIdx);
+          forecastText = 'Bei aktuellem Tempo (' + fmt(Math.round(dailyRate)) + ' Einheiten/Tag) wird das Ziel voraussichtlich am <strong>' + projDate.toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'}) + '</strong> erreicht.';
+        } else {
+          const shortfall = Math.round(target - dailyRate*totalDays);
+          forecastText = 'Bei aktuellem Tempo (' + fmt(Math.round(dailyRate)) + ' Einheiten/Tag) fehlen am Ende des Zeitraums voraussichtlich <strong>' + fmt(shortfall) + ' Einheiten</strong> zum Ziel.';
+        }
+      }
+    }
+  }
+  forecastLineEl.innerHTML = forecastText;
+
+  const ctx = document.getElementById('timelineChart').getContext('2d');
+  if(timelineChart) timelineChart.destroy();
+  timelineChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Ziel-Pfad', data: idealPath,
+          borderColor:'#5B7C8A', borderDash:[5,4], borderWidth:2,
+          pointRadius:0, tension:0, spanGaps:true
+        },
+        {
+          label:'Ist-Verlauf', data: actualSeries,
+          borderColor:'#64DDA3', backgroundColor:'rgba(100,221,163,.15)',
+          borderWidth:3, pointRadius:2, pointBackgroundColor:'#64DDA3',
+          fill:true, tension:.25, spanGaps:true
+        },
+        {
+          label:'Prognose', data: forecastSeries,
+          borderColor:'#E7A94C', borderDash:[3,3], borderWidth:2,
+          pointRadius:0, tension:.15, spanGaps:true
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{ ...DARK_TICK, maxTicksLimit:10 }, title:{ display:true, text:'Datum im Umsatzzeitraum', color:'#8FA1A6', font:{size:10} } },
+        y:{ beginAtZero:true, ticks: DARK_TICK, grid:{color:DARK_GRID} }
+      }
+    }
+  });
+}
+
+function renderGoalProgress(){
+  const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
+  const target = Number(teamGoal.target||0);
+  const pct = target>0 ? Math.round((totalIst/target)*100) : 0;
+  document.getElementById('goalIstLabel').textContent = fmt(totalIst);
+  document.getElementById('goalTargetLabel').textContent = fmt(target);
+  document.getElementById('goalPct').textContent = pct + '%';
+  document.getElementById('goalFill').style.width = Math.min(pct,100) + '%';
+  const remainingEl = document.getElementById('goalRemaining');
+  if(target<=0){
+    remainingEl.textContent = 'Noch kein Team-Ziel gesetzt — Zahl links eintragen.';
+  } else if(totalIst >= target){
+    remainingEl.textContent = 'Ziel erreicht — stark!';
+  } else {
+    remainingEl.textContent = 'Noch ' + fmt(target-totalIst) + ' Einheiten bis zum Ziel.';
+  }
+}
+
+function initGoalPanel(){
+  const targetInput = document.getElementById('teamGoalInput');
+  const noteInput = document.getElementById('teamGoalNote');
+  const startInput = document.getElementById('periodStartInput');
+  const endInput = document.getElementById('periodEndInput');
+
+  targetInput.value = teamGoal.target;
+  noteInput.value = teamGoal.note;
+  startInput.value = teamGoal.periodStart;
+  endInput.value = teamGoal.periodEnd;
+
+  targetInput.addEventListener('change', ()=>{
+    teamGoal.target = Number(targetInput.value) || 0;
+    saveGoal(); flashSaved();
+    renderGoalProgress();
+    renderTimeline();
+    renderCharts();
+  });
+  noteInput.addEventListener('change', ()=>{
+    teamGoal.note = noteInput.value;
+    saveGoal(); flashSaved();
+  });
+  startInput.addEventListener('change', ()=>{
+    if(!startInput.value) return;
+    teamGoal.periodStart = startInput.value;
+    saveGoal(); flashSaved();
+    renderTimeline();
+    renderRecruitPanel();
+  });
+  endInput.addEventListener('change', ()=>{
+    if(!endInput.value) return;
+    teamGoal.periodEnd = endInput.value;
+    saveGoal(); flashSaved();
+    renderTimeline();
+    renderRecruitPanel();
+  });
+}
+
+function initRecruitPanel(){
+  const goalInput = document.getElementById('recruitGoalInput');
+  goalInput.value = teamGoal.recruitGoal || 0;
+  goalInput.addEventListener('change', ()=>{
+    teamGoal.recruitGoal = Number(goalInput.value) || 0;
+    saveGoal(); flashSaved();
+    renderRecruitPanel();
+    renderSummary();
+  });
+}
+
+function renderRecruitPanel(){
+  const def = defaultPeriod();
+  const startStr = teamGoal.periodStart || def.periodStart;
+  const endStr = teamGoal.periodEnd || def.periodEnd;
+  const start = parseISODate(startStr);
+  const end = parseISODate(endStr);
+
+  const newHires = rows.filter(r=>r.isNew);
+  const count = recruitActualValue();
+  const target = Number(teamGoal.recruitGoal||0);
+  const pct = target>0 ? Math.round((count/target)*100) : 0;
+
+  document.getElementById('recruitCountLabel').textContent = count;
+  document.getElementById('recruitTargetLabel').textContent = target;
+  document.getElementById('recruitPct').textContent = pct + '%';
+  document.getElementById('recruitFill').style.width = Math.min(pct,100) + '%';
+
+  // sortiere: mit bekanntem Datum im Zeitraum zuerst (chronologisch), dann ohne Datum
+  const withDate = newHires.filter(r=>r.joinDate).map(r=>({...r, _d: parseISODate(r.joinDate)}))
+    .sort((a,b)=> a._d - b._d);
+  const withoutDate = newHires.filter(r=>!r.joinDate);
+
+  const listEl = document.getElementById('recruitList');
+  if(newHires.length === 0){
+    listEl.innerHTML = '<div class="recruit-empty">Noch keine neuen Mitarbeiter markiert.</div>';
+    return;
+  }
+  const rowsHtml = [
+    ...withDate.map(r=>{
+      const inPeriod = r._d >= start && r._d <= end;
+      return `<div class="recruit-item"><span>${r.name}</span><span class="rd">${r._d.toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit'})}${inPeriod?'':' (außerhalb Zeitraum)'}</span></div>`;
+    }),
+    ...withoutDate.map(r=>`<div class="recruit-item"><span>${r.name}</span><span class="rd">Datum unbekannt</span></div>`)
+  ];
+  listEl.innerHTML = rowsHtml.join('');
+}
+
+function renderAll(){
+  renderSummary();
+  renderTable();
+  renderCharts();
+  renderGoalProgress();
+  renderTimeline();
+  renderRecruitPanel();
+}
+
+document.getElementById('addRowBtn').addEventListener('click', ()=>{
+  rows.push({name:'Neuer Mitarbeiter', isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:new Date().toISOString().slice(0,10)});
+  saveData(); flashSaved();
+  renderAll();
+});
+
+document.getElementById('saveBtn').addEventListener('click', ()=> { saveData(); saveGoal(); flashSaved(); });
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const payload = { rows, teamGoal };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `finova_dashboard_backup_${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      if(Array.isArray(parsed)){
+        rows = parsed;
+      } else if(parsed && Array.isArray(parsed.rows)){
+        rows = parsed.rows;
+        if(parsed.teamGoal) teamGoal = { target:Number(parsed.teamGoal.target)||0, note:parsed.teamGoal.note||'' };
+      } else {
+        throw new Error('Ungültiges Format');
+      }
+      saveData(); saveGoal();
+      initGoalPanel();
+      renderAll();
+      alert('Import erfolgreich: ' + rows.length + ' Mitarbeiter geladen.');
+    }catch(err){
+      alert('Import fehlgeschlagen: ' + err.message);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+['searchInput','filterSelect','sortSelect'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderTable);
+  document.getElementById(id).addEventListener('change', renderTable);
+});
+
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('section-'+btn.dataset.section).classList.add('active');
+  });
+});
+
+initGoalPanel();
+initRecruitPanel();
+renderAll();
+</script>
+
+</body>
+</html>
