@@ -516,7 +516,7 @@
 <div class="app">
   <div class="sidebar">
     <div class="brand"><span class="fi">fi</span><span>nova</span></div>
-    <div class="brand-sub">GST Kögerl · Team Dashboard</div>
+    <div class="brand-sub">Direktion KKB · Team Dashboard</div>
 
     <button class="nav-item active" data-section="overview"><span class="ico">◈</span> Übersicht</button>
     <button class="nav-item" data-section="team"><span class="ico">◎</span> Mitarbeiter</button>
@@ -543,9 +543,7 @@
       </div>
     </div>
 
-    <div class="banner" id="cloudBanner">
-      Alle Werte sind direkt editierbar. Änderungen werden für das gesamte Team in der Cloud gespeichert — für ein Backup „Export" nutzen.
-    </div>
+    <div class="banner" id="cloudBanner" style="display:none;"></div>
 
     <!-- OVERVIEW SECTION -->
     <section class="section active" id="section-overview">
@@ -628,7 +626,10 @@
     <!-- TEAM SECTION -->
     <section class="section" id="section-team">
       <div class="panel">
-        <h2>Mitarbeiter-Übersicht</h2>
+        <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <span>Mitarbeiter-Übersicht</span>
+          <span id="empCountBadge" style="font-size:12px;font-weight:600;color:#8FA1A6;background:#EEF1F1;padding:4px 10px;border-radius:999px;">0 Mitarbeiter</span>
+        </h2>
         <div class="toolbar">
           <input type="text" id="searchInput" placeholder="Name suchen…">
           <select id="filterSelect">
@@ -776,8 +777,10 @@ function setSyncStatus(text, isError){
 
 function initCloudSync(){
   if(!CLOUD_CONFIGURED){
-    document.getElementById('cloudBanner').textContent =
+    const banner = document.getElementById('cloudBanner');
+    banner.textContent =
       'Cloud-Speicherung ist noch nicht eingerichtet — Änderungen werden nur in diesem Browser gespeichert. Firebase-Konfiguration im Quelltext ergänzen, damit alle im Team dieselben Daten sehen.';
+    banner.style.display = '';
     return;
   }
   setSyncStatus('Verbinde mit Cloud…');
@@ -973,6 +976,10 @@ function fieldInput(idx, field, value, wide){
 
 function renderTable(){
   const list = getFilteredSorted();
+  const badge = document.getElementById('empCountBadge');
+  badge.textContent = list.length === rows.length
+    ? `${rows.length} Mitarbeiter`
+    : `${list.length} von ${rows.length} Mitarbeitern`;
   document.getElementById('tableBody').innerHTML = list.map(r=>{
     const i = r._idx;
     const pct = pctOf(r);
