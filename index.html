@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --navy:#0B1F2A;
@@ -308,6 +309,16 @@
   .recruit-kpi-field input:hover{ border-color:rgba(255,255,255,.35); }
   .recruit-kpi-field input:focus{ outline:none; border-color:var(--mint); background:rgba(255,255,255,.1); }
   .recruit-kpi-field.actual input{ color:var(--mint); }
+  .recruit-kpi-static{
+    width:100%;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:8px;
+    padding:8px 10px;
+    color:#8FA1A6;
+    font-size:20px;
+    font-weight:800;
+  }
 
   .charts-grid{
     display:grid;
@@ -425,7 +436,20 @@
     border-radius:12px;
     padding:10px 12px;
   }
-  @media (max-width:1000px){ .emp-row{ grid-template-columns: 1fr; } .emp-row > div{ display:flex; justify-content:space-between; } }
+  @media (max-width:1000px){
+    .emp-row{ grid-template-columns: 1fr; }
+    .emp-row > div{ display:flex; justify-content:space-between; align-items:center; }
+    .emp-row > div[data-label]::before{
+      content: attr(data-label);
+      font-size:10.5px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:var(--grey-light);
+      font-weight:700;
+      margin-right:8px;
+      flex-shrink:0;
+    }
+  }
   .emp-name-wrap{ display:flex; align-items:center; gap:10px; }
   .avatar{
     width:32px;height:32px;border-radius:50%;
@@ -509,6 +533,28 @@
     border-radius:12px;
     margin-bottom:22px;
   }
+
+  /* AUTH */
+  .auth-box{ display:flex; align-items:center; }
+  .login-form{ display:flex; gap:6px; align-items:center; }
+  .login-form input{
+    width:120px; padding:8px 10px; border:1px solid var(--border);
+    border-radius:8px; font-size:12.5px; font-family:inherit;
+  }
+  .auth-status{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--grey-light); font-weight:600; }
+  .readonly-banner{ display:none; }
+  body.readonly-mode .readonly-banner{ display:block; }
+  body.readonly-mode .editor-only{ display:none !important; }
+  body.readonly-mode input[data-field],
+  body.readonly-mode #teamGoalInput,
+  body.readonly-mode #teamGoalNote,
+  body.readonly-mode #periodStartInput,
+  body.readonly-mode #periodEndInput,
+  body.readonly-mode #recruitGoalInput,
+  body.readonly-mode #kpiRecruitActual{
+    background:#F4F6F6; color:var(--grey-light); cursor:not-allowed;
+  }
+  body.readonly-mode .status-badge{ cursor:not-allowed; opacity:.7; }
 </style>
 </head>
 <body>
@@ -534,9 +580,22 @@
         <p>Ziele & Fortschritt — laufender Monat</p>
       </div>
       <div class="topbar-actions">
+        <div class="auth-box" id="authBox">
+          <button class="btn btn-ghost btn-small" id="adminToggleBtn">Admin</button>
+          <form id="loginForm" class="login-form" style="display:none;">
+            <input type="email" id="loginEmail" placeholder="E-Mail" autocomplete="username" required>
+            <input type="password" id="loginPassword" placeholder="Passwort" autocomplete="current-password" required>
+            <button type="submit" class="btn btn-small btn-primary">Anmelden</button>
+            <button type="button" class="btn btn-small btn-ghost" id="loginCancelBtn">×</button>
+          </form>
+          <div class="auth-status" id="authStatus" style="display:none;">
+            <span id="authUserLabel"></span>
+            <button class="btn btn-small btn-ghost" id="logoutBtn">Abmelden</button>
+          </div>
+        </div>
         <span id="saveStatus"></span>
         <button class="btn btn-ghost" id="exportBtn">Export</button>
-        <label class="btn btn-ghost" style="cursor:pointer;">
+        <label class="btn btn-ghost editor-only" style="cursor:pointer;">
           Import
           <input type="file" id="importFile" accept="application/json" style="display:none;">
         </label>
@@ -544,6 +603,7 @@
     </div>
 
     <div class="banner" id="cloudBanner" style="display:none;"></div>
+    <div class="banner readonly-banner" id="readonlyBanner">Nur Lesezugriff — melde dich an, um Zahlen zu ändern.</div>
 
     <!-- OVERVIEW SECTION -->
     <section class="section active" id="section-overview">
@@ -651,7 +711,7 @@
         <div class="emp-list" id="tableBody"></div>
 
         <div class="add-row">
-          <button class="btn btn-small btn-primary" id="addRowBtn">+ Mitarbeiter hinzufügen</button>
+          <button class="btn btn-small btn-primary editor-only" id="addRowBtn">+ Mitarbeiter hinzufügen</button>
           <span class="hint">Neue Zeile wird unten angehängt.</span>
         </div>
       </div>
@@ -661,24 +721,33 @@
 
 <script>
 /*
- * Cloud-Sync (Firebase Firestore)
+ * Cloud-Sync (Firebase Firestore) + Bearbeitungsrechte (Firebase Auth)
  * ---------------------------------------------------------------
- * Damit alle Teammitglieder dieselben Daten sehen und speichern können,
- * werden Mitarbeiter, Team-Ziele und Verlauf in einem Firestore-Dokument
+ * Damit alle Teammitglieder dieselben Daten sehen können, werden
+ * Mitarbeiter, Team-Ziele und Verlauf in einem Firestore-Dokument
  * abgelegt statt nur im localStorage des jeweiligen Browsers.
+ * Lesen darf jeder (auch ohne Login). Schreiben/Ändern darf nur, wer
+ * mit einem der angelegten Firebase-Auth-Konten eingeloggt ist.
  *
- * Einrichtung (einmalig):
- * 1. Auf https://console.firebase.google.com ein kostenloses Projekt anlegen.
- * 2. Dort "Firestore Database" aktivieren (im Testmodus/mit offenen Regeln,
- *    da dieses Dashboard ohne Login auskommt):
+ * Einrichtung (einmalig, in der Firebase Console):
+ * 1. Projekt "finova-team-dashboard" ist bereits verbunden (siehe
+ *    firebaseConfig unten).
+ * 2. Authentication > Sign-in method > "E-Mail/Passwort" aktivieren.
+ * 3. Authentication > Users > für jede der 3 Personen, die Zahlen
+ *    ändern dürfen, manuell einen Nutzer (E-Mail + Passwort) anlegen.
+ *    Diese Zugangsdaten geben die 3 Editoren dann im Login-Feld oben
+ *    rechts im Dashboard ein.
+ * 4. Firestore Database > Regeln auf Folgendes setzen, damit Lesen
+ *    offen bleibt, aber nur eingeloggte Nutzer schreiben dürfen:
  *      rules_version = '2';
  *      service cloud.firestore {
  *        match /databases/{database}/documents {
- *          match /{document=**} { allow read, write: if true; }
+ *          match /{document=**} {
+ *            allow read: if true;
+ *            allow write: if request.auth != null;
+ *          }
  *        }
  *      }
- * 3. Unter Projekteinstellungen > "Meine Apps" eine Web-App hinzufügen und
- *    die angezeigte firebaseConfig unten einsetzen.
  * Ohne gültige Konfiguration läuft die App automatisch im Offline-Modus
  * (nur lokaler Browser-Speicher, wie bisher).
  */
@@ -693,13 +762,67 @@ const firebaseConfig = {
 const CLOUD_CONFIGURED = firebaseConfig.apiKey !== "YOUR_API_KEY";
 let cloudReady = false;
 let stateDocRef = null;
+let firebaseAuth = null;
 if(CLOUD_CONFIGURED){
   try{
     firebase.initializeApp(firebaseConfig);
     stateDocRef = firebase.firestore().collection('finova').doc('dashboard');
+    firebaseAuth = firebase.auth();
   }catch(e){
     console.error('Firebase-Initialisierung fehlgeschlagen', e);
   }
+}
+
+// --- Bearbeitungsrechte: nur eingeloggte Nutzer (die 3 angelegten Editor-Konten) dürfen ändern ---
+let isEditor = false;
+
+function applyPermissions(){
+  document.body.classList.toggle('readonly-mode', !isEditor);
+  document.querySelectorAll('#tableBody input[data-field], #tableBody button[data-action]')
+    .forEach(el => el.disabled = !isEditor);
+  ['teamGoalInput','teamGoalNote','periodStartInput','periodEndInput','recruitGoalInput','kpiRecruitActual','addRowBtn']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.disabled = !isEditor; });
+}
+
+function initAuth(){
+  if(!firebaseAuth){ applyPermissions(); return; }
+  const adminToggleBtn = document.getElementById('adminToggleBtn');
+  const loginForm = document.getElementById('loginForm');
+  const authStatus = document.getElementById('authStatus');
+  const authUserLabel = document.getElementById('authUserLabel');
+
+  firebaseAuth.onAuthStateChanged(user=>{
+    isEditor = !!user;
+    adminToggleBtn.style.display = user ? 'none' : '';
+    loginForm.style.display = 'none';
+    authStatus.style.display = user ? '' : 'none';
+    if(user) authUserLabel.textContent = 'Angemeldet: ' + (user.email || user.uid);
+    applyPermissions();
+  });
+
+  adminToggleBtn.addEventListener('click', ()=>{
+    adminToggleBtn.style.display = 'none';
+    loginForm.style.display = '';
+    document.getElementById('loginEmail').focus();
+  });
+
+  document.getElementById('loginCancelBtn').addEventListener('click', ()=>{
+    loginForm.style.display = 'none';
+    adminToggleBtn.style.display = '';
+  });
+
+  loginForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    firebaseAuth.signInWithEmailAndPassword(email, password)
+      .then(()=>{ document.getElementById('loginPassword').value = ''; })
+      .catch(err=>{ alert('Anmeldung fehlgeschlagen: ' + err.message); });
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+    firebaseAuth.signOut();
+  });
 }
 
 const STORAGE_KEY = 'finova_dashboard_data_v1';
@@ -926,27 +1049,20 @@ function renderSummary(){
       </div>
       <div class="recruit-kpi-inputs">
         <div class="recruit-kpi-field">
-          <label for="kpiRecruitGoal">Ziel</label>
-          <input type="number" id="kpiRecruitGoal" value="${recruitGoal}">
+          <label>Ziel</label>
+          <div class="recruit-kpi-static">${recruitGoal}</div>
         </div>
         <div class="recruit-kpi-field actual">
           <label for="kpiRecruitActual">Tatsächlich</label>
           <input type="number" id="kpiRecruitActual" value="${recruitActualValue()}" placeholder="auto">
         </div>
       </div>
-      <div class="kpi-sub" style="margin-top:10px;">Tatsächlich überschreibt die automatische Zählung „NEU"-markierter Mitarbeiter — Feld leeren, um wieder automatisch zu zählen.</div>
+      <div class="kpi-sub" style="margin-top:10px;">Ziel wird oben im Bereich „Mitarbeiter-Aufbau" gesetzt. Tatsächlich überschreibt die automatische Zählung „NEU"-markierter Mitarbeiter — Feld leeren, um wieder automatisch zu zählen.</div>
     </div>
   `;
 
   document.getElementById('summaryCards').innerHTML = cardsHtml + recruitHtml;
 
-  document.getElementById('kpiRecruitGoal').addEventListener('change', (e)=>{
-    teamGoal.recruitGoal = Number(e.target.value) || 0;
-    saveGoal(); flashSaved();
-    const goalInput = document.getElementById('recruitGoalInput');
-    if(goalInput) goalInput.value = teamGoal.recruitGoal;
-    renderRecruitPanel();
-  });
   document.getElementById('kpiRecruitActual').addEventListener('change', (e)=>{
     teamGoal.recruitActual = e.target.value === '' ? null : Number(e.target.value);
     saveGoal(); flashSaved();
@@ -989,19 +1105,19 @@ function renderTable(){
         <div class="avatar">${initials(r.name)}</div>
         <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}">
       </div>
-      <div><button class="status-badge ${r.isNew?'':'off'}" data-idx="${i}" data-action="toggle-new">${r.isNew?'NEU':'Bestand'}</button></div>
-      <div>${fieldInput(i,'at',r.at)}</div>
-      <div>${fieldInput(i,'bt',r.bt)}</div>
-      <div>${fieldInput(i,'et',r.et)}</div>
-      <div>${fieldInput(i,'ma',r.ma)}</div>
-      <div>${fieldInput(i,'st',r.st)}</div>
-      <div>${fieldInput(i,'soll',r.soll,true)}</div>
-      <div>${fieldInput(i,'ist',r.ist,true)}</div>
-      <div class="prog-cell">
+      <div data-label="Status"><button class="status-badge ${r.isNew?'':'off'}" data-idx="${i}" data-action="toggle-new">${r.isNew?'NEU':'Bestand'}</button></div>
+      <div data-label="AT">${fieldInput(i,'at',r.at)}</div>
+      <div data-label="BT">${fieldInput(i,'bt',r.bt)}</div>
+      <div data-label="ET">${fieldInput(i,'et',r.et)}</div>
+      <div data-label="MA">${fieldInput(i,'ma',r.ma)}</div>
+      <div data-label="ST">${fieldInput(i,'st',r.st)}</div>
+      <div data-label="Soll">${fieldInput(i,'soll',r.soll,true)}</div>
+      <div data-label="Ist">${fieldInput(i,'ist',r.ist,true)}</div>
+      <div class="prog-cell" data-label="Fortschritt">
         <div class="prog-bar"><div class="prog-fill ${progressClass(pct)}" style="width:${Math.min(pct,100)}%"></div></div>
         <div class="prog-pct">${pct}%</div>
       </div>
-      <div><button class="del-btn" data-idx="${i}" data-action="delete" title="Entfernen">✕</button></div>
+      <div><button class="del-btn editor-only" data-idx="${i}" data-action="delete" title="Entfernen">✕</button></div>
     </div>
   `;
   }).join('');
@@ -1375,6 +1491,7 @@ function renderAll(){
   renderGoalProgress();
   renderTimeline();
   renderRecruitPanel();
+  applyPermissions();
 }
 
 document.getElementById('addRowBtn').addEventListener('click', ()=>{
@@ -1441,6 +1558,7 @@ initGoalPanel();
 initRecruitPanel();
 renderAll();
 initCloudSync();
+initAuth();
 </script>
 
 </body>
