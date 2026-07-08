@@ -6,6 +6,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --navy:#0B1F2A;
@@ -542,8 +544,8 @@
       </div>
     </div>
 
-    <div class="banner">
-      Alle Werte sind direkt editierbar. Änderungen werden in diesem Browser gespeichert — für ein Backup „Export" nutzen.
+    <div class="banner" id="cloudBanner">
+      Alle Werte sind direkt editierbar. Änderungen werden für das gesamte Team in der Cloud gespeichert — für ein Backup „Export" nutzen.
     </div>
 
     <!-- OVERVIEW SECTION -->
@@ -658,6 +660,48 @@
 </div>
 
 <script>
+/*
+ * Cloud-Sync (Firebase Firestore)
+ * ---------------------------------------------------------------
+ * Damit alle Teammitglieder dieselben Daten sehen und speichern können,
+ * werden Mitarbeiter, Team-Ziele und Verlauf in einem Firestore-Dokument
+ * abgelegt statt nur im localStorage des jeweiligen Browsers.
+ *
+ * Einrichtung (einmalig):
+ * 1. Auf https://console.firebase.google.com ein kostenloses Projekt anlegen.
+ * 2. Dort "Firestore Database" aktivieren (im Testmodus/mit offenen Regeln,
+ *    da dieses Dashboard ohne Login auskommt):
+ *      rules_version = '2';
+ *      service cloud.firestore {
+ *        match /databases/{database}/documents {
+ *          match /{document=**} { allow read, write: if true; }
+ *        }
+ *      }
+ * 3. Unter Projekteinstellungen > "Meine Apps" eine Web-App hinzufügen und
+ *    die angezeigte firebaseConfig unten einsetzen.
+ * Ohne gültige Konfiguration läuft die App automatisch im Offline-Modus
+ * (nur lokaler Browser-Speicher, wie bisher).
+ */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const CLOUD_CONFIGURED = firebaseConfig.apiKey !== "YOUR_API_KEY";
+let cloudReady = false;
+let stateDocRef = null;
+if(CLOUD_CONFIGURED){
+  try{
+    firebase.initializeApp(firebaseConfig);
+    stateDocRef = firebase.firestore().collection('finova').doc('dashboard');
+  }catch(e){
+    console.error('Firebase-Initialisierung fehlgeschlagen', e);
+  }
+}
+
 const STORAGE_KEY = 'finova_dashboard_data_v1';
 const GOAL_KEY = 'finova_dashboard_goal_v1';
 function defaultPeriod(){
@@ -717,6 +761,54 @@ function saveHistory(){
   catch(err){ console.warn('Speichern des Verlaufs fehlgeschlagen', err); }
 }
 
+function pushToCloud(){
+  if(!CLOUD_CONFIGURED || !cloudReady || !stateDocRef) return;
+  stateDocRef.set({ rows, teamGoal, history }).catch(err=>{
+    console.warn('Cloud-Speichern fehlgeschlagen', err);
+    setSyncStatus('Cloud-Speichern fehlgeschlagen — nur lokal gespeichert.', true);
+  });
+}
+
+function setSyncStatus(text, isError){
+  const el = document.getElementById('saveStatus');
+  el.textContent = text;
+  el.style.color = isError ? 'var(--red)' : '';
+}
+
+function initCloudSync(){
+  if(!CLOUD_CONFIGURED){
+    document.getElementById('cloudBanner').textContent =
+      'Cloud-Speicherung ist noch nicht eingerichtet — Änderungen werden nur in diesem Browser gespeichert. Firebase-Konfiguration im Quelltext ergänzen, damit alle im Team dieselben Daten sehen.';
+    return;
+  }
+  setSyncStatus('Verbinde mit Cloud…');
+  stateDocRef.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return; // eigene, bereits lokal dargestellte Änderung
+    if(snap.exists){
+      const data = snap.data() || {};
+      if(Array.isArray(data.rows) && data.rows.length) rows = data.rows;
+      if(data.teamGoal && typeof data.teamGoal === 'object') teamGoal = { ...STARTER_GOAL, ...data.teamGoal };
+      if(Array.isArray(data.history)) history = data.history;
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+        localStorage.setItem(GOAL_KEY, JSON.stringify(teamGoal));
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      }catch(e){}
+    } else {
+      stateDocRef.set({ rows, teamGoal, history });
+    }
+    cloudReady = true;
+    populateGoalPanel();
+    populateRecruitGoalInput();
+    renderAll();
+    setSyncStatus('Verbunden ✓');
+    setTimeout(()=>{ if(document.getElementById('saveStatus').textContent==='Verbunden ✓') setSyncStatus(''); }, 3000);
+  }, err=>{
+    console.error('Cloud-Sync Fehler', err);
+    setSyncStatus('Cloud-Verbindung fehlgeschlagen — nur lokal gespeichert.', true);
+  });
+}
+
 function recordSnapshot(){
   const today = new Date().toISOString().slice(0,10);
   const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
@@ -763,15 +855,18 @@ function saveData(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); }
   catch(err){ console.warn('Speichern fehlgeschlagen', err); }
   recordSnapshot();
+  pushToCloud();
 }
 
 function saveGoal(){
   try{ localStorage.setItem(GOAL_KEY, JSON.stringify(teamGoal)); }
   catch(err){ console.warn('Speichern fehlgeschlagen', err); }
+  pushToCloud();
 }
 
 function flashSaved(){
   const el = document.getElementById('saveStatus');
+  el.style.color = '';
   el.textContent = 'Gespeichert ✓  ' + new Date().toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
   setTimeout(()=>{ if(el.textContent.startsWith('Gespeichert')) el.textContent=''; }, 4000);
 }
@@ -1167,16 +1262,25 @@ function renderGoalProgress(){
   }
 }
 
+function populateGoalPanel(){
+  const targetInput = document.getElementById('teamGoalInput');
+  const noteInput = document.getElementById('teamGoalNote');
+  const startInput = document.getElementById('periodStartInput');
+  const endInput = document.getElementById('periodEndInput');
+
+  if(document.activeElement !== targetInput) targetInput.value = teamGoal.target;
+  if(document.activeElement !== noteInput) noteInput.value = teamGoal.note;
+  if(document.activeElement !== startInput) startInput.value = teamGoal.periodStart;
+  if(document.activeElement !== endInput) endInput.value = teamGoal.periodEnd;
+}
+
 function initGoalPanel(){
   const targetInput = document.getElementById('teamGoalInput');
   const noteInput = document.getElementById('teamGoalNote');
   const startInput = document.getElementById('periodStartInput');
   const endInput = document.getElementById('periodEndInput');
 
-  targetInput.value = teamGoal.target;
-  noteInput.value = teamGoal.note;
-  startInput.value = teamGoal.periodStart;
-  endInput.value = teamGoal.periodEnd;
+  populateGoalPanel();
 
   targetInput.addEventListener('change', ()=>{
     teamGoal.target = Number(targetInput.value) || 0;
@@ -1205,9 +1309,14 @@ function initGoalPanel(){
   });
 }
 
+function populateRecruitGoalInput(){
+  const goalInput = document.getElementById('recruitGoalInput');
+  if(document.activeElement !== goalInput) goalInput.value = teamGoal.recruitGoal || 0;
+}
+
 function initRecruitPanel(){
   const goalInput = document.getElementById('recruitGoalInput');
-  goalInput.value = teamGoal.recruitGoal || 0;
+  populateRecruitGoalInput();
   goalInput.addEventListener('change', ()=>{
     teamGoal.recruitGoal = Number(goalInput.value) || 0;
     saveGoal(); flashSaved();
@@ -1293,12 +1402,13 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
         rows = parsed;
       } else if(parsed && Array.isArray(parsed.rows)){
         rows = parsed.rows;
-        if(parsed.teamGoal) teamGoal = { target:Number(parsed.teamGoal.target)||0, note:parsed.teamGoal.note||'' };
+        if(parsed.teamGoal) teamGoal = { ...STARTER_GOAL, ...teamGoal, ...parsed.teamGoal };
       } else {
         throw new Error('Ungültiges Format');
       }
       saveData(); saveGoal();
-      initGoalPanel();
+      populateGoalPanel();
+      populateRecruitGoalInput();
       renderAll();
       alert('Import erfolgreich: ' + rows.length + ' Mitarbeiter geladen.');
     }catch(err){
@@ -1326,6 +1436,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
 initGoalPanel();
 initRecruitPanel();
 renderAll();
+initCloudSync();
 </script>
 
 </body>
