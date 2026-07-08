@@ -540,7 +540,6 @@
           Import
           <input type="file" id="importFile" accept="application/json" style="display:none;">
         </label>
-        <button class="btn btn-primary" id="saveBtn">Speichern</button>
       </div>
     </div>
 
@@ -1376,8 +1375,6 @@ document.getElementById('addRowBtn').addEventListener('click', ()=>{
   saveData(); flashSaved();
   renderAll();
 });
-
-document.getElementById('saveBtn').addEventListener('click', ()=> { saveData(); saveGoal(); flashSaved(); });
 
 document.getElementById('exportBtn').addEventListener('click', ()=>{
   const payload = { rows, teamGoal };
