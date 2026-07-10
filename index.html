@@ -576,8 +576,17 @@
   .eh-total-value .unit{ font-size:16px; font-weight:700; color:#B9D6CE; margin-left:6px; }
   .eh-groups{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
+    grid-template-columns:1.3fr 1fr;
     gap:16px;
+    align-items:start;
+  }
+  .eh-side-stack{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  @media (max-width:900px){
+    .eh-groups{ grid-template-columns:1fr; }
   }
   .eh-group{ border-top:3px solid var(--mint2); }
   .eh-group[data-sparte="investment"]{ border-top-color:#5B9BD5; }
@@ -808,7 +817,7 @@
     <!-- EH-RECHNER SECTION -->
     <section class="section" id="section-eh-rechner">
       <div class="banner eh-info">
-        <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet und zur Zwischensumme addiert. Grün hinterlegte Felder sind editierbar. KFZ wird generell nicht aufgenommen. Eingaben werden nicht gespeichert.
+        <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet und zur Zwischensumme addiert. Grün hinterlegte Felder sind editierbar. Eingaben werden nicht gespeichert.
       </div>
 
       <div class="eh-total-banner">
@@ -1691,9 +1700,6 @@ const EH_ITEMS = [
   { id:'eigenheim', label:'Eigenheim', sparte:'insurance', payout:'einmalig',
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j*0.9 },
-  { id:'kfz', label:'KFZ', sparte:'insurance', payout:'einmalig', disabled:true,
-    disabledNote:'Bleibt immer 0 — wird nicht aufgenommen',
-    calc:()=> 0 },
   { id:'rechtschutz', label:'Rechtschutz', sparte:'insurance', payout:'einmalig',
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j*0.9 },
@@ -1722,7 +1728,7 @@ function initEHRechner(){
   const container = document.getElementById('ehGroups');
   if(!container) return;
 
-  container.innerHTML = EH_GROUPS.map(group=>{
+  function renderGroup(group){
     const items = EH_ITEMS.filter(it=>it.sparte===group.id);
     const rowsHtml = items.map(it=>{
       const gField = it.hasG
@@ -1748,11 +1754,16 @@ function initEHRechner(){
       </div>
       <div class="eh-mult-row">
         <label>Multiplikator (€ / EH)</label>
-        <input type="number" class="eh-mult" data-group="${group.id}" value="${group.multDefault}" step="0.1" min="0">
+        <input type="number" class="eh-mult" data-group="${group.id}" value="${group.multDefault}" step="0.5" min="0">
         <span class="eh-mult-result"><span id="ehEur-${group.id}">0,00</span> €</span>
       </div>
     </div>`;
-  }).join('');
+  }
+
+  const mainGroup = EH_GROUPS.find(g=>g.id==='insurance');
+  const sideGroups = EH_GROUPS.filter(g=>g.id!=='insurance');
+  container.innerHTML = renderGroup(mainGroup)
+    + `<div class="eh-side-stack">${sideGroups.map(renderGroup).join('')}</div>`;
 
   function recalc(){
     const groupSums = {};
