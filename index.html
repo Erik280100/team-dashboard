@@ -790,7 +790,7 @@
     <!-- EH-RECHNER SECTION -->
     <section class="section" id="section-eh-rechner">
       <div class="banner eh-info">
-        <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet. Grün hinterlegte Felder sind editierbar. FSP zählt nicht in die Insurance-Zwischensumme, KFZ wird generell nicht aufgenommen. Eingaben werden nicht gespeichert.
+        <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet und zur Zwischensumme addiert. Grün hinterlegte Felder sind editierbar. KFZ wird generell nicht aufgenommen. Eingaben werden nicht gespeichert.
       </div>
 
       <div class="eh-total-banner">
@@ -1641,22 +1641,22 @@ const EH_GROUPS = [
 ];
 
 const EH_ITEMS = [
-  { id:'fsp', label:'FSP', sparte:'insurance', payout:'monatlich', excludeFromSubtotal:true,
+  { id:'fsp', label:'FSP', sparte:'insurance', payout:'monatlich',
     hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35,
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j/2 },
   { id:'flv', label:'FLV', sparte:'insurance', payout:'einmalig',
     hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2)/35)*g },
+    calc:(g,j)=> ((j*2.14)/35)*g },
   { id:'ableben', label:'Ableben', sparte:'insurance', payout:'einmalig',
     hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2)/30)*g },
+    calc:(g,j)=> ((j*2.14)/30)*g },
   { id:'bu', label:'BU', sparte:'insurance', payout:'einmalig',
     hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2)/30)*g },
+    calc:(g,j)=> ((j*2.14)/30)*g },
   { id:'uv', label:'UV', sparte:'insurance', payout:'einmalig',
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j*0.9 },
@@ -1705,9 +1705,7 @@ function initEHRechner(){
       const jField = it.disabled
         ? `<div class="eh-field"><label>Prämie</label><input type="text" disabled value="${it.disabledNote}"></div>`
         : `<div class="eh-field"><label>${it.jLabel}</label><input type="number" class="eh-j" data-id="${it.id}" value="0" step="10" min="0"></div>`;
-      const note = it.excludeFromSubtotal
-        ? `<span class="eh-row-note">Auszahlung: ${it.payout} · zählt nicht in Zwischensumme</span>`
-        : `<span class="eh-row-note">Auszahlung: ${it.payout}</span>`;
+      const note = `<span class="eh-row-note">Auszahlung: ${it.payout}</span>`;
       return `<div class="eh-row" data-row="${it.id}">
         <div class="eh-row-label">${it.label}${note}</div>
         ${gField}
@@ -1735,7 +1733,7 @@ function initEHRechner(){
       const result = it.calc(g, j);
       const valEl = document.getElementById('ehVal-'+it.id);
       if(valEl) valEl.textContent = ehFormatEH(result);
-      if(!it.excludeFromSubtotal) groupSums[it.sparte] += result;
+      groupSums[it.sparte] += result;
     });
 
     let grandTotal = 0;
