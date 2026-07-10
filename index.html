@@ -555,6 +555,75 @@
     background:#F4F6F6; color:var(--grey-light); cursor:not-allowed;
   }
   body.readonly-mode .status-badge{ cursor:not-allowed; opacity:.7; }
+
+  /* EH-RECHNER */
+  .eh-info{ background:#EAF6FF; border-color:#BFE0F5; color:#1B5A80; }
+  .eh-info strong{ color:#0B3A54; }
+  .eh-total-banner{
+    background: linear-gradient(135deg, var(--navy) 0%, var(--teal) 130%);
+    border-radius:20px;
+    padding:22px 26px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+    color:#fff;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .eh-total-label{ font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:#B9D6CE; margin-bottom:4px; font-weight:700; }
+  .eh-total-value{ font-size:34px; font-weight:800; }
+  .eh-total-value .unit{ font-size:16px; font-weight:700; color:#B9D6CE; margin-left:6px; }
+  .eh-groups{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
+    gap:16px;
+  }
+  .eh-group{ border-top:3px solid var(--mint2); }
+  .eh-group[data-sparte="investment"]{ border-top-color:#5B9BD5; }
+  .eh-group[data-sparte="credit"]{ border-top-color:#E7A94C; }
+  .eh-group[data-sparte="realestate"]{ border-top-color:#B07CC6; }
+  .eh-row{
+    display:grid;
+    grid-template-columns:1.4fr 110px 130px 90px;
+    gap:10px;
+    align-items:end;
+    padding:12px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .eh-row:last-of-type{ border-bottom:none; }
+  .eh-row-label{ font-size:13px; font-weight:700; padding-bottom:8px; }
+  .eh-row-note{ display:block; font-size:10.5px; font-weight:500; color:var(--grey-light); margin-top:3px; }
+  .eh-field{ display:flex; flex-direction:column; gap:4px; }
+  .eh-field label{ font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--grey-light); font-weight:700; }
+  .eh-field input{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:13px;
+    font-family:inherit;
+    background:#EFFBF5;
+  }
+  .eh-field input:focus{ outline:none; border-color:var(--mint2); }
+  .eh-field input:disabled{ background:#F4F6F6; color:var(--grey-light); cursor:not-allowed; font-size:10.5px; }
+  .eh-result{ text-align:right; font-weight:800; font-size:14.5px; color:var(--teal); padding-bottom:9px; white-space:nowrap; }
+  .eh-result .unit{ font-size:10.5px; font-weight:700; color:var(--grey-light); margin-left:3px; }
+  .eh-group-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:4px;
+    padding-top:14px;
+    border-top:2px solid var(--navy);
+  }
+  .eh-group-footer .lbl{ font-size:12.5px; font-weight:700; color:var(--grey); }
+  .eh-group-footer .val{ font-size:19px; font-weight:800; color:var(--navy); }
+  @media (max-width:520px){
+    .eh-row{ grid-template-columns:1fr 1fr; }
+    .eh-row-label{ grid-column:1 / -1; padding-bottom:2px; }
+    .eh-result{ text-align:left; }
+  }
 </style>
 </head>
 <body>
@@ -566,6 +635,7 @@
 
     <button class="nav-item active" data-section="overview"><span class="ico">◈</span> Übersicht</button>
     <button class="nav-item" data-section="team"><span class="ico">◎</span> Mitarbeiter</button>
+    <button class="nav-item" data-section="eh-rechner"><span class="ico">∑</span> EH-Rechner</button>
 
     <div class="sidebar-footer">
       <strong>Grenzgasse 1</strong>
@@ -715,6 +785,23 @@
           <span class="hint">Neue Zeile wird unten angehängt.</span>
         </div>
       </div>
+    </section>
+
+    <!-- EH-RECHNER SECTION -->
+    <section class="section" id="section-eh-rechner">
+      <div class="banner eh-info">
+        <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet. Grün hinterlegte Felder sind editierbar. FSP zählt nicht in die Insurance-Zwischensumme, KFZ wird generell nicht aufgenommen. Eingaben werden nicht gespeichert.
+      </div>
+
+      <div class="eh-total-banner">
+        <div>
+          <div class="eh-total-label">Gesamt Einheiten</div>
+          <div class="eh-total-value"><span id="ehGrandTotal">0</span><span class="unit">EH</span></div>
+        </div>
+        <button class="btn btn-ghost btn-small" id="ehResetBtn" type="button">Zurücksetzen</button>
+      </div>
+
+      <div class="eh-groups" id="ehGroups"></div>
     </section>
   </main>
 </div>
@@ -1545,6 +1632,144 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   document.getElementById(id).addEventListener('change', renderTable);
 });
 
+/* ===== EH-RECHNER ===== */
+const EH_GROUPS = [
+  { id:'insurance',  title:'Insurance' },
+  { id:'investment', title:'Investment' },
+  { id:'credit',     title:'Credit' },
+  { id:'realestate', title:'Real Estate' },
+];
+
+const EH_ITEMS = [
+  { id:'fsp', label:'FSP', sparte:'insurance', payout:'monatlich', excludeFromSubtotal:true,
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35,
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> j/2 },
+  { id:'flv', label:'FLV', sparte:'insurance', payout:'einmalig',
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35,
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> ((j*2)/35)*g },
+  { id:'ableben', label:'Ableben', sparte:'insurance', payout:'einmalig',
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30,
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> ((j*2)/30)*g },
+  { id:'bu', label:'BU', sparte:'insurance', payout:'einmalig',
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30,
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> ((j*2)/30)*g },
+  { id:'uv', label:'UV', sparte:'insurance', payout:'einmalig',
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> j*0.9 },
+  { id:'kranken', label:'Krankenversicherung', sparte:'insurance', payout:'einmalig',
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> j*0.7 },
+  { id:'haushalt', label:'Haushalt', sparte:'insurance', payout:'einmalig',
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> j*0.9 },
+  { id:'eigenheim', label:'Eigenheim', sparte:'insurance', payout:'einmalig',
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> j*0.9 },
+  { id:'kfz', label:'KFZ', sparte:'insurance', payout:'einmalig', disabled:true,
+    disabledNote:'Bleibt immer 0 — wird nicht aufgenommen',
+    calc:()=> 0 },
+  { id:'rechtschutz', label:'Rechtschutz', sparte:'insurance', payout:'einmalig',
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> j*0.9 },
+  { id:'depot', label:'Depot', sparte:'investment', payout:'monatlich',
+    jLabel:'Mtl. Prämie (€)',
+    calc:(g,j)=> j*120*0.8*0.05/10.5 },
+  { id:'kredit', label:'Kredit', sparte:'credit', payout:'einmalig',
+    hasG:true, gLabel:'Provision', gUnit:'Prozent', gDefault:3,
+    jLabel:'Kredithöhe gesamt (€)',
+    calc:(g,j)=> j*(g/100)/10.5 },
+  { id:'immobilie', label:'Immobilienverkauf', sparte:'realestate', payout:'einmalig',
+    hasG:true, gLabel:'Provision', gUnit:'Prozent', gDefault:3,
+    jLabel:'Verkaufshöhe gesamt (€)',
+    calc:(g,j)=> j*(g/100)/10.5 },
+];
+
+function ehFormatEH(n){
+  return Math.round(n).toLocaleString('de-DE');
+}
+
+function initEHRechner(){
+  const container = document.getElementById('ehGroups');
+  if(!container) return;
+
+  container.innerHTML = EH_GROUPS.map(group=>{
+    const items = EH_ITEMS.filter(it=>it.sparte===group.id);
+    const rowsHtml = items.map(it=>{
+      const gField = it.hasG
+        ? `<div class="eh-field"><label>${it.gLabel} (${it.gUnit})</label><input type="number" class="eh-g" data-id="${it.id}" value="${it.gDefault}" step="1" min="0"></div>`
+        : `<div class="eh-field"></div>`;
+      const jField = it.disabled
+        ? `<div class="eh-field"><label>Prämie</label><input type="text" disabled value="${it.disabledNote}"></div>`
+        : `<div class="eh-field"><label>${it.jLabel}</label><input type="number" class="eh-j" data-id="${it.id}" value="0" step="10" min="0"></div>`;
+      const note = it.excludeFromSubtotal
+        ? `<span class="eh-row-note">Auszahlung: ${it.payout} · zählt nicht in Zwischensumme</span>`
+        : `<span class="eh-row-note">Auszahlung: ${it.payout}</span>`;
+      return `<div class="eh-row" data-row="${it.id}">
+        <div class="eh-row-label">${it.label}${note}</div>
+        ${gField}
+        ${jField}
+        <div class="eh-result"><span class="eh-value" id="ehVal-${it.id}">0</span><span class="unit">EH</span></div>
+      </div>`;
+    }).join('');
+    return `<div class="panel eh-group" data-sparte="${group.id}">
+      <h2>${group.title}</h2>
+      ${rowsHtml}
+      <div class="eh-group-footer">
+        <span class="lbl">Zwischensumme</span>
+        <span class="val"><span id="ehSum-${group.id}">0</span> EH</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  function recalc(){
+    const groupSums = {};
+    EH_GROUPS.forEach(g=> groupSums[g.id]=0);
+
+    EH_ITEMS.forEach(it=>{
+      const g = it.hasG ? parseFloat(document.querySelector(`.eh-g[data-id="${it.id}"]`)?.value) || 0 : 0;
+      const j = it.disabled ? 0 : (parseFloat(document.querySelector(`.eh-j[data-id="${it.id}"]`)?.value) || 0);
+      const result = it.calc(g, j);
+      const valEl = document.getElementById('ehVal-'+it.id);
+      if(valEl) valEl.textContent = ehFormatEH(result);
+      if(!it.excludeFromSubtotal) groupSums[it.sparte] += result;
+    });
+
+    let grandTotal = 0;
+    EH_GROUPS.forEach(g=>{
+      const sumEl = document.getElementById('ehSum-'+g.id);
+      if(sumEl) sumEl.textContent = ehFormatEH(groupSums[g.id]);
+      grandTotal += groupSums[g.id];
+    });
+    const grandEl = document.getElementById('ehGrandTotal');
+    if(grandEl) grandEl.textContent = ehFormatEH(grandTotal);
+  }
+
+  container.addEventListener('input', recalc);
+  container.addEventListener('focusin', (e)=>{
+    if(e.target.matches('.eh-g, .eh-j')) e.target.select();
+  });
+
+  document.getElementById('ehResetBtn').addEventListener('click', ()=>{
+    EH_ITEMS.forEach(it=>{
+      if(it.hasG){
+        const gEl = document.querySelector(`.eh-g[data-id="${it.id}"]`);
+        if(gEl) gEl.value = it.gDefault;
+      }
+      if(!it.disabled){
+        const jEl = document.querySelector(`.eh-j[data-id="${it.id}"]`);
+        if(jEl) jEl.value = 0;
+      }
+    });
+    recalc();
+  });
+
+  recalc();
+}
+
 document.querySelectorAll('.nav-item').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
@@ -1559,6 +1784,7 @@ initRecruitPanel();
 renderAll();
 initCloudSync();
 initAuth();
+initEHRechner();
 </script>
 
 </body>
