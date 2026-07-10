@@ -522,6 +522,31 @@
     color:var(--grey-light); font-weight:700; text-align:center;
   }
   .col-headers span:first-child{ text-align:left; }
+  .emp-totals-row{
+    display:grid;
+    grid-template-columns: 2fr 0.7fr repeat(5, 0.5fr) 0.8fr 0.8fr 1.3fr 40px;
+    align-items:center;
+    gap:8px;
+    background: var(--navy);
+    border-radius:12px;
+    padding:12px 12px;
+    margin-top:10px;
+    color:#fff;
+  }
+  .emp-totals-row .et-label{ font-weight:800; font-size:13px; }
+  .emp-totals-row .et-val{ text-align:center; font-weight:800; font-size:13.5px; color:var(--mint); }
+  @media (max-width:1000px){
+    .emp-totals-row{ grid-template-columns:1fr; gap:4px; }
+    .emp-totals-row .et-val{ display:flex; justify-content:space-between; text-align:left; }
+    .emp-totals-row .et-val::before{
+      content: attr(data-label);
+      font-size:10.5px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:#8FA1A6;
+      font-weight:700;
+    }
+  }
   .add-row{ margin-top:16px; display:flex; align-items:center; gap:10px; }
   .hint{ font-size:11.5px; color:var(--grey-light); }
   .banner{
@@ -806,6 +831,7 @@
           <span>Name</span><span>Status</span><span>AT</span><span>BT</span><span>ET</span><span>MA</span><span>ST</span><span>Soll</span><span>Ist</span><span>Fortschritt</span><span></span>
         </div>
         <div class="emp-list" id="tableBody"></div>
+        <div class="emp-totals-row" id="empTotalsRow"></div>
 
         <div class="add-row">
           <button class="btn btn-small btn-primary editor-only" id="addRowBtn">+ Mitarbeiter hinzufügen</button>
@@ -1136,12 +1162,14 @@ function recruitActualValue(){
 
 function renderSummary(){
   const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
+  const totalSoll = rows.reduce((s,r)=>s+Number(r.soll||0),0);
   const target = Number(teamGoal.target||0);
   const pct = target>0 ? Math.round((totalIst/target)*100) : 0;
   const onTrack = rows.filter(r=>pctOf(r)>=70).length;
 
   const cards = [
     {icon:'◆', label:'Einheiten Ziel', value: fmt(target), sub:'Team gesamt'},
+    {icon:'Σ', label:'Soll (Mitarbeiter)', value: fmt(totalSoll), sub:'Summe Einzelziele'},
     {icon:'✓', label:'Einheiten Ist', value: fmt(totalIst), sub:'aktueller Stand'},
     {icon:'%', label:'Zielerreichung', value: pct+'%', sub: target===0?'kein Ziel gesetzt':(pct>=70?'im Plan':'Aufholbedarf')},
     {icon:'◎', label:'Mitarbeiter', value: rows.length, sub:'im Team'},
@@ -1239,6 +1267,24 @@ function renderTable(){
     </div>
   `;
   }).join('');
+
+  const sum = field => list.reduce((s,r)=>s+Number(r[field]||0),0);
+  const totalsRow = document.getElementById('empTotalsRow');
+  if(totalsRow){
+    totalsRow.innerHTML = `
+      <div class="et-label">Summe</div>
+      <div></div>
+      <div class="et-val" data-label="AT">${sum('at')}</div>
+      <div class="et-val" data-label="BT">${sum('bt')}</div>
+      <div class="et-val" data-label="ET">${sum('et')}</div>
+      <div class="et-val" data-label="MA">${sum('ma')}</div>
+      <div class="et-val" data-label="ST">${sum('st')}</div>
+      <div class="et-val" data-label="Soll">${sum('soll')}</div>
+      <div class="et-val" data-label="Ist">${sum('ist')}</div>
+      <div></div>
+      <div></div>
+    `;
+  }
 
   document.querySelectorAll('#tableBody input[data-field]').forEach(inp=>{
     inp.addEventListener('change', onFieldChange);
