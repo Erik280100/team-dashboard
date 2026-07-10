@@ -619,6 +619,24 @@
   }
   .eh-group-footer .lbl{ font-size:12.5px; font-weight:700; color:var(--grey); }
   .eh-group-footer .val{ font-size:19px; font-weight:800; color:var(--navy); }
+  .eh-mult-row{
+    display:flex;
+    align-items:center;
+    margin-top:8px;
+    gap:6px;
+  }
+  .eh-mult-row label{ font-size:11px; color:var(--grey-light); font-weight:600; }
+  .eh-mult-row input{
+    width:64px;
+    padding:6px 8px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:12.5px;
+    font-family:inherit;
+    background:#EFFBF5;
+    margin-left:8px;
+  }
+  .eh-mult-result{ font-size:13.5px; font-weight:700; color:var(--teal); margin-left:auto; }
   @media (max-width:520px){
     .eh-row{ grid-template-columns:1fr 1fr; }
     .eh-row-label{ grid-column:1 / -1; padding-bottom:2px; }
@@ -797,6 +815,10 @@
         <div>
           <div class="eh-total-label">Gesamt Einheiten</div>
           <div class="eh-total-value"><span id="ehGrandTotal">0</span><span class="unit">EH</span></div>
+        </div>
+        <div>
+          <div class="eh-total-label">Gesamt in €</div>
+          <div class="eh-total-value"><span id="ehGrandTotalEur">0,00</span><span class="unit">€</span></div>
         </div>
         <button class="btn btn-ghost btn-small" id="ehResetBtn" type="button">Zurücksetzen</button>
       </div>
@@ -1634,10 +1656,10 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
 
 /* ===== EH-RECHNER ===== */
 const EH_GROUPS = [
-  { id:'insurance',  title:'Insurance' },
-  { id:'investment', title:'Investment' },
-  { id:'credit',     title:'Credit' },
-  { id:'realestate', title:'Real Estate' },
+  { id:'insurance',  title:'Insurance',   multDefault:2 },
+  { id:'investment', title:'Investment',  multDefault:2 },
+  { id:'credit',     title:'Credit',      multDefault:2 },
+  { id:'realestate', title:'Real Estate', multDefault:2 },
 ];
 
 const EH_ITEMS = [
@@ -1692,6 +1714,10 @@ function ehFormatEH(n){
   return Math.round(n).toLocaleString('de-DE');
 }
 
+function ehFormatEUR(n){
+  return n.toLocaleString('de-DE', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
 function initEHRechner(){
   const container = document.getElementById('ehGroups');
   if(!container) return;
@@ -1720,6 +1746,11 @@ function initEHRechner(){
         <span class="lbl">Zwischensumme</span>
         <span class="val"><span id="ehSum-${group.id}">0</span> EH</span>
       </div>
+      <div class="eh-mult-row">
+        <label>Multiplikator (€ / EH)</label>
+        <input type="number" class="eh-mult" data-group="${group.id}" value="${group.multDefault}" step="0.1" min="0">
+        <span class="eh-mult-result"><span id="ehEur-${group.id}">0,00</span> €</span>
+      </div>
     </div>`;
   }).join('');
 
@@ -1737,18 +1768,27 @@ function initEHRechner(){
     });
 
     let grandTotal = 0;
+    let grandTotalEur = 0;
     EH_GROUPS.forEach(g=>{
       const sumEl = document.getElementById('ehSum-'+g.id);
       if(sumEl) sumEl.textContent = ehFormatEH(groupSums[g.id]);
       grandTotal += groupSums[g.id];
+
+      const mult = parseFloat(document.querySelector(`.eh-mult[data-group="${g.id}"]`)?.value) || 0;
+      const groupEur = groupSums[g.id] * mult;
+      const eurEl = document.getElementById('ehEur-'+g.id);
+      if(eurEl) eurEl.textContent = ehFormatEUR(groupEur);
+      grandTotalEur += groupEur;
     });
     const grandEl = document.getElementById('ehGrandTotal');
     if(grandEl) grandEl.textContent = ehFormatEH(grandTotal);
+    const grandEurEl = document.getElementById('ehGrandTotalEur');
+    if(grandEurEl) grandEurEl.textContent = ehFormatEUR(grandTotalEur);
   }
 
   container.addEventListener('input', recalc);
   container.addEventListener('focusin', (e)=>{
-    if(e.target.matches('.eh-g, .eh-j')) e.target.select();
+    if(e.target.matches('.eh-g, .eh-j, .eh-mult')) e.target.select();
   });
 
   document.getElementById('ehResetBtn').addEventListener('click', ()=>{
@@ -1761,6 +1801,10 @@ function initEHRechner(){
         const jEl = document.querySelector(`.eh-j[data-id="${it.id}"]`);
         if(jEl) jEl.value = 0;
       }
+    });
+    EH_GROUPS.forEach(g=>{
+      const multEl = document.querySelector(`.eh-mult[data-group="${g.id}"]`);
+      if(multEl) multEl.value = g.multDefault;
     });
     recalc();
   });
