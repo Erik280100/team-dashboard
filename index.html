@@ -1673,21 +1673,21 @@ const EH_GROUPS = [
 
 const EH_ITEMS = [
   { id:'fsp', label:'FSP', sparte:'insurance', payout:'monatlich',
-    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35,
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35, gMax:35,
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j/2 },
   { id:'flv', label:'FLV', sparte:'insurance', payout:'einmalig',
-    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35,
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:35, gMax:35,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2.14)/35)*g },
+    calc:(g,j)=> ((j*2.14)/35)*Math.min(g,35) },
   { id:'ableben', label:'Ableben', sparte:'insurance', payout:'einmalig',
-    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30,
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30, gMax:35,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2.14)/30)*g },
+    calc:(g,j)=> ((j*2.14)/30)*Math.min(g,35) },
   { id:'bu', label:'BU', sparte:'insurance', payout:'einmalig',
-    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30,
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30, gMax:35,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2.14)/30)*g },
+    calc:(g,j)=> ((j*2.14)/30)*Math.min(g,35) },
   { id:'uv', label:'UV', sparte:'insurance', payout:'einmalig',
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j*0.9 },
@@ -1731,8 +1731,9 @@ function initEHRechner(){
   function renderGroup(group){
     const items = EH_ITEMS.filter(it=>it.sparte===group.id);
     const rowsHtml = items.map(it=>{
+      const gMaxAttr = it.gMax ? ` max="${it.gMax}"` : '';
       const gField = it.hasG
-        ? `<div class="eh-field"><label>${it.gLabel} (${it.gUnit})</label><input type="number" class="eh-g" data-id="${it.id}" value="${it.gDefault}" step="1" min="0"></div>`
+        ? `<div class="eh-field"><label>${it.gLabel} (${it.gUnit})</label><input type="number" class="eh-g" data-id="${it.id}" value="${it.gDefault}" step="1" min="0"${gMaxAttr}></div>`
         : `<div class="eh-field"></div>`;
       const jField = it.disabled
         ? `<div class="eh-field"><label>Prämie</label><input type="text" disabled value="${it.disabledNote}"></div>`
