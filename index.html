@@ -726,7 +726,6 @@
   body.readonly-mode .readonly-banner{ display:block; }
   body.readonly-mode .editor-only{ display:none !important; }
   body.readonly-mode input[data-field],
-  body.readonly-mode #teamGoalInput,
   body.readonly-mode #teamGoalNote,
   body.readonly-mode #periodStartInput,
   body.readonly-mode #periodEndInput,
@@ -1075,8 +1074,8 @@
           <div>
             <div class="goal-eyebrow">Team-Ziel</div>
             <div class="goal-input-row">
-              <input type="number" id="teamGoalInput" class="goal-number" value="0">
-              <span class="goal-unit">Einheiten</span>
+              <div class="goal-number" id="teamGoalDisplay">0</div>
+              <span class="goal-unit">Einheiten<br><span style="opacity:.75;font-size:11.5px;">Summe Soll (Mitarbeiter)</span></span>
             </div>
             <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
             <div class="period-row">
@@ -1113,7 +1112,7 @@
         </div>
       </div>
 
-      <div class="charts-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="charts-grid" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="panel-dark panel-compact">
           <h2>Team-Fortschritt</h2>
           <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
@@ -1380,7 +1379,7 @@ function applyPermissions(){
   document.body.classList.toggle('readonly-mode', !isEditor);
   document.querySelectorAll('#tableBody input[data-field], #tableBody button[data-action]')
     .forEach(el => el.disabled = !isEditor);
-  ['teamGoalInput','teamGoalNote','periodStartInput','periodEndInput','recruitGoalInput','kpiRecruitActual','addRowBtn']
+  ['teamGoalNote','periodStartInput','periodEndInput','recruitGoalInput','kpiRecruitActual','addRowBtn']
     .forEach(id => { const el = document.getElementById(id); if(el) el.disabled = !isEditor; });
 }
 
@@ -1434,7 +1433,7 @@ function defaultPeriod(){
   const toISO = d => d.toISOString().slice(0,10);
   return { periodStart: toISO(first), periodEnd: toISO(last) };
 }
-const STARTER_GOAL = { target: 0, note: '', recruitGoal: 6, recruitActual: null, ...defaultPeriod() };
+const STARTER_GOAL = { note: '', recruitGoal: 6, recruitActual: null, ...defaultPeriod() };
 const STARTER_JOIN_DATE = defaultPeriod().periodStart;
 
 const STARTER_DATA = [
@@ -1574,7 +1573,6 @@ function loadGoal(){
       if(parsed && typeof parsed === 'object'){
         const def = defaultPeriod();
         return {
-          target: Number(parsed.target)||0,
           note: parsed.note||'',
           recruitGoal: parsed.recruitGoal!==undefined ? Number(parsed.recruitGoal)||0 : STARTER_GOAL.recruitGoal,
           recruitActual: (parsed.recruitActual === null || parsed.recruitActual === undefined) ? null : Number(parsed.recruitActual),
@@ -1609,6 +1607,8 @@ function flashSaved(){
 
 function fmt(n){ return Number(n||0).toLocaleString('de-AT'); }
 function pctOf(r){ return r.soll>0 ? Math.round((r.ist/r.soll)*100) : 0; }
+// Team-Ziel wird nicht mehr manuell eingegeben, sondern ergibt sich aus der Summe der Einzel-Soll-Werte pro Mitarbeiter.
+function teamTarget(){ return rows.reduce((s,r)=>s+Number(r.soll||0),0); }
 function progressClass(pct){
   if(pct < 50) return 'low';
   if(pct >= 90) return 'high';
@@ -1628,17 +1628,9 @@ function recruitActualValue(){
 }
 
 function renderSummary(){
-  const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
-  const totalSoll = rows.reduce((s,r)=>s+Number(r.soll||0),0);
-  const target = Number(teamGoal.target||0);
-  const pct = target>0 ? Math.round((totalIst/target)*100) : 0;
   const onTrack = rows.filter(r=>pctOf(r)>=70).length;
 
   const cards = [
-    {icon:'◆', label:'Einheiten Ziel', value: fmt(target), sub:'Team gesamt'},
-    {icon:'Σ', label:'Soll (Mitarbeiter)', value: fmt(totalSoll), sub:'Summe Einzelziele'},
-    {icon:'✓', label:'Einheiten Ist', value: fmt(totalIst), sub:'aktueller Stand'},
-    {icon:'%', label:'Zielerreichung', value: pct+'%', sub: target===0?'kein Ziel gesetzt':(pct>=70?'im Plan':'Aufholbedarf')},
     {icon:'◎', label:'Mitarbeiter', value: rows.length, sub:'im Team'},
     {icon:'★', label:'≥ 70% erreicht', value: onTrack, sub:'von '+rows.length+' MA'},
   ];
@@ -1806,6 +1798,7 @@ function onFieldChange(e){
   renderSummary();
   renderCharts();
   renderGoalProgress();
+  renderTimeline();
   renderTable();
   renderRecruitPanel();
 }
@@ -1868,7 +1861,7 @@ function renderCharts(){
   });
 
   const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
-  const target = Number(teamGoal.target||0);
+  const target = teamTarget();
   const rest = Math.max(target-totalIst,0);
   const pct = target>0 ? Math.round((totalIst/target)*100) : 0;
   const hasData = target>0 || totalIst>0;
@@ -1977,7 +1970,7 @@ function renderTimeline(){
   const endStr = teamGoal.periodEnd || def.periodEnd;
   let start = parseISODate(startStr);
   let end = parseISODate(endStr);
-  const target = Number(teamGoal.target||0);
+  const target = teamTarget();
   const forecastLineEl = document.getElementById('forecastLine');
 
   if(!(end > start)){
@@ -2077,15 +2070,16 @@ function renderTimeline(){
 
 function renderGoalProgress(){
   const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
-  const target = Number(teamGoal.target||0);
+  const target = teamTarget();
   const pct = target>0 ? Math.round((totalIst/target)*100) : 0;
+  document.getElementById('teamGoalDisplay').textContent = fmt(target);
   document.getElementById('goalIstLabel').textContent = fmt(totalIst);
   document.getElementById('goalTargetLabel').textContent = fmt(target);
   document.getElementById('goalPct').textContent = pct + '%';
   document.getElementById('goalFill').style.width = Math.min(pct,100) + '%';
   const remainingEl = document.getElementById('goalRemaining');
   if(target<=0){
-    remainingEl.textContent = 'Noch kein Team-Ziel gesetzt — Zahl links eintragen.';
+    remainingEl.textContent = 'Noch kein Team-Ziel — bei den Mitarbeitern „Soll"-Werte eintragen.';
   } else if(totalIst >= target){
     remainingEl.textContent = 'Ziel erreicht — stark!';
   } else {
@@ -2094,32 +2088,22 @@ function renderGoalProgress(){
 }
 
 function populateGoalPanel(){
-  const targetInput = document.getElementById('teamGoalInput');
   const noteInput = document.getElementById('teamGoalNote');
   const startInput = document.getElementById('periodStartInput');
   const endInput = document.getElementById('periodEndInput');
 
-  if(document.activeElement !== targetInput) targetInput.value = teamGoal.target;
   if(document.activeElement !== noteInput) noteInput.value = teamGoal.note;
   if(document.activeElement !== startInput) startInput.value = teamGoal.periodStart;
   if(document.activeElement !== endInput) endInput.value = teamGoal.periodEnd;
 }
 
 function initGoalPanel(){
-  const targetInput = document.getElementById('teamGoalInput');
   const noteInput = document.getElementById('teamGoalNote');
   const startInput = document.getElementById('periodStartInput');
   const endInput = document.getElementById('periodEndInput');
 
   populateGoalPanel();
 
-  targetInput.addEventListener('change', ()=>{
-    teamGoal.target = Number(targetInput.value) || 0;
-    saveGoal(); flashSaved();
-    renderGoalProgress();
-    renderTimeline();
-    renderCharts();
-  });
   noteInput.addEventListener('change', ()=>{
     teamGoal.note = noteInput.value;
     saveGoal(); flashSaved();
