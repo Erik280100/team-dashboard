@@ -1832,6 +1832,39 @@ const centerTextPlugin = {
   }
 };
 
+const pieSliceLabelsPlugin = {
+  id: 'pieSliceLabels',
+  afterDraw(chart){
+    const opts = chart.config.options.plugins && chart.config.options.plugins.pieSliceLabels;
+    if(!opts || !opts.enabled) return;
+    const meta = chart.getDatasetMeta(0);
+    const dataset = chart.data.datasets[0];
+    const total = dataset.data.reduce((s,v)=>s+Number(v||0),0);
+    if(total<=0) return;
+    const {ctx} = chart;
+    ctx.save();
+    ctx.font = "700 12px Inter, -apple-system, sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,.45)';
+    ctx.fillStyle = '#FFFFFF';
+    meta.data.forEach((arc,i)=>{
+      const val = Number(dataset.data[i]||0);
+      const pct = Math.round((val/total)*100);
+      if(pct<=0) return;
+      const angle = (arc.startAngle + arc.endAngle) / 2;
+      const r = arc.innerRadius + (arc.outerRadius - arc.innerRadius) * 0.65;
+      const x = arc.x + Math.cos(angle) * r;
+      const y = arc.y + Math.sin(angle) * r;
+      const label = pct + '%';
+      ctx.strokeText(label, x, y);
+      ctx.fillText(label, x, y);
+    });
+    ctx.restore();
+  }
+};
+
 const PIE_COLORS = ['#64DDA3','#5BB8E8','#F2B84B','#E8735B','#B48EE0','#4BD1C5','#E85B9C','#8FD14B','#5B7FE8','#D1A64B'];
 
 let barChart, doughnutChart, revenueShareChart, timelineChart;
@@ -1906,10 +1939,12 @@ function renderCharts(){
         borderWidth:0
       }]
     },
+    plugins:[pieSliceLabelsPlugin],
     options:{
       responsive:true,
       plugins:{
         legend:{ display:false },
+        pieSliceLabels:{ enabled: shareTotal>0 },
         tooltip:{
           callbacks:{
             label(item){
