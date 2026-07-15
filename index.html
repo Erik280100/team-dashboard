@@ -297,6 +297,25 @@
     grid-column: span 2;
   }
   @media (max-width:600px){ .kpi-card.recruit-kpi{ grid-column: span 1; } }
+
+  /* Compact KPI cards that sit in the whitespace next to the Team-Ziel card */
+  .overview-left-col{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .kpi-grid-mini{ display:grid; grid-template-columns:1fr 1fr; gap:14px; flex:1; }
+  .kpi-card-mini{
+    background: linear-gradient(160deg, #16323F 0%, #0B1F2A 100%);
+    border-radius:14px;
+    padding:14px 16px;
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:0 8px 20px -10px rgba(0,0,0,.5);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .kpi-card-mini .kpi-top{ margin-bottom:6px; }
+  .kpi-card-mini .kpi-icon{ width:26px; height:26px; border-radius:8px; font-size:13px; }
+  .kpi-card-mini .kpi-label{ font-size:10.5px; margin-bottom:4px; }
+  .kpi-card-mini .kpi-value{ font-size:22px; }
+  .kpi-card-mini .kpi-sub{ font-size:11px; margin-top:2px; }
   .kpi-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .kpi-icon{
     width:34px;height:34px;border-radius:10px;
@@ -1014,6 +1033,47 @@
   @media (max-width:760px){
     .cal-week{ grid-template-columns: 28px repeat(7,minmax(34px,1fr)); overflow-x:auto; }
   }
+
+  /* PARTNERPORTALE */
+  .partner-grid{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:14px;
+  }
+  @media (max-width:1024px){ .partner-grid{ grid-template-columns:repeat(4,1fr); } }
+  @media (max-width:760px){ .partner-grid{ grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:480px){ .partner-grid{ grid-template-columns:repeat(2,1fr); } }
+  .partner-tile{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px 10px;
+    text-decoration:none;
+    color:var(--navy);
+    text-align:center;
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .partner-tile:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 24px -12px rgba(11,31,42,.25);
+    border-color:var(--mint2);
+  }
+  .partner-icon{
+    width:52px; height:52px;
+    border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+    background:linear-gradient(135deg, rgba(100,221,163,.18), rgba(21,87,103,.12));
+    color:var(--teal);
+    overflow:hidden;
+  }
+  .partner-icon img{ width:24px; height:24px; object-fit:contain; }
+  .partner-name{ font-size:12.5px; font-weight:700; line-height:1.3; }
 </style>
 </head>
 <body>
@@ -1029,6 +1089,7 @@
     <button class="nav-item" data-section="karriere"><span class="ico">↗</span> Karrierepläne</button>
     <button class="nav-item" data-section="guide"><span class="ico">▤</span> Guide</button>
     <button class="nav-item" data-section="kalender"><span class="ico">▦</span> Kalender</button>
+    <button class="nav-item" data-section="partner"><span class="ico">🔗</span> Partnerportale</button>
 
     <div class="sidebar-footer">
       <strong>Grenzgasse 1</strong>
@@ -1071,33 +1132,37 @@
     <!-- OVERVIEW SECTION -->
     <section class="section active" id="section-overview">
       <div class="overview-row overview-row-top">
-        <div class="goal-card goal-card-compact">
-          <div>
-            <div class="goal-eyebrow">Team-Ziel</div>
-            <div class="goal-input-row">
-              <div class="goal-number" id="teamGoalDisplay">0</div>
-              <span class="goal-unit">Einheiten<br><span style="opacity:.75;font-size:11.5px;">Summe Soll (Mitarbeiter)</span></span>
+        <div class="overview-left-col">
+          <div class="goal-card goal-card-compact">
+            <div>
+              <div class="goal-eyebrow">Team-Ziel</div>
+              <div class="goal-input-row">
+                <div class="goal-number" id="teamGoalDisplay">0</div>
+                <span class="goal-unit">Einheiten<br><span style="opacity:.75;font-size:11.5px;">Summe Soll (Mitarbeiter)</span></span>
+              </div>
+              <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
+              <div class="period-row">
+                <div class="period-field">
+                  <label for="periodStartInput">Umsatzmonat Start</label>
+                  <input type="date" id="periodStartInput">
+                </div>
+                <div class="period-field">
+                  <label for="periodEndInput">Umsatzmonat Ende</label>
+                  <input type="date" id="periodEndInput">
+                </div>
+              </div>
             </div>
-            <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
-            <div class="period-row">
-              <div class="period-field">
-                <label for="periodStartInput">Umsatzmonat Start</label>
-                <input type="date" id="periodStartInput">
+            <div>
+              <div class="goal-progress-label">
+                <span><span id="goalIstLabel">0</span> von <span id="goalTargetLabel">0</span> Einheiten</span>
+                <span class="goal-pct" id="goalPct">0%</span>
               </div>
-              <div class="period-field">
-                <label for="periodEndInput">Umsatzmonat Ende</label>
-                <input type="date" id="periodEndInput">
-              </div>
+              <div class="goal-bar"><div class="fill" id="goalFill" style="width:0%"></div></div>
+              <div class="goal-remaining" id="goalRemaining"></div>
             </div>
           </div>
-          <div>
-            <div class="goal-progress-label">
-              <span><span id="goalIstLabel">0</span> von <span id="goalTargetLabel">0</span> Einheiten</span>
-              <span class="goal-pct" id="goalPct">0%</span>
-            </div>
-            <div class="goal-bar"><div class="fill" id="goalFill" style="width:0%"></div></div>
-            <div class="goal-remaining" id="goalRemaining"></div>
-          </div>
+
+          <div class="kpi-grid-mini" id="topSummaryCards"></div>
         </div>
 
         <div class="panel-dark timeline-panel">
@@ -1314,6 +1379,15 @@
           <span><i class="dot" style="background:var(--amber);"></i> Training</span>
           <span><i class="dot" style="background:#B07CC6;"></i> Führungskreis</span>
         </div>
+      </div>
+    </section>
+
+    <!-- PARTNERPORTALE SECTION -->
+    <!-- Kacheln werden aus PARTNER_PORTALS (siehe Script unten) gerendert -->
+    <section class="section" id="section-partner">
+      <div class="panel">
+        <h2>Partnerportale</h2>
+        <div class="partner-grid" id="partnerGrid"></div>
       </div>
     </section>
   </main>
@@ -1636,7 +1710,7 @@ function renderSummary(){
     {icon:'★', label:'≥ 70% erreicht', value: onTrack, sub:'von '+rows.length+' MA'},
   ];
   const cardsHtml = cards.map(c=>`
-    <div class="kpi-card">
+    <div class="kpi-card-mini">
       <div class="kpi-top">
         <div class="kpi-icon">${c.icon}</div>
       </div>
@@ -1667,7 +1741,8 @@ function renderSummary(){
     </div>
   `;
 
-  document.getElementById('summaryCards').innerHTML = cardsHtml + recruitHtml;
+  document.getElementById('topSummaryCards').innerHTML = cardsHtml;
+  document.getElementById('summaryCards').innerHTML = recruitHtml;
 
   document.getElementById('kpiRecruitActual').addEventListener('change', (e)=>{
     teamGoal.recruitActual = e.target.value === '' ? null : Number(e.target.value);
@@ -2540,6 +2615,46 @@ function initCareerPlans(){
   });
 }
 
+const PARTNER_PORTALS = [
+  { name: 'Analysetool', url: 'https://finova.anyconcept.ai/start', icon: null },
+  { name: 'Finova Academy', url: 'https://finova.academy', icon: null },
+  { name: 'Finova XP', url: 'https://partner.finova.at/App', icon: null },
+  { name: 'FCCM - Finova Credit', url: 'https://fccm.at', icon: null },
+  { name: 'LV-Merkur', url: 'https://vis.merkur-leben.at/aspx/Welcome.aspx', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC4UlEQVR4nHRTXUiTURh+z/nOPjedWzNnBRVhCbkNIbzpogvtwqKcRrEQipJNLIfRz320oIugiy4ysJJcEV1soflTV5rdRFApRbBZQRAZYYqKm7qf7zun92z7dAS98B74znue533en4/BhlF0jk7QhX+0plqhpi6eFTPLT+I90SjouVchoD4XkOjJ/DeTh3/Idapss6k7uZC92e+NDfui2ysIVwdVq1InBED5aZcDorGQBKPz6D9ZgVJQ1TJlP+EkiPlFmbl0t8lC61LLWkpoguMrLwiMINj/vPZuYNgdzJEZBGmVRZZ+pr+bbUoTqjkfbvn6HqFjJVZm5gIoEXBfEvtHXNds20qChMDFzmZQIFevZMYzMOo5ykwwTAih2RS/LYT2lJrYAT0jZjiFOANyqaRM6dA1nlxb0ZoeH59+K/GkuIHtA+42tZTcMZcrlSsLWgpbOk0oYZSBx+JgsLao/8qktc7wsfhLI7FSIBCypo9dc589zbYBXScOhdF6xUS3YqwKdPEpk9J708ls8NGJL1MQQfme3MSAFDUU6u+BafIcZDteuFqpQgcVRkRmVevdMRW/EArlAQ0TwF43gmYooMUE1Q58hAHOSZWkRvkYJ4sS3D4BZh9mluCG/l3mXPeMKRjm9uUvQegLQkMiXW4BuOVVuBFScnkCQ67DtTttH4xRbpQgJV3Pz9oXqbbbzaU/qErsepbPCq7VYCsrBFeuUCG6rVtUmpjNjC+nxBFmrCdCubHCgqsHgYpVXCEL3m3CQYwLHfZaK1l5OqFD4k/mQWZp/nL0zGxmXcHZZ3vcJot6VXDSarEzc04UUgqsQg47ndSz2JExofOePi+OsWBSMg3sc7UrKr1l2cQqkvNZCXqFxU1yQhJEx2Um8JsT8SbsjX9bL7fQRIZ/Fi4ZtKnligSPYPTGw5bYO/iPhXC1Q/lyCwrQfBGn1W5z+voOxcIGsxzZnDMfd86BiPoQVIgV218AAAD//55xPyMAAAAGSURBVAMAa4s614o7dgMAAAAASUVORK5CYII=' },
+  { name: 'AllianzNow Partner', url: 'https://secure.allianz.at/anp-konfigurator/dashboard', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABY0lEQVR4nJSSL0zDUBDGu2YJEyNFQUAMxRTDkKCWTEx2CckcQ5GAGAoEyTAIDA0kgKICJOscqsVVLBQDAVNUUdQQplhAgCq/5iXl8SeFXZr3evfuvrv77rJRFCmDSPab7nQDP+glql6ZKhXHZIdMkgHX1e3z/stbYVwrTGhYvJuQszxbONrSMX4J2Dxwzc41b63lMmeCZ9k+T/zY5oJIFQeAvbhx1qiVQMI0WT0kDz/PVy1OP3iqNTtafujidEkbzqkx/L5Lxp31qkB9cNfkogFu79bDxz7ZUFUAUForZaJH5gw+2VtYKJIwy7kTAT3RmZIq0AV0TCvwXAkJf4pKN1wi7F8BohhBeYo43XtBq8pFPcaxlx5AAw19WpHnQCrbbPzqPTNvcn7OQa8UmRpV1ZqWoCIRuI/n+Pre3qvjrci7xGoYJ5fyLsE4KpmZabKCGXm9eaY5GPNuQy2fKxVHf27rBwAAAP//9tH1ygAAAAZJREFUAwAVKqmkSgFvpAAAAABJRU5ErkJggg==' },
+  { name: 'KV-Merkur', url: 'https://portal.merkur.at/group/merkur-vertrieb-oesterreich-mak', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACGklEQVR4nIxTQWhTQRCd2V3SBCtB0GOoWBRbfwS9WSgK3tREekjVk6mJHgKCIl70EqpnwZOljYGKBUlBShNFPFhRe02txvZooVEPUbRNTKFJdjr/96dJ2/zSgd2Z2Zl5/+3sfAUOMjBh+KTCMAH9WC53jY73j9da5Slzi04aEUCIIeCjkcDXsVCq2yUlfASiDuS41z3fyeq+IwAKXSASJ/lrMXbH9rULn65Bx0YWUq+p4lNn1OL/wghomPZlvyXjcdDCDFT2lN+y+s6rJ5o27v4tdS1w1UwDAF6aarFYeIiEYUS80QjZEkkfP4ug37Ap+fA5IT4mpG4iyosa/gHJVyDo53hZkOgdDn7JbgKwQDLGeSR4wWa7dUCwxBkutjx2ym9Bum84OPepXiOaAZ5eyL1SFdHJqEmbn5f3NvZnuaEPqlV1uLl4G4O6RCf9F7lxE7b7JBHIxcBBRMtT1N66SQCrW8OhVEjuCIAkCg2K6N/ELu0/5/XM/4xkjl01fdUKgDuf5Uqy6oF6bqdOef65ivt5uO6xbz6hYODrrEe3AQy8PnEAq5XTRLBsN9Fd9BRnmPORdUALeEhQ2x2ApiZey/gPCaJBNi/zkq2I8foApAcTwbl3jSta9zIusUpA/f3NKUTKEuEv5lri0rysyumhvs8LW1EVz7PII9zkJLP4vQa6lQzkZmGXYjEITx10q9LeK0srR585/bZOsgYAAP//PP7XfAAAAAZJREFUAwCXbLpIsRUPpwAAAABJRU5ErkJggg==' },
+  { name: 'Continentale', url: 'https://makler.continentale.at/redesign', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACsUlEQVR4nGxTyU4UURQ9r6u6qweVSRvaRiU0DsgQxQSJiStxSPwADOgHkGjChoUkrl3oQlG3xg0mxLhxYeIUFroQFBEQSJpBEW1kCC3Qc3dVed+t6oZEbvJS9W7Vnc45V0VjxzmY4g6AE3QEpOkGYJqAw7rCoHch8l+lkQNfoYhugYarw3RpstwmVMWBusMH0NJYg6C/hOIEFlf/Ymh8FhVlRfB6NM6zHN3EwODEF5lAp7tDVgn4i3G9/QLqayqRzuRgGAYcDgcnVVUFBwNlmJ7/w0mn5iK41fvMUDnYtIJvd7VBczk52OrchKHrdnMmPo7O8NNPndhG6ckURcGN9osc7KYTS6R45EQqgyQd+b4RT6J4jw/NDaFtUACqBKzh2CHU1QSRSmexth6DW3Pi7pOXGA3/ZLhqq/ej/fIZhCq9GAsvYD2W4DGQb7+lMcTB0nb7PHj49A0GR8LsS2WyGJn8jp57/XjU/5aIEWiur4bLqdgdEFVBfykDphOQGQrgyqqy1SdNmqVO330Yw9DYLDqoGzYhE9gAFYwqbJ8xbwoVCgT3caEXA8MQEj76V5X0/V6O4khVAKowqTUNTbVVeP9pSqJriSen4yTporOtlX43kM3q+Dwxh8fPBwgDyizp8RBw0jbiKXReacXZ5uPweTV43RpaTh1F17VLzFnRLg8q9hZhfOYXz6BK77eZBYxPLxDK5SglqtY24kTrecSTGVatz+Nmakvo2ybRGVlZwcjUDzkXWAc6AfSg7zWS6QyLyEdylbA4CUinqjJGXreLk0ige/teIZfTbRpJcBKMpdV13CSqwiRVj+aywRdMm1SkFNn84ip67vcjshS1loti/1smhUaqDQVxmhQXLC9ld2Qlyss0SXPn5KaKAk+0TDutM1FVWGE7Ma+2pfytdRZm9z8AAAD//3D6tJ8AAAAGSURBVAMAM5YgMWk43PsAAAAASUVORK5CYII=' },
+  { name: 'Ergo Zahn', url: 'https://shop.ergo-versicherung.at/leistung/zahnversicherung', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABk0lEQVR4nJxTzUrDQBD+Ntmaam29+IM/ePCHUgX1IfTkVVDoQY/6AJ4FT4LgRfDuE/gSXgRPevLnIt6k0mpSqGmadWbbpNukYHFJsmRm9vvmm52RSqkfAEP0KnoFBltRbFMQgEp6wKZeM4ULegQ4nPfYTIYQgzOnMpHR4QiZeZvVGpTfhJB2200cluNA5kcRJdzJQsQSwpCCLEsDPJYPUb29a0OHCkHtCzP7uyhdniFstbQcjuUluxLbKvjrVz7hf1Qwsb0FOzeC4NtFrrjUjTNqIFOiOIjQ5VgBxYtTZOfnoIjVsu24mOZKAWg3AQSui/vNHdYGK+tg4+YaueUFKkfYBUsCmFfEQfm1EhVSQmQyGsSU2hcgumfNOpzFytU5hibHe+RxdiaRNNljBsvWRXwoH8GZnkLgeSisr2Lx5Fg3mOqXgWYnZmaYPdhD4+0d9edX1J9e0PLqVMgwPmhmEPeB2dHsDFwPYaOhs+FG4jrwzYg+AKlW5kxEp1H+WKpnmFRygMz/TgMlh4YBfNoz+Oc4/wIAAP//sDqgEgAAAAZJREFUAwCQ4rRX1OIh7wAAAABJRU5ErkJggg==' },
+  { name: 'RS-DAS', url: 'https://otr.ergo-versicherung.at/OTR_Einstieg.aspx', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAADw0lEQVR4nEyTf0zUdRjH38/n+71f3AHHcUTAAQcyBBSRUpGllqXpTBcUrfoj1xbNMsWtrZWxOaz+cNOo3PoxowjHbBr+4Q+ilAXVyJSCiUB5BCK/jgOOu+N+f7/f+3663Kje27M9fzzP+9mevV8i/hPFi98Z7F8ruS/X6g3yFjU0bZdlhZHeNu4LJP5qtT/9hb244Hp8VOWcU1yclrdtz3BD16GP3jKwP1/PKjSYoLciGtXFLUPQKbOQ5icw5NBKUWHjx/3iG+/u302ee1cbGsBmwPUHKutbigqcNRpbCa4MPqi0XxPZpCdGvqUIbMYw31PqVLfbfxJc43dpwl/RZS378KnycvIJ3d3gzfWJRwpsA69EM9dLtSfL6HyPVihZmYG8jERoGUP/uEzNHYrQ3WfF5lUhOUHqL/B6ncmnx7uu0OjAaGlk4nBvwQMWse50Dc35deyFqjxeWpRO2lAQ2Sl61J68geGxeZ4ZCxGTwur+ynNqOCxT9ubjj4nuO637Cq0u3WeXNiqleTmsaouFKwpobHIR2WYdSKOFoKo49lI5JQkK//2PBfqm24HnVncIc7cvvMYigYlHQlIiv3AVLMss04m2YbrmWIz/LoLZ+RAC/nDcSMCKrCS80/gdHWtsoxGXhbnDqTzgGqxkQnQyd27JCKdHhYbJPBiOYczph4nJUGQJ1x0upCZrcPj9q/j8xB5AlbjTFSJ3QE9K0JnKzIlaJoJI0ZrAmAqP24uwP4ioEoPXF8TX7UMozjai9auf8WlLD5qOV8VNYpBkDlEUwZLMmRO5yR5uTdEhECPKTyZUrkxGv2MOFiOhOCMBOq2K6uoStFxywGjU0IaKXG5JCHKz5T4v06et6DElLNITZYvqyHSMHzmwhv/QN4UppweZaQIK8xMRCYawvdKOzqbd/MZtmVuMXnWd3Y/cwtJekiTfevnmvh4lssRebK+jkdkIm5l28ovvbaAfby6g/pMh/HXuUTS23uIXf4tQkd2qfrDplJqRDiF57dFd8ShzFpo502iInT00NZYiHbz8rOaXUU7bVoMvBRUMT0WwqdiIgWmRUrUxfmrneSk/Z0QXNNW0mnbU1d6Lsu1xbt5b2NymiXVsVedU9eytreqZ3vuFhaAIo55gEBVUr3Gpe1d1kpgaZZJpR5+DH9xVmk5z/8LU0MQtbz/fcRS+zlc1wl0BkhbRQAJUzmAwhgBDBArP4ZT0cGvn0JNv7lxHzmWEsYzmP73MI9uUpe9fhjReIdBCGphIimp2Czpbr2B66EuR0r/9P85/AwAA//9MY31QAAAABklEQVQDADryvq1NlYh2AAAAAElFTkSuQmCC' },
+  { name: 'Dialog Leben Österreich', url: 'https://www.dialog-leben.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABWElEQVR4nHSSvU4CQRSFP5atTORH/EGjjRYm0BijiZXaaGNBZ+FDmPggPoWlnYUaLQwqWigETQzRgkoUlz8DSgHsrjPgwrKwp7qze86dc89c1dzfwQHDwDRl4fGgKI6fat9J8Lwq4TlC03igmEfLoTfxKMMEpsHEDFu7RFcZ8ckv9SovD1weU8h1NWqvdyjM3gEL0V6L0SBr20zOcnRIKS8dgnWX8LoR62N3MR9hM9YdRvlv7w9JJ26IrEhCOwlLEBjHF3QVjAbwj3UE1gy6LtN0g6Gjt2yWxDQVjfKXq6DwQVmzDS2q2jfJuEx2EK0m9xf8VvtTEkick7oZYDeIn/B41WHbZhDneg3tvUdtNshlSZyRupa1UyAfborldVlXCrymeb4jm5FOxAtYbJsAk8UlqhVuT8kkKX7KWMQ6uC6f4uXtiXSC+o9cO0n1Mgw2S6V2rAMtHfgDAAD//+l6AOYAAAAGSURBVAMAO1J3YNO8YHkAAAAASUVORK5CYII=' },
+  { name: 'Donau Maklerportal', url: 'https://www.donauversicherung.at/maklerportal?tx_felogin_login%5Baction%5D=login&tx_felogin_login%5Bcontroller%5D=Login&cHash=3635dcae8e19fd0bdecfe9c3f6f050a7', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABK0lEQVR4nMySMUvDQBiGvy9erNI4lNpRqSKlCMUiBREcOrg4uPsTuvgfBEd/gqOL4uAkdPMHFINFERdBrUmrlKTUJrnmcneeS2tFtB0Kfcc7no/n3vuIlBJGiQYjZvwA+fuaWza3GzhnAIv03Oo/gGrDOzmVni9cd7qw/hPgQlqO/1j/qDU7by3aplExbaxVzNndneC8GtsvDSjVmt7Rxd3l9WvdDWg3kpHYLiyW5jsohKRUSyWnltN9QM0+PKselx8AETT8OkbcyKYSN1csm2G397GtTdR16LWkXEMu4PsHIohWO6yYJLPCn18UMNAS0fBgL2/MkLJpNZQS46CTBccCzmXItKTyWeqP6q2GErMd/+ldvTgQgEWjm/BciMdBSD2f+wUYMhO4S58AAAD//9fP6N4AAAAGSURBVAMAPJeHmpDb9tQAAAAASUVORK5CYII=' },
+  { name: 'Hannoversche Österreich', url: 'https://partner.hannoversche.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAB30lEQVR4nFRSzW7UQAy2JzNJaHez24KEhIRAWmlLy8+hj8MZ8Qw8CmdeAHFC3LhwRQJEYRFqewC1UivtNsm2ySQZ98ukbbZziOzYn+3vs/Wzj/t0/USEmZW3nf92tsD1Idi6zybCr0Ykb2DSnYADpqwWOJFioxgWID2AhSpxD2L9ajIOmN8dnh3k9s325tgEn46Wn0/O17WS1Q4ocVHL7kb88tEI7tu/84dr5vVkA/aX0wt0Zj+FIlrpITRNwtrJ90Wxv6xejGPkLWzzdV7Eip30rNqHGJpuD0OM/iezy8o9HYUIH+TV3DYBBuAVAGoDkBj1JIlAfS+1UcA7SYTQXlrmtdOdRjcA4K2jycDcjQKI+2NR3I/1dBgibZZZP4zQLQCxdQ4lFfOpbX6ndicJR0Y1TtAhbDXlWwBHYpi3khDlZ6kF5vk4hgzHRX2YV1iCY+oB0jKmgWcM91da1o7QARGQyVoCxLQCwMog5b1IP143uIifZ3aoFQhg9FlWnjei+CbfL04xlU52N6OBCeB+WxTTxGx5iUBG89Xd9ADxGGj34X92UtRHRQ327/9lVbvBEvo66WdiXGt3VQhXXr81rbCT0p9gHDDm6et3HZANcSAFRPWKEY5voK9suT7s7l0CAAD//6N6wdAAAAAGSURBVAMArFb1GdROIukAAAAASUVORK5CYII=' },
+  { name: 'HanseMerkur Reiseversicherung', url: 'https://secure.hmrv.de/web/ba/baEingabe.jsf;jsessionid=yKXfM0FWrmo9b8aml1Yp_4i9_FFgeACYPGW9lKkj.w', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAACf0lEQVR4nBySW0tUURTH177MOTPOJUZsxLJJTcTCmSBLfSolCKqXeiqL6Av4kg9Bz/XYQ+BHqJceiigqIokIMUJCUYvKSzNp4+RlnNG5n3P2aq0557DZZ/Nf+79+ay0Nd2+BkqAFSAlgeG/5eKU/WvkTIFgghERjNCDL+EMvdqC5jG7FrRmJgAINgjAs0CSQSIdCKBhKgBTgeYFA07ex+xLFp7lpsGwAkHQ92VgWeh5JgT1kI4CPpVutGKlCtv9sz8lL3cn+Q51TKwvJ1o75m/e+ZFLpQlZqHwpQMNDH2bvOYE/f2ND5yz3Jdyvfm4OhZNuRw5GWsLLyTvV1anHPqTEJZ+dRZh45PLo4OhTvSud3Jj5Pnmk/Go+2dDYffDB8ZTqz6rouGGQkQAoiOgHV2vulhYpTt5UO+/wjncdHOnoffni+vrd7vbd/YvgaQQqkSrCDIRSsObPrqZ872acLM45bI2tbah2KtDQFaR+1AnytR6WUmr1op9S/fD4Raz9wOnDh2IlsaZ9umxy9s1bIlev1Z0tzUK1KHTbGSGYwhvqwsZ930MSCkZlMejQxcCMx+DW79mp5MWTbqd0tLiuSjBiQHLgjW6XidrlYd93ZzJ/9WtUz5sfmxtipc93R2N+93UYfoRFA7Ib7WiqXao4TbQoGhCa1FMIxJmj5CTRXKlEKyIkgQ7OdElhxxl88joXC85sZ0Xg2i/nxt098tj9bLHATGJWgSc0xEgS8nPpIHYzE40W37vd82Vzuza85CAXB9oNWLANS3b7K0NRsLZVSNJWoVVdrm1JytbBNZQGf8ighLVmjBE0rE3OMRy+wFeJy+jcPtt8iNTjIw8+FQVr/AwAA//+S2tcdAAAABklEQVQDADDzPbfOJjDXAAAAAElFTkSuQmCC' },
+  { name: 'HanseMerkur', url: 'https://www.hansemerkur.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAACQElEQVR4nFxSS2/TQBCe9a7thDZtQkMeUNKIUhrxqBLIoUWiJw5tL6D2hgT0gsQPAHEEid/AL0CIGyD1wAVOiMeBUlGplUroKyG05J3ajePY3mU3TlLBarTaGc/nb76ZIfDoLkgIsAQYgQTth9RxO0GpndB5SECZa4jByEAwoB7rRbpGgR25XYBDg56+lwv37qemwbZdPL8xQ0G1DwMSmLZhmJwAfhCHOD6Pt1/1pofPzI5evBKOrRfzyRPDL+YWV0u/f2lVQIgnHpU0HR9fOJ9eTF5tmCaj7FwgdPvC1PjxyKf81r5eB07YZiAiG8CjKA+uzU7FRrcqxaX1b/Gh0El/IOrzP0xf/1ErqgiLNFFll6Fpmsu5bYdRTss7kYrEUuHTz79/1Ezj5tmJx5NzsovpMQCjK7nt5dzOu801Xo8qYVnC/YrXQxT+0a94MQOLl4SgC0CsoB0kQtGwb/Dyqbjp2Fzis5lbWqu5sp9d+rnaNJtACKCeaAZlXbMcx6d6Ngp7M2OXbiSSmfKfD7sZGZOdWgmc/+ZAWb3R0JoG71y2Umo5NmOsqB/MJ1LxwaHSoQ7tsbgA6jLohlEzDgnGnMdybIcxw7JkjPWWWW3ovf9yDUIyL04zjKdvXwd9A5uVgk0pZTRXLT95/wZJ0l691mEQosU4uAO2Zb/6+pmHRiLRkq45VAC+7G6ATIRcglwAgjvzoku9hcVIUZSxcJTIJFMtNBzrn7XFiIB73H3kkhFqWdZaPisyCBapIsg6N4W/AAAA//8xDK4MAAAABklEQVQDACatTx8YcguAAAAAAElFTkSuQmCC' },
+  { name: 'Helvetia', url: 'https://idp-at.helvetia.com/auth/XUI/?realm=/at&spEntityID=SP-EBUSINESS-AT_DEFAULT&service=atAuth3&goto=https://idp-at.helvetia.com:443/auth/saml2/continue/metaAlias/at/idp1?secondVisitUrl%3D/auth/SSOPOST/metaAlias/at/idp1?ReqID%253DAuthnRequest_40f5e30206dae6e74d152bd9943e15a7&AMAuthCookie=#login/', icon: null },
+  { name: 'Muki', url: 'https://onlinerechner.muki.com/live/Login.aspx', icon: null },
+  { name: 'ROLAND Rechtsschutz Österreich', url: 'https://www.roland-rechtsschutz.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAACHklEQVR4nFxSPWzTUBB+79lOnLSx3VBQ46Q/UtWWFKkFCVhAAiRYYGCu1IWFCQaEhBgYkJgYQEJiYGNjgwXBABQJRsRQkNoKiYJaEE2CiJMGx3bs967nvzbqDadn3/fd3Xd3shCCEgoECCGAjhISe7L3iL9iGEVCAsJfNA7tNwBIeEBkfCBFYnRlo3Xj2XIgwhimQq4fAPpsRnq4MH9k3OACGCUyhBY2U2u5Pxv2xWOm0+PTpYLtBSNGzuf83ovVRtudhRhIGE0Nvw6XtCunJ46aWlFVeA8qhnrtwtSokSd0z9huo1jd8bnLxaOl710vKBfVB6+/Bb7wuejXw/qUhaqQttn25sr6y6+1Dz+av5vdrMIS0ZHJ/RVCtUB0VVYzUtP2zk0PDw0oAsj+CpCOTmbEsnsLJyrHp4r/7WDO1O4+X/3yZzuXkeMlJYRwH7gQAOxWV5Uty1nf6iyeGrMcv9X1Jw7kXZ8jgELaEj5R/ujB/FqjM6KrsxW93vFuXa5iqLntzt95ZxZz2HDEiKdEKReiWtaqJe3q08+bljN5aHBpuYaRxSefqmZhpqzx8CAilZxzylh4UZT++mufv/9x41/3+tnJVyv1QYW1Xf/t7TNjwwPYNWMMEBbeUmSoQWLM6niP36y/X6srinRy3Lh5aWaokMX0LD0zmq484giQJJpeZ7IezjF3ikaLm4FwChSHJSJanA9rIpTFY4kA6HcAAAD//+4jrTsAAAAGSURBVAMAxG4RK/JhLkUAAAAASUVORK5CYII=' },
+  { name: 'Pferdeversicherung der R+V', url: 'https://www.pferd-ruv.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAB40lEQVR4nJRSXSikYRSe98fMt+MvxLLbtD9tS5rabFs7F9qdXWrIhEIuREhRY264McoIEYok3EjJhZQbP8UUTXJDMYyfXPhpppQwojF+8/0433z19eGGp94673nOOe97nnOoIAiqt4A+S0AISR7ZeGZTOBzHywmEYImWIoCCKyGih+cFhBWpMpSFZY9s092Do6GxBV6E8FkXW1Zo1L5TY4yB8xye9g7Ofvsabyk1bex4h0fmE5M/0T3PcWfrqAoioMTVjffQ19VYnFnUbrPmxMVG9rQM/zIZyguNpdYBt9M9Pt2CGUZNGLU5L3VmoglHhi27dpddew7Hytzi5oHnmIZHJLyPauubdDtX6zsq8s2/RZU4lqMYu7Y80OD6tvdffjPVajr7p6EVllEvre3PzK7o/6bYLNmggagJxUijCerrvzYZfzjHG9jb+5rKrNH+ahJCzk4vaAgZ7K4MC2UgBj+wHOsPnPguq0rSSXz0lGM1Oio0LS3lf6pen6TjzgMqn99WW2D4+Z1lORCd2O12FK4F+o8h+eOHmISYiKREXb0194suLnB1h7RMhtlQZ8kG3UBYpByhUuyXkNlg08FxQgkw4ArvynEcLy4BwdL4xUTE8/zLhZGKKZdAYp986ZXAqjfiEQAA//+kbWSNAAAABklEQVQDAOEy5/60dMb9AAAAAElFTkSuQmCC' },
+  { name: 'Servo E-Bike-Vers', url: 'https://online.myservo.at/index.php', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASElEQVR4nMSQUQoAIAhDU7r/lRdIQRRlMEYPfwTZHnoh8UJCB9R5QUyOxSgMNtCFzI4nIgPg2URkMJr+/WA1uUAb5BVqAzqgAQAA//+69ejpAAAABklEQVQDADJoCixis0W1AAAAAElFTkSuQmCC' },
+  { name: 'Uniqa', url: 'https://connect.uniqa.at/prweb/Anmelden/app/SalesCRMMVT/xeqkd3SR_ZtHIM3ZC6y7nr8ABumfIYLy*/!STANDARD', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAACGklEQVR4nGxSOW8TQRR+Mzu7XpvYiWPHOMIc4ZKw0yCEOFqSAlEi0YAEEhUVKLT8BShpqChpaQgFh4QEFICSjitYxgRz2Yu9tnfXuzOPmVkvcZGZ5l3fN2++9xisrMI2hwCgvEC0AZDYQONUHFSF8lCdR5RJlVUeUdWIGqCcMSOhBEcc3RAiYcpswKWhaTSlfoFtvSir/aiSs2+eWThU2rHxZ/Dyi/Psc+eXH2n6GKYA0hGEUgyi/Xn74bXjzmB050n9XbObz1gHC5l+yx0KTDCyX9WrxCIRePt8td0frX3rvdl0Gx1/rdl1vGj5cAFGXAFUR0j1Q0SGjsxn98ymn35qL1fn3JAT2yBp9r0fXDlZ2VfIQMhjAehYLY7FDGu5wetGt5y1SmmGEkNIFGJtPlsrT0lGqoWisWzUNOqOz7l4W3fe/xzevbBIOQjHu3isvDtv19semAYobYkBpy9Jegx47/fAIzBtsXsvGteXFs7WSh9b/aXFnc8/dB68+qqkCdRPCNx4NGUZV09UihnTj0QuxX44Xilvn6vO7ZqR3EP5bxAoBP71wlurG0y2lbWMos1SFNIpur7Za7rBUQqX769bjJ46kJ9Ns2mbSVKLGXtnUgRWHss5wCCMJ696VZ9CMJkac8THrpYGbKYnTSnJ2XFEaB1Q11BLmiaMl0gDBTK9Rfokiyr+GwgTWxkvrFyNePkmDybpydIk+A8AAP//Jaep6wAAAAZJREFUAwB85/9uAggDQgAAAABJRU5ErkJggg==' },
+  { name: 'VAV', url: 'https://www.vavpro.at/vavpro-home/Start.html', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABR0lEQVR4nNySy6qCUBSG04RudIEaRNAkalAURBBdBvUgPUazXiZo1gMEUZFOREeCgqDiBXHiRBER0YmeP84TNDucPfr3v//1rcViU3meF745ZOHL8xcL1ut1rVYzDON6vRIEcTweGYapVCrlcvn5fJ5OJ5iXy8VxnHq9vtlsyMFgEMexZVmapgEwnU5pmk6SJE3T9/uNK0xVVRGIoqjX65EogqUoCppAjMfj1+s1Go2Gw+GvgIknBCAQppbLJZQgCMB0u91SqcTz/OFwoCjqfD4Xi8V+v6/reqPRQGy1WlFAdjodjuNc193v97ZtZ1kmyzJJfvZhmiao9/sdQ7ZarclkQjabzcVigY5BEGy3W1Qi5/u+53kQLMvCDMMQiPl83m63PxiAwcOuZrOZKIqY6na7PR6ParUqSRKo2A8Cu90OYeIf/KUfAAAA//8KI0taAAAABklEQVQDAPq8kNRjAgYOAAAAAElFTkSuQmCC' },
+  { name: 'Wunderlich Financial Consulting GmbH', url: 'https://www.wunderlich-consulting.net/de', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB1klEQVR4nJxTz2sTURCemfe6hmwgaaGhKtHFg5YQ7EUvgqAoCB4a/Ef8G+Jf470FQfDQkxd7aZGlliqrRQ0RStJmw7p5O+N7mywG+iO0H7x9O7xvZr5936yGC3DYfLHUp5KvKFvWSAFm5LMyaQbqhhbu3t3dfKsdUQAoar6s/9W6SoINJl4CRjkWwQVgEIYeAu1oTmMYjvqfouXxWitdd3l5ga3giXdd6cdEMELhCAjD4ckofvDtw+AsZTYRD6it9lafLSLMgevyxu6d/BXExTaJD1rtVzbe1q4aTg+KHJyQczjy6ZoARksPx7JCBdkRp0suUlScS5L+ZKVu0d799XvFd8ElUDMYWydKZAU/gitgxfs+ECQmQkyk2fTmSZ9Ffm9hmLJIiaxt1E1vV+EqQPlIBinpa/EvlTdVu7q78YUoy35gybtZSIM50p3dheUuJoXU1Qbr/4tP9s4McbZzYXcR67EZjrRXUdOBKoZGOpOVY/vO82qlWvYVy6IgBpxB+ffJ8ebTaCvJJe232u2dz97Gw+DPApTLNUOeb8A0ELCe2QIKLY1y047sP3Z4zZhBEL7ruYbaPfaJS6219HUKlV+UaU8Ux3a2I8P0tcZJ3AjfH513L/8AAAD//4ulgmQAAAAGSURBVAMA5NDOvPVYjVYAAAAASUVORK5CYII=' },
+  { name: 'ADAP - Wüstenrot Außendienst-Arbeitsplatz', url: 'https://adapsso.wuestenrot.at/wbs/flow/Dashboard?execution=e2s1', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAA2klEQVR4nLxSOwrCQBSc2d0YiWCVysZSsPcMXsHreBt7T2EhWFhbiKVYCAlks8m6JhDyWYs0DsvyvvMG3hMYCbWEGkYJZLAvlO7vp25YeGiAM/Qe7wt0P+XhryABURliwOWBAULKDSexlZJdSfeBJFeQEE9ZGh+XwEj8v4FVqH70NXCHqLbchkJwrSYrFRhC0xZAbMSsZHt56oC0cSJyKxEFsh7l6uYFZt0JyquncY9l+iiM4I+GIa7QJ5sFlv4Gp6Gon/3KVqSu5OetE2RP0pQMW8HE2rx7sB8AAAD//2+ZSIQAAAAGSURBVAMAiiE6fQYUwh4AAAAASUVORK5CYII=' },
+  { name: 'WWK Versicherungen – Eine starke Gemeinschaft', url: 'https://www.wwk.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABV0lEQVR4nLRS3ysEURSee2d2dlmMbbGk1o8Vsx6QkiSKFCmSfRLlnRdF8h/sH6A8+iMoXuQJL56UB1HaPG1tqx2bnZmde891ZtYDnmbUfnW7557Ouef7vo4ihJCCgEoBEbhBweOTFSEEK8l/NICAimM53DGZbXPn3fpgwN0MMMMsceBYg0nva6HUHqtn+7GIVmE2A6doGul4/0PheaZ77PzpMjt/dJ9/jEe07PQuNruUSna593TNsAwKfCo5oalNFy9XyFnvGBpPDN/lbrtae64zJ2E5hDNcSpTQT8dMRNsB+HZ6WaWy1hiTBCwkJ0fjqVzxtWCV3sp51x4JPA0AyZbODX1xMKGvp+aqwDbTK31tA1v6UoVZB7N7OyOZw5vjb6uQEopGuTgRFUdDDThNlUNVL8a8ShWZyqgzFm4mNWt/uuY6Tcif+FcgPEj+gG1K7ZJ8o/7L9wUAAP//PA05iwAAAAZJREFUAwAuI7YytswTZAAAAABJRU5ErkJggg==' },
+  { name: 'Zürich', url: 'https://www.zurich.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAADOElEQVR4nFRTW2gVVxTde58zc++djE1qY4wphFqt9iMg2JKfYOltCxH8aKW1Lba0WEkbShOE9qel/WhLFQqlxVZJiYiC+uE74PPHgCgGlCi+g+Ij4WIwanJzH7l3Zs7Z7pn4HDjMOWe/1llrbw3TH8rieDP3mz1vIWCHHLPM0AiIsXFUTP0M3Hvz/w+PPxuDjw4w69udvm/VOsvUgaRTbCMx28QLkABIA5uoSgS9RQp/HNv4cfFxFqz/qs/3HbsLHa+dgzIrAiP3iqS6ERhgZREaTaQilUEblo4WA1pxb/P7RR3DqHXt2gqm23//YF7wdstsfb9Qje8hslaSEUh99NJKrz84ZPcNjIQv1Na1z7CTa+8BdOHCzr62UhQdm/NiRm1b04Z7B4bp3M1xnigHMLfBx79XvQlpV8HJq3f5y/UnMTJsBYjQwYbQvqMN2k6L2n3Jd6M/dl+kPadus+cqFPSwZtnrSfCtu0Xo3nQaSxXDXkqj5LCkXNeaoFNHlrMpxXw5l6cLwxPQNDODean+6yeLYOnil6EaGvhlxzkYHitBreegsTEpQEJo/M/K87iRrRGeET2X8EGhCstbm2H1e68l6mw4NASHB3NxMEiweHEMDkUSjGPpsYxCORSmImhproPfVi4CRxMcO38H/jlwBWZkHJguPC3c0z0kBI+i0hxKei/t8J9fvAENtRnI3S/BT9vPggiRJE+c5W8scEbeDChLYmNTv7CK5aqxP3/UAq0L6qE4FcIPWwZhKDcJrqNAmE/gj45XeOniJmidX28FLGrCfhKHnnyhHHyenYer3p2flDpwJseXRib41dk+uPIUrYgzrubuZQvxsyWv8Jkb45giGyimniRg5V8n/u3pbvsuqobBg0JF50sB1fkuZFzFceUwsliT1hBEbDt7BqLBkcCtUZX/rm9c3pW0Ml/oa/j+9Jytx6+V24uFSU67ZPy0Vk0zPWieVQPSIzBeCsyRwTtqbIrQo+BovopJKz8ZJoAVftPqT9c5ijqYVCoMQzCRidtZxlTaWTvgaa6mHOzNj8kw7Xo6TMlUxgrLwS7o2r/ERvZrUSorNDdOi06jCrnfou29tuH5cX4IAAD///Li/AUAAAAGSURBVAMA+KCBdS4/JP8AAAAASUVORK5CYII=' }
+];
+
+function initPartnerPortals(){
+  const grid = document.getElementById('partnerGrid');
+  if(!grid) return;
+  grid.innerHTML = PARTNER_PORTALS.map(p=>`
+    <a class="partner-tile" href="${p.url}" target="_blank" rel="noopener">
+      <span class="partner-icon">${p.icon ? `<img src="${p.icon}" alt="">` : '🏢'}</span>
+      <span class="partner-name">${p.name}</span>
+    </a>
+  `).join('');
+}
+
 const GUIDE_SECTIONS = [
   { id: 'invest', title: 'Finova Invest', html: '' },
   { id: 'credit', title: 'Finova Credit', html: '' },
@@ -2589,6 +2704,7 @@ initAuth();
 initEHRechner();
 initCareerPlans();
 initGuide();
+initPartnerPortals();
 </script>
 
 </body>
