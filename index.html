@@ -423,6 +423,9 @@
     color:#8FA1A6;
   }
   .panel-dark .panel-sub.wide{ margin-bottom:18px; }
+  .panel-compact{ padding:16px 18px; }
+  .panel-compact h2{ font-size:13px; }
+  .panel-compact .panel-sub{ font-size:11px; margin-bottom:10px; }
   .timeline-legend{
     display:flex;
     gap:18px;
@@ -905,6 +908,34 @@
   }
   .career-lock-form input[type=password]:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); }
   .career-lock-error{ margin-top:10px; font-size:12.5px; color:var(--red); font-weight:600; }
+
+  /* GUIDE */
+  .guide-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:20px;
+  }
+  .guide-tab{
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--grey);
+    font-family:inherit;
+    font-size:13px;
+    font-weight:700;
+    padding:10px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .guide-tab:hover{ border-color:var(--mint2); color:var(--navy); }
+  .guide-tab.active{
+    background: linear-gradient(135deg, var(--mint), var(--mint2));
+    border-color:transparent;
+    color:var(--navy);
+    box-shadow:0 4px 14px rgba(63,203,142,.3);
+  }
+  .guide-empty{ font-size:13.5px; color:var(--grey-light); }
 </style>
 </head>
 <body>
@@ -918,6 +949,7 @@
     <button class="nav-item" data-section="team"><span class="ico">◎</span> Mitarbeiter</button>
     <button class="nav-item" data-section="eh-rechner"><span class="ico">∑</span> EH-Rechner</button>
     <button class="nav-item" data-section="karriere"><span class="ico">↗</span> Karrierepläne</button>
+    <button class="nav-item" data-section="guide"><span class="ico">▤</span> Guide</button>
 
     <div class="sidebar-footer">
       <strong>Grenzgasse 1</strong>
@@ -960,32 +992,47 @@
     <!-- OVERVIEW SECTION -->
     <section class="section active" id="section-overview">
       <div class="overview-row overview-row-top">
-        <div class="goal-card goal-card-compact">
-          <div>
-            <div class="goal-eyebrow">Team-Ziel</div>
-            <div class="goal-input-row">
-              <input type="number" id="teamGoalInput" class="goal-number" value="0">
-              <span class="goal-unit">Einheiten</span>
+        <div class="charts-stack">
+          <div class="goal-card goal-card-compact">
+            <div>
+              <div class="goal-eyebrow">Team-Ziel</div>
+              <div class="goal-input-row">
+                <input type="number" id="teamGoalInput" class="goal-number" value="0">
+                <span class="goal-unit">Einheiten</span>
+              </div>
+              <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
+              <div class="period-row">
+                <div class="period-field">
+                  <label for="periodStartInput">Umsatzmonat Start</label>
+                  <input type="date" id="periodStartInput">
+                </div>
+                <div class="period-field">
+                  <label for="periodEndInput">Umsatzmonat Ende</label>
+                  <input type="date" id="periodEndInput">
+                </div>
+              </div>
             </div>
-            <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
-            <div class="period-row">
-              <div class="period-field">
-                <label for="periodStartInput">Umsatzmonat Start</label>
-                <input type="date" id="periodStartInput">
+            <div>
+              <div class="goal-progress-label">
+                <span><span id="goalIstLabel">0</span> von <span id="goalTargetLabel">0</span> Einheiten</span>
+                <span class="goal-pct" id="goalPct">0%</span>
               </div>
-              <div class="period-field">
-                <label for="periodEndInput">Umsatzmonat Ende</label>
-                <input type="date" id="periodEndInput">
-              </div>
+              <div class="goal-bar"><div class="fill" id="goalFill" style="width:0%"></div></div>
+              <div class="goal-remaining" id="goalRemaining"></div>
             </div>
           </div>
-          <div>
-            <div class="goal-progress-label">
-              <span><span id="goalIstLabel">0</span> von <span id="goalTargetLabel">0</span> Einheiten</span>
-              <span class="goal-pct" id="goalPct">0%</span>
+
+          <div class="charts-grid" style="grid-template-columns:1fr 1fr; margin-bottom:0;">
+            <div class="panel-dark panel-compact">
+              <h2>Team-Fortschritt</h2>
+              <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
+              <canvas id="doughnutChart" height="150"></canvas>
             </div>
-            <div class="goal-bar"><div class="fill" id="goalFill" style="width:0%"></div></div>
-            <div class="goal-remaining" id="goalRemaining"></div>
+            <div class="panel-dark panel-compact">
+              <h2>Umsatzanteil</h2>
+              <p class="panel-sub">Anteil je Mitarbeiter am Gesamtumsatz</p>
+              <canvas id="revenueShareChart" height="150"></canvas>
+            </div>
           </div>
         </div>
 
@@ -1004,16 +1051,11 @@
 
       <div class="kpi-grid" id="summaryCards"></div>
 
-      <div class="charts-grid wide-bar">
+      <div class="charts-grid" style="grid-template-columns:1fr;">
         <div class="panel-dark">
           <h2>Einheiten — Soll vs. Ist pro Mitarbeiter</h2>
           <p class="panel-sub">Aktueller Stand je Mitarbeiter</p>
           <canvas id="barChart" height="230"></canvas>
-        </div>
-        <div class="panel-dark">
-          <h2>Team-Fortschritt</h2>
-          <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
-          <canvas id="doughnutChart" height="230"></canvas>
         </div>
       </div>
 
@@ -1115,6 +1157,12 @@
       </div>
       <div class="career-tabs" id="careerTabs" style="display:none;"></div>
       <div id="careerContent"></div>
+    </section>
+
+    <!-- GUIDE SECTION -->
+    <section class="section" id="section-guide">
+      <div class="guide-tabs" id="guideTabs"></div>
+      <div id="guideContent"></div>
     </section>
   </main>
 </div>
@@ -1638,7 +1686,9 @@ const centerTextPlugin = {
   }
 };
 
-let barChart, doughnutChart, timelineChart;
+const PIE_COLORS = ['#64DDA3','#5BB8E8','#F2B84B','#E8735B','#B48EE0','#4BD1C5','#E85B9C','#8FD14B','#5B7FE8','#D1A64B'];
+
+let barChart, doughnutChart, revenueShareChart, timelineChart;
 function renderCharts(){
   const sorted = [...rows].sort((a,b)=>b.ist-a.ist);
   const ctx1 = document.getElementById('barChart').getContext('2d');
@@ -1691,6 +1741,38 @@ function renderCharts(){
         centerText: hasData
           ? { text: pct+'%', sub: fmt(totalIst)+' / '+fmt(target) }
           : { text: '—', sub: 'Kein Ziel gesetzt' }
+      }
+    }
+  });
+
+  const contributors = rows.filter(r=>Number(r.ist||0)>0);
+  const shareRows = contributors.length ? contributors : rows;
+  const shareTotal = shareRows.reduce((s,r)=>s+Number(r.ist||0),0);
+  const ctx3 = document.getElementById('revenueShareChart').getContext('2d');
+  if(revenueShareChart) revenueShareChart.destroy();
+  revenueShareChart = new Chart(ctx3, {
+    type:'pie',
+    data:{
+      labels: shareRows.map(r=>r.name),
+      datasets:[{
+        data: shareTotal>0 ? shareRows.map(r=>Number(r.ist||0)) : shareRows.map(()=>1),
+        backgroundColor: shareRows.map((_,i)=>PIE_COLORS[i % PIE_COLORS.length]),
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label(item){
+              const val = Number(item.raw||0);
+              const pct = shareTotal>0 ? Math.round((val/shareTotal)*100) : 0;
+              return `${item.label}: ${pct}%`;
+            }
+          }
+        }
       }
     }
   });
@@ -2276,6 +2358,38 @@ function initCareerPlans(){
   });
 }
 
+const GUIDE_SECTIONS = [
+  { id: 'invest', title: 'Finova Invest', html: '' },
+  { id: 'credit', title: 'Finova Credit', html: '' },
+  { id: 'realestate', title: 'Finova Real Estate', html: '' },
+  { id: 'analyse', title: 'Analyse', html: '' }
+];
+
+function initGuide(){
+  const tabs = document.getElementById('guideTabs');
+  const content = document.getElementById('guideContent');
+  if(!tabs || !content) return;
+
+  let active = 0;
+
+  function render(){
+    tabs.innerHTML = GUIDE_SECTIONS.map((g,i)=>
+      `<button class="guide-tab${i===active?' active':''}" data-idx="${i}" type="button">${g.title}</button>`
+    ).join('');
+    const g = GUIDE_SECTIONS[active];
+    content.innerHTML = `<div class="panel career-plan">${g.html || `<h2>${g.title}</h2><p class="guide-empty">Inhalte folgen in Kürze.</p>`}</div>`;
+  }
+
+  tabs.addEventListener('click', e=>{
+    const btn = e.target.closest('.guide-tab');
+    if(!btn) return;
+    active = +btn.dataset.idx;
+    render();
+  });
+
+  render();
+}
+
 document.querySelectorAll('.nav-item').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
@@ -2292,6 +2406,7 @@ initCloudSync();
 initAuth();
 initEHRechner();
 initCareerPlans();
+initGuide();
 </script>
 
 </body>
