@@ -977,23 +977,16 @@
         </div>
       </div>
 
-      <div class="goal-card recruit-card">
-        <div>
-          <div class="goal-eyebrow">Mitarbeiter-Aufbau</div>
-          <div class="goal-input-row">
-            <input type="number" id="recruitGoalInput" class="goal-number small" value="0">
-            <span class="goal-unit">neue Mitarbeiter (Ziel)</span>
-          </div>
-          <p class="panel-sub wide" style="margin-top:10px;">Zählt alle aktuell als „NEU" markierten Mitarbeiter im gewählten Zeitraum.</p>
+      <div class="panel-dark timeline-panel">
+        <h2>Zielverlauf & Prognose</h2>
+        <p class="panel-sub wide">Wann erreichen wir das Team-Ziel bei aktuellem Tempo?</p>
+        <canvas id="timelineChart" height="180"></canvas>
+        <div class="timeline-legend">
+          <span><span class="dot ist"></span> Ist-Verlauf</span>
+          <span><span class="dot path"></span> Ziel-Pfad (linear)</span>
+          <span><span class="dot forecast"></span> Prognose</span>
         </div>
-        <div>
-          <div class="goal-progress-label">
-            <span><span id="recruitCountLabel">0</span> von <span id="recruitTargetLabel">0</span> neuen Mitarbeitern</span>
-            <span class="goal-pct" id="recruitPct">0%</span>
-          </div>
-          <div class="goal-bar"><div class="fill" id="recruitFill" style="width:0%"></div></div>
-          <div class="recruit-list" id="recruitList"></div>
-        </div>
+        <div class="forecast-line" id="forecastLine"></div>
       </div>
 
       <div class="kpi-grid" id="summaryCards"></div>
@@ -1011,16 +1004,23 @@
         </div>
       </div>
 
-      <div class="panel-dark timeline-panel">
-        <h2>Zielverlauf & Prognose</h2>
-        <p class="panel-sub wide">Wann erreichen wir das Team-Ziel bei aktuellem Tempo?</p>
-        <canvas id="timelineChart" height="180"></canvas>
-        <div class="timeline-legend">
-          <span><span class="dot ist"></span> Ist-Verlauf</span>
-          <span><span class="dot path"></span> Ziel-Pfad (linear)</span>
-          <span><span class="dot forecast"></span> Prognose</span>
+      <div class="goal-card recruit-card">
+        <div>
+          <div class="goal-eyebrow">Mitarbeiter-Aufbau</div>
+          <div class="goal-input-row">
+            <input type="number" id="recruitGoalInput" class="goal-number small" value="0">
+            <span class="goal-unit">neue Mitarbeiter (Ziel)</span>
+          </div>
+          <p class="panel-sub wide" style="margin-top:10px;">Zählt alle aktuell als „NEU" markierten Mitarbeiter im gewählten Zeitraum.</p>
         </div>
-        <div class="forecast-line" id="forecastLine"></div>
+        <div>
+          <div class="goal-progress-label">
+            <span><span id="recruitCountLabel">0</span> von <span id="recruitTargetLabel">0</span> neuen Mitarbeitern</span>
+            <span class="goal-pct" id="recruitPct">0%</span>
+          </div>
+          <div class="goal-bar"><div class="fill" id="recruitFill" style="width:0%"></div></div>
+          <div class="recruit-list" id="recruitList"></div>
+        </div>
       </div>
     </section>
 
