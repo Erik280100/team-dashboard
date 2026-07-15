@@ -359,6 +359,10 @@
     padding:22px 24px;
     border:1px solid var(--border);
   }
+  #section-team .panel{ padding-left:14px; padding-right:14px; }
+  #section-team .col-headers,
+  #section-team .emp-row,
+  #section-team .emp-totals-row{ padding-left:8px; padding-right:8px; }
   .panel h2{ margin:0 0 16px; font-size:15px; font-weight:700; }
 
   .panel-dark{
@@ -428,7 +432,7 @@
   .emp-list{ display:flex; flex-direction:column; gap:8px; max-height:600px; overflow-y:auto; padding-right:4px; }
   .emp-row{
     display:grid;
-    grid-template-columns: 2fr 0.7fr repeat(5, 0.5fr) 0.8fr 0.8fr 1.3fr 40px;
+    grid-template-columns: 1.9fr 0.65fr 1.7fr 1.7fr 0.7fr 0.7fr 1.15fr 40px;
     align-items:center;
     gap:8px;
     background:#fff;
@@ -436,10 +440,55 @@
     border-radius:12px;
     padding:10px 12px;
   }
+  /* Plan/Ist Feldgruppen (AT/BT/ET) */
+  .field-group{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:6px;
+    background:#F1F4F4;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:6px 7px;
+  }
+  .field-group[data-group="ist"]{ border-left:2px solid #CBD5D5; }
+  .emp-totals-row .field-group{
+    background:rgba(255,255,255,.08);
+    border-color:rgba(255,255,255,.14);
+  }
+  .emp-totals-row .field-group[data-group="ist"]{ border-left-color:rgba(255,255,255,.3); }
+  .field-group-head{
+    background:#F1F4F4;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:5px 7px 6px;
+  }
+  .field-group-head[data-group="ist"]{ border-left:2px solid #CBD5D5; }
+  .field-group-title{
+    text-align:center;
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--grey);
+    margin-bottom:3px;
+  }
+  .field-group-cols{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
   @media (max-width:1000px){
     .emp-row{ grid-template-columns: 1fr; }
     .emp-row > div{ display:flex; justify-content:space-between; align-items:center; }
     .emp-row > div[data-label]::before{
+      content: attr(data-label);
+      font-size:10.5px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:var(--grey-light);
+      font-weight:700;
+      margin-right:8px;
+      flex-shrink:0;
+    }
+    .field-group{ display:contents; }
+    .field-group > div{ display:flex; justify-content:space-between; align-items:center; }
+    .field-group > div[data-label]::before{
       content: attr(data-label);
       font-size:10.5px;
       text-transform:uppercase;
@@ -511,7 +560,7 @@
   .del-btn:hover{ background:#FDECEA; }
   .col-headers{
     display:grid;
-    grid-template-columns: 2fr 0.7fr repeat(5, 0.5fr) 0.8fr 0.8fr 1.3fr 40px;
+    grid-template-columns: 1.9fr 0.65fr 1.7fr 1.7fr 0.7fr 0.7fr 1.15fr 40px;
     gap:8px;
     padding:0 12px;
     margin-bottom:8px;
@@ -522,9 +571,13 @@
     color:var(--grey-light); font-weight:700; text-align:center;
   }
   .col-headers span:first-child{ text-align:left; }
+  .col-headers .field-group-cols span{
+    font-size:10px; text-transform:uppercase; letter-spacing:.03em;
+    color:var(--grey-light); font-weight:700; text-align:center;
+  }
   .emp-totals-row{
     display:grid;
-    grid-template-columns: 2fr 0.7fr repeat(5, 0.5fr) 0.8fr 0.8fr 1.3fr 40px;
+    grid-template-columns: 1.9fr 0.65fr 1.7fr 1.7fr 0.7fr 0.7fr 1.15fr 40px;
     align-items:center;
     gap:8px;
     background: var(--navy);
@@ -537,6 +590,7 @@
   .emp-totals-row .et-val{ text-align:center; font-weight:800; font-size:13.5px; color:var(--mint); }
   @media (max-width:1000px){
     .emp-totals-row{ grid-template-columns:1fr; gap:4px; }
+    .emp-totals-row .field-group{ display:contents; }
     .emp-totals-row .et-val{ display:flex; justify-content:space-between; text-align:left; }
     .emp-totals-row .et-val::before{
       content: attr(data-label);
@@ -828,7 +882,16 @@
         </div>
 
         <div class="col-headers">
-          <span>Name</span><span>Status</span><span>AT</span><span>BT</span><span>ET</span><span>MA</span><span>ST</span><span>Soll</span><span>Ist</span><span>Fortschritt</span><span></span>
+          <span>Name</span><span>Status</span>
+          <div class="field-group-head" data-group="plan">
+            <div class="field-group-title">Plan</div>
+            <div class="field-group-cols"><span>AT</span><span>BT</span><span>ET</span></div>
+          </div>
+          <div class="field-group-head" data-group="ist">
+            <div class="field-group-title">Ist</div>
+            <div class="field-group-cols"><span>AT</span><span>BT</span><span>ET</span></div>
+          </div>
+          <span>Soll</span><span>Ist</span><span>Fortschritt</span><span></span>
         </div>
         <div class="emp-list" id="tableBody"></div>
         <div class="emp-totals-row" id="empTotalsRow"></div>
@@ -982,28 +1045,28 @@ const STARTER_GOAL = { target: 0, note: '', recruitGoal: 6, recruitActual: null,
 const STARTER_JOIN_DATE = defaultPeriod().periodStart;
 
 const STARTER_DATA = [
-  {name:"Georg Kögerl", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Elias Karner", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Michael Posch", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Tobias Zika", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Tobias Trinker", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"David Lanicsek", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Theresa Wagner", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Isabella Zöhrer", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Floria Cotirla", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Delia Podlipnig", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Sito Eckelhardt", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Valentino Kahr", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Denise Stickl", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Madeleine Zugschwert", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Kevin Hödl", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"Luis Simhandel", isNew:false, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:''},
-  {name:"David Schrey", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
-  {name:"Erik Bindar", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
-  {name:"Lisa Simeon", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
-  {name:"Noah Vanek", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
-  {name:"Nico Kiem", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
-  {name:"Josef Nagel", isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE}
+  {name:"Georg Kögerl", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Elias Karner", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Michael Posch", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Tobias Zika", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Tobias Trinker", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"David Lanicsek", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Theresa Wagner", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Isabella Zöhrer", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Floria Cotirla", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Delia Podlipnig", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Sito Eckelhardt", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Valentino Kahr", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Denise Stickl", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Madeleine Zugschwert", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Kevin Hödl", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"Luis Simhandel", isNew:false, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:''},
+  {name:"David Schrey", isNew:true, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Erik Bindar", isNew:true, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Lisa Simeon", isNew:true, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Noah Vanek", isNew:true, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Nico Kiem", isNew:true, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE},
+  {name:"Josef Nagel", isNew:true, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:STARTER_JOIN_DATE}
 ];
 
 const HISTORY_KEY = 'finova_dashboard_history_v1';
@@ -1055,7 +1118,7 @@ function initCloudSync(){
     if(snap.metadata.hasPendingWrites) return; // eigene, bereits lokal dargestellte Änderung
     if(snap.exists){
       const data = snap.data() || {};
-      if(Array.isArray(data.rows) && data.rows.length) rows = data.rows;
+      if(Array.isArray(data.rows) && data.rows.length) rows = migrateRows(data.rows);
       if(data.teamGoal && typeof data.teamGoal === 'object') teamGoal = { ...STARTER_GOAL, ...data.teamGoal };
       if(Array.isArray(data.history)) history = data.history;
       try{
@@ -1088,12 +1151,23 @@ function recordSnapshot(){
   saveHistory();
 }
 
+function migrateRow(r){
+  if(r.atPlan===undefined) r.atPlan = Number(r.at)||0;
+  if(r.atIst===undefined) r.atIst = 0;
+  if(r.btPlan===undefined) r.btPlan = Number(r.bt)||0;
+  if(r.btIst===undefined) r.btIst = 0;
+  if(r.etPlan===undefined) r.etPlan = Number(r.et)||0;
+  if(r.etIst===undefined) r.etIst = 0;
+  return r;
+}
+function migrateRows(list){ return list.map(migrateRow); }
+
 function loadData(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      if(Array.isArray(parsed) && parsed.length) return parsed;
+      if(Array.isArray(parsed) && parsed.length) return migrateRows(parsed);
     }
   }catch(e){ console.warn('Konnte gespeicherte Daten nicht laden', e); }
   return JSON.parse(JSON.stringify(STARTER_DATA));
@@ -1252,11 +1326,16 @@ function renderTable(){
         <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}">
       </div>
       <div data-label="Status"><button class="status-badge ${r.isNew?'':'off'}" data-idx="${i}" data-action="toggle-new">${r.isNew?'NEU':'Bestand'}</button></div>
-      <div data-label="AT">${fieldInput(i,'at',r.at)}</div>
-      <div data-label="BT">${fieldInput(i,'bt',r.bt)}</div>
-      <div data-label="ET">${fieldInput(i,'et',r.et)}</div>
-      <div data-label="MA">${fieldInput(i,'ma',r.ma)}</div>
-      <div data-label="ST">${fieldInput(i,'st',r.st)}</div>
+      <div class="field-group" data-group="plan">
+        <div data-label="Plan AT">${fieldInput(i,'atPlan',r.atPlan)}</div>
+        <div data-label="Plan BT">${fieldInput(i,'btPlan',r.btPlan)}</div>
+        <div data-label="Plan ET">${fieldInput(i,'etPlan',r.etPlan)}</div>
+      </div>
+      <div class="field-group" data-group="ist">
+        <div data-label="Ist AT">${fieldInput(i,'atIst',r.atIst)}</div>
+        <div data-label="Ist BT">${fieldInput(i,'btIst',r.btIst)}</div>
+        <div data-label="Ist ET">${fieldInput(i,'etIst',r.etIst)}</div>
+      </div>
       <div data-label="Soll">${fieldInput(i,'soll',r.soll,true)}</div>
       <div data-label="Ist">${fieldInput(i,'ist',r.ist,true)}</div>
       <div class="prog-cell" data-label="Fortschritt">
@@ -1274,11 +1353,16 @@ function renderTable(){
     totalsRow.innerHTML = `
       <div class="et-label">Summe</div>
       <div></div>
-      <div class="et-val" data-label="AT">${sum('at')}</div>
-      <div class="et-val" data-label="BT">${sum('bt')}</div>
-      <div class="et-val" data-label="ET">${sum('et')}</div>
-      <div class="et-val" data-label="MA">${sum('ma')}</div>
-      <div class="et-val" data-label="ST">${sum('st')}</div>
+      <div class="field-group" data-group="plan">
+        <div class="et-val" data-label="Plan AT">${sum('atPlan')}</div>
+        <div class="et-val" data-label="Plan BT">${sum('btPlan')}</div>
+        <div class="et-val" data-label="Plan ET">${sum('etPlan')}</div>
+      </div>
+      <div class="field-group" data-group="ist">
+        <div class="et-val" data-label="Ist AT">${sum('atIst')}</div>
+        <div class="et-val" data-label="Ist BT">${sum('btIst')}</div>
+        <div class="et-val" data-label="Ist ET">${sum('etIst')}</div>
+      </div>
       <div class="et-val" data-label="Soll">${sum('soll')}</div>
       <div class="et-val" data-label="Ist">${sum('ist')}</div>
       <div></div>
@@ -1659,7 +1743,7 @@ function renderAll(){
 }
 
 document.getElementById('addRowBtn').addEventListener('click', ()=>{
-  rows.push({name:'Neuer Mitarbeiter', isNew:true, at:0, bt:0, et:0, ma:0, st:0, soll:0, ist:0, joinDate:new Date().toISOString().slice(0,10)});
+  rows.push({name:'Neuer Mitarbeiter', isNew:true, atPlan:0, atIst:0, btPlan:0, btIst:0, etPlan:0, etIst:0, soll:0, ist:0, joinDate:new Date().toISOString().slice(0,10)});
   saveData(); flashSaved();
   renderAll();
 });
