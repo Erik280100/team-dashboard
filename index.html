@@ -477,6 +477,8 @@
     padding:6px 7px;
   }
   .field-group[data-group="ist"]{ border-left:2px solid #CBD5D5; }
+  .emp-row.at-below{ background:#FDECEA; border-color:#F5C9C2; }
+  .emp-row.at-above{ background:#EAF9F1; border-color:#B9E8CE; }
   .emp-totals-row .field-group{
     background:rgba(255,255,255,.08);
     border-color:rgba(255,255,255,.14);
@@ -1342,11 +1344,18 @@ function renderTable(){
   badge.textContent = list.length === rows.length
     ? `${rows.length} Mitarbeiter`
     : `${list.length} von ${rows.length} Mitarbeitern`;
+  const wp = monthWeekProgress();
   document.getElementById('tableBody').innerHTML = list.map(r=>{
     const i = r._idx;
     const pct = pctOf(r);
+    const atPlan = Number(r.atPlan||0);
+    let rowClass = '';
+    if(wp.active && atPlan > 0){
+      const schwelle = 0.8 * atPlan * wp.fraction;
+      rowClass = Number(r.atIst||0) >= schwelle ? 'at-above' : 'at-below';
+    }
     return `
-    <div class="emp-row">
+    <div class="emp-row ${rowClass}">
       <div class="emp-name-wrap">
         <div class="avatar">${initials(r.name)}</div>
         <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}">
@@ -1536,6 +1545,23 @@ function addDays(d, n){
   return r;
 }
 
+// Wie weit ist der eingestellte Umsatzmonat wochen-anteilig fortgeschritten (0..1)?
+// Dient als Basis für die Rot/Grün-Einfärbung der Mitarbeiterzeilen nach AT-Fortschritt.
+function monthWeekProgress(){
+  const def = defaultPeriod();
+  const start = parseISODate(teamGoal.periodStart || def.periodStart);
+  const end   = parseISODate(teamGoal.periodEnd   || def.periodEnd);
+  if(!(end >= start)) return { active:false, fraction:0 };
+  const now = new Date(); now.setHours(0,0,0,0);
+  if(now < start) return { active:false, fraction:0 }; // Monat noch nicht begonnen
+  const totalDays  = Math.round((end-start)/86400000) + 1;
+  const totalWeeks = Math.max(1, Math.ceil(totalDays/7));
+  let currentWeek;
+  if(now > end) currentWeek = totalWeeks; // Monat vorbei -> voller Plan erwartet
+  else currentWeek = Math.min(totalWeeks, Math.ceil((Math.round((now-start)/86400000)+1)/7));
+  return { active:true, fraction: currentWeek/totalWeeks };
+}
+
 function renderTimeline(){
   const def = defaultPeriod();
   const startStr = teamGoal.periodStart || def.periodStart;
@@ -1695,6 +1721,7 @@ function initGoalPanel(){
     saveGoal(); flashSaved();
     renderTimeline();
     renderRecruitPanel();
+    renderTable();
   });
   endInput.addEventListener('change', ()=>{
     if(!endInput.value) return;
@@ -1702,6 +1729,7 @@ function initGoalPanel(){
     saveGoal(); flashSaved();
     renderTimeline();
     renderRecruitPanel();
+    renderTable();
   });
 }
 
