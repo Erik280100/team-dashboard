@@ -361,6 +361,9 @@
     gap:16px;
     margin-bottom:24px;
   }
+  .overview-row-top{ align-items:start; }
+  .overview-row-top .goal-card{ margin-bottom:0; }
+  .goal-card-compact{ grid-template-columns:1fr; }
   .charts-stack{ display:flex; flex-direction:column; gap:16px; }
   @media (max-width:900px){ .overview-row{ grid-template-columns:1fr; } }
 
@@ -956,38 +959,36 @@
 
     <!-- OVERVIEW SECTION -->
     <section class="section active" id="section-overview">
-      <div class="goal-card">
-        <div>
-          <div class="goal-eyebrow">Team-Ziel</div>
-          <div class="goal-input-row">
-            <input type="number" id="teamGoalInput" class="goal-number" value="0">
-            <span class="goal-unit">Einheiten</span>
+      <div class="overview-row overview-row-top">
+        <div class="goal-card goal-card-compact">
+          <div>
+            <div class="goal-eyebrow">Team-Ziel</div>
+            <div class="goal-input-row">
+              <input type="number" id="teamGoalInput" class="goal-number" value="0">
+              <span class="goal-unit">Einheiten</span>
+            </div>
+            <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
+            <div class="period-row">
+              <div class="period-field">
+                <label for="periodStartInput">Umsatzmonat Start</label>
+                <input type="date" id="periodStartInput">
+              </div>
+              <div class="period-field">
+                <label for="periodEndInput">Umsatzmonat Ende</label>
+                <input type="date" id="periodEndInput">
+              </div>
+            </div>
           </div>
-          <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
-          <div class="period-row">
-            <div class="period-field">
-              <label for="periodStartInput">Umsatzmonat Start</label>
-              <input type="date" id="periodStartInput">
+          <div>
+            <div class="goal-progress-label">
+              <span><span id="goalIstLabel">0</span> von <span id="goalTargetLabel">0</span> Einheiten</span>
+              <span class="goal-pct" id="goalPct">0%</span>
             </div>
-            <div class="period-field">
-              <label for="periodEndInput">Umsatzmonat Ende</label>
-              <input type="date" id="periodEndInput">
-            </div>
+            <div class="goal-bar"><div class="fill" id="goalFill" style="width:0%"></div></div>
+            <div class="goal-remaining" id="goalRemaining"></div>
           </div>
         </div>
-        <div>
-          <div class="goal-progress-label">
-            <span><span id="goalIstLabel">0</span> von <span id="goalTargetLabel">0</span> Einheiten</span>
-            <span class="goal-pct" id="goalPct">0%</span>
-          </div>
-          <div class="goal-bar"><div class="fill" id="goalFill" style="width:0%"></div></div>
-          <div class="goal-remaining" id="goalRemaining"></div>
-        </div>
-      </div>
 
-      <div class="kpi-grid" id="summaryCards"></div>
-
-      <div class="overview-row">
         <div class="panel-dark timeline-panel">
           <h2>Zielverlauf & Prognose</h2>
           <p class="panel-sub wide">Wann erreichen wir das Team-Ziel bei aktuellem Tempo?</p>
@@ -999,18 +1000,20 @@
           </div>
           <div class="forecast-line" id="forecastLine"></div>
         </div>
+      </div>
 
-        <div class="charts-stack">
-          <div class="panel-dark">
-            <h2>Einheiten — Soll vs. Ist pro Mitarbeiter</h2>
-            <p class="panel-sub">Aktueller Stand je Mitarbeiter</p>
-            <canvas id="barChart" height="230"></canvas>
-          </div>
-          <div class="panel-dark">
-            <h2>Team-Fortschritt</h2>
-            <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
-            <canvas id="doughnutChart" height="230"></canvas>
-          </div>
+      <div class="kpi-grid" id="summaryCards"></div>
+
+      <div class="charts-grid wide-bar">
+        <div class="panel-dark">
+          <h2>Einheiten — Soll vs. Ist pro Mitarbeiter</h2>
+          <p class="panel-sub">Aktueller Stand je Mitarbeiter</p>
+          <canvas id="barChart" height="230"></canvas>
+        </div>
+        <div class="panel-dark">
+          <h2>Team-Fortschritt</h2>
+          <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
+          <canvas id="doughnutChart" height="230"></canvas>
         </div>
       </div>
 
