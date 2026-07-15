@@ -355,6 +355,15 @@
   .charts-grid.wide-bar{ grid-template-columns:1.7fr 1fr; }
   @media (max-width:760px){ .charts-grid{ grid-template-columns:1fr; } }
 
+  .overview-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    margin-bottom:24px;
+  }
+  .charts-stack{ display:flex; flex-direction:column; gap:16px; }
+  @media (max-width:900px){ .overview-row{ grid-template-columns:1fr; } }
+
   .recruit-card{
     background: linear-gradient(135deg, #16323F 0%, #0B1F2A 100%);
     margin-bottom:24px;
@@ -411,7 +420,6 @@
     color:#8FA1A6;
   }
   .panel-dark .panel-sub.wide{ margin-bottom:18px; }
-  .timeline-panel{ margin-top:16px; }
   .timeline-legend{
     display:flex;
     gap:18px;
@@ -977,30 +985,32 @@
         </div>
       </div>
 
-      <div class="panel-dark timeline-panel">
-        <h2>Zielverlauf & Prognose</h2>
-        <p class="panel-sub wide">Wann erreichen wir das Team-Ziel bei aktuellem Tempo?</p>
-        <canvas id="timelineChart" height="180"></canvas>
-        <div class="timeline-legend">
-          <span><span class="dot ist"></span> Ist-Verlauf</span>
-          <span><span class="dot path"></span> Ziel-Pfad (linear)</span>
-          <span><span class="dot forecast"></span> Prognose</span>
-        </div>
-        <div class="forecast-line" id="forecastLine"></div>
-      </div>
-
       <div class="kpi-grid" id="summaryCards"></div>
 
-      <div class="charts-grid wide-bar">
-        <div class="panel-dark">
-          <h2>Einheiten — Soll vs. Ist pro Mitarbeiter</h2>
-          <p class="panel-sub">Aktueller Stand je Mitarbeiter</p>
-          <canvas id="barChart" height="230"></canvas>
+      <div class="overview-row">
+        <div class="panel-dark timeline-panel">
+          <h2>Zielverlauf & Prognose</h2>
+          <p class="panel-sub wide">Wann erreichen wir das Team-Ziel bei aktuellem Tempo?</p>
+          <canvas id="timelineChart" height="180"></canvas>
+          <div class="timeline-legend">
+            <span><span class="dot ist"></span> Ist-Verlauf</span>
+            <span><span class="dot path"></span> Ziel-Pfad (linear)</span>
+            <span><span class="dot forecast"></span> Prognose</span>
+          </div>
+          <div class="forecast-line" id="forecastLine"></div>
         </div>
-        <div class="panel-dark">
-          <h2>Team-Fortschritt</h2>
-          <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
-          <canvas id="doughnutChart" height="230"></canvas>
+
+        <div class="charts-stack">
+          <div class="panel-dark">
+            <h2>Einheiten — Soll vs. Ist pro Mitarbeiter</h2>
+            <p class="panel-sub">Aktueller Stand je Mitarbeiter</p>
+            <canvas id="barChart" height="230"></canvas>
+          </div>
+          <div class="panel-dark">
+            <h2>Team-Fortschritt</h2>
+            <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
+            <canvas id="doughnutChart" height="230"></canvas>
+          </div>
         </div>
       </div>
 
