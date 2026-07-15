@@ -362,9 +362,30 @@
     margin-bottom:24px;
   }
   .overview-row-top{ align-items:start; }
+  .overview-row-top > *{ min-width:0; }
   .overview-row-top .goal-card{ margin-bottom:0; }
   .goal-card-compact{ grid-template-columns:1fr; }
-  .charts-stack{ display:flex; flex-direction:column; gap:16px; }
+  .charts-stack{ display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .revenue-share-list{
+    margin-top:12px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    max-height:150px;
+    overflow-y:auto;
+  }
+  .revenue-share-list .rsl-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11.5px;
+    color:#DCEAE6;
+  }
+  .revenue-share-list .rsl-dot{
+    width:8px; height:8px; border-radius:50%; flex:none;
+  }
+  .revenue-share-list .rsl-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .revenue-share-list .rsl-pct{ color:#8FA1A6; font-weight:700; flex:none; }
   @media (max-width:900px){ .overview-row{ grid-template-columns:1fr; } }
 
   .recruit-card{
@@ -1032,6 +1053,7 @@
               <h2>Umsatzanteil</h2>
               <p class="panel-sub">Anteil je Mitarbeiter am Gesamtumsatz</p>
               <canvas id="revenueShareChart" height="150"></canvas>
+              <div class="revenue-share-list" id="revenueShareList"></div>
             </div>
           </div>
         </div>
@@ -1776,6 +1798,16 @@ function renderCharts(){
       }
     }
   });
+
+  const listEl = document.getElementById('revenueShareList');
+  listEl.innerHTML = shareRows
+    .map((r,i)=>{
+      const val = Number(r.ist||0);
+      const pct = shareTotal>0 ? Math.round((val/shareTotal)*100) : 0;
+      const color = PIE_COLORS[i % PIE_COLORS.length];
+      return `<div class="rsl-row"><span class="rsl-dot" style="background:${color}"></span><span class="rsl-name">${r.name}</span><span class="rsl-pct">${pct}%</span></div>`;
+    })
+    .join('');
 }
 
 function parseISODate(str){
