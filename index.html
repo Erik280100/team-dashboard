@@ -179,7 +179,7 @@
     box-shadow:0 4px 14px rgba(63,203,142,.35);
   }
   .btn-ghost{
-    background:#fff;
+    background:var(--card);
     color:var(--navy);
     border:1px solid var(--border);
   }
@@ -529,14 +529,14 @@
     border-radius:10px;
     font-size:13px;
     font-family:inherit;
-    background:#fff;
+    background:var(--card);
   }
   .toolbar select{
     padding:10px 14px;
     border:1px solid var(--border);
     border-radius:10px;
     font-size:13px;
-    background:#fff;
+    background:var(--card);
     font-family:inherit;
   }
   .emp-list{ display:flex; flex-direction:column; gap:8px; max-height:600px; overflow-y:auto; padding-right:4px; }
@@ -545,7 +545,7 @@
     grid-template-columns: 1.9fr 0.65fr 1.7fr 1.7fr 0.7fr 0.7fr 1.15fr 40px;
     align-items:center;
     gap:8px;
-    background:#fff;
+    background:var(--card);
     border:1px solid var(--border);
     border-radius:12px;
     padding:10px 12px;
@@ -660,7 +660,7 @@
     color:var(--navy);
   }
   .emp-name-input:hover{ border-color:#c9d3d2; }
-  .emp-name-input:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); background:#fff; }
+  .emp-name-input:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); background:var(--card); }
   .status-badge{
     border:none;
     border-radius:20px;
@@ -686,7 +686,7 @@
     color:var(--navy);
   }
   .num-input:hover{ border-color:#c9d3d2; }
-  .num-input:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); background:#fff; }
+  .num-input:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); background:var(--card); }
   .num-input.wide{ font-weight:800; }
   .prog-cell{ display:flex; align-items:center; gap:8px; }
   .prog-bar{ flex:1; height:7px; background:#EDF1F1; border-radius:5px; overflow:hidden; }
@@ -889,7 +889,7 @@
   }
   .career-tab{
     border:1px solid var(--border);
-    background:#fff;
+    background:var(--card);
     color:var(--grey);
     font-family:inherit;
     font-size:13px;
@@ -973,7 +973,7 @@
     border-radius:10px;
     font-size:13px;
     font-family:inherit;
-    background:#fff;
+    background:var(--card);
   }
   .career-lock-form input[type=password]:focus{ outline:none; border-color:var(--mint2); box-shadow:0 0 0 3px rgba(63,203,142,.15); }
   .career-lock-error{ margin-top:10px; font-size:12.5px; color:var(--red); font-weight:600; }
@@ -987,7 +987,7 @@
   }
   .guide-tab{
     border:1px solid var(--border);
-    background:#fff;
+    background:var(--card);
     color:var(--grey);
     font-family:inherit;
     font-size:13px;
@@ -1078,7 +1078,7 @@
     align-items:center;
     justify-content:center;
     gap:10px;
-    background:#fff;
+    background:var(--card);
     border:1px solid var(--border);
     border-radius:14px;
     padding:22px 10px;
@@ -1103,30 +1103,100 @@
   }
   .partner-icon img{ width:24px; height:24px; object-fit:contain; }
   .partner-name{ font-size:12.5px; font-weight:700; line-height:1.3; }
+
+  /* SKIP LINK */
+  .skip-link{
+    position:absolute;
+    left:8px; top:-60px;
+    background:var(--mint2);
+    color:var(--navy);
+    padding:10px 16px;
+    border-radius:8px;
+    font-weight:700;
+    font-size:13px;
+    text-decoration:none;
+    z-index:1000;
+    transition:top .15s ease;
+  }
+  .skip-link:focus{ top:8px; }
+
+  /* VISIBLE FOCUS */
+  .nav-item:focus-visible,
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  .status-badge:focus-visible,
+  .del-btn:focus-visible,
+  .partner-tile:focus-visible{
+    outline:3px solid var(--mint2);
+    outline-offset:2px;
+  }
+  .section:focus-visible{ outline:none; }
+
+  /* CONFIRM DIALOG */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(11,31,42,.55);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2000;
+    padding:16px;
+  }
+  .modal-box{
+    background:var(--card);
+    color:var(--navy);
+    border-radius:16px;
+    padding:24px;
+    max-width:380px;
+    width:100%;
+    box-shadow:0 20px 50px -15px rgba(0,0,0,.4);
+  }
+  .modal-message{ font-size:14.5px; line-height:1.5; margin:0 0 20px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; }
+
+  /* LOADING / EMPTY STATES */
+  .loading-state, .empty-state{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px;
+    padding:40px 20px;
+    color:var(--grey-light);
+    font-size:13.5px;
+    text-align:center;
+  }
+  .loading-spinner{
+    width:28px; height:28px;
+    border-radius:50%;
+    border:3px solid var(--border);
+    border-top-color:var(--mint2);
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
 </style>
 </head>
 <body>
 
+<a class="skip-link" href="#mainContent">Zum Inhalt springen</a>
+
 <div class="app">
-  <div class="sidebar">
+  <nav class="sidebar" aria-label="Hauptnavigation">
     <div class="brand"><span class="fi">fi</span><span>nova</span></div>
     <div class="brand-sub">Direktion KKB · Team Dashboard</div>
 
-    <button class="nav-item active" data-section="overview"><span class="ico">◈</span> Übersicht</button>
-    <button class="nav-item" data-section="team"><span class="ico">◎</span> Mitarbeiter</button>
-    <button class="nav-item" data-section="eh-rechner"><span class="ico">∑</span> EH-Rechner</button>
-    <button class="nav-item" data-section="karriere"><span class="ico">↗</span> Karrierepläne</button>
-    <button class="nav-item" data-section="guide"><span class="ico">▤</span> Guide</button>
-    <button class="nav-item" data-section="kalender"><span class="ico">▦</span> Kalender</button>
-    <button class="nav-item" data-section="partner"><span class="ico">🔗</span> Partnerportale</button>
+    <button class="nav-item active" data-section="overview" aria-current="page"><span class="ico" aria-hidden="true">◈</span> Übersicht</button>
+    <button class="nav-item" data-section="team"><span class="ico" aria-hidden="true">◎</span> Mitarbeiter</button>
+    <button class="nav-item" data-section="eh-rechner"><span class="ico" aria-hidden="true">∑</span> EH-Rechner</button>
+    <button class="nav-item" data-section="karriere"><span class="ico" aria-hidden="true">↗</span> Karrierepläne</button>
+    <button class="nav-item" data-section="guide"><span class="ico" aria-hidden="true">▤</span> Guide</button>
+    <button class="nav-item" data-section="kalender"><span class="ico" aria-hidden="true">▦</span> Kalender</button>
+    <button class="nav-item" data-section="partner"><span class="ico" aria-hidden="true">🔗</span> Partnerportale</button>
 
     <div class="sidebar-footer">
       <strong>Grenzgasse 1</strong>
       8055 Seiersberg, Austria
     </div>
-  </div>
+  </nav>
 
-  <main>
+  <main id="mainContent" tabindex="-1">
     <div class="topbar">
       <div>
         <h1>Team Dashboard</h1>
@@ -1136,17 +1206,17 @@
         <div class="auth-box" id="authBox">
           <button class="btn btn-ghost btn-small" id="adminToggleBtn">Admin</button>
           <form id="loginForm" class="login-form" style="display:none;">
-            <input type="email" id="loginEmail" placeholder="E-Mail" autocomplete="username" required>
-            <input type="password" id="loginPassword" placeholder="Passwort" autocomplete="current-password" required>
+            <input type="email" id="loginEmail" placeholder="E-Mail" aria-label="E-Mail" autocomplete="username" required>
+            <input type="password" id="loginPassword" placeholder="Passwort" aria-label="Passwort" autocomplete="current-password" required>
             <button type="submit" class="btn btn-small btn-primary">Anmelden</button>
-            <button type="button" class="btn btn-small btn-ghost" id="loginCancelBtn">×</button>
+            <button type="button" class="btn btn-small btn-ghost" id="loginCancelBtn" aria-label="Anmeldung abbrechen">×</button>
           </form>
           <div class="auth-status" id="authStatus" style="display:none;">
             <span id="authUserLabel"></span>
             <button class="btn btn-small btn-ghost" id="logoutBtn">Abmelden</button>
           </div>
         </div>
-        <span id="saveStatus"></span>
+        <span id="saveStatus" role="status" aria-live="polite"></span>
         <button class="btn btn-ghost" id="exportBtn">Export</button>
         <label class="btn btn-ghost editor-only" style="cursor:pointer;">
           Import
@@ -1159,7 +1229,7 @@
     <div class="banner readonly-banner" id="readonlyBanner">Nur Lesezugriff — melde dich an, um Zahlen zu ändern.</div>
 
     <!-- OVERVIEW SECTION -->
-    <section class="section active" id="section-overview">
+    <section class="section active" id="section-overview" aria-label="Übersicht" tabindex="-1">
       <div class="overview-row overview-row-top">
         <div class="overview-left-col">
           <div class="goal-card goal-card-compact">
@@ -1169,7 +1239,7 @@
                 <div class="goal-number" id="teamGoalDisplay">0</div>
                 <span class="goal-unit">Einheiten<br><span style="opacity:.75;font-size:11.5px;">Summe Soll (Mitarbeiter)</span></span>
               </div>
-              <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…">
+              <input type="text" id="teamGoalNote" class="goal-note" placeholder="Kurzer Fokus/Motto für den Monat (optional)…" aria-label="Fokus/Motto für den Monat">
               <div class="period-row">
                 <div class="period-field">
                   <label for="periodStartInput">Umsatzmonat Start</label>
@@ -1197,7 +1267,7 @@
         <div class="panel-dark timeline-panel">
           <h2>Zielverlauf & Prognose</h2>
           <p class="panel-sub wide">Wann erreichen wir das Team-Ziel bei aktuellem Tempo?</p>
-          <canvas id="timelineChart" height="180"></canvas>
+          <canvas id="timelineChart" height="180" role="img" aria-label="Zielverlauf und Prognose"></canvas>
           <div class="timeline-legend">
             <span><span class="dot ist"></span> Ist-Verlauf</span>
             <span><span class="dot path"></span> Ziel-Pfad (linear)</span>
@@ -1211,12 +1281,12 @@
         <div class="panel-dark panel-compact">
           <h2>Team-Fortschritt</h2>
           <p class="panel-sub">Ist / Team-Ziel, Einheiten</p>
-          <canvas id="doughnutChart" height="150"></canvas>
+          <canvas id="doughnutChart" height="150" role="img" aria-label="Team-Fortschritt"></canvas>
         </div>
         <div class="panel-dark panel-compact">
           <h2>Umsatzanteil</h2>
           <p class="panel-sub">Anteil je Mitarbeiter am Gesamtumsatz</p>
-          <canvas id="revenueShareChart" height="150"></canvas>
+          <canvas id="revenueShareChart" height="150" role="img" aria-label="Umsatzanteil je Mitarbeiter"></canvas>
           <div class="revenue-share-list" id="revenueShareList"></div>
         </div>
         <div class="panel-dark panel-compact leaderboard-panel">
@@ -1232,7 +1302,7 @@
         <div class="panel-dark">
           <h2>Einheiten — Soll vs. Ist pro Mitarbeiter</h2>
           <p class="panel-sub">Aktueller Stand je Mitarbeiter</p>
-          <canvas id="barChart" height="230"></canvas>
+          <canvas id="barChart" height="230" role="img" aria-label="Einheiten Soll vs. Ist pro Mitarbeiter"></canvas>
         </div>
       </div>
 
@@ -1257,20 +1327,20 @@
     </section>
 
     <!-- TEAM SECTION -->
-    <section class="section" id="section-team">
+    <section class="section" id="section-team" aria-label="Mitarbeiter" tabindex="-1" hidden>
       <div class="panel">
         <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
           <span>Mitarbeiter-Übersicht</span>
           <span id="empCountBadge" style="font-size:12px;font-weight:600;color:#8FA1A6;background:#EEF1F1;padding:4px 10px;border-radius:999px;">0 Mitarbeiter</span>
         </h2>
         <div class="toolbar">
-          <input type="text" id="searchInput" placeholder="Name suchen…">
-          <select id="filterSelect">
+          <input type="text" id="searchInput" placeholder="Name suchen…" aria-label="Mitarbeiter nach Name suchen">
+          <select id="filterSelect" aria-label="Mitarbeiter filtern">
             <option value="all">Alle Mitarbeiter</option>
             <option value="new">Nur neue MA</option>
             <option value="existing">Nur bestehendes Team</option>
           </select>
-          <select id="sortSelect">
+          <select id="sortSelect" aria-label="Mitarbeiter sortieren">
             <option value="name">Sortieren: Name (A–Z)</option>
             <option value="progress-desc">Fortschritt (hoch → niedrig)</option>
             <option value="progress-asc">Fortschritt (niedrig → hoch)</option>
@@ -1278,19 +1348,21 @@
           </select>
         </div>
 
-        <div class="col-headers">
-          <span>Name</span><span>Status</span>
-          <div class="field-group-head" data-group="plan">
+        <div role="table" aria-label="Mitarbeiter-Übersicht">
+        <div class="col-headers" role="row">
+          <span role="columnheader">Name</span><span role="columnheader">Status</span>
+          <div class="field-group-head" data-group="plan" role="columnheader">
             <div class="field-group-title">Plan</div>
             <div class="field-group-cols"><span>AT</span><span>BT</span><span>ET</span></div>
           </div>
-          <div class="field-group-head" data-group="ist">
+          <div class="field-group-head" data-group="ist" role="columnheader">
             <div class="field-group-title">Ist</div>
             <div class="field-group-cols"><span>AT</span><span>BT</span><span>ET</span></div>
           </div>
-          <span>Soll</span><span>Ist</span><span>Fortschritt</span><span></span>
+          <span role="columnheader">Soll</span><span role="columnheader">Ist</span><span role="columnheader">Fortschritt</span><span role="columnheader"></span>
         </div>
-        <div class="emp-list" id="tableBody"></div>
+        <div class="emp-list" id="tableBody" role="rowgroup"></div>
+        </div>
         <div class="emp-totals-row" id="empTotalsRow"></div>
 
         <div class="add-row">
@@ -1301,7 +1373,7 @@
     </section>
 
     <!-- EH-RECHNER SECTION -->
-    <section class="section" id="section-eh-rechner">
+    <section class="section" id="section-eh-rechner" aria-label="EH-Rechner" tabindex="-1" hidden>
       <div class="banner eh-info">
         <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet und zur Zwischensumme addiert. Grün hinterlegte Felder sind editierbar. Eingaben werden nicht gespeichert.
       </div>
@@ -1322,28 +1394,28 @@
     </section>
 
     <!-- KARRIEREPLÄNE SECTION -->
-    <section class="section" id="section-karriere">
+    <section class="section" id="section-karriere" aria-label="Karrierepläne" tabindex="-1" hidden>
       <div class="panel career-lock" id="careerLock">
         <h2>Karrierepläne</h2>
         <p class="career-sub">Dieser Bereich ist passwortgeschützt.</p>
         <form id="careerLockForm" class="career-lock-form">
-          <input type="password" id="careerPasswordInput" placeholder="Passwort" autocomplete="off">
+          <input type="password" id="careerPasswordInput" placeholder="Passwort" aria-label="Passwort für Karrierepläne" autocomplete="off">
           <button type="submit" class="btn btn-primary btn-small">Freischalten</button>
         </form>
-        <div class="career-lock-error" id="careerLockError" style="display:none;">Falsches Passwort.</div>
+        <div class="career-lock-error" id="careerLockError" role="alert" style="display:none;">Falsches Passwort.</div>
       </div>
       <div class="career-tabs" id="careerTabs" style="display:none;"></div>
       <div id="careerContent"></div>
     </section>
 
     <!-- GUIDE SECTION -->
-    <section class="section" id="section-guide">
+    <section class="section" id="section-guide" aria-label="Guide" tabindex="-1" hidden>
       <div class="guide-tabs" id="guideTabs"></div>
       <div id="guideContent"></div>
     </section>
 
     <!-- KALENDER SECTION -->
-    <section class="section" id="section-kalender">
+    <section class="section" id="section-kalender" aria-label="Kalender" tabindex="-1" hidden>
       <div class="panel">
         <h2>Fixtermine — Wochenkalender</h2>
         <div class="cal-week">
@@ -1418,7 +1490,7 @@
 
     <!-- PARTNERPORTALE SECTION -->
     <!-- Kacheln werden aus PARTNER_PORTALS (siehe Script unten) gerendert -->
-    <section class="section" id="section-partner">
+    <section class="section" id="section-partner" aria-label="Partnerportale" tabindex="-1" hidden>
       <div class="panel">
         <h2>Partnerportale</h2>
         <div class="partner-grid" id="partnerGrid"></div>
@@ -1801,8 +1873,9 @@ function getFilteredSorted(){
   return list;
 }
 
-function fieldInput(idx, field, value, wide){
-  return `<input type="number" class="num-input ${wide?'wide':''}" data-idx="${idx}" data-field="${field}" value="${value}">`;
+function fieldInput(idx, field, value, wide, label){
+  const aria = label ? ` aria-label="${label.replace(/"/g,'&quot;')}"` : '';
+  return `<input type="number" class="num-input ${wide?'wide':''}" data-idx="${idx}" data-field="${field}" value="${value}"${aria}>`;
 }
 
 function renderTable(){
@@ -1812,6 +1885,22 @@ function renderTable(){
     ? `${rows.length} Mitarbeiter`
     : `${list.length} von ${rows.length} Mitarbeitern`;
   const wp = monthWeekProgress();
+  if(list.length === 0){
+    if(rows.length === 0 && CLOUD_CONFIGURED && !cloudReady){
+      document.getElementById('tableBody').innerHTML = `
+        <div class="loading-state">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <span>Lade Mitarbeiterdaten…</span>
+        </div>
+      `;
+    } else {
+      document.getElementById('tableBody').innerHTML = `
+        <div class="empty-state">
+          <span>${rows.length === 0 ? 'Noch keine Mitarbeiter angelegt.' : 'Keine Mitarbeiter entsprechen der Suche/Filterung.'}</span>
+        </div>
+      `;
+    }
+  } else {
   document.getElementById('tableBody').innerHTML = list.map(r=>{
     const i = r._idx;
     const pct = pctOf(r);
@@ -1822,32 +1911,33 @@ function renderTable(){
       rowClass = Number(r.atIst||0) >= schwelle ? 'at-above' : 'at-below';
     }
     return `
-    <div class="emp-row ${rowClass}">
-      <div class="emp-name-wrap">
-        <div class="avatar">${initials(r.name)}</div>
-        <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}">
+    <div class="emp-row ${rowClass}" role="row">
+      <div class="emp-name-wrap" role="cell">
+        <div class="avatar" aria-hidden="true">${initials(r.name)}</div>
+        <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}" aria-label="Name">
       </div>
-      <div data-label="Status"><button class="status-badge ${r.isNew?'':'off'}" data-idx="${i}" data-action="toggle-new">${r.isNew?'NEU':'Bestand'}</button></div>
-      <div class="field-group" data-group="plan">
-        <div data-label="Plan AT">${fieldInput(i,'atPlan',r.atPlan)}</div>
-        <div data-label="Plan BT">${fieldInput(i,'btPlan',r.btPlan)}</div>
-        <div data-label="Plan ET">${fieldInput(i,'etPlan',r.etPlan)}</div>
+      <div data-label="Status" role="cell"><button class="status-badge ${r.isNew?'':'off'}" data-idx="${i}" data-action="toggle-new" aria-pressed="${r.isNew?'true':'false'}" aria-label="Status ${r.name}: ${r.isNew?'Neu':'Bestand'}, umschalten">${r.isNew?'NEU':'Bestand'}</button></div>
+      <div class="field-group" data-group="plan" role="cell">
+        <div data-label="Plan AT">${fieldInput(i,'atPlan',r.atPlan,false,`Plan AT – ${r.name}`)}</div>
+        <div data-label="Plan BT">${fieldInput(i,'btPlan',r.btPlan,false,`Plan BT – ${r.name}`)}</div>
+        <div data-label="Plan ET">${fieldInput(i,'etPlan',r.etPlan,false,`Plan ET – ${r.name}`)}</div>
       </div>
-      <div class="field-group" data-group="ist">
-        <div data-label="Ist AT">${fieldInput(i,'atIst',r.atIst)}</div>
-        <div data-label="Ist BT">${fieldInput(i,'btIst',r.btIst)}</div>
-        <div data-label="Ist ET">${fieldInput(i,'etIst',r.etIst)}</div>
+      <div class="field-group" data-group="ist" role="cell">
+        <div data-label="Ist AT">${fieldInput(i,'atIst',r.atIst,false,`Ist AT – ${r.name}`)}</div>
+        <div data-label="Ist BT">${fieldInput(i,'btIst',r.btIst,false,`Ist BT – ${r.name}`)}</div>
+        <div data-label="Ist ET">${fieldInput(i,'etIst',r.etIst,false,`Ist ET – ${r.name}`)}</div>
       </div>
-      <div data-label="Soll">${fieldInput(i,'soll',r.soll,true)}</div>
-      <div data-label="Ist">${fieldInput(i,'ist',r.ist,true)}</div>
-      <div class="prog-cell" data-label="Fortschritt">
+      <div data-label="Soll" role="cell">${fieldInput(i,'soll',r.soll,true,`Soll – ${r.name}`)}</div>
+      <div data-label="Ist" role="cell">${fieldInput(i,'ist',r.ist,true,`Ist – ${r.name}`)}</div>
+      <div class="prog-cell" data-label="Fortschritt" role="cell">
         <div class="prog-bar"><div class="prog-fill ${progressClass(pct)}" style="width:${Math.min(pct,100)}%"></div></div>
         <div class="prog-pct">${pct}%</div>
       </div>
-      <div><button class="del-btn editor-only" data-idx="${i}" data-action="delete" title="Entfernen">✕</button></div>
+      <div role="cell"><button class="del-btn editor-only" data-idx="${i}" data-action="delete" title="Entfernen" aria-label="${r.name} entfernen">✕</button></div>
     </div>
   `;
   }).join('');
+  }
 
   const sum = field => list.reduce((s,r)=>s+Number(r[field]||0),0);
   const totalsRow = document.getElementById('empTotalsRow');
@@ -1887,9 +1977,10 @@ function renderTable(){
     });
   });
   document.querySelectorAll('#tableBody button[data-action="delete"]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+    btn.addEventListener('click', async ()=>{
       const idx = Number(btn.dataset.idx);
-      if(confirm('„' + rows[idx].name + '" wirklich entfernen?')){
+      const ok = await confirmDialog('„' + rows[idx].name + '" wirklich entfernen?');
+      if(ok){
         rows.splice(idx,1);
         saveData(); flashSaved();
         renderAll();
@@ -2002,6 +2093,8 @@ function renderCharts(){
       }
     }
   });
+  document.getElementById('barChart').setAttribute('aria-label',
+    'Einheiten Soll vs. Ist pro Mitarbeiter: ' + sorted.map(r=>`${r.name} Ist ${fmt(r.ist)} von Soll ${fmt(r.soll)}`).join(', '));
 
   const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
   const target = teamTarget();
@@ -2032,6 +2125,8 @@ function renderCharts(){
       }
     }
   });
+  document.getElementById('doughnutChart').setAttribute('aria-label',
+    hasData ? `Team-Fortschritt: ${fmt(totalIst)} von ${fmt(target)} Einheiten, ${pct} Prozent erreicht.` : 'Team-Fortschritt: kein Ziel gesetzt.');
 
   const contributors = rows.filter(r=>Number(r.ist||0)>0);
   const shareRows = (contributors.length ? contributors : [...rows]).sort((a,b)=>Number(b.ist||0)-Number(a.ist||0));
@@ -2066,6 +2161,12 @@ function renderCharts(){
       }
     }
   });
+  document.getElementById('revenueShareChart').setAttribute('aria-label',
+    'Umsatzanteil je Mitarbeiter: ' + shareRows.map((r,i)=>{
+      const val = Number(r.ist||0);
+      const p = shareTotal>0 ? Math.round((val/shareTotal)*100) : 0;
+      return `${r.name} ${p} Prozent`;
+    }).join(', '));
 
   const listEl = document.getElementById('revenueShareList');
   listEl.innerHTML = shareRows
@@ -2133,6 +2234,7 @@ function renderTimeline(){
     document.getElementById('timelineChart').getContext('2d');
     if(timelineChart){ timelineChart.destroy(); timelineChart=null; }
     forecastLineEl.innerHTML = 'Ende des Zeitraums muss nach dem Start liegen — bitte Datum oben prüfen.';
+    document.getElementById('timelineChart').setAttribute('aria-label', 'Zielverlauf und Prognose: ungültiger Zeitraum.');
     return;
   }
 
@@ -2222,6 +2324,8 @@ function renderTimeline(){
       }
     }
   });
+  document.getElementById('timelineChart').setAttribute('aria-label',
+    'Zielverlauf und Prognose. ' + forecastText.replace(/<[^>]+>/g,''));
 }
 
 function renderGoalProgress(){
@@ -2367,17 +2471,22 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
   const file = e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = (evt)=>{
+  reader.onload = async (evt)=>{
     try{
       const parsed = JSON.parse(evt.target.result);
+      let newRows, newGoal = null;
       if(Array.isArray(parsed)){
-        rows = parsed;
+        newRows = parsed;
       } else if(parsed && Array.isArray(parsed.rows)){
-        rows = parsed.rows;
-        if(parsed.teamGoal) teamGoal = { ...STARTER_GOAL, ...teamGoal, ...parsed.teamGoal };
+        newRows = parsed.rows;
+        if(parsed.teamGoal) newGoal = parsed.teamGoal;
       } else {
         throw new Error('Ungültiges Format');
       }
+      const ok = await confirmDialog('Import überschreibt die aktuellen ' + rows.length + ' Mitarbeiter-Datensätze mit ' + newRows.length + ' importierten Datensätzen. Fortfahren?');
+      if(!ok){ e.target.value = ''; return; }
+      rows = newRows;
+      if(newGoal) teamGoal = { ...STARTER_GOAL, ...teamGoal, ...newGoal };
       saveData(); saveGoal();
       populateGoalPanel();
       populateRecruitGoalInput();
@@ -2536,7 +2645,9 @@ function initEHRechner(){
     if(e.target.matches('.eh-g, .eh-j, .eh-mult')) e.target.select();
   });
 
-  document.getElementById('ehResetBtn').addEventListener('click', ()=>{
+  document.getElementById('ehResetBtn').addEventListener('click', async ()=>{
+    const ok = await confirmDialog('Alle Eingaben im EH-Rechner wirklich zurücksetzen?');
+    if(!ok) return;
     EH_ITEMS.forEach(it=>{
       if(it.hasG){
         const gEl = document.querySelector(`.eh-g[data-id="${it.id}"]`);
@@ -2735,12 +2846,57 @@ function initGuide(){
 
 document.querySelectorAll('.nav-item').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b=>{ b.classList.remove('active'); b.removeAttribute('aria-current'); });
+    document.querySelectorAll('.section').forEach(s=>{ s.classList.remove('active'); s.setAttribute('hidden',''); });
     btn.classList.add('active');
-    document.getElementById('section-'+btn.dataset.section).classList.add('active');
+    btn.setAttribute('aria-current','page');
+    const target = document.getElementById('section-'+btn.dataset.section);
+    target.classList.add('active');
+    target.removeAttribute('hidden');
+    target.focus();
   });
 });
+
+function confirmDialog(message){
+  return new Promise(resolve=>{
+    const previouslyFocused = document.activeElement;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box" role="dialog" aria-modal="true" aria-label="Bestätigung erforderlich">
+        <p class="modal-message">${message}</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost btn-small" data-action="cancel">Abbrechen</button>
+          <button type="button" class="btn btn-primary btn-small" data-action="confirm">Bestätigen</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const focusable = overlay.querySelectorAll('button');
+    const cancelBtn = overlay.querySelector('[data-action="cancel"]');
+    const confirmBtn = overlay.querySelector('[data-action="confirm"]');
+
+    function close(result){
+      document.removeEventListener('keydown', onKeydown);
+      overlay.remove();
+      if(previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
+      resolve(result);
+    }
+    function onKeydown(e){
+      if(e.key === 'Escape'){ close(false); }
+      else if(e.key === 'Tab'){
+        const first = focusable[0], last = focusable[focusable.length-1];
+        if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+      }
+    }
+    cancelBtn.addEventListener('click', ()=>close(false));
+    confirmBtn.addEventListener('click', ()=>close(true));
+    overlay.addEventListener('click', e=>{ if(e.target === overlay) close(false); });
+    document.addEventListener('keydown', onKeydown);
+    confirmBtn.focus();
+  });
+}
 
 initGoalPanel();
 initRecruitPanel();
