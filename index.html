@@ -890,6 +890,54 @@
   }
   .um-input-row:last-child{ margin-bottom:0; }
   .um-input-row .eh-field input{ background:#EFFBF5; }
+  .um-storno-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding-top:10px;
+    border-top:1px solid var(--border);
+  }
+  .um-storno-switch{
+    position:relative;
+    display:inline-block;
+    width:42px;
+    height:24px;
+    flex:0 0 auto;
+    cursor:pointer;
+  }
+  .um-storno-switch input{ opacity:0; width:0; height:0; }
+  .um-storno-slider{
+    position:absolute;
+    inset:0;
+    background:var(--border);
+    border-radius:999px;
+    transition:background .15s ease;
+  }
+  .um-storno-slider::before{
+    content:"";
+    position:absolute;
+    left:3px;
+    top:3px;
+    width:18px;
+    height:18px;
+    background:#fff;
+    border-radius:50%;
+    transition:transform .15s ease;
+    box-shadow:0 1px 3px rgba(0,0,0,.25);
+  }
+  .um-storno-switch input:checked + .um-storno-slider{ background:var(--teal); }
+  .um-storno-switch input:checked + .um-storno-slider::before{ transform:translateX(18px); }
+  .um-storno-label{ font-size:13px; color:var(--grey); cursor:pointer; }
+  .um-storno-note{
+    background:#FFF4E5;
+    border:1px solid #F0C36D;
+    color:#8a5a00;
+    font-size:12.5px;
+    font-weight:600;
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:16px;
+  }
   .um-results{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -1487,7 +1535,16 @@
             <input type="number" class="um-in" id="umFkNeu" value="0" step="0.1" min="0">
           </div>
         </div>
+        <div class="um-storno-row">
+          <label class="um-storno-switch">
+            <input type="checkbox" id="umStornoSwitch">
+            <span class="um-storno-slider"></span>
+          </label>
+          <label for="umStornoSwitch" class="um-storno-label">Stornoreserve berücksichtigen (15% werden von allen verdienten Summen abgezogen und nicht ausgezahlt)</label>
+        </div>
       </div>
+
+      <div class="um-storno-note" id="umStornoNote" hidden>Hinweis: Die Stornoreserve (15%) wurde berücksichtigt — alle angezeigten Beträge sind bereits um die einbehaltene Stornoreserve reduziert.</div>
 
       <div class="um-results">
         <div class="panel um-result-panel">
@@ -2812,15 +2869,17 @@ function initUmdrehRechner(){
     const beraterNeu = parseFloat(document.getElementById('umBeraterNeu').value) || 0;
     const fkAlt = parseFloat(document.getElementById('umFkAlt').value) || 0;
     const fkNeu = parseFloat(document.getElementById('umFkNeu').value) || 0;
+    const stornoActive = document.getElementById('umStornoSwitch').checked;
+    const stornoFactor = stornoActive ? 0.85 : 1;
 
-    const beraterMinus = UM_EH_ALT * praemie * beraterAlt;
-    const beraterAktuell = UM_EH_NEU * praemie * beraterNeu;
+    const beraterMinus = UM_EH_ALT * praemie * beraterAlt * stornoFactor;
+    const beraterAktuell = UM_EH_NEU * praemie * beraterNeu * stornoFactor;
     const beraterDiff = beraterAktuell - beraterMinus;
 
-    const fkMinus = UM_EH_ALT * praemie * (fkAlt - beraterAlt);
+    const fkMinus = UM_EH_ALT * praemie * (fkAlt - beraterAlt) * stornoFactor;
     let fkNeuProEH = fkNeu - beraterNeu;
     if(fkNeuProEH === 0 && beraterNeu >= 4 && fkNeu >= 4) fkNeuProEH = 0.5;
-    const fkAktuell = UM_EH_NEU * praemie * fkNeuProEH;
+    const fkAktuell = UM_EH_NEU * praemie * fkNeuProEH * stornoFactor;
     const fkDiff = fkAktuell - fkMinus;
 
     const gesamtMinus = beraterMinus + fkMinus;
@@ -2839,6 +2898,8 @@ function initUmdrehRechner(){
     document.getElementById('umGesamtAktuell').textContent = ehFormatEUR(gesamtAktuell);
     document.getElementById('umGesamtDiff').textContent = ehFormatEUR(gesamtDiff);
     document.getElementById('umGesamtDiffWrap').classList.toggle('is-neg', gesamtDiff < 0);
+
+    document.getElementById('umStornoNote').hidden = !stornoActive;
   }
 
   section.addEventListener('input', recalc);
@@ -2854,6 +2915,7 @@ function initUmdrehRechner(){
     document.getElementById('umBeraterNeu').value = 0;
     document.getElementById('umFkAlt').value = 0;
     document.getElementById('umFkNeu').value = 0;
+    document.getElementById('umStornoSwitch').checked = false;
     recalc();
   });
 
