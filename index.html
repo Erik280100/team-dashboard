@@ -2820,7 +2820,9 @@ function initUmdrehRechner(){
     const beraterDiff = beraterAktuell - beraterMinus;
 
     const fkMinus = UM_EH_ALT * praemie * (fkAlt - beraterAlt);
-    const fkAktuell = UM_EH_NEU * praemie * (fkNeu - beraterNeu);
+    let fkNeuProEH = fkNeu - beraterNeu;
+    if(fkNeuProEH === 0 && beraterNeu >= 4 && fkNeu >= 4) fkNeuProEH = 0.5;
+    const fkAktuell = UM_EH_NEU * praemie * fkNeuProEH;
     const fkDiff = fkAktuell - fkMinus;
 
     const gesamtMinus = beraterMinus + fkMinus;
