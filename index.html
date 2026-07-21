@@ -2523,13 +2523,13 @@ const EH_ITEMS = [
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> ((j*2.14)/35)*Math.min(g,35) },
   { id:'ableben', label:'Ableben', sparte:'insurance', payout:'einmalig',
-    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30, gMax:35,
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:40, gMax:40,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2.14)/30)*Math.min(g,35) },
+    calc:(g,j)=> ((j*2.14)/30)*Math.min(g,40) },
   { id:'bu', label:'BU', sparte:'insurance', payout:'einmalig',
-    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:30, gMax:35,
+    hasG:true, gLabel:'Laufzeit', gUnit:'Jahre', gDefault:15, gMax:40,
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> ((j*2.14)/30)*Math.min(g,35) },
+    calc:(g,j)=> (j*12*Math.min(g,40)/1000*48)/10.5 },
   { id:'uv', label:'UV', sparte:'insurance', payout:'einmalig',
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j*0.9 },
@@ -2545,9 +2545,13 @@ const EH_ITEMS = [
   { id:'rechtschutz', label:'Rechtschutz', sparte:'insurance', payout:'einmalig',
     jLabel:'Mtl. Prämie (€)',
     calc:(g,j)=> j*0.9 },
-  { id:'depot', label:'Depot', sparte:'investment', payout:'monatlich',
+  { id:'froots-vv-mtl', label:'froots VV (monatlich)', sparte:'investment', payout:'monatlich',
     jLabel:'Mtl. Prämie (€)',
-    calc:(g,j)=> j*120*0.8*0.05/10.5 },
+    calc:(g,j)=> j*3/10.5*0.9 },
+  { id:'froots-vv-einmalig', label:'froots VV (einmalig)', sparte:'investment', payout:'einmalig',
+    hasG:true, gLabel:'Provision', gUnit:'Prozent', gDefault:5,
+    jLabel:'Anlagebetrag gesamt (€)',
+    calc:(g,j)=> (j*(g/100)*0.9)/10.5 },
   { id:'kredit', label:'Kredit', sparte:'credit', payout:'einmalig',
     hasG:true, gLabel:'Provision', gUnit:'Prozent', gDefault:3,
     jLabel:'Kredithöhe gesamt (€)',
@@ -2813,6 +2817,63 @@ function initPartnerPortals(){
 }
 
 const GUIDE_SECTIONS = [
+  { id: 'analyse', title: 'Analyse', html: '' },
+  { id: 'credit', title: 'Finova Credit', html: `
+    <h2>Nach dem AT – Nächste Schritte</h2>
+    <p>FCCM anlegen, danach 2x telefonieren und dem Kunden schicken.</p>
+
+    <h3>Offene Klärungspunkte</h3>
+    <ul>
+      <li>Checkliste übergeben</li>
+      <li>Gibt es einen Makler?</li>
+      <li>Gibt es einen Notar?</li>
+      <li>Ist der Kunde bereit, das Girokonto zu wechseln?</li>
+    </ul>
+
+    <h3>Finanzierungsgespräch</h3>
+    <p>Sobald der Kunde alle Daten aufbereitet hat – macht Georg.</p>
+
+    <h3>Unterlagen (digital, je Dokument als separates PDF)</h3>
+    <ul>
+      <li>Ausweiskopie</li>
+      <li>Meldezettel / Aufenthaltstitel</li>
+      <li>Fotos vom Objekt – außen</li>
+      <li>Fotos vom Objekt – innen</li>
+      <li>Baupläne</li>
+      <li>Exposé</li>
+      <li>Kaufanbot / Kaufvertrag</li>
+    </ul>
+
+    <h3>Download</h3>
+    <p><a class="btn btn-primary btn-small" href="docs/Finanzierungscheckliste_finovacredit.pdf" download>Finanzierungscheckliste herunterladen</a></p>
+  ` },
+  { id: 'realestate', title: 'Finova Real Estate', html: '' },
+  { id: 'anlegerwohnungen', title: 'Anlegerwohnung', html: `
+    <h2>Anlegerwohnung – C&amp;P</h2>
+    <p>Ansprechpartner: Alex Grassl – fährt mit zu den Kundenterminen.</p>
+
+    <h3>Vergütung</h3>
+    <p>2,5 % auf die Wohnung + die Finanzierung.</p>
+
+    <h3>Warum Anlegerwohnungen?</h3>
+    <p>Eine der wenigen Möglichkeiten, wo private Leute gehebelte Investitionen tätigen können.</p>
+
+    <h3>Einstieg</h3>
+    <p>Möglich ab 15.000 € Invest – Liquidität ist dann nicht gegeben.</p>
+
+    <h3>Objektauswahl</h3>
+    <p>Welches Objekt das richtige ist, ist der Job der C&amp;P:</p>
+    <ul>
+      <li>Neubauprojekte</li>
+      <li>Sekundärmarktprojekte (Kauf und Sanierung)</li>
+      <li>Sekundärmarktprojekte von bereits verkauften Wohnungen</li>
+      <li>Zurückverkaufte Wohnungen an die C&amp;P, die dann im C&amp;P-Netzwerk angeboten werden</li>
+    </ul>
+
+    <h3>Langfristige Strategie</h3>
+    <p>Langfristig geht es nicht darum, eine Wohnung zu kaufen, sondern alle 1–3 Jahre die nächste Wohnung.</p>
+    <p>Ab der zweiten Wohnung keine Eigenmittel mehr nötig, sondern die andere Immobilie als Sicherheit einsetzen.</p>
+  ` },
   { id: 'invest', title: 'Froots', html: `
     <h2>Tipps</h2>
     <h3>Maximum ohne Vermögensberater</h3>
@@ -2866,35 +2927,6 @@ const GUIDE_SECTIONS = [
     <h2>Beratungsprotokoll für Umsatzfreigabe</h2>
     <p><a class="btn btn-primary btn-small" href="docs/factsheets/Beratungsprotokoll_Umsatzfreigabe.pdf" download>Beratungsprotokoll herunterladen</a></p>
   ` },
-  { id: 'credit', title: 'Finova Credit', html: `
-    <h2>Nach dem AT – Nächste Schritte</h2>
-    <p>FCCM anlegen, danach 2x telefonieren und dem Kunden schicken.</p>
-
-    <h3>Offene Klärungspunkte</h3>
-    <ul>
-      <li>Checkliste übergeben</li>
-      <li>Gibt es einen Makler?</li>
-      <li>Gibt es einen Notar?</li>
-      <li>Ist der Kunde bereit, das Girokonto zu wechseln?</li>
-    </ul>
-
-    <h3>Finanzierungsgespräch</h3>
-    <p>Sobald der Kunde alle Daten aufbereitet hat – macht Georg.</p>
-
-    <h3>Unterlagen (digital, je Dokument als separates PDF)</h3>
-    <ul>
-      <li>Ausweiskopie</li>
-      <li>Meldezettel / Aufenthaltstitel</li>
-      <li>Fotos vom Objekt – außen</li>
-      <li>Fotos vom Objekt – innen</li>
-      <li>Baupläne</li>
-      <li>Exposé</li>
-      <li>Kaufanbot / Kaufvertrag</li>
-    </ul>
-
-    <h3>Download</h3>
-    <p><a class="btn btn-primary btn-small" href="docs/Finanzierungscheckliste_finovacredit.pdf" download>Finanzierungscheckliste herunterladen</a></p>
-  ` },
   { id: 'edelmetalle', title: 'Edelmetalle', html: `
     <h2>Edelmetalle – Golden Gates</h2>
     <p>Grundprinzip: Man kauft einmalig das Recht, Gold zum Großhandelspreis zu erwerben. Das physische Gold wird in München eingelagert. Investieren per Sparplan ist möglich, Verkauf und Tausch jederzeit.</p>
@@ -2929,33 +2961,6 @@ const GUIDE_SECTIONS = [
     </table>
     <p>Ergebnis: Trotz der einmaligen Gebühr hat der Kunde nach 10 Jahren rund 20 % mehr Gold – weil der Großhandelspreis den Gebühreneffekt mehr als ausgleicht.</p>
   ` },
-  { id: 'anlegerwohnungen', title: 'Anlegerwohnungen', html: `
-    <h2>Anlegerwohnung – C&amp;P</h2>
-    <p>Ansprechpartner: Alex Grassl – fährt mit zu den Kundenterminen.</p>
-
-    <h3>Vergütung</h3>
-    <p>2,5 % auf die Wohnung + die Finanzierung.</p>
-
-    <h3>Warum Anlegerwohnungen?</h3>
-    <p>Eine der wenigen Möglichkeiten, wo private Leute gehebelte Investitionen tätigen können.</p>
-
-    <h3>Einstieg</h3>
-    <p>Möglich ab 15.000 € Invest – Liquidität ist dann nicht gegeben.</p>
-
-    <h3>Objektauswahl</h3>
-    <p>Welches Objekt das richtige ist, ist der Job der C&amp;P:</p>
-    <ul>
-      <li>Neubauprojekte</li>
-      <li>Sekundärmarktprojekte (Kauf und Sanierung)</li>
-      <li>Sekundärmarktprojekte von bereits verkauften Wohnungen</li>
-      <li>Zurückverkaufte Wohnungen an die C&amp;P, die dann im C&amp;P-Netzwerk angeboten werden</li>
-    </ul>
-
-    <h3>Langfristige Strategie</h3>
-    <p>Langfristig geht es nicht darum, eine Wohnung zu kaufen, sondern alle 1–3 Jahre die nächste Wohnung.</p>
-    <p>Ab der zweiten Wohnung keine Eigenmittel mehr nötig, sondern die andere Immobilie als Sicherheit einsetzen.</p>
-  ` },
-  { id: 'realestate', title: 'Finova Real Estate', html: '' },
   { id: 'bauherrenmodell', title: 'Bauherrenmodell', html: `
     <h2>Bauherrenmodell – Pericon</h2>
     <p>Die Pericon begleitet uns und den Kunden durch den gesamten Prozess.</p>
@@ -2979,8 +2984,7 @@ const GUIDE_SECTIONS = [
       <li><b>Erste ca. 3 Jahre – Aufbauphase:</b> Der Kunde bringt Eigenmittel ein, es fließen noch keine Gewinne. Dieser Betrag lässt sich aber von der Steuer absetzen – einer der wenigen Fälle, in denen sich ein Investment selbst steuerlich absetzen lässt.</li>
       <li><b>Ab ca. 15–20 Jahren – Ertragsphase:</b> Ab diesem Zeitpunkt erwirtschaftet die Immobilie einen positiven Cashflow.</li>
     </ul>
-  ` },
-  { id: 'analyse', title: 'Analyse', html: '' }
+  ` }
 ];
 
 function initGuide(){
