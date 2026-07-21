@@ -1444,7 +1444,7 @@
     <!-- UMDREHRECHNER SECTION -->
     <section class="section" id="section-umdreh-rechner" aria-label="Umdrehrechner" tabindex="-1" hidden>
       <div class="banner eh-info">
-        <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags (alte Stufe, Faktor 2,30) mit dem aktuellen Verdienst bei finova (neue Stufe, Faktor 2,14) — für Berater und Führungskraft. Eingaben werden nicht gespeichert.
+        <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags (alte Stufe, Faktor 2,30) mit dem aktuellen Verdienst bei finova (neue Stufe, Faktor 2,14) — für Berater und Führungskraft. Die Führungskraft verdient jeweils die Differenz zwischen ihrer eigenen Stufe und der Berater-Stufe (alt bzw. neu getrennt). Eingaben werden nicht gespeichert.
       </div>
 
       <div class="panel um-input-panel">
@@ -2819,8 +2819,8 @@ function initUmdrehRechner(){
     const beraterAktuell = UM_EH_NEU * praemie * beraterNeu;
     const beraterDiff = beraterAktuell - beraterMinus;
 
-    const fkMinus = UM_EH_ALT * praemie * fkAlt;
-    const fkAktuell = UM_EH_NEU * praemie * fkNeu;
+    const fkMinus = UM_EH_ALT * praemie * (fkAlt - beraterAlt);
+    const fkAktuell = UM_EH_NEU * praemie * (fkNeu - beraterNeu);
     const fkDiff = fkAktuell - fkMinus;
 
     const gesamtMinus = beraterMinus + fkMinus;
