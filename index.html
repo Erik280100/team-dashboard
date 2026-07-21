@@ -3200,18 +3200,40 @@ function initGuide(){
   render();
 }
 
+function activateSection(section){
+  const btn = document.querySelector(`.nav-item[data-section="${section}"]`);
+  const target = document.getElementById('section-'+section);
+  if(!btn || !target) return false;
+  document.querySelectorAll('.nav-item').forEach(b=>{ b.classList.remove('active'); b.removeAttribute('aria-current'); });
+  document.querySelectorAll('.section').forEach(s=>{ s.classList.remove('active'); s.setAttribute('hidden',''); });
+  btn.classList.add('active');
+  btn.setAttribute('aria-current','page');
+  target.classList.add('active');
+  target.removeAttribute('hidden');
+  return target;
+}
+
+function navigateToSection(section, {focus=true}={}){
+  const target = activateSection(section);
+  if(target && focus) target.focus();
+}
+
 document.querySelectorAll('.nav-item').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.nav-item').forEach(b=>{ b.classList.remove('active'); b.removeAttribute('aria-current'); });
-    document.querySelectorAll('.section').forEach(s=>{ s.classList.remove('active'); s.setAttribute('hidden',''); });
-    btn.classList.add('active');
-    btn.setAttribute('aria-current','page');
-    const target = document.getElementById('section-'+btn.dataset.section);
-    target.classList.add('active');
-    target.removeAttribute('hidden');
-    target.focus();
+    const section = btn.dataset.section;
+    if(location.hash.slice(1) === section){
+      navigateToSection(section);
+    } else {
+      location.hash = section;
+    }
   });
 });
+
+window.addEventListener('hashchange', ()=>{
+  navigateToSection(location.hash.slice(1) || 'overview');
+});
+
+navigateToSection(location.hash.slice(1) || 'overview', {focus:false});
 
 function confirmDialog(message){
   return new Promise(resolve=>{
