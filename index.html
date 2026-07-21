@@ -1055,6 +1055,11 @@
 
   /* KALENDER */
   .cal-week{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .cal-head-row, .cal-body-row{
     display:grid;
     grid-template-columns: 44px repeat(7,1fr);
     gap:6px;
@@ -1099,7 +1104,7 @@
     text-align:center; font-size:10.5px; color:var(--grey-light);
   }
   @media (max-width:1024px){
-    .cal-week{ grid-template-columns: 34px repeat(7,1fr); gap:4px; }
+    .cal-head-row, .cal-body-row{ grid-template-columns: 34px repeat(7,1fr); gap:4px; }
     .cal-day-head{ font-size:10.5px; }
     .cal-day-head .cal-day-sub{ display:none; }
     .cal-event{ font-size:9px; padding:4px 4px; }
@@ -1107,7 +1112,8 @@
     .cal-time-col .cal-hour{ font-size:9px; }
   }
   @media (max-width:760px){
-    .cal-week{ grid-template-columns: 28px repeat(7,minmax(34px,1fr)); overflow-x:auto; }
+    .cal-week{ overflow-x:auto; }
+    .cal-head-row, .cal-body-row{ grid-template-columns: 28px repeat(7,minmax(34px,1fr)); }
   }
 
   /* PARTNERPORTALE */
@@ -1541,63 +1547,55 @@
       <div class="panel">
         <h2>Fixtermine — Wochenkalender</h2>
         <div class="cal-week">
-          <div class="cal-time-col">
-            <span class="cal-hour" style="top:0px;">8:00</span>
-            <span class="cal-hour" style="top:40px;">9:00</span>
-            <span class="cal-hour" style="top:80px;">10:00</span>
-            <span class="cal-hour" style="top:120px;">11:00</span>
-            <span class="cal-hour" style="top:160px;">12:00</span>
-            <span class="cal-hour" style="top:200px;">13:00</span>
-            <span class="cal-hour" style="top:240px;">14:00</span>
-            <span class="cal-hour" style="top:280px;">15:00</span>
-            <span class="cal-hour" style="top:320px;">16:00</span>
-            <span class="cal-hour" style="top:360px;">17:00</span>
-            <span class="cal-hour" style="top:400px;">18:00</span>
-            <span class="cal-hour" style="top:440px;">19:00</span>
-            <span class="cal-hour" style="top:480px;">20:00</span>
-            <span class="cal-hour" style="top:520px;">21:00</span>
+          <div class="cal-head-row">
+            <div class="cal-head-spacer"></div>
+            <div class="cal-day-head">Montag<span class="cal-day-sub">Büro</span></div>
+            <div class="cal-day-head">Dienstag</div>
+            <div class="cal-day-head">Mittwoch<span class="cal-day-sub">Führungskreis / Büro</span></div>
+            <div class="cal-day-head">Donnerstag</div>
+            <div class="cal-day-head">Freitag<span class="cal-day-sub">Training / Büro</span></div>
+            <div class="cal-day-head">Samstag</div>
+            <div class="cal-day-head">Sonntag</div>
           </div>
 
-          <div class="cal-day-col">
-            <div class="cal-day-head">Montag<span class="cal-day-sub">Büro</span></div>
+          <div class="cal-body-row">
+            <div class="cal-time-col">
+              <span class="cal-hour" style="top:0px;">8:00</span>
+              <span class="cal-hour" style="top:40px;">9:00</span>
+              <span class="cal-hour" style="top:80px;">10:00</span>
+              <span class="cal-hour" style="top:120px;">11:00</span>
+              <span class="cal-hour" style="top:160px;">12:00</span>
+              <span class="cal-hour" style="top:200px;">13:00</span>
+              <span class="cal-hour" style="top:240px;">14:00</span>
+              <span class="cal-hour" style="top:280px;">15:00</span>
+              <span class="cal-hour" style="top:320px;">16:00</span>
+              <span class="cal-hour" style="top:360px;">17:00</span>
+              <span class="cal-hour" style="top:400px;">18:00</span>
+              <span class="cal-hour" style="top:440px;">19:00</span>
+              <span class="cal-hour" style="top:480px;">20:00</span>
+              <span class="cal-hour" style="top:520px;">21:00</span>
+            </div>
+
             <div class="cal-day-body">
               <div class="cal-event buero" style="top:80px;height:240px;">Büro<span class="cal-event-time">10:00–16:00</span></div>
             </div>
-          </div>
 
-          <div class="cal-day-col">
-            <div class="cal-day-head">Dienstag</div>
             <div class="cal-day-body"><div class="cal-day-empty">—</div></div>
-          </div>
 
-          <div class="cal-day-col">
-            <div class="cal-day-head">Mittwoch<span class="cal-day-sub">Führungskreis / Büro</span></div>
             <div class="cal-day-body">
               <div class="cal-event fuehrung" style="top:80px;height:80px;">Führungskreis<span class="cal-event-time">10:00–12:00</span></div>
               <div class="cal-event buero" style="top:200px;height:320px;">Büro<span class="cal-event-time">13:00–21:00</span></div>
             </div>
-          </div>
 
-          <div class="cal-day-col">
-            <div class="cal-day-head">Donnerstag</div>
             <div class="cal-day-body"><div class="cal-day-empty">—</div></div>
-          </div>
 
-          <div class="cal-day-col">
-            <div class="cal-day-head">Freitag<span class="cal-day-sub">Training / Büro</span></div>
             <div class="cal-day-body">
               <div class="cal-event training" style="top:80px;height:80px;">Training<span class="cal-event-time">10:00–12:00</span></div>
               <div class="cal-event buero" style="top:160px;height:160px;">Büro<span class="cal-event-time">12:00–16:00</span></div>
             </div>
-          </div>
 
-          <div class="cal-day-col">
-            <div class="cal-day-head">Samstag</div>
             <div class="cal-day-body"><div class="cal-day-empty">—</div></div>
-          </div>
 
-          <div class="cal-day-col">
-            <div class="cal-day-head">Sonntag</div>
             <div class="cal-day-body"><div class="cal-day-empty">—</div></div>
           </div>
         </div>
@@ -3021,9 +3019,9 @@ const GUIDE_SECTIONS = [
       <li>Warum er sparen will – mittel- und langfristig</li>
     </ul>
 
-    <h2>Leitfaden / Formulierungen für den AT: Investitionen</h2>
+    <h2>Leitfaden / Formulierungen für den AT</h2>
 
-    <h3>Einstieg</h3>
+    <h3>Investitions-Einstieg</h3>
     <p><em>„Wär das nicht super, wenn jeder immer den Betrag zur Verfügung hat, den man aktuell gerade braucht?“</em></p>
     <ul>
       <li><b>Kurzfristig:</b> totes Geld, das sich nur ansammelt.</li>
