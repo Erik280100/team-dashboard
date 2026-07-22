@@ -1981,9 +1981,9 @@ function loadAttendance(){
 function getAttendanceEntry(name){
   const e = attendance[name];
   return {
-    seminar: !!(e && e.seminar),
+    seminar: e && e.seminar !== undefined ? !!e.seminar : true,
     seminarReason: (e && e.seminarReason) || '',
-    training: !!(e && e.training),
+    training: e && e.training !== undefined ? !!e.training : true,
     trainingReason: (e && e.trainingReason) || ''
   };
 }
