@@ -1164,6 +1164,52 @@
     .cal-head-row, .cal-body-row{ grid-template-columns: 28px repeat(7,minmax(34px,1fr)); }
   }
 
+  /* ANWESENHEITSLISTE */
+  .attendance-note{ font-size:13px; color:var(--grey-light); margin:-6px 0 14px; }
+  .attendance-col-headers{
+    display:grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    gap:14px;
+    padding:0 10px 8px;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--grey-light);
+    border-bottom:1px solid var(--border);
+  }
+  .attendance-col-headers span:not(:first-child){ text-align:center; }
+  .attendance-row{
+    display:grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    gap:14px;
+    align-items:center;
+    padding:12px 10px;
+    border-bottom:1px solid var(--border);
+  }
+  .attendance-row:last-child{ border-bottom:none; }
+  .attendance-name{ display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; color:var(--navy); }
+  .attendance-toggle-cell{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .attendance-reason-input{
+    width:100%;
+    max-width:170px;
+    font-size:12.5px;
+    padding:5px 8px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--navy);
+    background:#fff;
+  }
+  .attendance-reason-input:focus{ outline:none; border-color:var(--teal); }
+  .attendance-reason-input::placeholder{ color:#B7C2C4; }
+  @media (max-width:640px){
+    .attendance-col-headers{ display:none; }
+    .attendance-row{ grid-template-columns:1fr; gap:12px; padding:14px 10px; }
+    .attendance-toggle-cell{ align-items:flex-start; }
+    .attendance-toggle-cell::before{ content:attr(data-label); font-size:12px; font-weight:600; color:var(--grey-light); }
+    .attendance-reason-input{ max-width:100%; }
+  }
+
   /* PARTNERPORTALE */
   .partner-grid{
     display:grid;
@@ -1663,6 +1709,20 @@
           <span><i class="dot" style="background:#B07CC6;"></i> Führungskreis</span>
         </div>
       </div>
+
+      <div class="panel" style="margin-top:24px;">
+        <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <span>Anwesenheitsliste</span>
+          <span id="attendanceCountBadge" style="font-size:12px;font-weight:600;color:#8FA1A6;background:#EEF1F1;padding:4px 10px;border-radius:999px;">0 Mitarbeiter</span>
+        </h2>
+        <p class="attendance-note">Jede·r kann hier selbst an-/abhaken. Bei Abwesenheit bitte kurz den Absagegrund eintragen.</p>
+        <div class="attendance-col-headers">
+          <span>Mitarbeiter</span>
+          <span>Seminar</span>
+          <span>Training</span>
+        </div>
+        <div id="attendanceBody"></div>
+      </div>
     </section>
 
     <!-- PARTNERPORTALE SECTION -->
@@ -1695,10 +1755,16 @@
  *    Diese Zugangsdaten geben die 3 Editoren dann im Login-Feld oben
  *    rechts im Dashboard ein.
  * 4. Firestore Database > Regeln auf Folgendes setzen, damit Lesen
- *    offen bleibt, aber nur eingeloggte Nutzer schreiben dürfen:
+ *    offen bleibt, aber nur eingeloggte Nutzer schreiben dürfen — mit
+ *    Ausnahme des Anwesenheitslisten-Dokuments, das bewusst für alle
+ *    (auch ohne Login) beschreibbar ist:
  *      rules_version = '2';
  *      service cloud.firestore {
  *        match /databases/{database}/documents {
+ *          match /finova/attendance {
+ *            allow read: if true;
+ *            allow write: if true;
+ *          }
  *          match /{document=**} {
  *            allow read: if true;
  *            allow write: if request.auth != null;
@@ -1719,11 +1785,16 @@ const firebaseConfig = {
 const CLOUD_CONFIGURED = firebaseConfig.apiKey !== "YOUR_API_KEY";
 let cloudReady = false;
 let stateDocRef = null;
+let attendanceDocRef = null;
 let firebaseAuth = null;
 if(CLOUD_CONFIGURED){
   try{
     firebase.initializeApp(firebaseConfig);
     stateDocRef = firebase.firestore().collection('finova').doc('dashboard');
+    // Eigenes Dokument für die Anwesenheitsliste: laut Firestore-Regeln offen
+    // beschreibbar (siehe Hinweis unten), damit jeder Mitarbeiter ohne Login
+    // an-/abhaken kann — unabhängig vom editor-geschützten Dashboard-Dokument.
+    attendanceDocRef = firebase.firestore().collection('finova').doc('attendance');
     firebaseAuth = firebase.auth();
   }catch(e){
     console.error('Firebase-Initialisierung fehlgeschlagen', e);
@@ -1889,6 +1960,142 @@ function initCloudSync(){
     console.error('Cloud-Sync Fehler', err);
     setSyncStatus('Cloud-Verbindung fehlgeschlagen — nur lokal gespeichert.', true);
   });
+}
+
+// --- Anwesenheitsliste (Seminar/Training): eigenes, für alle offenes Dokument ---
+const ATTENDANCE_KEY = 'finova_dashboard_attendance_v1';
+let attendanceReady = false;
+let attendance = loadAttendance();
+
+function loadAttendance(){
+  try{
+    const raw = localStorage.getItem(ATTENDANCE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object') return parsed;
+    }
+  }catch(e){ console.warn('Konnte Anwesenheitsdaten nicht laden', e); }
+  return {};
+}
+
+function getAttendanceEntry(name){
+  const e = attendance[name];
+  return {
+    seminar: !!(e && e.seminar),
+    seminarReason: (e && e.seminarReason) || '',
+    training: !!(e && e.training),
+    trainingReason: (e && e.trainingReason) || ''
+  };
+}
+
+function setAttendanceEntry(name, patch){
+  attendance[name] = { ...getAttendanceEntry(name), ...patch };
+  saveAttendance();
+}
+
+function saveAttendance(){
+  try{ localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(attendance)); }
+  catch(err){ console.warn('Speichern der Anwesenheit fehlgeschlagen', err); }
+  pushAttendanceToCloud();
+}
+
+function pushAttendanceToCloud(){
+  if(!CLOUD_CONFIGURED || !attendanceReady || !attendanceDocRef) return;
+  attendanceDocRef.set({ entries: attendance }).catch(err=>{
+    console.warn('Anwesenheit: Cloud-Speichern fehlgeschlagen', err);
+  });
+}
+
+function initAttendanceSync(){
+  if(!CLOUD_CONFIGURED || !attendanceDocRef) return;
+  attendanceDocRef.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return;
+    if(snap.exists){
+      const data = snap.data() || {};
+      if(data.entries && typeof data.entries === 'object') attendance = data.entries;
+      try{ localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(attendance)); }catch(e){}
+    } else {
+      attendanceDocRef.set({ entries: attendance });
+    }
+    attendanceReady = true;
+    renderAttendance();
+  }, err=>{
+    console.warn('Anwesenheit: Cloud-Verbindung fehlgeschlagen', err);
+  });
+}
+
+function attendanceCell(idx, type, present, reason){
+  const typeLabel = type === 'seminar' ? 'Seminar' : 'Training';
+  const safeReason = (reason || '').replace(/"/g,'&quot;');
+  return `
+    <label class="um-storno-switch" aria-label="${typeLabel} – Anwesend">
+      <input type="checkbox" data-idx="${idx}" data-type="${type}" ${present ? 'checked' : ''}>
+      <span class="um-storno-slider"></span>
+    </label>
+    <input type="text" class="attendance-reason-input" data-idx="${idx}" data-type="${type}"
+      placeholder="Absagegrund…" value="${safeReason}" ${present ? 'style="display:none"' : ''}
+      aria-label="Absagegrund ${typeLabel} – ${(rows[idx] && rows[idx].name) || ''}">
+  `;
+}
+
+function renderAttendance(){
+  const badge = document.getElementById('attendanceCountBadge');
+  if(badge) badge.textContent = `${rows.length} Mitarbeiter`;
+  const body = document.getElementById('attendanceBody');
+  if(!body) return;
+  if(rows.length === 0){
+    body.innerHTML = `<div class="empty-state"><span>Noch keine Mitarbeiter angelegt.</span></div>`;
+    return;
+  }
+  body.innerHTML = rows.map((r,i)=>{
+    const a = getAttendanceEntry(r.name);
+    return `
+    <div class="attendance-row" role="row">
+      <div class="attendance-name" role="cell">
+        <div class="avatar" aria-hidden="true">${initials(r.name)}</div>
+        <span>${r.name}</span>
+      </div>
+      <div class="attendance-toggle-cell" data-label="Seminar" role="cell">
+        ${attendanceCell(i,'seminar',a.seminar,a.seminarReason)}
+      </div>
+      <div class="attendance-toggle-cell" data-label="Training" role="cell">
+        ${attendanceCell(i,'training',a.training,a.trainingReason)}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('#attendanceBody input[type="checkbox"][data-type]').forEach(cb=>{
+    cb.addEventListener('change', onAttendanceToggle);
+  });
+  document.querySelectorAll('#attendanceBody input.attendance-reason-input').forEach(inp=>{
+    inp.addEventListener('change', onAttendanceReasonChange);
+  });
+}
+
+function onAttendanceToggle(e){
+  const idx = Number(e.target.dataset.idx);
+  const type = e.target.dataset.type;
+  const r = rows[idx];
+  if(!r) return;
+  const present = e.target.checked;
+  const patch = { [type]: present };
+  if(present) patch[type + 'Reason'] = '';
+  setAttendanceEntry(r.name, patch);
+  flashSaved();
+  renderAttendance();
+  if(!present){
+    const inp = document.querySelector(`#attendanceBody input.attendance-reason-input[data-idx="${idx}"][data-type="${type}"]`);
+    if(inp) inp.focus();
+  }
+}
+
+function onAttendanceReasonChange(e){
+  const idx = Number(e.target.dataset.idx);
+  const type = e.target.dataset.type;
+  const r = rows[idx];
+  if(!r) return;
+  setAttendanceEntry(r.name, { [type + 'Reason']: e.target.value });
+  flashSaved();
 }
 
 function recordSnapshot(){
@@ -2623,6 +2830,7 @@ function renderAll(){
   renderGoalProgress();
   renderTimeline();
   renderRecruitPanel();
+  renderAttendance();
   applyPermissions();
 }
 
@@ -3397,6 +3605,7 @@ initGoalPanel();
 initRecruitPanel();
 renderAll();
 initCloudSync();
+initAttendanceSync();
 initAuth();
 initEHRechner();
 initUmdrehRechner();
