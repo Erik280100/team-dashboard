@@ -3429,22 +3429,24 @@ function simulateFLV(provider, monat, einmal, jahre, perf, waPct = 0){
 }
 
 // Fondssparer: kein Einmalerlag, keine Zillmerung, keine Kickbacks
-// Kosten lt. LV-InfoV-Kostenblatt (200 €/mon, 15J): Sparprämie 91,08 % der Prämiensumme
-// (Versicherungssteuer 3,85 % + Kosten 5,07 %), laufende Kosten 0,036 % monatlich (0,432 % p.a.)
-// — die separat ausgewiesenen Fondskosten (Ø 1,66 % p.a.) sind bereits netto in der
-// angenommenen Fondsperformance enthalten (Fondsrenditen werden stets TER-netto angegeben)
+// Kosten lt. LV-InfoV-Kostenblatt (200/100 €/mon, 38J): Sparprämie 91,10 % der Prämiensumme
+// (Versicherungssteuer 3,85 % + Kosten 5,06 %), laufende Kosten 0,043 % monatlich (0,516 % p.a. =
+// 0,041 % Vermögenskosten + 0,002 % Risikokosten) — die separat ausgewiesenen Fondskosten
+// (Ø 1,66 % p.a.) sind bereits netto in der angenommenen Fondsperformance enthalten
+// (Fondsrenditen werden stets TER-netto angegeben). Wertanpassung erhöht die mtl. Prämie
+// jährlich zum Vertragsjubiläum (Stufenmodell, ab dem 2. Versicherungsjahr).
 function simulateFondssparer(monat, jahre, perf, waPct = 0){
   const months = jahre * 12;
   const r = rrRate(perf);
-  const waRateMonthly = waPct > 0 ? Math.pow(1 + waPct, 1/12) - 1 : 0;
   let depot = 0;
   const values = [0];
   for(let m = 1; m <= months; m++){
-    const monatAngepasst = waRateMonthly > 0 ? monat * Math.pow(1 + waRateMonthly, m - 1) : monat;
-    const netNachAbzug = monatAngepasst * 0.9108;
+    const jahrIdx = Math.floor((m - 1) / 12);
+    const monatAngepasst = waPct > 0 ? monat * Math.pow(1 + waPct, jahrIdx) : monat;
+    const netNachAbzug = monatAngepasst * 0.9110;
     depot += netNachAbzug;
     depot *= (1 + r);
-    depot -= depot * (0.00432 / 12);
+    depot -= depot * (0.00516 / 12);
     if(depot < 0) depot = 0;
     values.push(depot);
   }
@@ -3575,8 +3577,8 @@ function initRenditeRechner(){
       <h3>Fondssparer</h3>
       <div class="rr-cost-list">
         <div class="rr-cost-row"><span>Versicherungssteuer</span><span>3,85 %</span></div>
-        <div class="rr-cost-row"><span>Kosten (von Prämiensumme)</span><span>5,07 %</span></div>
-        <div class="rr-cost-row"><span>Laufende Kosten (am Vermögen)</span><span>0,432 % p.a.</span></div>
+        <div class="rr-cost-row"><span>Kosten (von Prämiensumme)</span><span>5,06 %</span></div>
+        <div class="rr-cost-row"><span>Laufende Kosten (am Vermögen)</span><span>0,516 % p.a.</span></div>
       </div>
       <div class="rr-tile-note">KESt-frei</div>
       <div class="rr-tile-warning" id="rrFondssparerWarning" hidden>Kein Einmalerlag verfügbar — der eingegebene Einmalerlag fließt bei diesem Produkt nicht ins Depot.</div>
