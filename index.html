@@ -1074,6 +1074,8 @@
   .rr-tile-inputs input:focus{ outline:none; border-color:var(--mint2); }
   .rr-tile-inputs input:disabled{ background:#F4F6F6; color:var(--grey-light); cursor:not-allowed; }
   .rr-tile-note{ font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--teal); }
+  .rr-tile-hint{ font-size:11px; color:var(--grey-light); margin-bottom:8px; }
+  .rr-tile-hint:empty{ display:none; }
   .rr-tile-warning{
     margin-top:10px; background:#FFF4E5; border:1px solid #F0C36D; color:#8a5a00;
     font-size:11.5px; font-weight:600; border-radius:8px; padding:8px 10px;
@@ -3326,9 +3328,11 @@ function initUmdrehRechner(){
 const RR_KEST = 0.275;
 
 // Depot-Presets: Kosten laut Online-Angaben der Broker (Stand 2026)
+// Sparplanausführung ist bei beiden gebührenfrei (Ausgabeaufschlag/Depotgebühr = 0),
+// ein Einmalerlag (Einzelorder) kostet aber pauschal eine fixe Ordergebühr in €.
 const RR_DEPOT_PRESETS = {
-  flatex: { ausgabeaufschlag: 0, depotgebuehr: 0 },
-  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 0 },
+  flatex: { ausgabeaufschlag: 0, depotgebuehr: 0, flatFee: 5.90, feeLabel: '5,90 €' },
+  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 0, flatFee: 1.00, feeLabel: '1 €' },
 };
 
 const RR_FLV_COSTS = {
@@ -3429,13 +3433,13 @@ function simulateFondssparer(monat, jahre, perf){
 }
 
 // Fondsdepot: KESt via jährliche ausschüttungsgleiche Erträge (agE) + Rest-KESt beim Verkauf
-function simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlagPct, depotgebuehrPa, ageRenditePa){
+function simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlagPct, depotgebuehrPa, ageRenditePa, einmalFixFee = 0){
   const months = jahre * 12;
   const r = rrRate(perf);
   const aa = ausgabeaufschlagPct / 100;
   let depot = 0, cumNetto = 0, cumAge = 0;
   if(einmal > 0){
-    const net = einmal * (1 - aa);
+    const net = Math.max(0, einmal - einmalFixFee) * (1 - aa);
     depot += net; cumNetto += net;
   }
   const values = [depot];
@@ -3520,7 +3524,7 @@ function initRenditeRechner(){
   const panel = document.getElementById('rechnerPanel-rendite');
   if(!panel) return;
 
-  const state = { provider: 'merkur', perf: 0.06 };
+  const state = { provider: 'merkur', perf: 0.06, depotProvider: 'flatex' };
 
   const tilesEl = document.getElementById('rrTiles');
   tilesEl.innerHTML = `
@@ -3536,6 +3540,7 @@ function initRenditeRechner(){
         <div class="rr-field"><label>Depotgebühr (% p.a.)</label><input type="number" class="rr-in" id="rrDepotgebuehr" value="0" min="0" step="0.1" disabled></div>
         <div class="rr-field"><label>agE-/Dividendenrendite (% p.a.)</label><input type="number" class="rr-in" id="rrAgeRendite" value="2.0" min="0" step="0.1"></div>
       </div>
+      <div class="rr-tile-hint" id="rrDepotFeeHint"></div>
       <div class="rr-tile-note">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
     </div>
     <div class="panel rr-tile" data-product="vv">
@@ -3577,6 +3582,14 @@ function initRenditeRechner(){
   }
   renderFlvCosts();
 
+  function renderDepotHint(einmal){
+    const hintEl = document.getElementById('rrDepotFeeHint');
+    const preset = RR_DEPOT_PRESETS[state.depotProvider];
+    hintEl.textContent = (preset && einmal > 0)
+      ? `Sparplan gebührenfrei — zzgl. ${preset.feeLabel} einmalige Ordergebühr auf den Einmalerlag`
+      : '';
+  }
+
   const summaryEl = document.getElementById('rrSummary');
   const tableEl = document.getElementById('rrTable');
   const chartCanvas = document.getElementById('rrChart');
@@ -3597,10 +3610,14 @@ function initRenditeRechner(){
     const perf = state.perf;
 
     document.getElementById('rrFondssparerWarning').hidden = !(einmal > 0);
+    renderDepotHint(einmal);
+
+    const depotPreset = RR_DEPOT_PRESETS[state.depotProvider];
+    const depotFixFee = depotPreset ? depotPreset.flatFee : 0;
 
     const flvMonthly = simulateFLV(state.provider, monat, einmal, jahre, perf);
     const fondssparerMonthly = simulateFondssparer(monat, jahre, perf);
-    const fondsdepotMonthly = simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlag, depotgebuehr, ageRendite);
+    const fondsdepotMonthly = simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlag, depotgebuehr, ageRendite, depotFixFee);
     const vvMonthly = simulateVV(monat, einmal, jahre, perf, ageRendite);
 
     const years = [];
@@ -3694,9 +3711,10 @@ function initRenditeRechner(){
     const depotToggleBtn = e.target.closest('.rr-depot-toggle-btn');
     if(depotToggleBtn){
       depotToggleBtn.closest('.rr-flv-toggle').querySelectorAll('.rr-depot-toggle-btn').forEach(b=>b.classList.toggle('active', b===depotToggleBtn));
+      state.depotProvider = depotToggleBtn.dataset.depotProvider;
       const ausgabeEl = document.getElementById('rrAusgabeaufschlag');
       const depotEl = document.getElementById('rrDepotgebuehr');
-      const preset = RR_DEPOT_PRESETS[depotToggleBtn.dataset.depotProvider];
+      const preset = RR_DEPOT_PRESETS[state.depotProvider];
       if(preset){
         ausgabeEl.value = preset.ausgabeaufschlag;
         depotEl.value = preset.depotgebuehr;
