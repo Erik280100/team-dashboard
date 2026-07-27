@@ -975,6 +975,137 @@
   #umGesamtDiffWrap.is-neg .unit,
   #umGesamtDiffWrap.is-neg #umGesamtDiff{ color:#ffb4a8; }
 
+  /* RENDITERECHNER */
+  .rr-global-panel{ margin-bottom:20px; }
+  .rr-global-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1.6fr;
+    gap:16px;
+    margin-bottom:18px;
+  }
+  @media (max-width:760px){
+    .rr-global-grid{ grid-template-columns:1fr; }
+  }
+  .rr-field{ display:flex; flex-direction:column; gap:4px; }
+  .rr-field label{ font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--grey-light); font-weight:700; }
+  .rr-field input[type="number"]{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:13px;
+    font-family:inherit;
+    background:#EFFBF5;
+  }
+  .rr-field input[type="number"]:focus{ outline:none; border-color:var(--mint2); }
+  .rr-stepper{ display:flex; align-items:stretch; gap:6px; }
+  .rr-stepper input{ text-align:center; }
+  .rr-step-btn{
+    flex:0 0 auto;
+    width:32px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--card);
+    color:var(--navy);
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    line-height:1;
+  }
+  .rr-step-btn:hover{ border-color:var(--mint2); color:var(--teal); }
+  .rr-step-btn:active{ transform:scale(.94); }
+  .rr-range-row{ display:flex; align-items:center; gap:12px; }
+  .rr-range-row input[type="range"]{ flex:1 1 auto; accent-color:var(--mint2); }
+  .rr-range-row input[type="number"]{ width:70px; text-align:center; flex:0 0 auto; padding:8px 9px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:#EFFBF5; }
+  .rr-scenario-row{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:16px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .rr-scenario-tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .rr-custom-perf{ min-width:160px; }
+  .rr-custom-perf input{
+    padding:8px 9px; border:1px solid var(--border); border-radius:8px;
+    font-size:13px; font-family:inherit; background:#EFFBF5; width:100%;
+  }
+  .rr-tiles{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:16px;
+    margin-bottom:20px;
+    align-items:start;
+  }
+  @media (max-width:1100px){ .rr-tiles{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:600px){ .rr-tiles{ grid-template-columns:1fr; } }
+  .rr-tile{ border-top:3px solid var(--mint2); }
+  .rr-tile[data-product="fondssparer"]{ border-top-color:#5B9BD5; }
+  .rr-tile[data-product="fondsdepot"]{ border-top-color:#B07CC6; }
+  .rr-tile[data-product="vv"]{ border-top-color:var(--amber); }
+  .rr-tile h3{ margin:0 0 12px; font-size:14px; font-weight:800; color:var(--navy); }
+  .rr-flv-toggle{ display:flex; gap:6px; margin-bottom:14px; }
+  .rr-toggle-btn{
+    flex:1 1 auto;
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--grey);
+    font-family:inherit;
+    font-size:12px;
+    font-weight:700;
+    padding:8px 6px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .rr-toggle-btn:hover{ border-color:var(--mint2); color:var(--navy); }
+  .rr-toggle-btn.active{
+    background:linear-gradient(135deg, var(--mint), var(--mint2));
+    border-color:transparent;
+    color:var(--navy);
+  }
+  .rr-cost-list{ display:flex; flex-direction:column; gap:7px; margin-bottom:12px; }
+  .rr-cost-row{ display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--grey); }
+  .rr-cost-row span:last-child{ font-weight:700; color:var(--navy); white-space:nowrap; }
+  .rr-tile-inputs{ display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+  .rr-tile-inputs input{
+    width:100%; padding:8px 9px; border:1px solid var(--border); border-radius:8px;
+    font-size:13px; font-family:inherit; background:#EFFBF5;
+  }
+  .rr-tile-inputs input:focus{ outline:none; border-color:var(--mint2); }
+  .rr-tile-note{ font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--teal); }
+  .rr-tile-warning{
+    margin-top:10px; background:#FFF4E5; border:1px solid #F0C36D; color:#8a5a00;
+    font-size:11.5px; font-weight:600; border-radius:8px; padding:8px 10px;
+  }
+  .rr-chart-panel{ margin-bottom:20px; }
+  .rr-chart-wrap{ height:400px; position:relative; }
+  .rr-summary{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:16px;
+    margin-bottom:20px;
+  }
+  @media (max-width:1100px){ .rr-summary{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:600px){ .rr-summary{ grid-template-columns:1fr; } }
+  .rr-summary-tile{ text-align:left; }
+  .rr-summary-tile .rr-sum-name{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--grey-light); margin-bottom:8px; }
+  .rr-summary-tile .rr-sum-value{ font-size:22px; font-weight:800; color:var(--navy); margin-bottom:4px; }
+  .rr-summary-tile .rr-sum-diff{ font-size:12.5px; font-weight:700; color:var(--teal); }
+  .rr-table-wrap{ overflow-x:auto; max-height:480px; overflow-y:auto; }
+  .rr-table{ width:100%; border-collapse:collapse; font-size:12.5px; white-space:nowrap; }
+  .rr-table th{
+    position:sticky; top:0; background:var(--card);
+    text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--grey-light); font-weight:700; padding:9px 12px; border-bottom:2px solid var(--navy);
+  }
+  .rr-table th:first-child, .rr-table td:first-child{ text-align:left; }
+  .rr-table td{ text-align:right; padding:8px 12px; border-bottom:1px solid var(--border); color:var(--navy); }
+  .rr-table tbody tr:nth-child(even){ background:#F7FAFA; }
+  .rr-table tbody tr:last-child td{ font-weight:800; border-bottom:none; }
+
   /* KARRIEREPLÄNE */
   .career-tabs{
     display:flex;
@@ -1524,6 +1655,7 @@
       <div class="guide-tabs" id="rechnerTabs">
         <button class="guide-tab active" data-rechner-panel="eh" type="button">EH-Rechner</button>
         <button class="guide-tab" data-rechner-panel="umdreh" type="button">Umdrehrechner</button>
+        <button class="guide-tab" data-rechner-panel="rendite" type="button">Renditerechner</button>
       </div>
 
       <div class="rechner-panel" id="rechnerPanel-eh">
@@ -1625,6 +1757,66 @@
             <div class="eh-total-value" id="umGesamtDiffWrap"><span id="umGesamtDiff">0,00</span><span class="unit">€</span></div>
           </div>
           <button class="btn btn-ghost btn-small" id="umResetBtn" type="button">Zurücksetzen</button>
+        </div>
+      </div>
+
+      <div class="rechner-panel" id="rechnerPanel-rendite" hidden>
+        <div class="banner eh-info">
+          <strong>Renditerechner:</strong> Vergleicht vier österreichische Anlageprodukte (FLV, Fondssparer, Fondsdepot, Vermögensverwaltung) über die gewählte Laufzeit inklusive Kosten und KESt. Modellrechnung ohne Gewähr — Eingaben werden nicht gespeichert.
+        </div>
+
+        <div class="panel rr-global-panel">
+          <h2>Eingaben</h2>
+          <div class="rr-global-grid">
+            <div class="rr-field">
+              <label>Monatliche Einzahlung (€)</label>
+              <div class="rr-stepper">
+                <button type="button" class="rr-step-btn" data-target="rrMonat" data-step="-25">−</button>
+                <input type="number" class="rr-in" id="rrMonat" value="200" min="0" step="25">
+                <button type="button" class="rr-step-btn" data-target="rrMonat" data-step="25">+</button>
+              </div>
+            </div>
+            <div class="rr-field">
+              <label>Einmalerlag (€)</label>
+              <div class="rr-stepper">
+                <button type="button" class="rr-step-btn" data-target="rrEinmal" data-step="-1000">−</button>
+                <input type="number" class="rr-in" id="rrEinmal" value="0" min="0" step="1000">
+                <button type="button" class="rr-step-btn" data-target="rrEinmal" data-step="1000">+</button>
+              </div>
+            </div>
+            <div class="rr-field rr-field-wide">
+              <label>Laufzeit (Jahre)</label>
+              <div class="rr-range-row">
+                <input type="range" class="rr-in" id="rrLaufzeitRange" min="1" max="40" step="1" value="20">
+                <input type="number" class="rr-in" id="rrLaufzeitInput" min="1" max="40" step="1" value="20">
+              </div>
+            </div>
+          </div>
+          <div class="rr-scenario-row">
+            <div class="rr-scenario-tabs" id="rrScenarioTabs">
+              <button type="button" class="guide-tab" data-perf="3">3 %</button>
+              <button type="button" class="guide-tab active" data-perf="6">6 %</button>
+              <button type="button" class="guide-tab" data-perf="9">9 %</button>
+            </div>
+            <div class="rr-field rr-custom-perf">
+              <label>Eigene Performance (% p.a.)</label>
+              <input type="number" class="rr-in" id="rrCustomPerf" step="0.1" placeholder="z. B. 5,5">
+            </div>
+          </div>
+        </div>
+
+        <div class="rr-tiles" id="rrTiles"></div>
+
+        <div class="panel rr-chart-panel">
+          <h2>Wertentwicklung im Vergleich</h2>
+          <div class="rr-chart-wrap"><canvas id="rrChart" height="140" role="img" aria-label="Wertentwicklungs-Vergleich der vier Produkte"></canvas></div>
+        </div>
+
+        <div class="rr-summary" id="rrSummary"></div>
+
+        <div class="panel rr-table-panel">
+          <h2>Jahrestabelle</h2>
+          <div class="rr-table-wrap"><table class="rr-table" id="rrTable"></table></div>
         </div>
       </div>
     </section>
@@ -3135,6 +3327,399 @@ function initUmdrehRechner(){
   recalc();
 }
 
+/* ===== RENDITERECHNER ===== */
+const RR_KEST = 0.275;
+
+const RR_FLV_COSTS = {
+  merkur: [
+    ['Versicherungssteuer (laufend)', '4 %'],
+    ['Verwaltungskosten von Prämie', '4 %'],
+    ['Abschlusskosten (Zillmerung)', '4 % · Monat 1–60'],
+    ['Laufende Depotkosten', '0,20 % p.a.'],
+    ['Kickbacks', '+0,575 % p.a.'],
+    ['Einmalerlag Abschlusskosten', '4 %'],
+    ['Einmalerlag Verwaltung', '0,35 % p.a.'],
+    ['Einmalerlag VSt', '4 % (≥15 J.) / 11 % (<15 J.)'],
+    ['Fixkosten (nur bei Einmalerlag)', '2 €/Monat'],
+  ],
+  helvetia: [
+    ['Versicherungssteuer (laufend)', '4 %'],
+    ['Verwaltungskosten von Prämie', '7 %'],
+    ['Abschlusskosten (Zillmerung)', '7 % · Monat 1–60'],
+    ['Laufende Depotkosten', '0,348 % p.a.'],
+    ['Kickbacks Jahr 1–7', '+0,20 % p.a.'],
+    ['Kickbacks ab Jahr 8', '+0,40 % p.a.'],
+    ['Einmalerlag Gesamtkosten', '9,62 % (≥15 J.) / 15,77 % (<15 J.)'],
+    ['Einmalerlag Hüllenkosten', '0,348 % p.a.'],
+  ],
+};
+
+function rrRate(pa){ return Math.pow(1 + pa, 1/12) - 1; }
+
+// FLV: getrennte Prämien-/Einmalerlag-Töpfe (Kostensätze können differieren)
+function simulateFLV(provider, monat, einmal, jahre, perf){
+  const months = jahre * 12;
+  const r = rrRate(perf);
+  const vst = 0.04;
+  const adminPraemie = provider === 'merkur' ? 0.04 : 0.07;
+  const abschlussPraemie = provider === 'merkur' ? 0.04 : 0.07;
+  const depotCostPraemiePa = provider === 'merkur' ? 0.0020 : 0.00348;
+  const depotCostEinmalPa = provider === 'merkur' ? (0.0020 + 0.0035) : 0.00348;
+  const gesamtBrutto = monat * 12 * jahre;
+  const zillmerMonatlich = (abschlussPraemie * gesamtBrutto) / 60;
+  const fixMonatlich = (provider === 'merkur' && einmal > 0) ? 2 : 0;
+  function kickbackPa(m){
+    if(provider === 'merkur') return 0.00575;
+    return m <= 84 ? 0.0020 : 0.0040;
+  }
+
+  let depotP = 0, depotE = 0;
+  if(einmal > 0){
+    if(provider === 'merkur'){
+      const vstEinmal = jahre >= 15 ? 0.04 : 0.11;
+      depotE = einmal * (1 - vstEinmal) - einmal * 0.04;
+    } else {
+      depotE = einmal * (jahre >= 15 ? 0.9038 : 0.8423);
+    }
+    if(depotE < 0) depotE = 0;
+  }
+
+  const values = [depotP + depotE];
+  for(let m = 1; m <= months; m++){
+    const netPraemie = monat * (1 - vst);
+    const netNachAdmin = netPraemie * (1 - adminPraemie);
+    let invest = m <= 60 ? netNachAdmin - zillmerMonatlich : netNachAdmin;
+    if(invest < 0) invest = 0;
+    depotP += invest;
+    depotP *= (1 + r);
+    depotP -= depotP * (depotCostPraemiePa / 12);
+    depotP += depotP * (kickbackPa(m) / 12);
+    if(depotP < 0) depotP = 0;
+
+    if(einmal > 0){
+      depotE *= (1 + r);
+      depotE -= depotE * (depotCostEinmalPa / 12);
+      depotE += depotE * (kickbackPa(m) / 12);
+      depotE -= fixMonatlich;
+      if(depotE < 0) depotE = 0;
+    }
+    values.push(depotP + depotE);
+  }
+  return values;
+}
+
+// Fondssparer: kein Einmalerlag, keine Zillmerung, keine Kickbacks
+function simulateFondssparer(monat, jahre, perf){
+  const months = jahre * 12;
+  const r = rrRate(perf);
+  let depot = 0;
+  const values = [0];
+  for(let m = 1; m <= months; m++){
+    const netPraemie = monat * 0.96;
+    const netNachAbzug = netPraemie * (1 - 0.0525);
+    depot += netNachAbzug;
+    depot *= (1 + r);
+    const depotCostPa = m <= 84 ? 0.0311 : 0.0335;
+    depot -= depot * (depotCostPa / 12);
+    if(depot < 0) depot = 0;
+    values.push(depot);
+  }
+  return values;
+}
+
+// Fondsdepot: KESt via jährliche ausschüttungsgleiche Erträge (agE) + Rest-KESt beim Verkauf
+function simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlagPct, depotgebuehrPa, ageRenditePa){
+  const months = jahre * 12;
+  const r = rrRate(perf);
+  const aa = ausgabeaufschlagPct / 100;
+  let depot = 0, cumNetto = 0, cumAge = 0;
+  if(einmal > 0){
+    const net = einmal * (1 - aa);
+    depot += net; cumNetto += net;
+  }
+  const values = [depot];
+  let yearStart = depot;
+  for(let m = 1; m <= months; m++){
+    const net = monat * (1 - aa);
+    depot += net; cumNetto += net;
+    depot *= (1 + r);
+    depot -= depot * (depotgebuehrPa / 100 / 12);
+    if(depot < 0) depot = 0;
+    values.push(depot);
+    if(m % 12 === 0){
+      const avg = (yearStart + depot) / 2;
+      const ageBetrag = Math.max(0, avg) * (ageRenditePa / 100);
+      const kestAge = ageBetrag * RR_KEST;
+      depot -= kestAge;
+      if(depot < 0) depot = 0;
+      cumAge += ageBetrag;
+      values[values.length - 1] = depot;
+      yearStart = depot;
+    }
+  }
+  const restGewinn = depot - cumNetto - cumAge;
+  if(restGewinn > 0){
+    depot -= restGewinn * RR_KEST;
+    values[values.length - 1] = depot;
+  }
+  return values;
+}
+
+// Vermögensverwaltung: Setup verzehrt Monat 1-3, KESt wie Fondsdepot (teilt sich die agE-Rendite)
+function simulateVV(monat, einmal, jahre, perf, ageRenditePa){
+  const months = jahre * 12;
+  const r = rrRate(perf);
+  let depot = 0, cumNetto = 0, cumAge = 0;
+  if(einmal > 0){
+    const net = einmal * 0.95;
+    depot += net; cumNetto += net;
+  }
+  const values = [depot];
+  let yearStart = depot;
+  for(let m = 1; m <= months; m++){
+    const net = m <= 3 ? 0 : monat;
+    depot += net; cumNetto += net;
+    depot *= (1 + r);
+    depot -= depot * (0.0209 / 12);
+    if(depot < 0) depot = 0;
+    values.push(depot);
+    if(m % 12 === 0){
+      const avg = (yearStart + depot) / 2;
+      const ageBetrag = Math.max(0, avg) * (ageRenditePa / 100);
+      const kestAge = ageBetrag * RR_KEST;
+      depot -= kestAge;
+      if(depot < 0) depot = 0;
+      cumAge += ageBetrag;
+      values[values.length - 1] = depot;
+      yearStart = depot;
+    }
+  }
+  const restGewinn = depot - cumNetto - cumAge;
+  if(restGewinn > 0){
+    depot -= restGewinn * RR_KEST;
+    values[values.length - 1] = depot;
+  }
+  return values;
+}
+
+function rrFormatEUR(n){
+  return Math.round(n).toLocaleString('de-AT') + ' €';
+}
+
+function rrFormatAxis(n){
+  const abs = Math.abs(n);
+  if(abs >= 1000000) return (n/1000000).toLocaleString('de-AT',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' Mio.';
+  if(abs >= 1000) return Math.round(n/1000) + 'k';
+  return Math.round(n) + ' €';
+}
+
+let rrChartInstance = null;
+
+function initRenditeRechner(){
+  const panel = document.getElementById('rechnerPanel-rendite');
+  if(!panel) return;
+
+  const state = { provider: 'merkur', perf: 0.06 };
+
+  const tilesEl = document.getElementById('rrTiles');
+  tilesEl.innerHTML = `
+    <div class="panel rr-tile" data-product="flv">
+      <h3>FLV (Fondsgebundene Lebensversicherung)</h3>
+      <div class="rr-flv-toggle">
+        <button type="button" class="rr-toggle-btn active" data-provider="merkur">Merkur</button>
+        <button type="button" class="rr-toggle-btn" data-provider="helvetia">Helvetia</button>
+      </div>
+      <div class="rr-cost-list" id="rrFlvCosts"></div>
+      <div class="rr-tile-note">KESt-frei</div>
+    </div>
+    <div class="panel rr-tile" data-product="fondssparer">
+      <h3>Fondssparer (CleVesto FLV13F)</h3>
+      <div class="rr-cost-list">
+        <div class="rr-cost-row"><span>Versicherungssteuer</span><span>4 %</span></div>
+        <div class="rr-cost-row"><span>Prämienabzüge</span><span>5,25 %</span></div>
+        <div class="rr-cost-row"><span>Depotkosten Jahr 1–7</span><span>3,11 % p.a.</span></div>
+        <div class="rr-cost-row"><span>Depotkosten ab Jahr 8</span><span>3,35 % p.a.</span></div>
+      </div>
+      <div class="rr-tile-note">KESt-frei</div>
+      <div class="rr-tile-warning" id="rrFondssparerWarning" hidden>Kein Einmalerlag verfügbar — der eingegebene Einmalerlag fließt bei diesem Produkt nicht ins Depot.</div>
+    </div>
+    <div class="panel rr-tile" data-product="fondsdepot">
+      <h3>Fondsdepot</h3>
+      <div class="rr-tile-inputs">
+        <div class="rr-field"><label>Ausgabeaufschlag (%)</label><input type="number" class="rr-in" id="rrAusgabeaufschlag" value="5" min="0" step="0.1"></div>
+        <div class="rr-field"><label>Depotgebühr (% p.a.)</label><input type="number" class="rr-in" id="rrDepotgebuehr" value="1" min="0" step="0.1"></div>
+        <div class="rr-field"><label>agE-/Dividendenrendite (% p.a.)</label><input type="number" class="rr-in" id="rrAgeRendite" value="2.0" min="0" step="0.1"></div>
+      </div>
+      <div class="rr-tile-note">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
+    </div>
+    <div class="panel rr-tile" data-product="vv">
+      <h3>Vermögensverwaltung (4money)</h3>
+      <div class="rr-cost-list">
+        <div class="rr-cost-row"><span>Setup-Kosten</span><span>3 × Monatsbeitrag</span></div>
+        <div class="rr-cost-row"><span>Ausgabeaufschlag Einmalerlag</span><span>5 %</span></div>
+        <div class="rr-cost-row"><span>Laufende Kosten</span><span>2,09 % p.a.</span></div>
+      </div>
+      <div class="rr-tile-note">KESt-pflichtig (27,5 %)</div>
+    </div>
+  `;
+
+  function renderFlvCosts(){
+    const el = document.getElementById('rrFlvCosts');
+    el.innerHTML = RR_FLV_COSTS[state.provider].map(([label,val])=>
+      `<div class="rr-cost-row"><span>${label}</span><span>${val}</span></div>`
+    ).join('');
+  }
+  renderFlvCosts();
+
+  const summaryEl = document.getElementById('rrSummary');
+  const tableEl = document.getElementById('rrTable');
+  const chartCanvas = document.getElementById('rrChart');
+
+  function readInputs(){
+    const monat = Math.max(0, parseFloat(document.getElementById('rrMonat').value) || 0);
+    const einmal = Math.max(0, parseFloat(document.getElementById('rrEinmal').value) || 0);
+    let jahre = Math.round(parseFloat(document.getElementById('rrLaufzeitInput').value)) || 20;
+    jahre = Math.min(40, Math.max(1, jahre));
+    const ausgabeaufschlag = Math.max(0, parseFloat(document.getElementById('rrAusgabeaufschlag').value) || 0);
+    const depotgebuehr = Math.max(0, parseFloat(document.getElementById('rrDepotgebuehr').value) || 0);
+    const ageRendite = Math.max(0, parseFloat(document.getElementById('rrAgeRendite').value) || 0);
+    return { monat, einmal, jahre, ausgabeaufschlag, depotgebuehr, ageRendite };
+  }
+
+  function recalc(){
+    const { monat, einmal, jahre, ausgabeaufschlag, depotgebuehr, ageRendite } = readInputs();
+    const perf = state.perf;
+
+    document.getElementById('rrFondssparerWarning').hidden = !(einmal > 0);
+
+    const flvMonthly = simulateFLV(state.provider, monat, einmal, jahre, perf);
+    const fondssparerMonthly = simulateFondssparer(monat, jahre, perf);
+    const fondsdepotMonthly = simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlag, depotgebuehr, ageRendite);
+    const vvMonthly = simulateVV(monat, einmal, jahre, perf, ageRendite);
+
+    const years = [];
+    const einbezahlt = [];
+    const flvY = [], fondssparerY = [], fondsdepotY = [], vvY = [];
+    for(let y = 0; y <= jahre; y++){
+      years.push(y);
+      einbezahlt.push(monat * 12 * y + einmal);
+      const idx = y * 12;
+      flvY.push(flvMonthly[idx]);
+      fondssparerY.push(fondssparerMonthly[idx]);
+      fondsdepotY.push(fondsdepotMonthly[idx]);
+      vvY.push(vvMonthly[idx]);
+    }
+
+    // Chart
+    if(rrChartInstance) rrChartInstance.destroy();
+    rrChartInstance = new Chart(chartCanvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: years,
+        datasets: [
+          { label:'FLV', data: flvY, borderColor:'#155767', backgroundColor:'rgba(21,87,103,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
+          { label:'Fondssparer', data: fondssparerY, borderColor:'#5B9BD5', backgroundColor:'rgba(91,155,213,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
+          { label:'Fondsdepot', data: fondsdepotY, borderColor:'#B07CC6', backgroundColor:'rgba(176,124,198,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
+          { label:'Vermögensverwaltung', data: vvY, borderColor:'#E7A94C', backgroundColor:'rgba(231,169,76,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
+          { label:'Einbezahlt*', data: einbezahlt, borderColor:'#8FA1A6', borderDash:[5,4], borderWidth:2, pointRadius:0, tension:0 },
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ position:'top', labels:{ color:'#5B6B70', boxWidth:12, font:{size:11} } },
+          tooltip:{ callbacks:{ label:(ctx)=> `${ctx.dataset.label}: ${rrFormatEUR(ctx.parsed.y)}` } }
+        },
+        scales:{
+          x:{ grid:{display:false}, ticks:{ color:'#8FA1A6', font:{size:10}, maxTicksLimit:Math.min(jahre+1, Math.ceil(jahre/5)+1), callback:(val,idx)=> years[idx] % 5 === 0 || years[idx]===jahre ? years[idx] : '' }, title:{ display:true, text:'Jahre', color:'#8FA1A6', font:{size:10} } },
+          y:{ beginAtZero:true, ticks:{ color:'#8FA1A6', font:{size:10}, callback:(val)=> rrFormatAxis(val) }, grid:{ color:'#E7ECED' } }
+        }
+      }
+    });
+
+    // Endwert-Summary
+    const finalEinbezahlt = einbezahlt[einbezahlt.length-1];
+    const products = [
+      { name:'FLV', end: flvY[flvY.length-1] },
+      { name:'Fondssparer', end: fondssparerY[fondssparerY.length-1] },
+      { name:'Fondsdepot', end: fondsdepotY[fondsdepotY.length-1] },
+      { name:'Vermögensverwaltung', end: vvY[vvY.length-1] },
+    ];
+    summaryEl.innerHTML = products.map(p=>{
+      const diff = p.end - finalEinbezahlt;
+      const diffClass = diff >= 0 ? 'rr-sum-diff' : 'rr-sum-diff is-neg';
+      const sign = diff >= 0 ? '+' : '';
+      return `<div class="panel rr-summary-tile">
+        <div class="rr-sum-name">${p.name}</div>
+        <div class="rr-sum-value">${rrFormatEUR(p.end)}</div>
+        <div class="${diffClass}">${sign}${rrFormatEUR(diff)} ggü. Einbezahlt</div>
+      </div>`;
+    }).join('');
+
+    // Jahrestabelle
+    let tableHtml = `<thead><tr><th>Jahr</th><th>Einbezahlt</th><th>FLV</th><th>Fondssparer</th><th>Fondsdepot</th><th>VV</th></tr></thead><tbody>`;
+    for(let y = 0; y <= jahre; y++){
+      tableHtml += `<tr><td>${y}</td><td>${rrFormatEUR(einbezahlt[y])}</td><td>${rrFormatEUR(flvY[y])}</td><td>${rrFormatEUR(fondssparerY[y])}</td><td>${rrFormatEUR(fondsdepotY[y])}</td><td>${rrFormatEUR(vvY[y])}</td></tr>`;
+    }
+    tableHtml += `</tbody>`;
+    tableEl.innerHTML = tableHtml;
+  }
+
+  // Stepper buttons
+  panel.addEventListener('click', (e)=>{
+    const stepBtn = e.target.closest('.rr-step-btn');
+    if(stepBtn){
+      const targetEl = document.getElementById(stepBtn.dataset.target);
+      const step = parseFloat(stepBtn.dataset.step) || 0;
+      const newVal = Math.max(0, (parseFloat(targetEl.value) || 0) + step);
+      targetEl.value = newVal;
+      recalc();
+      return;
+    }
+    const scenarioBtn = e.target.closest('#rrScenarioTabs .guide-tab');
+    if(scenarioBtn){
+      document.querySelectorAll('#rrScenarioTabs .guide-tab').forEach(b=>b.classList.toggle('active', b===scenarioBtn));
+      state.perf = parseFloat(scenarioBtn.dataset.perf) / 100;
+      document.getElementById('rrCustomPerf').value = '';
+      recalc();
+      return;
+    }
+    const toggleBtn = e.target.closest('.rr-toggle-btn');
+    if(toggleBtn){
+      document.querySelectorAll('.rr-toggle-btn').forEach(b=>b.classList.toggle('active', b===toggleBtn));
+      state.provider = toggleBtn.dataset.provider;
+      renderFlvCosts();
+      recalc();
+      return;
+    }
+  });
+
+  document.getElementById('rrCustomPerf').addEventListener('input', (e)=>{
+    const val = parseFloat(e.target.value);
+    if(!isNaN(val)){
+      document.querySelectorAll('#rrScenarioTabs .guide-tab').forEach(b=>b.classList.remove('active'));
+      state.perf = val / 100;
+      recalc();
+    }
+  });
+
+  document.getElementById('rrLaufzeitRange').addEventListener('input', (e)=>{
+    document.getElementById('rrLaufzeitInput').value = e.target.value;
+    recalc();
+  });
+  document.getElementById('rrLaufzeitInput').addEventListener('input', (e)=>{
+    document.getElementById('rrLaufzeitRange').value = e.target.value;
+    recalc();
+  });
+
+  panel.addEventListener('input', (e)=>{
+    if(e.target.matches('#rrMonat, #rrEinmal, #rrAusgabeaufschlag, #rrDepotgebuehr, #rrAgeRendite')) recalc();
+  });
+
+  recalc();
+}
+
 // --- Karrierepläne: statische Inhalte, ein Eintrag pro Plan, per Segment-Tabs umschaltbar ---
 const CAREER_PLANS_LOCKED = {
   "salt": "pg9wBr2rgDxuE6q42vMVtA==",
@@ -3516,6 +4101,7 @@ function initRechnerTabs(){
     tabs.querySelectorAll('.guide-tab').forEach(b=>b.classList.toggle('active', b===btn));
     document.getElementById('rechnerPanel-eh').hidden = key !== 'eh';
     document.getElementById('rechnerPanel-umdreh').hidden = key !== 'umdreh';
+    document.getElementById('rechnerPanel-rendite').hidden = key !== 'rendite';
   });
 }
 
@@ -3628,6 +4214,7 @@ initAttendanceSync();
 initAuth();
 initEHRechner();
 initUmdrehRechner();
+initRenditeRechner();
 initRechnerTabs();
 initCareerPlans();
 initGuide();
