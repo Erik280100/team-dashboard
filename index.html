@@ -3540,7 +3540,7 @@ function initRenditeRechner(){
         <button type="button" class="rr-toggle-btn rr-depot-toggle-btn" data-depot-provider="sonstiges">Sonstiges</button>
       </div>
       <div class="rr-tile-inputs">
-        <div class="rr-field"><label>Ausgabeaufschlag (%)</label><input type="number" class="rr-in" id="rrAusgabeaufschlag" value="0" min="0" step="0.1" disabled></div>
+        <div class="rr-field"><label>Ausgabeaufschlag (%)</label><input type="number" class="rr-in" id="rrAusgabeaufschlag" value="5" min="0" step="0.1"></div>
         <div class="rr-field"><label>Depotgebühr / Fonds-TER (% p.a.)</label><input type="number" class="rr-in" id="rrDepotgebuehr" value="1.45" min="0" step="0.05"></div>
         <div class="rr-field"><label>agE-/Dividendenrendite (% p.a.)</label><input type="number" class="rr-in" id="rrAgeRendite" value="2.0" min="0" step="0.1"></div>
       </div>
@@ -3589,9 +3589,10 @@ function initRenditeRechner(){
   function renderDepotHint(einmal){
     const hintEl = document.getElementById('rrDepotFeeHint');
     const preset = RR_DEPOT_PRESETS[state.depotProvider];
-    hintEl.textContent = (preset && einmal > 0)
+    if(!preset){ hintEl.textContent = ''; return; }
+    hintEl.textContent = einmal > 0
       ? `Sparplan gebührenfrei — zzgl. ${preset.feeLabel} einmalige Ordergebühr auf den Einmalerlag`
-      : '';
+      : `Sparplan gebührenfrei — bei Einmalerlag fällt eine fixe Ordergebühr von ${preset.feeLabel} an`;
   }
 
   const summaryEl = document.getElementById('rrSummary');
@@ -3717,15 +3718,10 @@ function initRenditeRechner(){
     if(depotToggleBtn){
       depotToggleBtn.closest('.rr-flv-toggle').querySelectorAll('.rr-depot-toggle-btn').forEach(b=>b.classList.toggle('active', b===depotToggleBtn));
       state.depotProvider = depotToggleBtn.dataset.depotProvider;
-      const ausgabeEl = document.getElementById('rrAusgabeaufschlag');
       const depotEl = document.getElementById('rrDepotgebuehr');
       const preset = RR_DEPOT_PRESETS[state.depotProvider];
       if(preset){
-        ausgabeEl.value = preset.ausgabeaufschlag;
         depotEl.value = preset.depotgebuehr;
-        ausgabeEl.disabled = true;
-      } else {
-        ausgabeEl.disabled = false;
       }
       recalc();
       return;
