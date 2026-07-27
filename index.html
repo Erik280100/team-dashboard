@@ -1788,6 +1788,10 @@
               <label>Laufzeit (Jahre)</label>
               <input type="number" class="rr-in" id="rrLaufzeitInput" min="1" max="65" step="1" value="20">
             </div>
+            <div class="rr-field">
+              <label><input type="checkbox" id="rrWaEnabled"> Wertanpassung p.a. (%) <span class="rr-tile-note">nur FLV, wirkt auf mtl. Prämie</span></label>
+              <input type="number" class="rr-in" id="rrWaPct" value="3" min="0" step="0.5" disabled>
+            </div>
           </div>
           <div class="rr-scenario-row">
             <div class="rr-scenario-tabs" id="rrScenarioTabs">
@@ -3345,10 +3349,11 @@ const RR_FLV_COSTS = {
     ['Verwaltungskosten von Prämie', '4 %'],
     ['Abschlusskosten (Zillmerung)', '4 % · Monat 1–60'],
     ['Laufende Depotkosten', '0,20 % p.a.'],
-    ['Kickbacks', '+0,575 % p.a.'],
+    ['Kickbacks (Prämie)', '+0,13 % p.a.'],
     ['Einmalerlag Abschlusskosten', '4 %'],
     ['Einmalerlag Verwaltung', '0,35 % p.a.'],
     ['Einmalerlag VSt', '4 % (≥15 J.) / 11 % (<15 J.)'],
+    ['Kickbacks (Einmalerlag)', '+0,835 % p.a.'],
     ['Fixkosten (nur bei Einmalerlag)', '2 €/Monat'],
   ],
   helvetia: [
@@ -3366,9 +3371,14 @@ const RR_FLV_COSTS = {
 function rrRate(pa){ return Math.pow(1 + pa, 1/12) - 1; }
 
 // FLV: getrennte Prämien-/Einmalerlag-Töpfe (Kostensätze können differieren)
-function simulateFLV(provider, monat, einmal, jahre, perf){
+// waPct: jährliche Wertanpassung (Prämiendynamik) auf die mtl. Prämie, kontinuierlich verzinst
+// (analog zur Umrechnung von perf via rrRate) — die Zillmerbasis (gesamtBrutto) bleibt auf der
+// ursprünglich vereinbarten Prämiensumme, da Versicherer diese unabhängig von künftigen,
+// nicht garantierten Wertanpassungen für die Abschlusskostenberechnung heranziehen.
+function simulateFLV(provider, monat, einmal, jahre, perf, waPct = 0){
   const months = jahre * 12;
   const r = rrRate(perf);
+  const waRateMonthly = waPct > 0 ? Math.pow(1 + waPct, 1/12) - 1 : 0;
   const vst = 0.04;
   const adminPraemie = provider === 'merkur' ? 0.04 : 0.07;
   const abschlussPraemie = provider === 'merkur' ? 0.04 : 0.07;
@@ -3377,8 +3387,8 @@ function simulateFLV(provider, monat, einmal, jahre, perf){
   const gesamtBrutto = monat * 12 * jahre;
   const zillmerMonatlich = (abschlussPraemie * gesamtBrutto) / 60;
   const fixMonatlich = (provider === 'merkur' && einmal > 0) ? 2 : 0;
-  function kickbackPa(m){
-    if(provider === 'merkur') return 0.00575;
+  function kickbackPa(m, leg){
+    if(provider === 'merkur') return leg === 'einmal' ? 0.00835 : 0.0013;
     return m <= 84 ? 0.0020 : 0.0040;
   }
 
@@ -3395,20 +3405,21 @@ function simulateFLV(provider, monat, einmal, jahre, perf){
 
   const values = [depotP + depotE];
   for(let m = 1; m <= months; m++){
-    const netPraemie = monat * (1 - vst);
+    const monatAngepasst = waRateMonthly > 0 ? monat * Math.pow(1 + waRateMonthly, m - 1) : monat;
+    const netPraemie = monatAngepasst * (1 - vst);
     const netNachAdmin = netPraemie * (1 - adminPraemie);
     let invest = m <= 60 ? netNachAdmin - zillmerMonatlich : netNachAdmin;
     if(invest < 0) invest = 0;
     depotP += invest;
     depotP *= (1 + r);
     depotP -= depotP * (depotCostPraemiePa / 12);
-    depotP += depotP * (kickbackPa(m) / 12);
+    depotP += depotP * (kickbackPa(m, 'praemie') / 12);
     if(depotP < 0) depotP = 0;
 
     if(einmal > 0){
       depotE *= (1 + r);
       depotE -= depotE * (depotCostEinmalPa / 12);
-      depotE += depotE * (kickbackPa(m) / 12);
+      depotE += depotE * (kickbackPa(m, 'einmal') / 12);
       depotE -= fixMonatlich;
       if(depotE < 0) depotE = 0;
     }
@@ -3607,11 +3618,13 @@ function initRenditeRechner(){
     const ausgabeaufschlag = Math.max(0, parseFloat(document.getElementById('rrAusgabeaufschlag').value) || 0);
     const depotgebuehr = Math.max(0, parseFloat(document.getElementById('rrDepotgebuehr').value) || 0);
     const ageRendite = Math.max(0, parseFloat(document.getElementById('rrAgeRendite').value) || 0);
-    return { monat, einmal, jahre, ausgabeaufschlag, depotgebuehr, ageRendite };
+    const waEnabled = document.getElementById('rrWaEnabled').checked;
+    const waPct = waEnabled ? Math.max(0, parseFloat(document.getElementById('rrWaPct').value) || 0) / 100 : 0;
+    return { monat, einmal, jahre, ausgabeaufschlag, depotgebuehr, ageRendite, waPct };
   }
 
   function recalc(){
-    const { monat, einmal, jahre, ausgabeaufschlag, depotgebuehr, ageRendite } = readInputs();
+    const { monat, einmal, jahre, ausgabeaufschlag, depotgebuehr, ageRendite, waPct } = readInputs();
     const perf = state.perf;
 
     document.getElementById('rrFondssparerWarning').hidden = !(einmal > 0);
@@ -3620,7 +3633,7 @@ function initRenditeRechner(){
     const depotPreset = RR_DEPOT_PRESETS[state.depotProvider];
     const depotFixFee = depotPreset ? depotPreset.flatFee : 0;
 
-    const flvMonthly = simulateFLV(state.provider, monat, einmal, jahre, perf);
+    const flvMonthly = simulateFLV(state.provider, monat, einmal, jahre, perf, waPct);
     const fondssparerMonthly = simulateFondssparer(monat, jahre, perf);
     const fondsdepotMonthly = simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlag, depotgebuehr, ageRendite, depotFixFee);
     const vvMonthly = simulateVV(monat, einmal, jahre, perf, ageRendite);
@@ -3747,8 +3760,13 @@ function initRenditeRechner(){
 
   document.getElementById('rrLaufzeitInput').addEventListener('input', recalc);
 
+  document.getElementById('rrWaEnabled').addEventListener('change', (e)=>{
+    document.getElementById('rrWaPct').disabled = !e.target.checked;
+    recalc();
+  });
+
   panel.addEventListener('input', (e)=>{
-    if(e.target.matches('#rrMonat, #rrEinmal, #rrAusgabeaufschlag, #rrDepotgebuehr, #rrAgeRendite')) recalc();
+    if(e.target.matches('#rrMonat, #rrEinmal, #rrAusgabeaufschlag, #rrDepotgebuehr, #rrAgeRendite, #rrWaPct')) recalc();
   });
 
   recalc();
