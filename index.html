@@ -1014,9 +1014,6 @@
   }
   .rr-step-btn:hover{ border-color:var(--mint2); color:var(--teal); }
   .rr-step-btn:active{ transform:scale(.94); }
-  .rr-range-row{ display:flex; align-items:center; gap:12px; }
-  .rr-range-row input[type="range"]{ flex:1 1 auto; accent-color:var(--mint2); }
-  .rr-range-row input[type="number"]{ width:70px; text-align:center; flex:0 0 auto; padding:8px 9px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; background:#EFFBF5; }
   .rr-scenario-row{
     display:flex;
     align-items:flex-end;
@@ -1075,6 +1072,7 @@
     font-size:13px; font-family:inherit; background:#EFFBF5;
   }
   .rr-tile-inputs input:focus{ outline:none; border-color:var(--mint2); }
+  .rr-tile-inputs input:disabled{ background:#F4F6F6; color:var(--grey-light); cursor:not-allowed; }
   .rr-tile-note{ font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--teal); }
   .rr-tile-warning{
     margin-top:10px; background:#FFF4E5; border:1px solid #F0C36D; color:#8a5a00;
@@ -1762,7 +1760,7 @@
 
       <div class="rechner-panel" id="rechnerPanel-rendite" hidden>
         <div class="banner eh-info">
-          <strong>Renditerechner:</strong> Vergleicht vier österreichische Anlageprodukte (FLV, Fondssparer, Fondsdepot, Vermögensverwaltung) über die gewählte Laufzeit inklusive Kosten und KESt. Modellrechnung ohne Gewähr — Eingaben werden nicht gespeichert.
+          <strong>Renditerechner:</strong> Vergleicht vier österreichische Anlageprodukte (FLV, Fondssparer, Depot, Vermögensverwaltung) über die gewählte Laufzeit inklusive Kosten und KESt. Modellrechnung ohne Gewähr — Eingaben werden nicht gespeichert.
         </div>
 
         <div class="panel rr-global-panel">
@@ -1784,12 +1782,9 @@
                 <button type="button" class="rr-step-btn" data-target="rrEinmal" data-step="1000">+</button>
               </div>
             </div>
-            <div class="rr-field rr-field-wide">
+            <div class="rr-field">
               <label>Laufzeit (Jahre)</label>
-              <div class="rr-range-row">
-                <input type="range" class="rr-in" id="rrLaufzeitRange" min="1" max="40" step="1" value="20">
-                <input type="number" class="rr-in" id="rrLaufzeitInput" min="1" max="40" step="1" value="20">
-              </div>
+              <input type="number" class="rr-in" id="rrLaufzeitInput" min="1" max="65" step="1" value="20">
             </div>
           </div>
           <div class="rr-scenario-row">
@@ -3330,6 +3325,12 @@ function initUmdrehRechner(){
 /* ===== RENDITERECHNER ===== */
 const RR_KEST = 0.275;
 
+// Depot-Presets: Kosten laut Online-Angaben der Broker (Stand 2026)
+const RR_DEPOT_PRESETS = {
+  flatex: { ausgabeaufschlag: 0, depotgebuehr: 0 },
+  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 0 },
+};
+
 const RR_FLV_COSTS = {
   merkur: [
     ['Versicherungssteuer (laufend)', '4 %'],
@@ -3523,17 +3524,31 @@ function initRenditeRechner(){
 
   const tilesEl = document.getElementById('rrTiles');
   tilesEl.innerHTML = `
-    <div class="panel rr-tile" data-product="flv">
-      <h3>FLV (Fondsgebundene Lebensversicherung)</h3>
+    <div class="panel rr-tile" data-product="fondsdepot">
+      <h3>Depot</h3>
       <div class="rr-flv-toggle">
-        <button type="button" class="rr-toggle-btn active" data-provider="merkur">Merkur</button>
-        <button type="button" class="rr-toggle-btn" data-provider="helvetia">Helvetia</button>
+        <button type="button" class="rr-toggle-btn rr-depot-toggle-btn active" data-depot-provider="flatex">flatex</button>
+        <button type="button" class="rr-toggle-btn rr-depot-toggle-btn" data-depot-provider="traderepublic">Trade Republic</button>
+        <button type="button" class="rr-toggle-btn rr-depot-toggle-btn" data-depot-provider="sonstiges">Sonstiges</button>
       </div>
-      <div class="rr-cost-list" id="rrFlvCosts"></div>
-      <div class="rr-tile-note">KESt-frei</div>
+      <div class="rr-tile-inputs">
+        <div class="rr-field"><label>Ausgabeaufschlag (%)</label><input type="number" class="rr-in" id="rrAusgabeaufschlag" value="0" min="0" step="0.1" disabled></div>
+        <div class="rr-field"><label>Depotgebühr (% p.a.)</label><input type="number" class="rr-in" id="rrDepotgebuehr" value="0" min="0" step="0.1" disabled></div>
+        <div class="rr-field"><label>agE-/Dividendenrendite (% p.a.)</label><input type="number" class="rr-in" id="rrAgeRendite" value="2.0" min="0" step="0.1"></div>
+      </div>
+      <div class="rr-tile-note">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
+    </div>
+    <div class="panel rr-tile" data-product="vv">
+      <h3>Vermögensverwaltung</h3>
+      <div class="rr-cost-list">
+        <div class="rr-cost-row"><span>Setup-Kosten</span><span>3 × Monatsbeitrag</span></div>
+        <div class="rr-cost-row"><span>Ausgabeaufschlag Einmalerlag</span><span>5 %</span></div>
+        <div class="rr-cost-row"><span>Laufende Kosten</span><span>2,09 % p.a.</span></div>
+      </div>
+      <div class="rr-tile-note">KESt-pflichtig (27,5 %)</div>
     </div>
     <div class="panel rr-tile" data-product="fondssparer">
-      <h3>Fondssparer (CleVesto FLV13F)</h3>
+      <h3>Fondssparer</h3>
       <div class="rr-cost-list">
         <div class="rr-cost-row"><span>Versicherungssteuer</span><span>4 %</span></div>
         <div class="rr-cost-row"><span>Prämienabzüge</span><span>5,25 %</span></div>
@@ -3543,23 +3558,14 @@ function initRenditeRechner(){
       <div class="rr-tile-note">KESt-frei</div>
       <div class="rr-tile-warning" id="rrFondssparerWarning" hidden>Kein Einmalerlag verfügbar — der eingegebene Einmalerlag fließt bei diesem Produkt nicht ins Depot.</div>
     </div>
-    <div class="panel rr-tile" data-product="fondsdepot">
-      <h3>Fondsdepot</h3>
-      <div class="rr-tile-inputs">
-        <div class="rr-field"><label>Ausgabeaufschlag (%)</label><input type="number" class="rr-in" id="rrAusgabeaufschlag" value="5" min="0" step="0.1"></div>
-        <div class="rr-field"><label>Depotgebühr (% p.a.)</label><input type="number" class="rr-in" id="rrDepotgebuehr" value="1" min="0" step="0.1"></div>
-        <div class="rr-field"><label>agE-/Dividendenrendite (% p.a.)</label><input type="number" class="rr-in" id="rrAgeRendite" value="2.0" min="0" step="0.1"></div>
+    <div class="panel rr-tile" data-product="flv">
+      <h3>FLV (Fondsgebundene Lebensversicherung)</h3>
+      <div class="rr-flv-toggle">
+        <button type="button" class="rr-toggle-btn active" data-provider="merkur">Merkur</button>
+        <button type="button" class="rr-toggle-btn" data-provider="helvetia">Helvetia</button>
       </div>
-      <div class="rr-tile-note">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
-    </div>
-    <div class="panel rr-tile" data-product="vv">
-      <h3>Vermögensverwaltung (4money)</h3>
-      <div class="rr-cost-list">
-        <div class="rr-cost-row"><span>Setup-Kosten</span><span>3 × Monatsbeitrag</span></div>
-        <div class="rr-cost-row"><span>Ausgabeaufschlag Einmalerlag</span><span>5 %</span></div>
-        <div class="rr-cost-row"><span>Laufende Kosten</span><span>2,09 % p.a.</span></div>
-      </div>
-      <div class="rr-tile-note">KESt-pflichtig (27,5 %)</div>
+      <div class="rr-cost-list" id="rrFlvCosts"></div>
+      <div class="rr-tile-note">KESt-frei</div>
     </div>
   `;
 
@@ -3579,7 +3585,7 @@ function initRenditeRechner(){
     const monat = Math.max(0, parseFloat(document.getElementById('rrMonat').value) || 0);
     const einmal = Math.max(0, parseFloat(document.getElementById('rrEinmal').value) || 0);
     let jahre = Math.round(parseFloat(document.getElementById('rrLaufzeitInput').value)) || 20;
-    jahre = Math.min(40, Math.max(1, jahre));
+    jahre = Math.min(65, Math.max(1, jahre));
     const ausgabeaufschlag = Math.max(0, parseFloat(document.getElementById('rrAusgabeaufschlag').value) || 0);
     const depotgebuehr = Math.max(0, parseFloat(document.getElementById('rrDepotgebuehr').value) || 0);
     const ageRendite = Math.max(0, parseFloat(document.getElementById('rrAgeRendite').value) || 0);
@@ -3619,7 +3625,7 @@ function initRenditeRechner(){
         datasets: [
           { label:'FLV', data: flvY, borderColor:'#155767', backgroundColor:'rgba(21,87,103,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
           { label:'Fondssparer', data: fondssparerY, borderColor:'#5B9BD5', backgroundColor:'rgba(91,155,213,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
-          { label:'Fondsdepot', data: fondsdepotY, borderColor:'#B07CC6', backgroundColor:'rgba(176,124,198,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
+          { label:'Depot', data: fondsdepotY, borderColor:'#B07CC6', backgroundColor:'rgba(176,124,198,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
           { label:'Vermögensverwaltung', data: vvY, borderColor:'#E7A94C', backgroundColor:'rgba(231,169,76,.08)', borderWidth:2.5, pointRadius:0, tension:.2 },
           { label:'Einbezahlt*', data: einbezahlt, borderColor:'#8FA1A6', borderDash:[5,4], borderWidth:2, pointRadius:0, tension:0 },
         ]
@@ -3643,7 +3649,7 @@ function initRenditeRechner(){
     const products = [
       { name:'FLV', end: flvY[flvY.length-1] },
       { name:'Fondssparer', end: fondssparerY[fondssparerY.length-1] },
-      { name:'Fondsdepot', end: fondsdepotY[fondsdepotY.length-1] },
+      { name:'Depot', end: fondsdepotY[fondsdepotY.length-1] },
       { name:'Vermögensverwaltung', end: vvY[vvY.length-1] },
     ];
     summaryEl.innerHTML = products.map(p=>{
@@ -3658,7 +3664,7 @@ function initRenditeRechner(){
     }).join('');
 
     // Jahrestabelle
-    let tableHtml = `<thead><tr><th>Jahr</th><th>Einbezahlt</th><th>FLV</th><th>Fondssparer</th><th>Fondsdepot</th><th>VV</th></tr></thead><tbody>`;
+    let tableHtml = `<thead><tr><th>Jahr</th><th>Einbezahlt</th><th>FLV</th><th>Fondssparer</th><th>Depot</th><th>VV</th></tr></thead><tbody>`;
     for(let y = 0; y <= jahre; y++){
       tableHtml += `<tr><td>${y}</td><td>${rrFormatEUR(einbezahlt[y])}</td><td>${rrFormatEUR(flvY[y])}</td><td>${rrFormatEUR(fondssparerY[y])}</td><td>${rrFormatEUR(fondsdepotY[y])}</td><td>${rrFormatEUR(vvY[y])}</td></tr>`;
     }
@@ -3685,9 +3691,27 @@ function initRenditeRechner(){
       recalc();
       return;
     }
-    const toggleBtn = e.target.closest('.rr-toggle-btn');
+    const depotToggleBtn = e.target.closest('.rr-depot-toggle-btn');
+    if(depotToggleBtn){
+      depotToggleBtn.closest('.rr-flv-toggle').querySelectorAll('.rr-depot-toggle-btn').forEach(b=>b.classList.toggle('active', b===depotToggleBtn));
+      const ausgabeEl = document.getElementById('rrAusgabeaufschlag');
+      const depotEl = document.getElementById('rrDepotgebuehr');
+      const preset = RR_DEPOT_PRESETS[depotToggleBtn.dataset.depotProvider];
+      if(preset){
+        ausgabeEl.value = preset.ausgabeaufschlag;
+        depotEl.value = preset.depotgebuehr;
+        ausgabeEl.disabled = true;
+        depotEl.disabled = true;
+      } else {
+        ausgabeEl.disabled = false;
+        depotEl.disabled = false;
+      }
+      recalc();
+      return;
+    }
+    const toggleBtn = e.target.closest('.rr-toggle-btn:not(.rr-depot-toggle-btn)');
     if(toggleBtn){
-      document.querySelectorAll('.rr-toggle-btn').forEach(b=>b.classList.toggle('active', b===toggleBtn));
+      toggleBtn.closest('.rr-flv-toggle').querySelectorAll('.rr-toggle-btn:not(.rr-depot-toggle-btn)').forEach(b=>b.classList.toggle('active', b===toggleBtn));
       state.provider = toggleBtn.dataset.provider;
       renderFlvCosts();
       recalc();
@@ -3704,14 +3728,7 @@ function initRenditeRechner(){
     }
   });
 
-  document.getElementById('rrLaufzeitRange').addEventListener('input', (e)=>{
-    document.getElementById('rrLaufzeitInput').value = e.target.value;
-    recalc();
-  });
-  document.getElementById('rrLaufzeitInput').addEventListener('input', (e)=>{
-    document.getElementById('rrLaufzeitRange').value = e.target.value;
-    recalc();
-  });
+  document.getElementById('rrLaufzeitInput').addEventListener('input', recalc);
 
   panel.addEventListener('input', (e)=>{
     if(e.target.matches('#rrMonat, #rrEinmal, #rrAusgabeaufschlag, #rrDepotgebuehr, #rrAgeRendite')) recalc();
