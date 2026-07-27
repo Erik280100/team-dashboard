@@ -3328,11 +3328,15 @@ function initUmdrehRechner(){
 const RR_KEST = 0.275;
 
 // Depot-Presets: Kosten laut Online-Angaben der Broker (Stand 2026)
-// Sparplanausführung ist bei beiden gebührenfrei (Ausgabeaufschlag/Depotgebühr = 0),
+// Sparplanausführung ist bei beiden gebührenfrei (Ausgabeaufschlag = 0),
 // ein Einmalerlag (Einzelorder) kostet aber pauschal eine fixe Ordergebühr in €.
+// Depotgebühr wird hier als laufende Fondskosten (TER) genutzt, die der Broker nicht
+// separat verrechnet, sondern die sich automatisch im Anteilsschein-Kurs niederschlagen
+// (z. B. aktiver Fonds wie der DWS Vermögensbildungsfonds ~1,45 % p.a.) — editierbar,
+// da die tatsächliche TER vom gewählten Fonds/ETF abhängt.
 const RR_DEPOT_PRESETS = {
-  flatex: { ausgabeaufschlag: 0, depotgebuehr: 0, flatFee: 5.90, feeLabel: '5,90 €' },
-  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 0, flatFee: 1.00, feeLabel: '1 €' },
+  flatex: { ausgabeaufschlag: 0, depotgebuehr: 1.45, flatFee: 5.90, feeLabel: '5,90 €' },
+  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 1.45, flatFee: 1.00, feeLabel: '1 €' },
 };
 
 const RR_FLV_COSTS = {
@@ -3537,7 +3541,7 @@ function initRenditeRechner(){
       </div>
       <div class="rr-tile-inputs">
         <div class="rr-field"><label>Ausgabeaufschlag (%)</label><input type="number" class="rr-in" id="rrAusgabeaufschlag" value="0" min="0" step="0.1" disabled></div>
-        <div class="rr-field"><label>Depotgebühr (% p.a.)</label><input type="number" class="rr-in" id="rrDepotgebuehr" value="0" min="0" step="0.1" disabled></div>
+        <div class="rr-field"><label>Depotgebühr / Fonds-TER (% p.a.)</label><input type="number" class="rr-in" id="rrDepotgebuehr" value="1.45" min="0" step="0.05"></div>
         <div class="rr-field"><label>agE-/Dividendenrendite (% p.a.)</label><input type="number" class="rr-in" id="rrAgeRendite" value="2.0" min="0" step="0.1"></div>
       </div>
       <div class="rr-tile-hint" id="rrDepotFeeHint"></div>
@@ -3663,14 +3667,15 @@ function initRenditeRechner(){
 
     // Endwert-Summary
     const finalEinbezahlt = einbezahlt[einbezahlt.length-1];
+    const finalEinbezahltFondssparer = monat * 12 * jahre; // kein Einmalerlag möglich
     const products = [
-      { name:'FLV', end: flvY[flvY.length-1] },
-      { name:'Fondssparer', end: fondssparerY[fondssparerY.length-1] },
-      { name:'Depot', end: fondsdepotY[fondsdepotY.length-1] },
-      { name:'Vermögensverwaltung', end: vvY[vvY.length-1] },
+      { name:'FLV', end: flvY[flvY.length-1], einbezahlt: finalEinbezahlt },
+      { name:'Fondssparer', end: fondssparerY[fondssparerY.length-1], einbezahlt: finalEinbezahltFondssparer },
+      { name:'Depot', end: fondsdepotY[fondsdepotY.length-1], einbezahlt: finalEinbezahlt },
+      { name:'Vermögensverwaltung', end: vvY[vvY.length-1], einbezahlt: finalEinbezahlt },
     ];
     summaryEl.innerHTML = products.map(p=>{
-      const diff = p.end - finalEinbezahlt;
+      const diff = p.end - p.einbezahlt;
       const diffClass = diff >= 0 ? 'rr-sum-diff' : 'rr-sum-diff is-neg';
       const sign = diff >= 0 ? '+' : '';
       return `<div class="panel rr-summary-tile">
@@ -3719,10 +3724,8 @@ function initRenditeRechner(){
         ausgabeEl.value = preset.ausgabeaufschlag;
         depotEl.value = preset.depotgebuehr;
         ausgabeEl.disabled = true;
-        depotEl.disabled = true;
       } else {
         ausgabeEl.disabled = false;
-        depotEl.disabled = false;
       }
       recalc();
       return;
