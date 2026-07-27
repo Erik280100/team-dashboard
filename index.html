@@ -1331,11 +1331,10 @@
 
     <button class="nav-item active" data-section="overview" aria-current="page"><span class="ico" aria-hidden="true">◈</span> Übersicht</button>
     <button class="nav-item" data-section="team"><span class="ico" aria-hidden="true">◎</span> Mitarbeiter</button>
-    <button class="nav-item" data-section="eh-rechner"><span class="ico" aria-hidden="true">∑</span> EH-Rechner</button>
-    <button class="nav-item" data-section="umdreh-rechner"><span class="ico" aria-hidden="true">⇄</span> Umdrehrechner</button>
+    <button class="nav-item" data-section="rechner"><span class="ico" aria-hidden="true">∑</span> Rechner</button>
     <button class="nav-item" data-section="karriere"><span class="ico" aria-hidden="true">↗</span> Karrierepläne</button>
     <button class="nav-item" data-section="guide"><span class="ico" aria-hidden="true">▤</span> Guide</button>
-    <button class="nav-item" data-section="kalender"><span class="ico" aria-hidden="true">▦</span> Kalender</button>
+    <button class="nav-item" data-section="kalender"><span class="ico" aria-hidden="true">▦</span> Kalender/Anwesenheitsliste</button>
     <button class="nav-item" data-section="partner"><span class="ico" aria-hidden="true">🔗</span> Partnerportale</button>
 
     <div class="sidebar-footer">
@@ -1520,107 +1519,113 @@
       </div>
     </section>
 
-    <!-- EH-RECHNER SECTION -->
-    <section class="section" id="section-eh-rechner" aria-label="EH-Rechner" tabindex="-1" hidden>
-      <div class="banner eh-info">
-        <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet und zur Zwischensumme addiert. Grün hinterlegte Felder sind editierbar. Eingaben werden nicht gespeichert.
+    <!-- RECHNER SECTION -->
+    <section class="section" id="section-rechner" aria-label="Rechner" tabindex="-1" hidden>
+      <div class="guide-tabs" id="rechnerTabs">
+        <button class="guide-tab active" data-rechner-panel="eh" type="button">EH-Rechner</button>
+        <button class="guide-tab" data-rechner-panel="umdreh" type="button">Umdrehrechner</button>
       </div>
 
-      <div class="eh-total-banner">
-        <div>
-          <div class="eh-total-label">Gesamt Einheiten</div>
-          <div class="eh-total-value"><span id="ehGrandTotal">0</span><span class="unit">EH</span></div>
+      <div class="rechner-panel" id="rechnerPanel-eh">
+        <div class="banner eh-info">
+          <strong>Einheiten (EH) berechnen:</strong> Trage bei jedem Produkt die monatliche Prämie ein (bei Kredit &amp; Immobilienverkauf die Gesamtsumme) — das Ergebnis in Einheiten wird automatisch berechnet und zur Zwischensumme addiert. Grün hinterlegte Felder sind editierbar. Eingaben werden nicht gespeichert.
         </div>
-        <div>
-          <div class="eh-total-label">Gesamt in €</div>
-          <div class="eh-total-value"><span id="ehGrandTotalEur">0,00</span><span class="unit">€</span></div>
+
+        <div class="eh-total-banner">
+          <div>
+            <div class="eh-total-label">Gesamt Einheiten</div>
+            <div class="eh-total-value"><span id="ehGrandTotal">0</span><span class="unit">EH</span></div>
+          </div>
+          <div>
+            <div class="eh-total-label">Gesamt in €</div>
+            <div class="eh-total-value"><span id="ehGrandTotalEur">0,00</span><span class="unit">€</span></div>
+          </div>
+          <button class="btn btn-ghost btn-small" id="ehResetBtn" type="button">Zurücksetzen</button>
         </div>
-        <button class="btn btn-ghost btn-small" id="ehResetBtn" type="button">Zurücksetzen</button>
+
+        <div class="eh-groups" id="ehGroups"></div>
       </div>
 
-      <div class="eh-groups" id="ehGroups"></div>
-    </section>
+      <div class="rechner-panel" id="rechnerPanel-umdreh" hidden>
+        <div class="banner eh-info">
+          <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags (alte Stufe, Faktor 2,30) mit dem aktuellen Verdienst bei finova (neue Stufe, Faktor 2,14) — für Berater und Führungskraft. Die Führungskraft verdient jeweils die Differenz zwischen ihrer eigenen Stufe und der Berater-Stufe (alt bzw. neu getrennt). Eingaben werden nicht gespeichert.
+        </div>
 
-    <!-- UMDREHRECHNER SECTION -->
-    <section class="section" id="section-umdreh-rechner" aria-label="Umdrehrechner" tabindex="-1" hidden>
-      <div class="banner eh-info">
-        <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags (alte Stufe, Faktor 2,30) mit dem aktuellen Verdienst bei finova (neue Stufe, Faktor 2,14) — für Berater und Führungskraft. Die Führungskraft verdient jeweils die Differenz zwischen ihrer eigenen Stufe und der Berater-Stufe (alt bzw. neu getrennt). Eingaben werden nicht gespeichert.
-      </div>
+        <div class="panel um-input-panel">
+          <h2>Eingabe</h2>
+          <div class="um-input-row">
+            <div class="eh-field">
+              <label>Prämie (€)</label>
+              <input type="number" class="um-in" id="umPraemie" value="100" step="10" min="0">
+            </div>
+            <div class="eh-field">
+              <label>Einheiten alt</label>
+              <input type="text" value="2,30" disabled>
+            </div>
+            <div class="eh-field">
+              <label>Einheiten neu</label>
+              <input type="text" value="2,14" disabled>
+            </div>
+          </div>
+          <div class="um-input-row">
+            <div class="eh-field">
+              <label>Berater-Stufe alt (€/EH)</label>
+              <input type="number" class="um-in" id="umBeraterAlt" value="0" step="0.1" min="0">
+            </div>
+            <div class="eh-field">
+              <label>Berater-Stufe neu (€/EH)</label>
+              <input type="number" class="um-in" id="umBeraterNeu" value="0" step="0.1" min="0">
+            </div>
+            <div class="eh-field">
+              <label>FK-Stufe alt (€/EH)</label>
+              <input type="number" class="um-in" id="umFkAlt" value="0" step="0.1" min="0">
+            </div>
+            <div class="eh-field">
+              <label>FK-Stufe neu (€/EH)</label>
+              <input type="number" class="um-in" id="umFkNeu" value="0" step="0.1" min="0">
+            </div>
+          </div>
+          <div class="um-storno-row">
+            <label class="um-storno-switch">
+              <input type="checkbox" id="umStornoSwitch">
+              <span class="um-storno-slider"></span>
+            </label>
+            <label for="umStornoSwitch" class="um-storno-label">Stornoreserve berücksichtigen (15% werden von allen verdienten Summen abgezogen und nicht ausgezahlt)</label>
+          </div>
+        </div>
 
-      <div class="panel um-input-panel">
-        <h2>Eingabe</h2>
-        <div class="um-input-row">
-          <div class="eh-field">
-            <label>Prämie (€)</label>
-            <input type="number" class="um-in" id="umPraemie" value="100" step="10" min="0">
-          </div>
-          <div class="eh-field">
-            <label>Einheiten alt</label>
-            <input type="text" value="2,30" disabled>
-          </div>
-          <div class="eh-field">
-            <label>Einheiten neu</label>
-            <input type="text" value="2,14" disabled>
-          </div>
-        </div>
-        <div class="um-input-row">
-          <div class="eh-field">
-            <label>Berater-Stufe alt (€/EH)</label>
-            <input type="number" class="um-in" id="umBeraterAlt" value="0" step="0.1" min="0">
-          </div>
-          <div class="eh-field">
-            <label>Berater-Stufe neu (€/EH)</label>
-            <input type="number" class="um-in" id="umBeraterNeu" value="0" step="0.1" min="0">
-          </div>
-          <div class="eh-field">
-            <label>FK-Stufe alt (€/EH)</label>
-            <input type="number" class="um-in" id="umFkAlt" value="0" step="0.1" min="0">
-          </div>
-          <div class="eh-field">
-            <label>FK-Stufe neu (€/EH)</label>
-            <input type="number" class="um-in" id="umFkNeu" value="0" step="0.1" min="0">
-          </div>
-        </div>
-        <div class="um-storno-row">
-          <label class="um-storno-switch">
-            <input type="checkbox" id="umStornoSwitch">
-            <span class="um-storno-slider"></span>
-          </label>
-          <label for="umStornoSwitch" class="um-storno-label">Stornoreserve berücksichtigen (15% werden von allen verdienten Summen abgezogen und nicht ausgezahlt)</label>
-        </div>
-      </div>
+        <div class="um-storno-note" id="umStornoNote" hidden>Hinweis: Die Stornoreserve (15%) wurde berücksichtigt — alle angezeigten Beträge sind bereits um die einbehaltene Stornoreserve reduziert.</div>
 
-      <div class="um-storno-note" id="umStornoNote" hidden>Hinweis: Die Stornoreserve (15%) wurde berücksichtigt — alle angezeigten Beträge sind bereits um die einbehaltene Stornoreserve reduziert.</div>
+        <div class="um-results">
+          <div class="panel um-result-panel">
+            <h2>Berater</h2>
+            <div class="um-result-row"><span class="lbl">Storno-Minus</span><span class="val" id="umBeraterMinus">0,00 €</span></div>
+            <div class="um-result-row"><span class="lbl">Aktuell</span><span class="val" id="umBeraterAktuell">0,00 €</span></div>
+            <div class="um-result-row um-diff-row"><span class="lbl">Differenz</span><span class="val um-diff" id="umBeraterDiff">0,00 €</span></div>
+          </div>
+          <div class="panel um-result-panel">
+            <h2>Führungskraft</h2>
+            <div class="um-result-row"><span class="lbl">Storno-Minus</span><span class="val" id="umFkMinus">0,00 €</span></div>
+            <div class="um-result-row"><span class="lbl">Aktuell</span><span class="val" id="umFkAktuell">0,00 €</span></div>
+            <div class="um-result-row um-diff-row"><span class="lbl">Differenz</span><span class="val um-diff" id="umFkDiff">0,00 €</span></div>
+          </div>
+        </div>
 
-      <div class="um-results">
-        <div class="panel um-result-panel">
-          <h2>Berater</h2>
-          <div class="um-result-row"><span class="lbl">Storno-Minus</span><span class="val" id="umBeraterMinus">0,00 €</span></div>
-          <div class="um-result-row"><span class="lbl">Aktuell</span><span class="val" id="umBeraterAktuell">0,00 €</span></div>
-          <div class="um-result-row um-diff-row"><span class="lbl">Differenz</span><span class="val um-diff" id="umBeraterDiff">0,00 €</span></div>
+        <div class="um-total-banner">
+          <div>
+            <div class="eh-total-label">Storno-Minus gesamt</div>
+            <div class="eh-total-value"><span id="umGesamtMinus">0,00</span><span class="unit">€</span></div>
+          </div>
+          <div>
+            <div class="eh-total-label">Aktuell gesamt</div>
+            <div class="eh-total-value"><span id="umGesamtAktuell">0,00</span><span class="unit">€</span></div>
+          </div>
+          <div>
+            <div class="eh-total-label">Differenz gesamt</div>
+            <div class="eh-total-value" id="umGesamtDiffWrap"><span id="umGesamtDiff">0,00</span><span class="unit">€</span></div>
+          </div>
+          <button class="btn btn-ghost btn-small" id="umResetBtn" type="button">Zurücksetzen</button>
         </div>
-        <div class="panel um-result-panel">
-          <h2>Führungskraft</h2>
-          <div class="um-result-row"><span class="lbl">Storno-Minus</span><span class="val" id="umFkMinus">0,00 €</span></div>
-          <div class="um-result-row"><span class="lbl">Aktuell</span><span class="val" id="umFkAktuell">0,00 €</span></div>
-          <div class="um-result-row um-diff-row"><span class="lbl">Differenz</span><span class="val um-diff" id="umFkDiff">0,00 €</span></div>
-        </div>
-      </div>
-
-      <div class="um-total-banner">
-        <div>
-          <div class="eh-total-label">Storno-Minus gesamt</div>
-          <div class="eh-total-value"><span id="umGesamtMinus">0,00</span><span class="unit">€</span></div>
-        </div>
-        <div>
-          <div class="eh-total-label">Aktuell gesamt</div>
-          <div class="eh-total-value"><span id="umGesamtAktuell">0,00</span><span class="unit">€</span></div>
-        </div>
-        <div>
-          <div class="eh-total-label">Differenz gesamt</div>
-          <div class="eh-total-value" id="umGesamtDiffWrap"><span id="umGesamtDiff">0,00</span><span class="unit">€</span></div>
-        </div>
-        <button class="btn btn-ghost btn-small" id="umResetBtn" type="button">Zurücksetzen</button>
       </div>
     </section>
 
@@ -3062,7 +3067,7 @@ const UM_EH_ALT = 2.30;
 const UM_EH_NEU = 2.14;
 
 function initUmdrehRechner(){
-  const section = document.getElementById('section-umdreh-rechner');
+  const section = document.getElementById('rechnerPanel-umdreh');
   if(!section) return;
 
   function setDiff(el, value){
@@ -3500,6 +3505,20 @@ const GUIDE_SECTIONS = [
   ` }
 ];
 
+function initRechnerTabs(){
+  const tabs = document.getElementById('rechnerTabs');
+  if(!tabs) return;
+
+  tabs.addEventListener('click', e=>{
+    const btn = e.target.closest('.guide-tab');
+    if(!btn) return;
+    const key = btn.dataset.rechnerPanel;
+    tabs.querySelectorAll('.guide-tab').forEach(b=>b.classList.toggle('active', b===btn));
+    document.getElementById('rechnerPanel-eh').hidden = key !== 'eh';
+    document.getElementById('rechnerPanel-umdreh').hidden = key !== 'umdreh';
+  });
+}
+
 function initGuide(){
   const tabs = document.getElementById('guideTabs');
   const content = document.getElementById('guideContent');
@@ -3609,6 +3628,7 @@ initAttendanceSync();
 initAuth();
 initEHRechner();
 initUmdrehRechner();
+initRechnerTabs();
 initCareerPlans();
 initGuide();
 initPartnerPortals();
