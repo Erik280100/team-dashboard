@@ -1789,7 +1789,7 @@
               <input type="number" class="rr-in" id="rrLaufzeitInput" min="1" max="65" step="1" value="20">
             </div>
             <div class="rr-field">
-              <label><input type="checkbox" id="rrWaEnabled"> Wertanpassung p.a. (%) <span class="rr-tile-note">nur FLV, wirkt auf mtl. Prämie</span></label>
+              <label><input type="checkbox" id="rrWaEnabled"> Wertanpassung p.a. (%) <span class="rr-tile-note">FLV &amp; Fondssparer, wirkt auf mtl. Prämie</span></label>
               <input type="number" class="rr-in" id="rrWaPct" value="3" min="0" step="0.5" disabled>
             </div>
           </div>
@@ -3429,13 +3429,15 @@ function simulateFLV(provider, monat, einmal, jahre, perf, waPct = 0){
 }
 
 // Fondssparer: kein Einmalerlag, keine Zillmerung, keine Kickbacks
-function simulateFondssparer(monat, jahre, perf){
+function simulateFondssparer(monat, jahre, perf, waPct = 0){
   const months = jahre * 12;
   const r = rrRate(perf);
+  const waRateMonthly = waPct > 0 ? Math.pow(1 + waPct, 1/12) - 1 : 0;
   let depot = 0;
   const values = [0];
   for(let m = 1; m <= months; m++){
-    const netPraemie = monat * 0.96;
+    const monatAngepasst = waRateMonthly > 0 ? monat * Math.pow(1 + waRateMonthly, m - 1) : monat;
+    const netPraemie = monatAngepasst * 0.96;
     const netNachAbzug = netPraemie * (1 - 0.0525);
     depot += netNachAbzug;
     depot *= (1 + r);
@@ -3634,7 +3636,7 @@ function initRenditeRechner(){
     const depotFixFee = depotPreset ? depotPreset.flatFee : 0;
 
     const flvMonthly = simulateFLV(state.provider, monat, einmal, jahre, perf, waPct);
-    const fondssparerMonthly = simulateFondssparer(monat, jahre, perf);
+    const fondssparerMonthly = simulateFondssparer(monat, jahre, perf, waPct);
     const fondsdepotMonthly = simulateFondsdepot(monat, einmal, jahre, perf, ausgabeaufschlag, depotgebuehr, ageRendite, depotFixFee);
     const vvMonthly = simulateVV(monat, einmal, jahre, perf, ageRendite);
 
