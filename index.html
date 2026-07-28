@@ -1455,8 +1455,9 @@
   .sb-hint-bar{ display:none; background:#EAF4FB; color:var(--teal); font-size:12px; font-weight:600; padding:8px 14px; border-radius:10px; margin-bottom:12px; }
   .sb-hint-bar.on{ display:block; }
   .sb-stage{ position:relative; height:600px; border:1px solid var(--border); border-radius:14px; background:#FAFBFC; overflow:hidden; }
-  .sb-scroll{ position:absolute; inset:0; overflow:auto; padding:40px 50px 60px; }
-  .sb-chart{ position:relative; display:inline-block; min-width:100%; }
+  .sb-scroll{ position:absolute; inset:0; overflow:auto; padding:40px 50px 60px; display:flex; align-items:flex-start; justify-content:center; }
+  .sb-chart-wrap{ position:relative; flex:none; }
+  .sb-chart{ position:relative; transform-origin:0 0; }
   .sb-svg-layer{ position:absolute; top:0; left:0; pointer-events:none; overflow:visible; }
   .sb-custom-conn{ pointer-events:stroke; cursor:pointer; }
 
@@ -1761,8 +1762,10 @@
         <div class="sb-hint-bar" id="sbHintBar"></div>
         <div class="sb-stage">
           <div class="sb-scroll" id="sbScroll">
-            <div class="sb-chart" id="sbChart">
-              <svg class="sb-svg-layer" id="sbSvgLayer"></svg>
+            <div class="sb-chart-wrap" id="sbChartWrap">
+              <div class="sb-chart" id="sbChart">
+                <svg class="sb-svg-layer" id="sbSvgLayer"></svg>
+              </div>
             </div>
           </div>
         </div>
@@ -4206,6 +4209,7 @@ function sbRender(){
   nodes.forEach(n=>sbNodeMap[n.id]=n);
   const maxX = Math.max(...nodes.map(n=>n.x+SB_NW))+70;
   const maxY = Math.max(...nodes.map(n=>n.y+SB_NH))+70;
+  sbChartW = maxX; sbChartH = maxY;
   stage.style.width = maxX+'px'; stage.style.height = maxY+'px';
   const svg = document.getElementById('sbSvgLayer');
   svg.setAttribute('width', maxX); svg.setAttribute('height', maxY);
@@ -4270,7 +4274,29 @@ function sbRender(){
 
   if(sbCurId && sbNodeMap[sbCurId]) sbRenderPanel(sbNodeMap[sbCurId]);
   sbRefreshTotal();
+  sbApplyFit();
 }
+
+// Skaliert den Baum so, dass er komplett in die sichtbare Fläche passt
+// (kein Scrollen nötig für normal große Bäume) — schrumpft aber nicht
+// unter eine noch lesbare Mindestgröße; sehr große Bäume bleiben scrollbar.
+const SB_MIN_SCALE = 0.4;
+let sbChartW = 0, sbChartH = 0;
+function sbApplyFit(){
+  const scrollEl = document.getElementById('sbScroll');
+  const chart = document.getElementById('sbChart');
+  const wrap = document.getElementById('sbChartWrap');
+  if(!scrollEl || !chart || !wrap || !sbChartW || !sbChartH) return;
+  const availW = Math.max(100, scrollEl.clientWidth - 100);
+  const availH = Math.max(100, scrollEl.clientHeight - 100);
+  let scale = Math.min(1, availW/sbChartW, availH/sbChartH);
+  scale = Math.max(scale, SB_MIN_SCALE);
+  chart.style.transform = `scale(${scale})`;
+  wrap.style.width = (sbChartW*scale)+'px';
+  wrap.style.height = (sbChartH*scale)+'px';
+}
+window.addEventListener('resize', ()=>{ if(sbChartW) sbApplyFit(); });
+
 function sbRefreshBadge(id){
   const el = document.getElementById('sbb-'+id); if(!el) return;
   const c = (sbNotes[id]||[]).length;
@@ -4834,6 +4860,7 @@ function activateSection(section){
   btn.setAttribute('aria-current','page');
   target.classList.add('active');
   target.removeAttribute('hidden');
+  if(section==='struktur' && typeof sbApplyFit==='function') sbApplyFit();
   return target;
 }
 
