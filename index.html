@@ -1449,6 +1449,102 @@
     animation:spin .8s linear infinite;
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ══════════════ STRUKTURBAUM (Org-Chart) ══════════════ */
+  .sb-link-on{ background:var(--amber) !important; border-color:var(--amber) !important; color:var(--navy) !important; }
+  .sb-hint-bar{ display:none; background:#EAF4FB; color:var(--teal); font-size:12px; font-weight:600; padding:8px 14px; border-radius:10px; margin-bottom:12px; }
+  .sb-hint-bar.on{ display:block; }
+  .sb-stage{ position:relative; height:600px; border:1px solid var(--border); border-radius:14px; background:#FAFBFC; overflow:hidden; }
+  .sb-scroll{ position:absolute; inset:0; overflow:auto; padding:40px 50px 60px; }
+  .sb-chart{ position:relative; display:inline-block; min-width:100%; }
+  .sb-svg-layer{ position:absolute; top:0; left:0; pointer-events:none; overflow:visible; }
+  .sb-custom-conn{ pointer-events:stroke; cursor:pointer; }
+
+  .sb-node{ position:absolute; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:600; letter-spacing:-.01em; transition:box-shadow .14s, outline .1s; gap:3px; cursor:pointer; }
+  .sb-node .sb-nn{ font-size:13.5px; line-height:1; pointer-events:none; }
+  .sb-node .sb-nr{ font-size:9.5px; opacity:.6; font-weight:500; line-height:1; pointer-events:none; }
+  .sb-node:not(.sb-dragging):hover{ box-shadow:0 6px 20px rgba(0,0,0,.18); }
+  .sb-node.sb-lk-src{ outline:3px solid var(--amber); outline-offset:3px; }
+  .sb-node.sb-drop-ok{ outline:3px solid var(--mint2); outline-offset:3px; background:#F0FDF4 !important; }
+  .sb-node.sb-dragging{ opacity:.28; cursor:grabbing; outline:none !important; }
+  .sb-node.sb-l0{ background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; font-weight:800; box-shadow:0 4px 18px rgba(11,31,42,.35); }
+  .sb-node.sb-l1{ background:linear-gradient(135deg,var(--teal),#1d7a8c); color:#fff; box-shadow:0 3px 12px rgba(21,87,103,.3); }
+  .sb-node.sb-l2{ background:#fff; color:var(--navy); border:2px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .sb-node.sb-l3{ background:#F8F9FD; color:var(--grey); font-weight:500; border:1.5px solid var(--border); box-shadow:0 1px 5px rgba(0,0,0,.06); }
+  .sb-badge{ position:absolute; top:-7px; right:-7px; background:var(--amber); color:#fff; border-radius:50%; width:18px; height:18px; font-size:10px; display:none; align-items:center; justify-content:center; font-weight:800; box-shadow:0 1px 4px rgba(0,0,0,.2); pointer-events:none; }
+  .sb-acp{ position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); width:22px; height:22px; background:#fff; border:2px solid var(--border); border-radius:50%; font-size:15px; line-height:1; display:none; align-items:center; justify-content:center; cursor:pointer; color:var(--grey); box-shadow:0 1px 4px rgba(0,0,0,.12); z-index:5; transition:all .12s; pointer-events:auto; }
+  .sb-node:hover .sb-acp{ display:flex; }
+  .sb-acp:hover{ background:var(--teal); border-color:var(--teal); color:#fff; }
+
+  #sbGhost{ position:fixed; pointer-events:none; z-index:2000; border-radius:10px; background:linear-gradient(135deg,var(--teal),#1d7a8c); color:#fff; font-weight:700; font-size:13px; display:none; align-items:center; justify-content:center; flex-direction:column; gap:3px; box-shadow:0 12px 32px rgba(21,87,103,.45); opacity:.92; border:2px solid rgba(255,255,255,.3); }
+  #sbGhost.on{ display:flex; }
+  #sbGhost .sb-gn{ font-size:13px; font-weight:700; pointer-events:none; }
+  #sbGhost .sb-gr{ font-size:9.5px; opacity:.7; pointer-events:none; }
+  .sb-drag-hint{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:rgba(11,31,42,.9); color:#fff; padding:9px 18px; border-radius:9px; font-size:12.5px; font-weight:600; display:none; z-index:1500; pointer-events:none; }
+  .sb-drag-hint.on{ display:block; }
+
+  .sb-ov{ display:none; position:fixed; inset:0; background:rgba(11,31,42,.25); z-index:250; }
+  .sb-ov.on{ display:block; }
+  .sb-side-panel{ position:fixed; top:0; right:-420px; bottom:0; width:400px; max-width:92vw; background:#fff; border-left:1px solid var(--border); box-shadow:-8px 0 36px rgba(0,0,0,.12); z-index:260; display:flex; flex-direction:column; transition:right .26s cubic-bezier(.4,0,.2,1); }
+  .sb-side-panel.on{ right:0; }
+  .sb-ph{ padding:18px 18px 14px; border-bottom:1px solid #F0F2FA; }
+  .sb-ph-row{ display:flex; align-items:flex-start; justify-content:space-between; }
+  .sb-pav{ width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:#fff; margin-bottom:10px; }
+  .sb-pcl{ background:#F0F3FA; border:none; border-radius:7px; width:30px; height:30px; cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center; color:var(--grey); }
+  .sb-pcl:hover{ background:#E2E8F4; }
+  .sb-eg{ margin-bottom:9px; }
+  .sb-el{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--grey-light); margin-bottom:4px; }
+  .sb-ei{ width:100%; border:1.5px solid var(--border); border-radius:8px; padding:8px 11px; font-size:14px; font-weight:600; font-family:inherit; color:var(--navy); outline:none; background:#FAFBFF; transition:border-color .14s; }
+  .sb-ei:focus{ border-color:var(--mint2); background:#fff; }
+  .sb-ei.sb-role{ font-size:13px; font-weight:500; color:var(--grey); }
+  .sb-ei:disabled{ background:#F1F4F4; color:var(--grey-light); cursor:not-allowed; }
+  .sb-sfb{ width:100%; padding:9px; background:var(--navy); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:2px; }
+  .sb-sfb:hover{ background:var(--navy2); }
+  .sb-pb{ flex:1; overflow-y:auto; padding:14px 18px; }
+  .sb-sec{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--grey-light); margin-bottom:9px; margin-top:16px; }
+  .sb-sec:first-child{ margin-top:0; }
+  .sb-arow{ display:flex; gap:7px; margin-bottom:4px; }
+  .sb-abtn{ flex:1; padding:8px; border:1.5px solid var(--border); background:#F8F9FD; border-radius:8px; font-size:12px; font-weight:600; color:var(--grey); cursor:pointer; font-family:inherit; transition:all .12s; }
+  .sb-abtn:hover{ background:#EEF1FF; border-color:#A0B0F0; color:var(--teal); }
+  .sb-abtn.sb-red:hover{ background:#FFF0F0; border-color:#F0A0A0; color:var(--red); }
+  .sb-ci{ display:flex; align-items:center; justify-content:space-between; background:#F5F0FF; border:1px solid #E0D0FF; border-radius:8px; padding:8px 11px; margin-bottom:7px; }
+  .sb-cin{ font-size:13px; font-weight:600; color:#5B21B6; }
+  .sb-cil{ font-size:10.5px; color:var(--grey-light); margin-top:1px; }
+  .sb-cdl{ background:none; border:none; cursor:pointer; color:#ccc; font-size:13px; padding:2px; }
+  .sb-cdl:hover{ color:var(--red); }
+  .sb-nc{ background:#F8F9FD; border:1px solid #E8ECF4; border-radius:10px; padding:11px 13px; margin-bottom:9px; position:relative; }
+  .sb-nc:hover .sb-ndl{ opacity:1; }
+  .sb-nt{ font-size:13px; line-height:1.55; color:#222; white-space:pre-wrap; word-break:break-word; padding-right:14px; }
+  .sb-nm{ font-size:10px; color:var(--grey-light); margin-top:5px; }
+  .sb-ndl{ position:absolute; top:10px; right:10px; background:none; border:none; cursor:pointer; color:#ccc; font-size:13px; opacity:0; transition:opacity .12s, color .12s; }
+  .sb-ndl:hover{ color:var(--red); }
+  .sb-em{ text-align:center; color:#ccc; font-size:13px; padding:24px 0; font-style:italic; }
+  .sb-pf{ padding:12px 18px 18px; border-top:1px solid #F0F2FA; }
+  .sb-al{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--grey-light); margin-bottom:7px; }
+  .sb-ta{ width:100%; border:1.5px solid var(--border); border-radius:9px; padding:10px 12px; font-size:13px; font-family:inherit; resize:none; min-height:76px; outline:none; color:#222; background:#FAFBFF; transition:border-color .14s, background .14s; line-height:1.55; }
+  .sb-ta:focus{ border-color:var(--mint2); background:#fff; }
+  .sb-ta:disabled{ background:#F1F4F4; color:var(--grey-light); cursor:not-allowed; }
+  .sb-nsv{ margin-top:8px; width:100%; padding:10px; background:var(--navy); color:#fff; border:none; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .sb-nsv:hover{ background:var(--navy2); }
+
+  .sb-dov{ display:none; position:fixed; inset:0; background:rgba(11,31,42,.35); z-index:290; }
+  .sb-dov.on{ display:block; }
+  .sb-dlg{ display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:14px; padding:22px 22px 18px; width:310px; max-width:92vw; box-shadow:0 20px 60px rgba(0,0,0,.18); z-index:300; }
+  .sb-dlg.on{ display:block; }
+  .sb-dlg h3{ font-size:15px; font-weight:700; color:var(--navy); margin:0 0 5px; }
+  .sb-dlg p{ font-size:12px; color:var(--grey-light); margin:0 0 12px; }
+  .sb-dlg input{ width:100%; border:1.5px solid var(--border); border-radius:8px; padding:9px 11px; font-size:13.5px; font-family:inherit; outline:none; color:#222; margin-bottom:8px; }
+  .sb-dlg input:focus{ border-color:var(--mint2); }
+  .sb-dbtns{ display:flex; gap:8px; margin-top:4px; }
+  .sb-dbtn{ flex:1; padding:10px; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .sb-dbtn.sb-p{ background:var(--navy); color:#fff; }
+  .sb-dbtn.sb-p:hover{ background:var(--navy2); }
+  .sb-dbtn.sb-s{ background:#F0F3FA; color:var(--grey); }
+  .sb-dbtn.sb-s:hover{ background:#E2E8F4; }
+  @media (max-width:640px){
+    .sb-stage{ height:460px; }
+    .sb-side-panel{ width:340px; }
+  }
 </style>
 </head>
 <body>
@@ -1462,6 +1558,7 @@
 
     <button class="nav-item active" data-section="overview" aria-current="page"><span class="ico" aria-hidden="true">◈</span> Übersicht</button>
     <button class="nav-item" data-section="team"><span class="ico" aria-hidden="true">◎</span> Mitarbeiter</button>
+    <button class="nav-item" data-section="struktur"><span class="ico" aria-hidden="true">🌳</span> Strukturbaum</button>
     <button class="nav-item" data-section="rechner"><span class="ico" aria-hidden="true">∑</span> Rechner</button>
     <button class="nav-item" data-section="karriere"><span class="ico" aria-hidden="true">↗</span> Karrierepläne</button>
     <button class="nav-item" data-section="guide"><span class="ico" aria-hidden="true">▤</span> Guide</button>
@@ -1646,6 +1743,65 @@
         <div class="add-row">
           <button class="btn btn-small btn-primary editor-only" id="addRowBtn">+ Mitarbeiter hinzufügen</button>
           <span class="hint">Neue Zeile wird unten angehängt.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- STRUKTURBAUM SECTION -->
+    <section class="section" id="section-struktur" aria-label="Strukturbaum" tabindex="-1" hidden>
+      <div class="panel">
+        <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <span>Team Strukturbaum</span>
+          <span style="display:flex;align-items:center;gap:10px;">
+            <span id="sbNoteTotal" style="font-size:12px;color:var(--grey-light);font-weight:600;"></span>
+            <button type="button" class="btn btn-ghost btn-small editor-only" id="sbLinkBtn">🔗 Linie hinzufügen</button>
+          </span>
+        </h2>
+        <p style="margin:0 0 14px;font-size:12.5px;color:var(--grey-light);">Klicke auf eine Person für Details &amp; Notizen. Ziehe eine Person auf eine andere, um sie dort einzugliedern.</p>
+        <div class="sb-hint-bar" id="sbHintBar"></div>
+        <div class="sb-stage">
+          <div class="sb-scroll" id="sbScroll">
+            <div class="sb-chart" id="sbChart">
+              <svg class="sb-svg-layer" id="sbSvgLayer"></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- drag ghost + hint -->
+      <div id="sbGhost"><span class="sb-gn" id="sbGhostName"></span><span class="sb-gr" id="sbGhostRole"></span></div>
+      <div class="sb-drag-hint" id="sbDragHint">Auf eine Person ziehen → dort eingliedern</div>
+
+      <!-- side panel -->
+      <div class="sb-ov" id="sbOv"></div>
+      <div class="sb-side-panel" id="sbSidePanel">
+        <div class="sb-ph">
+          <div class="sb-ph-row">
+            <div class="sb-pav" id="sbPav"></div>
+            <button class="sb-pcl" id="sbPanelClose" type="button" aria-label="Schließen">✕</button>
+          </div>
+          <div class="sb-eg"><div class="sb-el">Name</div><input class="sb-ei" id="sbNameInput" type="text" placeholder="Name"></div>
+          <div class="sb-eg"><div class="sb-el">Bezeichnung / Rolle</div><input class="sb-ei sb-role" id="sbRoleInput" type="text" placeholder="z.B. Gruppenleiter…"></div>
+          <button class="sb-sfb editor-only" id="sbSaveFieldsBtn" type="button">Änderungen speichern</button>
+        </div>
+        <div class="sb-pb" id="sbPanelBody"></div>
+        <div class="sb-pf">
+          <div class="sb-al">Notiz hinzufügen</div>
+          <textarea class="sb-ta" id="sbNoteInput" placeholder="Notiz, Ziel, Feedback, Termin…"></textarea>
+          <button class="sb-nsv editor-only" id="sbAddNoteBtn" type="button">+ Speichern</button>
+        </div>
+      </div>
+
+      <!-- add/connection dialog -->
+      <div class="sb-dov" id="sbDov"></div>
+      <div class="sb-dlg" id="sbDlg">
+        <h3 id="sbDlgTitle"></h3>
+        <p id="sbDlgDesc"></p>
+        <input type="text" id="sbDlgInput1" placeholder="">
+        <input type="text" id="sbDlgInput2" placeholder="">
+        <div class="sb-dbtns">
+          <button class="sb-dbtn sb-s" id="sbDlgCancel" type="button">Abbrechen</button>
+          <button class="sb-dbtn sb-p" id="sbDlgOk" type="button">Hinzufügen</button>
         </div>
       </div>
     </section>
@@ -1984,6 +2140,7 @@ const CLOUD_CONFIGURED = firebaseConfig.apiKey !== "YOUR_API_KEY";
 let cloudReady = false;
 let stateDocRef = null;
 let attendanceDocRef = null;
+let orgChartDocRef = null;
 let firebaseAuth = null;
 if(CLOUD_CONFIGURED){
   try{
@@ -1993,6 +2150,9 @@ if(CLOUD_CONFIGURED){
     // beschreibbar (siehe Hinweis unten), damit jeder Mitarbeiter ohne Login
     // an-/abhaken kann — unabhängig vom editor-geschützten Dashboard-Dokument.
     attendanceDocRef = firebase.firestore().collection('finova').doc('attendance');
+    // Strukturbaum: eigenes Dokument, fällt unter die editor-geschützte
+    // Standardregel (write: if request.auth != null) wie das Dashboard-Dokument.
+    orgChartDocRef = firebase.firestore().collection('finova').doc('orgchart');
     firebaseAuth = firebase.auth();
   }catch(e){
     console.error('Firebase-Initialisierung fehlgeschlagen', e);
@@ -2006,7 +2166,8 @@ function applyPermissions(){
   document.body.classList.toggle('readonly-mode', !isEditor);
   document.querySelectorAll('#tableBody input[data-field], #tableBody button[data-action]')
     .forEach(el => el.disabled = !isEditor);
-  ['teamGoalNote','periodStartInput','periodEndInput','recruitGoalInput','kpiRecruitActual','addRowBtn']
+  ['teamGoalNote','periodStartInput','periodEndInput','recruitGoalInput','kpiRecruitActual','addRowBtn',
+   'sbNameInput','sbRoleInput','sbNoteInput']
     .forEach(id => { const el = document.getElementById(id); if(el) el.disabled = !isEditor; });
 }
 
@@ -3910,6 +4071,482 @@ const PARTNER_PORTALS = [
   { name: 'Zürich', url: 'https://www.zurich.at/', icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAADOElEQVR4nFRTW2gVVxTde58zc++djE1qY4wphFqt9iMg2JKfYOltCxH8aKW1Lba0WEkbShOE9qel/WhLFQqlxVZJiYiC+uE74PPHgCgGlCi+g+Ij4WIwanJzH7l3Zs7Z7pn4HDjMOWe/1llrbw3TH8rieDP3mz1vIWCHHLPM0AiIsXFUTP0M3Hvz/w+PPxuDjw4w69udvm/VOsvUgaRTbCMx28QLkABIA5uoSgS9RQp/HNv4cfFxFqz/qs/3HbsLHa+dgzIrAiP3iqS6ERhgZREaTaQilUEblo4WA1pxb/P7RR3DqHXt2gqm23//YF7wdstsfb9Qje8hslaSEUh99NJKrz84ZPcNjIQv1Na1z7CTa+8BdOHCzr62UhQdm/NiRm1b04Z7B4bp3M1xnigHMLfBx79XvQlpV8HJq3f5y/UnMTJsBYjQwYbQvqMN2k6L2n3Jd6M/dl+kPadus+cqFPSwZtnrSfCtu0Xo3nQaSxXDXkqj5LCkXNeaoFNHlrMpxXw5l6cLwxPQNDODean+6yeLYOnil6EaGvhlxzkYHitBreegsTEpQEJo/M/K87iRrRGeET2X8EGhCstbm2H1e68l6mw4NASHB3NxMEiweHEMDkUSjGPpsYxCORSmImhproPfVi4CRxMcO38H/jlwBWZkHJguPC3c0z0kBI+i0hxKei/t8J9fvAENtRnI3S/BT9vPggiRJE+c5W8scEbeDChLYmNTv7CK5aqxP3/UAq0L6qE4FcIPWwZhKDcJrqNAmE/gj45XeOniJmidX28FLGrCfhKHnnyhHHyenYer3p2flDpwJseXRib41dk+uPIUrYgzrubuZQvxsyWv8Jkb45giGyimniRg5V8n/u3pbvsuqobBg0JF50sB1fkuZFzFceUwsliT1hBEbDt7BqLBkcCtUZX/rm9c3pW0Ml/oa/j+9Jytx6+V24uFSU67ZPy0Vk0zPWieVQPSIzBeCsyRwTtqbIrQo+BovopJKz8ZJoAVftPqT9c5ijqYVCoMQzCRidtZxlTaWTvgaa6mHOzNj8kw7Xo6TMlUxgrLwS7o2r/ERvZrUSorNDdOi06jCrnfou29tuH5cX4IAAD///Li/AUAAAAGSURBVAMA+KCBdS4/JP8AAAAASUVORK5CYII=' }
 ];
 
+// ══════════════ STRUKTURBAUM (Org-Chart) ══════════════
+// Editierbarer Team-Baum mit Drag&Drop-Umgliederung, freien Verbindungslinien
+// und Notizen je Person. Persistiert wie das übrige Dashboard: lokal per
+// localStorage und — falls konfiguriert — im Firestore-Dokument
+// finova/orgchart (schreibgeschützt für nicht eingeloggte Nutzer, siehe
+// applyPermissions/isEditor weiter oben).
+const SB_STORAGE_KEY = 'finova_orgchart_data_v1';
+const SB_NW=138, SB_NH=52, SB_HG=32, SB_VG=84;
+const SB_AVATAR_COLORS = ['#0B1F2A','#155767','#6d28d9','#0e7490','#065f46','#92400e'];
+
+const SB_DEFAULT_TREE = {
+  id:'koegerl', name:'Kögerl', role:'Geschäftsstellenleiter', children:[
+    {id:'poetsn', name:'Pütün', role:'FT4', children:[]},
+    {id:'bindlar', name:'Bindar', role:'Geschäftsstellenleiter', children:[
+      {id:'vanek', name:'Vanek', role:'Mitarbeiter', children:[]},
+      {id:'schrey', name:'Schrey', role:'Mitarbeiterin', children:[
+        {id:'niem', name:'Niem', role:'Mitarbeiter', children:[]},
+        {id:'nagl', name:'Nagl', role:'Mitarbeiterin', children:[]}
+      ]}
+    ]},
+    {id:'posch', name:'Posch', role:'Teamleiter', children:[
+      {id:'hoedl', name:'Hödl', role:'FT 2', children:[
+        {id:'skarget', name:'Skarget', role:'FT 1', children:[]}
+      ]},
+      {id:'moser', name:'Moser', role:'FT 1', children:[]}
+    ]},
+    {id:'podlipnig', name:'Podlipnig', role:'FT 3', children:[]},
+    {id:'karner', name:'Karner', role:'Geschäftsstellenleiter', children:[
+      {id:'kahr', name:'Kahr', role:'FT 3', children:[
+        {id:'cortirila', name:'Cortirila', role:'FT 1', children:[]}
+      ]},
+      {id:'ekelhardt', name:'Ekelhardt', role:'FT 4', children:[]},
+      {id:'simion', name:'Simion', role:'FT 3', children:[]},
+      {id:'gaenser', name:'Gänser', role:'FT 4', children:[]}
+    ]}
+  ]
+};
+
+function sbLoadLocal(){
+  try{
+    const raw = localStorage.getItem(SB_STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && parsed.tree) return { tree:parsed.tree, notes:parsed.notes||{}, conns:parsed.conns||[] };
+    }
+  }catch(e){ console.warn('Konnte Strukturbaum nicht laden', e); }
+  return { tree: JSON.parse(JSON.stringify(SB_DEFAULT_TREE)), notes:{}, conns:[] };
+}
+
+const sbSaved = sbLoadLocal();
+let sbTree = sbSaved.tree;
+let sbNotes = sbSaved.notes;
+let sbConns = sbSaved.conns;
+let sbUidCounter = 300;
+let sbCloudReady = false;
+let sbNodeMap = {};
+let sbCurId = null;
+
+function sbNewId(){ return 'n'+(++sbUidCounter)+'_'+Date.now(); }
+
+function sbSaveLocal(){
+  try{ localStorage.setItem(SB_STORAGE_KEY, JSON.stringify({ tree:sbTree, notes:sbNotes, conns:sbConns })); }
+  catch(e){ console.warn('Speichern des Strukturbaums fehlgeschlagen', e); }
+}
+function sbPushToCloud(){
+  if(!CLOUD_CONFIGURED || !sbCloudReady || !orgChartDocRef) return;
+  orgChartDocRef.set({ tree:sbTree, notes:sbNotes, conns:sbConns }).catch(err=>{
+    console.warn('Strukturbaum: Cloud-Speichern fehlgeschlagen', err);
+  });
+}
+function sbSaveAll(){ sbSaveLocal(); sbPushToCloud(); }
+
+function initOrgChartSync(){
+  if(!CLOUD_CONFIGURED || !orgChartDocRef) return;
+  orgChartDocRef.onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return;
+    if(snap.exists){
+      const data = snap.data() || {};
+      if(data.tree && typeof data.tree === 'object') sbTree = data.tree;
+      if(data.notes && typeof data.notes === 'object') sbNotes = data.notes;
+      if(Array.isArray(data.conns)) sbConns = data.conns;
+      sbSaveLocal();
+    } else {
+      orgChartDocRef.set({ tree:sbTree, notes:sbNotes, conns:sbConns });
+    }
+    sbCloudReady = true;
+    sbRender();
+  }, err=>{
+    console.warn('Strukturbaum: Cloud-Verbindung fehlgeschlagen', err);
+  });
+}
+
+// ---- Baum-Helfer ----
+function sbAll(n,a){ a=a||[]; a.push(n); (n.children||[]).forEach(c=>sbAll(c,a)); return a; }
+function sbFind(n,id){ if(n.id===id) return n; for(const c of (n.children||[])){ const f=sbFind(c,id); if(f) return f; } return null; }
+function sbRemove(n,id){
+  n.children = (n.children||[]).filter(c=>c.id!==id);
+  n.children.forEach(c=>sbRemove(c,id));
+}
+function sbDetach(root,id){
+  const n = sbFind(root,id);
+  if(!n) return null;
+  const copy = JSON.parse(JSON.stringify(n));
+  sbRemove(root,id);
+  return copy;
+}
+
+// ---- Layout (gerade orthogonale Linien wie im Original) ----
+function sbSubtreeWidth(n){
+  if(!n.children || !n.children.length) return SB_NW;
+  return Math.max(SB_NW, n.children.reduce((s,c)=>s+sbSubtreeWidth(c)+SB_HG, -SB_HG));
+}
+function sbLayout(n,x,y,d){
+  const w = sbSubtreeWidth(n);
+  n.x = x+(w-SB_NW)/2; n.y = y; n.d = d;
+  if(n.children && n.children.length){
+    let cx = x;
+    n.children.forEach(c=>{ const cw=sbSubtreeWidth(c); sbLayout(c,cx,y+SB_NH+SB_VG,d+1); cx += cw+SB_HG; });
+  }
+}
+function sbLine(x1,y1,x2,y2,stroke,w){
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round"/>`;
+}
+function sbEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+// ---- Render ----
+function sbRender(){
+  const stage = document.getElementById('sbChart');
+  if(!stage) return;
+  sbLayout(sbTree,0,0,0);
+  const nodes = sbAll(sbTree);
+  sbNodeMap = {};
+  nodes.forEach(n=>sbNodeMap[n.id]=n);
+  const maxX = Math.max(...nodes.map(n=>n.x+SB_NW))+70;
+  const maxY = Math.max(...nodes.map(n=>n.y+SB_NH))+70;
+  stage.style.width = maxX+'px'; stage.style.height = maxY+'px';
+  const svg = document.getElementById('sbSvgLayer');
+  svg.setAttribute('width', maxX); svg.setAttribute('height', maxY);
+  svg.setAttribute('viewBox', `0 0 ${maxX} ${maxY}`);
+
+  let S = '';
+  nodes.forEach(n=>{
+    if(!n.children || !n.children.length) return;
+    const px=n.x+SB_NW/2, py=n.y+SB_NH, my=py+SB_VG/2;
+    const LC='#c2cce0', LW=2;
+    S += sbLine(px,py,px,my,LC,LW);
+    if(n.children.length===1){
+      const c=n.children[0], cx=c.x+SB_NW/2;
+      if(Math.abs(cx-px)>1) S += sbLine(px,my,cx,my,LC,LW);
+      S += sbLine(cx,my,cx,c.y,LC,LW);
+    } else {
+      const lx=n.children[0].x+SB_NW/2, rx=n.children[n.children.length-1].x+SB_NW/2;
+      S += sbLine(lx,my,rx,my,LC,LW);
+      n.children.forEach(c=>{ const cx=c.x+SB_NW/2; S += sbLine(cx,my,cx,c.y,LC,LW); });
+    }
+  });
+
+  sbConns.forEach((c,i)=>{
+    const a=sbNodeMap[c.from], b=sbNodeMap[c.to]; if(!a||!b) return;
+    const x1=a.x+SB_NW/2, y1=a.y+SB_NH/2, x2=b.x+SB_NW/2, y2=b.y+SB_NH/2;
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    S += `<line class="sb-custom-conn" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#7c6bcc" stroke-width="2.5" stroke-dasharray="7 4" stroke-linecap="round" data-conn-idx="${i}"/>`;
+    if(c.label){
+      const tw = c.label.length*6.5+14;
+      S += `<rect x="${mx-tw/2}" y="${my-11.5}" width="${tw}" height="17" rx="5" fill="#fff" stroke="#d4c8ff" stroke-width="1.2"/>`;
+      S += `<text x="${mx}" y="${my+2}" text-anchor="middle" font-size="10.5" fill="#7c6bcc" font-weight="700">${sbEsc(c.label)}</text>`;
+    }
+  });
+  svg.innerHTML = S;
+  if(isEditor){
+    svg.querySelectorAll('.sb-custom-conn').forEach(line=>{
+      line.style.pointerEvents = 'stroke';
+      line.addEventListener('click', ()=>sbDeleteConn(+line.dataset.connIdx));
+    });
+  }
+
+  document.querySelectorAll('#sbChart .sb-node').forEach(e=>e.remove());
+  nodes.forEach(n=>{
+    const d = Math.min(n.d,3);
+    const div = document.createElement('div');
+    div.className = `sb-node sb-l${d}`;
+    div.id = 'sbnd-'+n.id;
+    div.style.cssText = `left:${n.x}px;top:${n.y}px;width:${SB_NW}px;height:${SB_NH}px`;
+    div.innerHTML =
+      `<span class="sb-nn">${sbEsc(n.name)}</span>`+
+      `<span class="sb-nr">${sbEsc(n.role||'')}</span>`+
+      `<span class="sb-badge" id="sbb-${n.id}"></span>`+
+      `<span class="sb-acp editor-only" data-add-child="${n.id}">+</span>`;
+    div.addEventListener('mousedown', e=>sbOnNodeMouseDown(e,n));
+    div.addEventListener('click', e=>sbOnNodeClick(e,n));
+    stage.appendChild(div);
+    sbRefreshBadge(n.id);
+  });
+  document.querySelectorAll('#sbChart .sb-acp').forEach(btn=>{
+    btn.addEventListener('click', e=>{ e.stopPropagation(); if(isEditor) sbOpenAddChild(btn.dataset.addChild); });
+  });
+
+  if(sbCurId && sbNodeMap[sbCurId]) sbRenderPanel(sbNodeMap[sbCurId]);
+  sbRefreshTotal();
+}
+function sbRefreshBadge(id){
+  const el = document.getElementById('sbb-'+id); if(!el) return;
+  const c = (sbNotes[id]||[]).length;
+  el.textContent = c; el.style.display = c ? 'flex' : 'none';
+}
+function sbRefreshTotal(){
+  const t = Object.values(sbNotes).reduce((s,a)=>s+a.length,0);
+  const el = document.getElementById('sbNoteTotal');
+  if(el) el.textContent = t ? `${t} Notiz${t===1?'':'en'}` : '';
+}
+
+// ---- Drag & Drop (Umgliedern) ----
+let sbDrag = { active:false, node:null, startX:0, startY:0, target:null };
+function sbOnNodeMouseDown(e,n){
+  if(!isEditor) return;
+  if(e.target.closest('.sb-acp') || sbLinkMode) return;
+  if(n.id===sbTree.id) return; // Wurzel kann nicht verschoben werden
+  sbDrag.node=n; sbDrag.startX=e.clientX; sbDrag.startY=e.clientY; sbDrag.active=false; sbDrag.target=null;
+  document.addEventListener('mousemove', sbOnDragMove, {passive:false});
+  document.addEventListener('mouseup', sbOnDragUp);
+}
+function sbOnDragMove(e){
+  if(!sbDrag.node) return;
+  const dx=e.clientX-sbDrag.startX, dy=e.clientY-sbDrag.startY;
+  if(!sbDrag.active && Math.sqrt(dx*dx+dy*dy)>6){
+    sbDrag.active=true;
+    const g=document.getElementById('sbGhost');
+    document.getElementById('sbGhostName').textContent = sbDrag.node.name;
+    document.getElementById('sbGhostRole').textContent = sbDrag.node.role||'';
+    g.style.width=SB_NW+'px'; g.style.height=SB_NH+'px';
+    g.classList.add('on');
+    document.getElementById('sbnd-'+sbDrag.node.id)?.classList.add('sb-dragging');
+    document.getElementById('sbDragHint').classList.add('on');
+    sbClosePanel();
+  }
+  if(!sbDrag.active) return;
+  const g=document.getElementById('sbGhost');
+  g.style.left=(e.clientX-SB_NW/2)+'px';
+  g.style.top=(e.clientY-SB_NH/2)+'px';
+
+  g.style.display='none';
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  g.style.display='';
+  const dragDescendants = new Set(sbAll(sbDrag.node).map(n=>n.id));
+  let tgt=null;
+  if(el){
+    const nd=el.closest('.sb-node');
+    if(nd){
+      const tid=nd.id.replace('sbnd-','');
+      if(!dragDescendants.has(tid) && tid!==sbDrag.node.id) tgt=sbNodeMap[tid]||null;
+    }
+  }
+  document.querySelectorAll('.sb-node.sb-drop-ok').forEach(n=>n.classList.remove('sb-drop-ok'));
+  if(tgt){ document.getElementById('sbnd-'+tgt.id)?.classList.add('sb-drop-ok'); sbDrag.target=tgt; }
+  else sbDrag.target=null;
+}
+function sbOnDragUp(){
+  document.removeEventListener('mousemove', sbOnDragMove);
+  document.removeEventListener('mouseup', sbOnDragUp);
+  document.getElementById('sbGhost').classList.remove('on');
+  document.getElementById('sbDragHint').classList.remove('on');
+  document.querySelectorAll('.sb-node.sb-drop-ok').forEach(n=>n.classList.remove('sb-drop-ok'));
+  document.getElementById('sbnd-'+sbDrag.node?.id)?.classList.remove('sb-dragging');
+
+  if(sbDrag.active && sbDrag.target && sbDrag.node){
+    const copy = sbDetach(sbTree, sbDrag.node.id);
+    const newParent = sbFind(sbTree, sbDrag.target.id);
+    if(newParent && copy){
+      newParent.children = newParent.children || [];
+      newParent.children.push(copy);
+      sbSaveAll(); sbRender();
+    } else {
+      sbRender();
+    }
+  }
+  sbDrag = { active:false, node:null, startX:0, startY:0, target:null };
+}
+function sbOnNodeClick(e,n){
+  if(sbDrag.active) return; // war ein Drag, kein Klick
+  if(e.target.closest('.sb-acp')) return;
+  if(sbLinkMode){ sbLinkClick(n); return; }
+  sbOpenPanel(n);
+}
+
+// ---- Linienmodus (freie Verbindungen) ----
+let sbLinkMode=false, sbLinkSrc=null, sbPendConn=null;
+function sbToggleLink(){
+  if(!isEditor) return;
+  sbLinkMode = !sbLinkMode; sbLinkSrc=null;
+  const btn=document.getElementById('sbLinkBtn');
+  const hb=document.getElementById('sbHintBar');
+  btn.classList.toggle('sb-link-on', sbLinkMode);
+  hb.classList.toggle('on', sbLinkMode);
+  if(sbLinkMode) hb.textContent='Linienmodus aktiv — klicke Person 1, dann Person 2. ESC zum Beenden.';
+  document.querySelectorAll('.sb-node').forEach(n=>n.classList.remove('sb-lk-src'));
+  sbClosePanel();
+}
+function sbLinkClick(n){
+  if(!sbLinkSrc){
+    sbLinkSrc = n;
+    document.getElementById('sbnd-'+n.id).classList.add('sb-lk-src');
+    document.getElementById('sbHintBar').textContent = `"${n.name}" ausgewählt → klicke jetzt die zweite Person`;
+  } else if(sbLinkSrc.id===n.id){
+    document.getElementById('sbnd-'+n.id).classList.remove('sb-lk-src');
+    sbLinkSrc=null;
+    document.getElementById('sbHintBar').textContent='Linienmodus aktiv — klicke Person 1, dann Person 2. ESC zum Beenden.';
+  } else {
+    sbPendConn = { from:sbLinkSrc.id, to:n.id };
+    sbOpenDialog('🔗 Neue Verbindung', `${sbLinkSrc.name} → ${n.name}`, 'Bezeichnung (optional, z.B. "Mentoring")', null, 'Hinzufügen', sbDoAddConn);
+  }
+}
+function sbDoAddConn(v1){
+  if(!sbPendConn) return;
+  sbConns.push({ from:sbPendConn.from, to:sbPendConn.to, label:(v1||'').trim() });
+  sbSaveAll(); sbCloseDialog();
+  document.querySelectorAll('.sb-node').forEach(n=>n.classList.remove('sb-lk-src'));
+  sbLinkSrc=null; sbPendConn=null;
+  document.getElementById('sbHintBar').textContent='Linienmodus aktiv — klicke Person 1, dann Person 2. ESC zum Beenden.';
+  sbRender();
+}
+async function sbDeleteConn(i){
+  if(!isEditor) return;
+  if(!(await confirmDialog('Verbindung löschen?'))) return;
+  sbConns.splice(i,1); sbSaveAll(); sbRender();
+}
+
+// ---- Person hinzufügen ----
+let sbAddParent=null;
+function sbOpenAddChild(pid){
+  sbAddParent = pid;
+  const p = sbNodeMap[pid];
+  sbOpenDialog('➕ Person hinzufügen', `Neue Person unter "${p?.name||pid}"`, 'Name', 'Bezeichnung / Rolle', 'Hinzufügen', sbDoAddChild);
+}
+function sbDoAddChild(v1,v2){
+  const name=(v1||'').trim(), role=(v2||'').trim();
+  if(!name){ alert('Bitte einen Namen eingeben.'); return; }
+  const p = sbFind(sbTree, sbAddParent); if(!p) return;
+  p.children = p.children || [];
+  p.children.push({ id:sbNewId(), name, role: role||'Mitarbeiter', children:[] });
+  sbSaveAll(); sbCloseDialog(); sbRender();
+}
+
+// ---- Seitenpanel (Details & Notizen) ----
+function sbOpenPanel(n){
+  if(sbLinkMode) return;
+  sbCurId = n.id;
+  const col = SB_AVATAR_COLORS[n.d % SB_AVATAR_COLORS.length];
+  const av = document.getElementById('sbPav');
+  av.style.background = `linear-gradient(135deg,${col}cc,${col})`;
+  av.textContent = n.name[0];
+  document.getElementById('sbNameInput').value = n.name;
+  document.getElementById('sbRoleInput').value = n.role||'';
+  document.getElementById('sbNoteInput').value = '';
+  sbRenderPanel(n);
+  document.getElementById('sbSidePanel').classList.add('on');
+  document.getElementById('sbOv').classList.add('on');
+}
+function sbClosePanel(){
+  document.getElementById('sbSidePanel').classList.remove('on');
+  document.getElementById('sbOv').classList.remove('on');
+  sbCurId=null;
+}
+function sbSaveFields(){
+  if(!sbCurId || !isEditor) return;
+  const n = sbFind(sbTree, sbCurId); if(!n) return;
+  const nm = document.getElementById('sbNameInput').value.trim();
+  const rl = document.getElementById('sbRoleInput').value.trim();
+  if(!nm){ alert('Name darf nicht leer sein.'); return; }
+  n.name=nm; n.role=rl;
+  sbSaveAll(); sbRender();
+  document.getElementById('sbPav').textContent = nm[0];
+}
+function sbRenderPanel(n){
+  let h = '';
+  h += `<div class="sb-sec editor-only">Aktionen</div><div class="sb-arow editor-only">`;
+  h += `<button type="button" class="sb-abtn" data-add-child="${n.id}">+ Person hinzufügen</button>`;
+  if(n.id!==sbTree.id) h += `<button type="button" class="sb-abtn sb-red" data-del-node="${n.id}">Löschen</button>`;
+  h += `</div>`;
+
+  const mc = sbConns.filter(c=>c.from===n.id || c.to===n.id);
+  if(mc.length){
+    h += `<div class="sb-sec">🔗 Verbindungen</div>`;
+    mc.forEach(c=>{
+      const oid = c.from===n.id ? c.to : c.from;
+      const on = sbNodeMap[oid]?.name || oid;
+      const dir = c.from===n.id ? '→' : '←';
+      const ri = sbConns.indexOf(c);
+      h += `<div class="sb-ci"><div><div class="sb-cin">${dir} ${sbEsc(on)}</div>${c.label?`<div class="sb-cil">${sbEsc(c.label)}</div>`:''}</div><button type="button" class="sb-cdl editor-only" data-del-conn="${ri}">✕</button></div>`;
+    });
+  }
+
+  const list = sbNotes[n.id] || [];
+  h += `<div class="sb-sec">📝 Notizen &amp; Ergänzungen</div>`;
+  if(!list.length) h += `<div class="sb-em">Noch keine Einträge vorhanden</div>`;
+  else list.forEach((nt,i)=>{
+    h += `<div class="sb-nc"><div class="sb-nt">${sbEsc(nt.text)}</div><div class="sb-nm">${nt.date}</div><button type="button" class="sb-ndl editor-only" data-del-note="${i}">✕</button></div>`;
+  });
+  const body = document.getElementById('sbPanelBody');
+  body.innerHTML = h;
+
+  body.querySelectorAll('[data-add-child]').forEach(b=>b.addEventListener('click', ()=>{ if(isEditor) sbOpenAddChild(b.dataset.addChild); }));
+  const delBtn = body.querySelector('[data-del-node]');
+  if(delBtn) delBtn.addEventListener('click', ()=>{ if(isEditor) sbDeleteNode(delBtn.dataset.delNode); });
+  body.querySelectorAll('[data-del-conn]').forEach(b=>b.addEventListener('click', ()=>{ if(isEditor) sbDeleteConn(+b.dataset.delConn); }));
+  body.querySelectorAll('[data-del-note]').forEach(b=>b.addEventListener('click', ()=>{ if(isEditor) sbDeleteNote(+b.dataset.delNote); }));
+}
+async function sbDeleteNode(id){
+  if(!isEditor) return;
+  const n = sbFind(sbTree, id);
+  if(!n) return;
+  const cnt = sbAll(n).length-1;
+  const msg = cnt ? `"${n.name}" und ${cnt} untergeordnete Person${cnt===1?'':'en'} löschen?` : `"${n.name}" löschen?`;
+  if(!(await confirmDialog(msg))) return;
+  sbRemove(sbTree, id);
+  sbConns = sbConns.filter(c=>c.from!==id && c.to!==id);
+  sbSaveAll(); sbClosePanel(); sbRender();
+}
+function sbAddNote(){
+  if(!isEditor) return;
+  const text = document.getElementById('sbNoteInput').value.trim();
+  if(!text || !sbCurId) return;
+  if(!sbNotes[sbCurId]) sbNotes[sbCurId]=[];
+  const d = new Date();
+  const date = d.toLocaleDateString('de-AT',{day:'2-digit',month:'2-digit',year:'numeric'})+' · '+d.toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+  sbNotes[sbCurId].unshift({text,date});
+  sbSaveAll();
+  document.getElementById('sbNoteInput').value='';
+  sbRenderPanel(sbNodeMap[sbCurId]); sbRefreshBadge(sbCurId); sbRefreshTotal();
+}
+function sbDeleteNote(i){
+  if(!sbCurId || !isEditor) return;
+  sbNotes[sbCurId].splice(i,1); sbSaveAll();
+  sbRenderPanel(sbNodeMap[sbCurId]); sbRefreshBadge(sbCurId); sbRefreshTotal();
+}
+
+// ---- Dialog (Person hinzufügen / Verbindung benennen) ----
+let sbDlgCallback=null;
+function sbOpenDialog(title, desc, ph1, ph2, okLabel, cb){
+  sbDlgCallback = cb;
+  document.getElementById('sbDlgTitle').textContent = title;
+  document.getElementById('sbDlgDesc').textContent = desc||'';
+  const i1=document.getElementById('sbDlgInput1'), i2=document.getElementById('sbDlgInput2');
+  i1.value=''; i1.placeholder = ph1||'';
+  if(ph2){ i2.style.display='block'; i2.value=''; i2.placeholder=ph2; } else { i2.style.display='none'; }
+  document.getElementById('sbDlgOk').textContent = okLabel||'OK';
+  document.getElementById('sbDov').classList.add('on');
+  document.getElementById('sbDlg').classList.add('on');
+  setTimeout(()=>i1.focus(),60);
+}
+function sbCloseDialog(){
+  document.getElementById('sbDov').classList.remove('on');
+  document.getElementById('sbDlg').classList.remove('on');
+  sbDlgCallback=null; sbAddParent=null; sbPendConn=null;
+}
+function sbDoDialogAction(){
+  if(sbDlgCallback) sbDlgCallback(document.getElementById('sbDlgInput1').value, document.getElementById('sbDlgInput2').value);
+}
+
+function initOrgChart(){
+  document.getElementById('sbLinkBtn').addEventListener('click', sbToggleLink);
+  document.getElementById('sbPanelClose').addEventListener('click', sbClosePanel);
+  document.getElementById('sbOv').addEventListener('click', sbClosePanel);
+  document.getElementById('sbSaveFieldsBtn').addEventListener('click', sbSaveFields);
+  document.getElementById('sbAddNoteBtn').addEventListener('click', sbAddNote);
+  document.getElementById('sbDov').addEventListener('click', sbCloseDialog);
+  document.getElementById('sbDlgCancel').addEventListener('click', sbCloseDialog);
+  document.getElementById('sbDlgOk').addEventListener('click', sbDoDialogAction);
+  document.getElementById('sbNoteInput').addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.metaKey||e.ctrlKey)) sbAddNote(); });
+  document.getElementById('sbDlgInput1').addEventListener('keydown', e=>{ if(e.key==='Enter') sbDoDialogAction(); if(e.key==='Escape') sbCloseDialog(); });
+  document.getElementById('sbDlgInput2').addEventListener('keydown', e=>{ if(e.key==='Enter') sbDoDialogAction(); if(e.key==='Escape') sbCloseDialog(); });
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ if(sbLinkMode) sbToggleLink(); sbClosePanel(); sbCloseDialog(); }
+  });
+  sbRender();
+}
+
 function initPartnerPortals(){
   const grid = document.getElementById('partnerGrid');
   if(!grid) return;
@@ -4268,6 +4905,8 @@ initRecruitPanel();
 renderAll();
 initCloudSync();
 initAttendanceSync();
+initOrgChart();
+initOrgChartSync();
 initAuth();
 initEHRechner();
 initUmdrehRechner();
