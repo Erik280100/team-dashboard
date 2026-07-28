@@ -1455,6 +1455,12 @@
   .sb-hint-bar{ display:none; background:#EAF4FB; color:var(--teal); font-size:12px; font-weight:600; padding:8px 14px; border-radius:10px; margin-bottom:12px; }
   .sb-hint-bar.on{ display:block; }
   .sb-stage{ position:relative; height:600px; border:1px solid var(--border); border-radius:14px; background:#FAFBFC; overflow:hidden; }
+  #sbPanelRoot:fullscreen{ width:100vw; height:100vh; max-width:none; background:#fff; padding:20px 24px; display:flex; flex-direction:column; border-radius:0; }
+  #sbPanelRoot:-webkit-full-screen{ width:100vw; height:100vh; max-width:none; background:#fff; padding:20px 24px; display:flex; flex-direction:column; border-radius:0; }
+  #sbPanelRoot:fullscreen .sb-stage,
+  #sbPanelRoot:-webkit-full-screen .sb-stage{ flex:1; height:auto; border-radius:10px; }
+  #sbPanelRoot:fullscreen .sb-hide-fs,
+  #sbPanelRoot:-webkit-full-screen .sb-hide-fs{ display:none; }
   .sb-scroll{ position:absolute; inset:0; overflow:auto; padding:40px 50px 60px; display:flex; align-items:flex-start; justify-content:center; }
   .sb-chart-wrap{ position:relative; flex:none; }
   .sb-chart{ position:relative; transform-origin:0 0; }
@@ -1473,6 +1479,7 @@
   .sb-node.sb-l2{ background:#fff; color:var(--navy); border:2px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,.08); }
   .sb-node.sb-l3{ background:#F8F9FD; color:var(--grey); font-weight:500; border:1.5px solid var(--border); box-shadow:0 1px 5px rgba(0,0,0,.06); }
   .sb-badge{ position:absolute; top:-7px; right:-7px; background:var(--amber); color:#fff; border-radius:50%; width:18px; height:18px; font-size:10px; display:none; align-items:center; justify-content:center; font-weight:800; box-shadow:0 1px 4px rgba(0,0,0,.2); pointer-events:none; }
+  .sb-status-pill{ position:absolute; bottom:-9px; left:6px; font-size:8px; font-weight:800; letter-spacing:.02em; padding:2px 6px; border-radius:8px; color:#fff; line-height:1.4; box-shadow:0 1px 3px rgba(0,0,0,.18); pointer-events:none; white-space:nowrap; }
   .sb-acp{ position:absolute; bottom:-12px; left:50%; transform:translateX(-50%); width:22px; height:22px; background:#fff; border:2px solid var(--border); border-radius:50%; font-size:15px; line-height:1; display:none; align-items:center; justify-content:center; cursor:pointer; color:var(--grey); box-shadow:0 1px 4px rgba(0,0,0,.12); z-index:5; transition:all .12s; pointer-events:auto; }
   .sb-node:hover .sb-acp{ display:flex; }
   .sb-acp:hover{ background:var(--teal); border-color:var(--teal); color:#fff; }
@@ -1499,6 +1506,12 @@
   .sb-ei:focus{ border-color:var(--mint2); background:#fff; }
   .sb-ei.sb-role{ font-size:13px; font-weight:500; color:var(--grey); }
   .sb-ei:disabled{ background:#F1F4F4; color:var(--grey-light); cursor:not-allowed; }
+  .sb-color-row{ display:flex; gap:7px; flex-wrap:wrap; }
+  .sb-swatch{ width:24px; height:24px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; box-shadow:0 1px 3px rgba(0,0,0,.18); transition:transform .1s; }
+  .sb-swatch:hover:not(:disabled){ transform:scale(1.12); }
+  .sb-swatch.sb-swatch-sel{ border-color:var(--navy); box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--navy); }
+  .sb-swatch-none{ background:#fff; color:var(--grey-light); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; border:2px solid var(--border) !important; }
+  .sb-swatch:disabled{ cursor:not-allowed; opacity:.55; transform:none !important; }
   .sb-sfb{ width:100%; padding:9px; background:var(--navy); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:2px; }
   .sb-sfb:hover{ background:var(--navy2); }
   .sb-pb{ flex:1; overflow-y:auto; padding:14px 18px; }
@@ -1750,17 +1763,19 @@
 
     <!-- STRUKTURBAUM SECTION -->
     <section class="section" id="section-struktur" aria-label="Strukturbaum" tabindex="-1" hidden>
-      <div class="panel">
+      <div class="panel" id="sbPanelRoot">
         <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
           <span>Team Strukturbaum</span>
           <span style="display:flex;align-items:center;gap:10px;">
+            <span id="sbPersonTotal" style="font-size:12px;color:var(--grey-light);font-weight:600;"></span>
             <span id="sbNoteTotal" style="font-size:12px;color:var(--grey-light);font-weight:600;"></span>
             <button type="button" class="btn btn-ghost btn-small editor-only" id="sbLinkBtn">🔗 Linie hinzufügen</button>
+            <button type="button" class="btn btn-ghost btn-small" id="sbFullscreenBtn">⛶ Vollbild</button>
           </span>
         </h2>
-        <p style="margin:0 0 14px;font-size:12.5px;color:var(--grey-light);">Klicke auf eine Person für Details &amp; Notizen. Ziehe eine Person auf eine andere, um sie dort einzugliedern.</p>
+        <p class="sb-hide-fs" style="margin:0 0 14px;font-size:12.5px;color:var(--grey-light);">Klicke auf eine Person für Details &amp; Notizen. Ziehe eine Person auf eine andere, um sie dort einzugliedern.</p>
         <div class="sb-hint-bar" id="sbHintBar"></div>
-        <div class="sb-stage">
+        <div class="sb-stage" id="sbStage">
           <div class="sb-scroll" id="sbScroll">
             <div class="sb-chart-wrap" id="sbChartWrap">
               <div class="sb-chart" id="sbChart">
@@ -1786,6 +1801,16 @@
           <div class="sb-eg"><div class="sb-el">Name</div><input class="sb-ei" id="sbNameInput" type="text" placeholder="Name"></div>
           <div class="sb-eg"><div class="sb-el">Bezeichnung / Rolle</div><input class="sb-ei sb-role" id="sbRoleInput" type="text" placeholder="z.B. Gruppenleiter…"></div>
           <button class="sb-sfb editor-only" id="sbSaveFieldsBtn" type="button">Änderungen speichern</button>
+          <div class="sb-eg" style="margin-top:12px;"><div class="sb-el">Farbe</div><div class="sb-color-row" id="sbColorRow"></div></div>
+          <div class="sb-eg"><div class="sb-el">Status</div>
+            <select class="sb-ei" id="sbStatusSelect">
+              <option value="">— kein Status —</option>
+              <option value="vollzeit">Vollzeit</option>
+              <option value="teilzeit">Teilzeit</option>
+              <option value="keine">Keine Zeit</option>
+              <option value="vielleicht">Kommt vielleicht</option>
+            </select>
+          </div>
         </div>
         <div class="sb-pb" id="sbPanelBody"></div>
         <div class="sb-pf">
@@ -2170,8 +2195,9 @@ function applyPermissions(){
   document.querySelectorAll('#tableBody input[data-field], #tableBody button[data-action]')
     .forEach(el => el.disabled = !isEditor);
   ['teamGoalNote','periodStartInput','periodEndInput','recruitGoalInput','kpiRecruitActual','addRowBtn',
-   'sbNameInput','sbRoleInput','sbNoteInput']
+   'sbNameInput','sbRoleInput','sbNoteInput','sbStatusSelect']
     .forEach(id => { const el = document.getElementById(id); if(el) el.disabled = !isEditor; });
+  if(typeof sbCurId!=='undefined' && sbCurId && typeof sbNodeMap!=='undefined' && sbNodeMap[sbCurId]) sbRenderColorAndStatus(sbNodeMap[sbCurId]);
 }
 
 function initAuth(){
@@ -4084,6 +4110,23 @@ const SB_STORAGE_KEY = 'finova_orgchart_data_v1';
 const SB_NW=138, SB_NH=52, SB_HG=32, SB_VG=84;
 const SB_AVATAR_COLORS = ['#0B1F2A','#155767','#6d28d9','#0e7490','#065f46','#92400e'];
 
+// Frei zuweisbare Kachelfarben (6 vordefinierte Farben) — rein zur eigenen
+// Kategorisierung durch das Team, keine feste Bedeutung.
+const SB_COLORS = [
+  { key:'red',    label:'Rot',    hex:'#DC2626', text:'#fff' },
+  { key:'orange', label:'Orange', hex:'#EA580C', text:'#fff' },
+  { key:'yellow', label:'Gelb',   hex:'#EAB308', text:'#1A1A1A' },
+  { key:'green',  label:'Grün',   hex:'#16A34A', text:'#fff' },
+  { key:'blue',   label:'Blau',   hex:'#2563EB', text:'#fff' },
+  { key:'purple', label:'Lila',   hex:'#7C3AED', text:'#fff' }
+];
+const SB_STATUS = {
+  vollzeit:   { label:'Vollzeit',         color:'#16A34A' },
+  teilzeit:   { label:'Teilzeit',         color:'#D97706' },
+  keine:      { label:'Keine Zeit',       color:'#DC2626' },
+  vielleicht: { label:'Kommt vielleicht', color:'#64748B' }
+};
+
 const SB_DEFAULT_TREE = {
   id:'koegerl', name:'Kögerl', role:'Geschäftsstellenleiter', children:[
     {id:'poetsn', name:'Pütün', role:'FT4', children:[]},
@@ -4258,10 +4301,18 @@ function sbRender(){
     div.className = `sb-node sb-l${d}`;
     div.id = 'sbnd-'+n.id;
     div.style.cssText = `left:${n.x}px;top:${n.y}px;width:${SB_NW}px;height:${SB_NH}px`;
+    const colorDef = n.color ? SB_COLORS.find(c=>c.key===n.color) : null;
+    if(colorDef){
+      div.style.background = colorDef.hex;
+      div.style.color = colorDef.text;
+      div.style.border = 'none';
+    }
+    const statusDef = n.status ? SB_STATUS[n.status] : null;
     div.innerHTML =
       `<span class="sb-nn">${sbEsc(n.name)}</span>`+
       `<span class="sb-nr">${sbEsc(n.role||'')}</span>`+
       `<span class="sb-badge" id="sbb-${n.id}"></span>`+
+      (statusDef ? `<span class="sb-status-pill" style="background:${statusDef.color}">${sbEsc(statusDef.label)}</span>` : '')+
       `<span class="sb-acp editor-only" data-add-child="${n.id}">+</span>`;
     div.addEventListener('mousedown', e=>sbOnNodeMouseDown(e,n));
     div.addEventListener('click', e=>sbOnNodeClick(e,n));
@@ -4272,9 +4323,17 @@ function sbRender(){
     btn.addEventListener('click', e=>{ e.stopPropagation(); if(isEditor) sbOpenAddChild(btn.dataset.addChild); });
   });
 
+  if(sbCurId && sbNodeMap[sbCurId]) sbRenderColorAndStatus(sbNodeMap[sbCurId]);
   if(sbCurId && sbNodeMap[sbCurId]) sbRenderPanel(sbNodeMap[sbCurId]);
   sbRefreshTotal();
+  sbRefreshPersonTotal();
   sbApplyFit();
+}
+function sbRefreshPersonTotal(){
+  const el = document.getElementById('sbPersonTotal');
+  if(!el) return;
+  const t = sbAll(sbTree).length;
+  el.textContent = `${t} Mitarbeiter erfasst`;
 }
 
 // Skaliert den Baum so, dass er komplett in die sichtbare Fläche passt
@@ -4450,9 +4509,35 @@ function sbOpenPanel(n){
   document.getElementById('sbNameInput').value = n.name;
   document.getElementById('sbRoleInput').value = n.role||'';
   document.getElementById('sbNoteInput').value = '';
+  sbRenderColorAndStatus(n);
   sbRenderPanel(n);
   document.getElementById('sbSidePanel').classList.add('on');
   document.getElementById('sbOv').classList.add('on');
+}
+function sbRenderColorAndStatus(n){
+  const row = document.getElementById('sbColorRow');
+  if(row){
+    row.innerHTML = SB_COLORS.map(c=>
+      `<button type="button" class="sb-swatch${n.color===c.key?' sb-swatch-sel':''}" style="background:${c.hex}" data-color="${c.key}" title="${c.label}" aria-label="${c.label}"${isEditor?'':' disabled'}></button>`
+    ).join('') + `<button type="button" class="sb-swatch sb-swatch-none${!n.color?' sb-swatch-sel':''}" data-color="" title="Keine Farbe" aria-label="Keine Farbe"${isEditor?'':' disabled'}>✕</button>`;
+    row.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click', ()=>sbSetColor(btn.dataset.color||null));
+    });
+  }
+  const sel = document.getElementById('sbStatusSelect');
+  if(sel) sel.value = n.status || '';
+}
+function sbSetColor(colorKey){
+  if(!sbCurId || !isEditor) return;
+  const n = sbFind(sbTree, sbCurId); if(!n) return;
+  n.color = colorKey || null;
+  sbSaveAll(); sbRender();
+}
+function sbSetStatus(value){
+  if(!sbCurId || !isEditor) return;
+  const n = sbFind(sbTree, sbCurId); if(!n) return;
+  n.status = value || null;
+  sbSaveAll(); sbRender();
 }
 function sbClosePanel(){
   document.getElementById('sbSidePanel').classList.remove('on');
@@ -4561,6 +4646,7 @@ function initOrgChart(){
   document.getElementById('sbOv').addEventListener('click', sbClosePanel);
   document.getElementById('sbSaveFieldsBtn').addEventListener('click', sbSaveFields);
   document.getElementById('sbAddNoteBtn').addEventListener('click', sbAddNote);
+  document.getElementById('sbStatusSelect').addEventListener('change', e=>sbSetStatus(e.target.value));
   document.getElementById('sbDov').addEventListener('click', sbCloseDialog);
   document.getElementById('sbDlgCancel').addEventListener('click', sbCloseDialog);
   document.getElementById('sbDlgOk').addEventListener('click', sbDoDialogAction);
@@ -4570,7 +4656,27 @@ function initOrgChart(){
   document.addEventListener('keydown', e=>{
     if(e.key==='Escape'){ if(sbLinkMode) sbToggleLink(); sbClosePanel(); sbCloseDialog(); }
   });
+  document.getElementById('sbFullscreenBtn').addEventListener('click', sbToggleFullscreen);
+  document.addEventListener('fullscreenchange', sbOnFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', sbOnFullscreenChange);
   sbRender();
+}
+
+function sbIsFullscreen(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function sbToggleFullscreen(){
+  const el = document.getElementById('sbPanelRoot');
+  if(!sbIsFullscreen()){
+    (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+  }
+}
+function sbOnFullscreenChange(){
+  const btn = document.getElementById('sbFullscreenBtn');
+  if(btn) btn.textContent = sbIsFullscreen() ? '⤢ Vollbild beenden' : '⛶ Vollbild';
+  if(sbChartW) sbApplyFit();
 }
 
 function initPartnerPortals(){
