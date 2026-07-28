@@ -140,3 +140,27 @@ export function migrateRow(r: EmployeeRow): EmployeeRow {
 export function migrateRows(list: EmployeeRow[]): EmployeeRow[] {
   return list.map(migrateRow)
 }
+
+export interface HistoryEntry {
+  date: string
+  ist: number
+}
+
+/**
+ * Trägt den heutigen Gesamt-Ist-Wert in die Verlaufshistorie ein (überschreibt
+ * einen bereits vorhandenen Eintrag für heute) und sortiert nach Datum.
+ * Mutiert `history` nicht — gibt ein neues, sortiertes Array zurück.
+ */
+export function recordSnapshot(
+  rows: Pick<EmployeeRow, "ist">[],
+  history: HistoryEntry[],
+  today: string = new Date().toISOString().slice(0, 10)
+): HistoryEntry[] {
+  const totalIst = rows.reduce((s, r) => s + Number(r.ist || 0), 0)
+  const next = history.map((h) => ({ ...h }))
+  const existing = next.find((h) => h.date === today)
+  if (existing) existing.ist = totalIst
+  else next.push({ date: today, ist: totalIst })
+  next.sort((a, b) => a.date.localeCompare(b.date))
+  return next
+}

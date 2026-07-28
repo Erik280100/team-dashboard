@@ -72,7 +72,22 @@ function monthWeekProgress(teamGoal, nowOverride){
   return { active:true, fraction: currentWeek/totalWeeks };
 }
 
+// Verbatim from legacy/index.html:2493-2501 (recordSnapshot), adapted to take
+// rows/history/today as explicit params and return the new history instead of
+// mutating module-globals + calling saveHistory().
+function recordSnapshot(rows, history, today){
+  today = today || new Date().toISOString().slice(0,10);
+  const totalIst = rows.reduce((s,r)=>s+Number(r.ist||0),0);
+  const next = history.map(h=>({...h}));
+  const existing = next.find(h=>h.date===today);
+  if(existing){ existing.ist = totalIst; }
+  else { next.push({date:today, ist:totalIst}); }
+  next.sort((a,b)=>a.date.localeCompare(b.date));
+  return next;
+}
+
 export {
   defaultPeriod, migrateRow, migrateRows, fmt, pctOf, teamTarget, progressClass,
   initials, recruitActualValue, parseISODate, toISODate, addDays, monthWeekProgress,
+  recordSnapshot,
 };

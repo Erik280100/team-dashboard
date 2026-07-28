@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   fmt, pctOf, teamTarget, progressClass, initials, recruitActualValue,
   parseISODate, toISODate, addDays, defaultPeriod, monthWeekProgress, migrateRow, migrateRows,
-  type EmployeeRow,
+  recordSnapshot, type EmployeeRow, type HistoryEntry,
 } from "../../src/lib/calc/format"
 // @ts-expect-error – plain JS fixture, keine Typen nötig
 import * as legacy from "../legacy-fixtures/format.legacy.js"
@@ -52,6 +52,18 @@ describe("format: golden master vs. legacy", () => {
       const now = new Date(day)
       expect(monthWeekProgress(goal, now)).toEqual(legacy.monthWeekProgress(goal, day))
     }
+  })
+
+  it("recordSnapshot matches", () => {
+    const rows: EmployeeRow[] = [{ soll: 1, ist: 30 }, { soll: 1, ist: 12 }]
+    const history: HistoryEntry[] = [{ date: "2026-07-01", ist: 5 }, { date: "2026-07-27", ist: 40 }]
+    expect(recordSnapshot(rows, history, "2026-07-28")).toEqual(
+      legacy.recordSnapshot(rows, JSON.parse(JSON.stringify(history)), "2026-07-28")
+    )
+    // overwriting an existing day's entry
+    expect(recordSnapshot(rows, history, "2026-07-27")).toEqual(
+      legacy.recordSnapshot(rows, JSON.parse(JSON.stringify(history)), "2026-07-27")
+    )
   })
 
   it("migrateRow / migrateRows match", () => {
