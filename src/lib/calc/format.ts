@@ -6,9 +6,11 @@
 // Golden-Master-Test: test/calc/format.golden.test.ts.
 
 export interface EmployeeRow {
+  name: string
   soll: number
   ist: number
   isNew?: boolean
+  joinDate?: string
   at?: number
   atPlan?: number
   atIst?: number

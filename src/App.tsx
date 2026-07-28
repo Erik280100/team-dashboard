@@ -11,6 +11,7 @@ import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
 import { Overview } from "@/components/sections/Overview"
+import { Team } from "@/components/sections/Team"
 
 const SECTION_LABELS: Record<SectionId, string> = {
   overview: "Übersicht",
@@ -30,9 +31,8 @@ function App() {
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
 
-  // Ruhig halten, bis diese Hooks in Phase 3 tatsächlich in den Sektionen verdrahtet werden.
+  // Ruhig halten, bis dieser Hook in einer späteren Phase-3-Sektion verdrahtet wird.
   void attendance
-  void orgChart
 
   return (
     <ConfirmProvider>
@@ -72,7 +72,17 @@ function App() {
                     isEditor={auth.isEditor}
                   />
                 )}
-                {section === id && id !== "overview" && (
+                {section === id && id === "team" && (
+                  <Team
+                    rows={dashboard.rows}
+                    saveRows={dashboard.saveRows}
+                    teamGoal={dashboard.teamGoal}
+                    orgTree={orgChart.tree}
+                    orgRoleRates={orgChart.rates}
+                    isEditor={auth.isEditor}
+                  />
+                )}
+                {section === id && id !== "overview" && id !== "team" && (
                   <div className="text-sm text-muted-foreground">
                     {SECTION_LABELS[id]} — Inhalt folgt in Phase 3 der Migration.
                   </div>
