@@ -641,6 +641,8 @@
     }
   }
   .emp-name-wrap{ display:flex; align-items:center; gap:10px; }
+  .emp-name-col{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+  .emp-role-tag{ font-size:10.5px; font-weight:600; color:var(--grey-light); padding-left:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .avatar{
     width:32px;height:32px;border-radius:50%;
     background:linear-gradient(135deg, var(--mint), var(--teal));
@@ -1770,6 +1772,7 @@
             <span id="sbPersonTotal" style="font-size:12px;color:var(--grey-light);font-weight:600;"></span>
             <span id="sbNoteTotal" style="font-size:12px;color:var(--grey-light);font-weight:600;"></span>
             <button type="button" class="btn btn-ghost btn-small editor-only" id="sbLinkBtn">🔗 Linie hinzufügen</button>
+            <button type="button" class="btn btn-ghost btn-small editor-only" id="sbRatesBtn">💶 Stufensätze</button>
             <button type="button" class="btn btn-ghost btn-small" id="sbFullscreenBtn">⛶ Vollbild</button>
           </span>
         </h2>
@@ -1799,7 +1802,7 @@
             <button class="sb-pcl" id="sbPanelClose" type="button" aria-label="Schließen">✕</button>
           </div>
           <div class="sb-eg"><div class="sb-el">Name</div><input class="sb-ei" id="sbNameInput" type="text" placeholder="Name"></div>
-          <div class="sb-eg"><div class="sb-el">Bezeichnung / Rolle</div><input class="sb-ei sb-role" id="sbRoleInput" type="text" placeholder="z.B. Gruppenleiter…"></div>
+          <div class="sb-eg"><div class="sb-el">Bezeichnung / Rolle</div><select class="sb-ei sb-role" id="sbRoleInput"></select></div>
           <button class="sb-sfb editor-only" id="sbSaveFieldsBtn" type="button">Änderungen speichern</button>
           <div class="sb-eg" style="margin-top:12px;"><div class="sb-el">Farbe</div><div class="sb-color-row" id="sbColorRow"></div></div>
           <div class="sb-eg"><div class="sb-el">Status</div>
@@ -1827,6 +1830,7 @@
         <p id="sbDlgDesc"></p>
         <input type="text" id="sbDlgInput1" placeholder="">
         <input type="text" id="sbDlgInput2" placeholder="">
+        <select id="sbDlgSelect2" class="sb-ei" style="display:none;margin-bottom:8px;"></select>
         <div class="sb-dbtns">
           <button class="sb-dbtn sb-s" id="sbDlgCancel" type="button">Abbrechen</button>
           <button class="sb-dbtn sb-p" id="sbDlgOk" type="button">Hinzufügen</button>
@@ -2682,11 +2686,17 @@ function renderTable(){
       const schwelle = 0.8 * atPlan * wp.fraction;
       rowClass = Number(r.atIst||0) >= schwelle ? 'at-above' : 'at-below';
     }
+    const role = typeof sbGetRoleForName==='function' ? sbGetRoleForName(r.name) : '';
+    const rate = role && typeof sbGetRateForRole==='function' ? sbGetRateForRole(role) : 0;
+    const roleTag = role ? `<span class="emp-role-tag">${sbEsc(role)}${rate>0 ? ` · ${(Number(r.ist||0)*rate).toLocaleString('de-AT',{minimumFractionDigits:2,maximumFractionDigits:2})} €` : ''}</span>` : '';
     return `
     <div class="emp-row ${rowClass}" role="row">
       <div class="emp-name-wrap" role="cell">
         <div class="avatar" aria-hidden="true">${initials(r.name)}</div>
-        <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}" aria-label="Name">
+        <div class="emp-name-col">
+          <input type="text" class="emp-name-input" data-idx="${i}" data-field="name" value="${r.name.replace(/"/g,'&quot;')}" aria-label="Name">
+          ${roleTag}
+        </div>
       </div>
       <div data-label="Status" role="cell"><button class="status-badge ${r.isNew?'':'off'}" data-idx="${i}" data-action="toggle-new" aria-pressed="${r.isNew?'true':'false'}" aria-label="Status ${r.name}: ${r.isNew?'Neu':'Bestand'}, umschalten">${r.isNew?'NEU':'Bestand'}</button></div>
       <div class="field-group" data-group="plan" role="cell">
@@ -4127,6 +4137,17 @@ const SB_STATUS = {
   vielleicht: { label:'Kommt vielleicht', color:'#64748B' }
 };
 
+// Feste Karrierestufen zur Auswahl bei "Bezeichnung / Rolle"
+const SB_ROLES = ['Direktor','Regionalleiter','Geschäftsstellenleiter','Teamleiter','Kundenberater','FT4','FT3','FT2','FT1'];
+function sbBuildRoleOptions(selectEl, current){
+  const cur = (current||'').trim();
+  let html = '<option value="">— keine Angabe —</option>';
+  if(cur && !SB_ROLES.includes(cur)) html += `<option value="${sbEsc(cur)}">${sbEsc(cur)}</option>`;
+  html += SB_ROLES.map(r=>`<option value="${r}">${r}</option>`).join('');
+  selectEl.innerHTML = html;
+  selectEl.value = cur;
+}
+
 const SB_DEFAULT_TREE = {
   id:'koegerl', name:'Kögerl', role:'Geschäftsstellenleiter', children:[
     {id:'poetsn', name:'Pütün', role:'FT4', children:[]},
@@ -4160,16 +4181,18 @@ function sbLoadLocal(){
     const raw = localStorage.getItem(SB_STORAGE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      if(parsed && parsed.tree) return { tree:parsed.tree, notes:parsed.notes||{}, conns:parsed.conns||[] };
+      if(parsed && parsed.tree) return { tree:parsed.tree, notes:parsed.notes||{}, conns:parsed.conns||[], rates:parsed.rates||{} };
     }
   }catch(e){ console.warn('Konnte Strukturbaum nicht laden', e); }
-  return { tree: JSON.parse(JSON.stringify(SB_DEFAULT_TREE)), notes:{}, conns:[] };
+  return { tree: JSON.parse(JSON.stringify(SB_DEFAULT_TREE)), notes:{}, conns:[], rates:{} };
 }
 
 const sbSaved = sbLoadLocal();
 let sbTree = sbSaved.tree;
 let sbNotes = sbSaved.notes;
 let sbConns = sbSaved.conns;
+// Karrierestufe → Euro pro Einheit, app-weit nutzbar (z.B. Mitarbeiterseite)
+let sbRoleRates = sbSaved.rates;
 let sbUidCounter = 300;
 let sbCloudReady = false;
 let sbNodeMap = {};
@@ -4178,16 +4201,16 @@ let sbCurId = null;
 function sbNewId(){ return 'n'+(++sbUidCounter)+'_'+Date.now(); }
 
 function sbSaveLocal(){
-  try{ localStorage.setItem(SB_STORAGE_KEY, JSON.stringify({ tree:sbTree, notes:sbNotes, conns:sbConns })); }
+  try{ localStorage.setItem(SB_STORAGE_KEY, JSON.stringify({ tree:sbTree, notes:sbNotes, conns:sbConns, rates:sbRoleRates })); }
   catch(e){ console.warn('Speichern des Strukturbaums fehlgeschlagen', e); }
 }
 function sbPushToCloud(){
   if(!CLOUD_CONFIGURED || !sbCloudReady || !orgChartDocRef) return;
-  orgChartDocRef.set({ tree:sbTree, notes:sbNotes, conns:sbConns }).catch(err=>{
+  orgChartDocRef.set({ tree:sbTree, notes:sbNotes, conns:sbConns, rates:sbRoleRates }).catch(err=>{
     console.warn('Strukturbaum: Cloud-Speichern fehlgeschlagen', err);
   });
 }
-function sbSaveAll(){ sbSaveLocal(); sbPushToCloud(); }
+function sbSaveAll(){ sbSaveLocal(); sbPushToCloud(); if(typeof renderTable==='function') renderTable(); }
 
 function initOrgChartSync(){
   if(!CLOUD_CONFIGURED || !orgChartDocRef) return;
@@ -4198,12 +4221,14 @@ function initOrgChartSync(){
       if(data.tree && typeof data.tree === 'object') sbTree = data.tree;
       if(data.notes && typeof data.notes === 'object') sbNotes = data.notes;
       if(Array.isArray(data.conns)) sbConns = data.conns;
+      if(data.rates && typeof data.rates === 'object') sbRoleRates = data.rates;
       sbSaveLocal();
     } else {
-      orgChartDocRef.set({ tree:sbTree, notes:sbNotes, conns:sbConns });
+      orgChartDocRef.set({ tree:sbTree, notes:sbNotes, conns:sbConns, rates:sbRoleRates });
     }
     sbCloudReady = true;
     sbRender();
+    if(typeof renderTable==='function') renderTable();
   }, err=>{
     console.warn('Strukturbaum: Cloud-Verbindung fehlgeschlagen', err);
   });
@@ -4212,6 +4237,72 @@ function initOrgChartSync(){
 // ---- Baum-Helfer ----
 function sbAll(n,a){ a=a||[]; a.push(n); (n.children||[]).forEach(c=>sbAll(c,a)); return a; }
 function sbFind(n,id){ if(n.id===id) return n; for(const c of (n.children||[])){ const f=sbFind(c,id); if(f) return f; } return null; }
+function sbFindByName(n,name){
+  const target=(name||'').trim().toLowerCase(); if(!target||!n) return null;
+  if((n.name||'').trim().toLowerCase()===target) return n;
+  for(const c of (n.children||[])){ const f=sbFindByName(c,name); if(f) return f; }
+  return null;
+}
+function sbLastWord(s){ const parts=(s||'').trim().split(/\s+/); return parts[parts.length-1].toLowerCase(); }
+function sbFindByLastName(n,lastName){
+  if(!n||!lastName) return null;
+  if(sbLastWord(n.name)===lastName) return n;
+  for(const c of (n.children||[])){ const f=sbFindByLastName(c,lastName); if(f) return f; }
+  return null;
+}
+// App-weiter Zugriff auf die im Strukturbaum hinterlegte Karrierestufe einer Person.
+// Strukturbaum-Knoten tragen oft nur den Nachnamen, die Mitarbeiterliste den vollen
+// Namen — daher erst exakter Abgleich, dann Fallback auf Nachnamen-Abgleich.
+function sbGetRoleForName(name){
+  let n = sbFindByName(sbTree,name);
+  if(!n) n = sbFindByLastName(sbTree, sbLastWord(name));
+  return n ? (n.role||'') : '';
+}
+function sbGetRateForRole(role){
+  return Number(sbRoleRates[role]) || 0;
+}
+
+// ---- Stufensätze (€ pro Einheit je Karrierestufe) ----
+function sbOpenRatesDialog(){
+  if(!isEditor) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Stufensätze verwalten" style="max-width:420px;">
+      <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--navy);">💶 Stufensätze</h3>
+      <p style="margin:0 0 14px;font-size:12px;color:var(--grey-light);">Euro pro Einheit (EH) je Karrierestufe — wird z.B. auf der Mitarbeiterseite verwendet.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto;">
+        ${SB_ROLES.map(r=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <label style="font-size:13px;font-weight:600;color:var(--navy);">${r}</label>
+            <span style="display:flex;align-items:center;gap:4px;">
+              <input type="number" step="0.01" min="0" class="sb-rate-input" data-role="${r}" value="${sbRoleRates[r]!=null?sbRoleRates[r]:''}" placeholder="0,00" style="width:90px;border:1.5px solid var(--border);border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit;text-align:right;">
+              <span style="font-size:12px;color:var(--grey-light);">€/EH</span>
+            </span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button type="button" class="btn btn-ghost btn-small" data-action="cancel">Abbrechen</button>
+        <button type="button" class="btn btn-primary btn-small" data-action="save">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  function close(){ overlay.remove(); document.removeEventListener('keydown', onKeydown); }
+  function onKeydown(e){ if(e.key==='Escape') close(); }
+  document.addEventListener('keydown', onKeydown);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('[data-action="cancel"]').addEventListener('click', close);
+  overlay.querySelector('[data-action="save"]').addEventListener('click', ()=>{
+    overlay.querySelectorAll('.sb-rate-input').forEach(inp=>{
+      const r = inp.dataset.role, v = parseFloat(inp.value);
+      if(v>0) sbRoleRates[r]=v; else delete sbRoleRates[r];
+    });
+    sbSaveAll();
+    close();
+  });
+}
 function sbRemove(n,id){
   n.children = (n.children||[]).filter(c=>c.id!==id);
   n.children.forEach(c=>sbRemove(c,id));
@@ -4487,7 +4578,7 @@ let sbAddParent=null;
 function sbOpenAddChild(pid){
   sbAddParent = pid;
   const p = sbNodeMap[pid];
-  sbOpenDialog('➕ Person hinzufügen', `Neue Person unter "${p?.name||pid}"`, 'Name', 'Bezeichnung / Rolle', 'Hinzufügen', sbDoAddChild);
+  sbOpenDialog('➕ Person hinzufügen', `Neue Person unter "${p?.name||pid}"`, 'Name', 'Bezeichnung / Rolle', 'Hinzufügen', sbDoAddChild, true);
 }
 function sbDoAddChild(v1,v2){
   const name=(v1||'').trim(), role=(v2||'').trim();
@@ -4507,7 +4598,7 @@ function sbOpenPanel(n){
   av.style.background = `linear-gradient(135deg,${col}cc,${col})`;
   av.textContent = n.name[0];
   document.getElementById('sbNameInput').value = n.name;
-  document.getElementById('sbRoleInput').value = n.role||'';
+  sbBuildRoleOptions(document.getElementById('sbRoleInput'), n.role);
   document.getElementById('sbNoteInput').value = '';
   sbRenderColorAndStatus(n);
   sbRenderPanel(n);
@@ -4619,13 +4710,23 @@ function sbDeleteNote(i){
 
 // ---- Dialog (Person hinzufügen / Verbindung benennen) ----
 let sbDlgCallback=null;
-function sbOpenDialog(title, desc, ph1, ph2, okLabel, cb){
+function sbOpenDialog(title, desc, ph1, ph2, okLabel, cb, roleSelect){
   sbDlgCallback = cb;
   document.getElementById('sbDlgTitle').textContent = title;
   document.getElementById('sbDlgDesc').textContent = desc||'';
-  const i1=document.getElementById('sbDlgInput1'), i2=document.getElementById('sbDlgInput2');
+  const i1=document.getElementById('sbDlgInput1'), i2=document.getElementById('sbDlgInput2'), s2=document.getElementById('sbDlgSelect2');
   i1.value=''; i1.placeholder = ph1||'';
-  if(ph2){ i2.style.display='block'; i2.value=''; i2.placeholder=ph2; } else { i2.style.display='none'; }
+  if(roleSelect){
+    i2.style.display='none';
+    sbBuildRoleOptions(s2, '');
+    s2.style.display='block';
+  } else if(ph2){
+    i2.style.display='block'; i2.value=''; i2.placeholder=ph2;
+    s2.style.display='none';
+  } else {
+    i2.style.display='none';
+    s2.style.display='none';
+  }
   document.getElementById('sbDlgOk').textContent = okLabel||'OK';
   document.getElementById('sbDov').classList.add('on');
   document.getElementById('sbDlg').classList.add('on');
@@ -4637,11 +4738,14 @@ function sbCloseDialog(){
   sbDlgCallback=null; sbAddParent=null; sbPendConn=null;
 }
 function sbDoDialogAction(){
-  if(sbDlgCallback) sbDlgCallback(document.getElementById('sbDlgInput1').value, document.getElementById('sbDlgInput2').value);
+  const s2 = document.getElementById('sbDlgSelect2');
+  const v2 = s2.style.display==='block' ? s2.value : document.getElementById('sbDlgInput2').value;
+  if(sbDlgCallback) sbDlgCallback(document.getElementById('sbDlgInput1').value, v2);
 }
 
 function initOrgChart(){
   document.getElementById('sbLinkBtn').addEventListener('click', sbToggleLink);
+  document.getElementById('sbRatesBtn').addEventListener('click', sbOpenRatesDialog);
   document.getElementById('sbPanelClose').addEventListener('click', sbClosePanel);
   document.getElementById('sbOv').addEventListener('click', sbClosePanel);
   document.getElementById('sbSaveFieldsBtn').addEventListener('click', sbSaveFields);
