@@ -10,6 +10,7 @@ import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
+import { Overview } from "@/components/sections/Overview"
 
 const SECTION_LABELS: Record<SectionId, string> = {
   overview: "Übersicht",
@@ -62,7 +63,16 @@ function App() {
                 hidden={section !== id}
                 tabIndex={-1}
               >
-                {section === id && (
+                {section === id && id === "overview" && (
+                  <Overview
+                    rows={dashboard.rows}
+                    teamGoal={dashboard.teamGoal}
+                    history={dashboard.history}
+                    saveGoal={dashboard.saveGoal}
+                    isEditor={auth.isEditor}
+                  />
+                )}
+                {section === id && id !== "overview" && (
                   <div className="text-sm text-muted-foreground">
                     {SECTION_LABELS[id]} — Inhalt folgt in Phase 3 der Migration.
                   </div>
