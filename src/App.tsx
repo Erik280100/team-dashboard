@@ -1,13 +1,78 @@
-import { Button } from "@/components/ui/button"
+// App-Shell — Äquivalent zum <div class="app"> Grundgerüst aus legacy/index.html
+// (Sidebar-Nav, Topbar, Banner, Section-Routing). Section-Inhalte selbst folgen
+// in Phase 3; hier steht Navigation, Auth und die Datenschicht-Verdrahtung.
+import { ConfirmProvider } from "@/hooks/useConfirm"
+import { useAuth } from "@/hooks/useAuth"
+import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
+import { useDashboardDoc } from "@/hooks/useDashboardDoc"
+import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
+import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
+import { CLOUD_CONFIGURED } from "@/lib/firebase"
+import { Sidebar } from "@/components/Sidebar"
+import { Topbar } from "@/components/Topbar"
+
+const SECTION_LABELS: Record<SectionId, string> = {
+  overview: "Übersicht",
+  team: "Mitarbeiter",
+  struktur: "Strukturbaum",
+  rechner: "Rechner",
+  karriere: "Karrierepläne",
+  guide: "Guide",
+  kalender: "Kalender/Anwesenheitsliste",
+  partner: "Partnerportale",
+}
 
 function App() {
+  const auth = useAuth()
+  const { section, navigateTo } = useHashSection()
+  const dashboard = useDashboardDoc()
+  const attendance = useAttendanceDoc()
+  const orgChart = useOrgChartDoc()
+
+  // Ruhig halten, bis diese Hooks in Phase 3 tatsächlich in den Sektionen verdrahtet werden.
+  void attendance
+  void orgChart
+
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background text-foreground">
-      <p className="text-sm text-muted-foreground">
-        React-Migrations-Gerüst steht. App-Shell folgt in Phase 2.
-      </p>
-      <Button>shadcn/ui Testkomponente</Button>
-    </div>
+    <ConfirmProvider>
+      <div className="flex min-h-svh bg-background text-foreground">
+        <Sidebar section={section} onNavigate={navigateTo} />
+        <main className="flex min-w-0 flex-1 flex-col">
+          <Topbar auth={auth} dashboard={dashboard} />
+
+          {!CLOUD_CONFIGURED && (
+            <div className="border-b bg-amber-50 px-6 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              Cloud-Speicherung ist noch nicht eingerichtet — Änderungen werden nur in
+              diesem Browser gespeichert. Firebase-Konfiguration im Quelltext ergänzen,
+              damit alle im Team dieselben Daten sehen.
+            </div>
+          )}
+          {!auth.isEditor && (
+            <div className="border-b bg-muted px-6 py-2 text-sm text-muted-foreground">
+              Nur Lesezugriff — melde dich an, um Zahlen zu ändern.
+            </div>
+          )}
+
+          <div className="flex-1 p-6">
+            {SECTION_IDS.map((id) => (
+              <section
+                key={id}
+                id={`section-${id}`}
+                aria-label={SECTION_LABELS[id]}
+                hidden={section !== id}
+                tabIndex={-1}
+              >
+                {section === id && (
+                  <div className="text-sm text-muted-foreground">
+                    {SECTION_LABELS[id]} — Inhalt folgt in Phase 3 der Migration.
+                  </div>
+                )}
+              </section>
+            ))}
+          </div>
+        </main>
+      </div>
+    </ConfirmProvider>
   )
 }
 
