@@ -11,9 +11,15 @@ const defaultInputs: UmdrehInputs = {
   praemie: 100, beraterAlt: 0, beraterNeu: 0, fkAlt: 0, fkNeu: 0, stornoActive: false,
 }
 
-function DiffValue({ value }: { value: number }) {
+function DiffValue({ value, onDark }: { value: number; onDark?: boolean }) {
   return (
-    <span className={cn("font-semibold", value < 0 ? "text-destructive" : value > 0 ? "text-emerald-600 dark:text-emerald-400" : "")}>
+    <span
+      className={cn(
+        "font-semibold",
+        value < 0 ? (onDark ? "text-[#E2685B]" : "text-destructive") : value > 0 ? "text-[#155767]" : undefined,
+        onDark && value >= 0 && "text-[#64DDA3]"
+      )}
+    >
       {ehFormatEUR(value)} €
     </span>
   )
@@ -113,21 +119,28 @@ export function UmdrehRechner() {
         </Card>
       </div>
 
-      <Card className={r.gesamtDiff < 0 ? "border-destructive/50" : undefined}>
+      <Card className="border-none bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
         <CardContent className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-xs text-muted-foreground">Storno-Minus gesamt</div>
+            <div className="text-xs text-white/60">Storno-Minus gesamt</div>
             <div className="text-lg font-bold tabular-nums">{ehFormatEUR(r.gesamtMinus)} €</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">Aktuell gesamt</div>
+            <div className="text-xs text-white/60">Aktuell gesamt</div>
             <div className="text-lg font-bold tabular-nums">{ehFormatEUR(r.gesamtAktuell)} €</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">Differenz gesamt</div>
-            <div className="text-lg font-bold tabular-nums"><DiffValue value={r.gesamtDiff} /></div>
+            <div className="text-xs text-white/60">Differenz gesamt</div>
+            <div className="text-lg font-bold tabular-nums"><DiffValue value={r.gesamtDiff} onDark /></div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onReset}>Zurücksetzen</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10 hover:text-white"
+            onClick={onReset}
+          >
+            Zurücksetzen
+          </Button>
         </CardContent>
       </Card>
     </div>

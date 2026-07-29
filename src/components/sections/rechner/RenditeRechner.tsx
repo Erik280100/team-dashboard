@@ -211,7 +211,7 @@ export function RenditeRechner() {
               </label>
             </div>
             {depotHint && <div className="text-xs text-muted-foreground">{depotHint}</div>}
-            <div className="text-xs text-muted-foreground">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
           </CardContent>
         </Card>
 
@@ -221,7 +221,7 @@ export function RenditeRechner() {
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>3 × Monatsbeitrag</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Ausgabeaufschlag Einmalerlag</span><span>5 %</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>2,09 % p.a.</span></div>
-            <div className="mt-1 text-xs text-muted-foreground">KESt-pflichtig (27,5 %)</div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-pflichtig (27,5 %)</div>
           </CardContent>
         </Card>
 
@@ -231,7 +231,7 @@ export function RenditeRechner() {
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Versicherungssteuer</span><span>3,85 %</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Kosten (von Prämiensumme)</span><span>5,06 %</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten (am Vermögen)</span><span>0,516 % p.a.</span></div>
-            <div className="mt-1 text-xs text-muted-foreground">KESt-frei</div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
             {einmal > 0 && (
               <div className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                 Kein Einmalerlag verfügbar — der eingegebene Einmalerlag fließt bei diesem Produkt nicht ins Depot.
@@ -253,7 +253,7 @@ export function RenditeRechner() {
                 <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
               ))}
             </div>
-            <div className="text-xs text-muted-foreground">KESt-frei</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
           </CardContent>
         </Card>
       </div>
@@ -302,7 +302,7 @@ export function RenditeRechner() {
               <CardContent>
                 <div className="text-xs text-muted-foreground">{p.name}</div>
                 <div className="text-xl font-bold tabular-nums">{rrFormatEUR(p.end)}</div>
-                <div className={cn("text-xs font-medium", positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
                   {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
                 </div>
               </CardContent>

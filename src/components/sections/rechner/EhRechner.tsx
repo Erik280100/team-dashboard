@@ -6,6 +6,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useConfirm } from "@/hooks/useConfirm"
 import { calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
 
+// legacy/index.html:821-824 — Gruppen-Akzentfarbe (oberer Rand der Karte)
+const GROUP_ACCENT: Record<EhGroup["id"], string> = {
+  insurance: "#3FCB8E",
+  investment: "#5B9BD5",
+  credit: "#E7A94C",
+  realestate: "#B07CC6",
+}
+
 function defaultG(): Record<string, number> {
   const g: Record<string, number> = {}
   EH_ITEMS.forEach((it) => { if (it.hasG) g[it.id] = it.gDefault ?? 0 })
@@ -41,7 +49,7 @@ export function EhRechner() {
   function renderGroup(group: EhGroup) {
     const items = EH_ITEMS.filter((it) => it.sparte === group.id)
     return (
-      <Card key={group.id}>
+      <Card key={group.id} className="border-t-[3px]" style={{ borderTopColor: GROUP_ACCENT[group.id] }}>
         <CardContent className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold">{group.title}</h3>
           {items.map((it) => (
@@ -79,14 +87,14 @@ export function EhRechner() {
                 </label>
               )}
               <div className="text-right">
-                <div className="text-base font-bold tabular-nums">{ehFormatEH(result.perItem[it.id])}</div>
+                <div className="text-base font-bold tabular-nums text-[#155767]">{ehFormatEH(result.perItem[it.id])}</div>
                 <div className="text-xs text-muted-foreground">EH</div>
               </div>
             </div>
           ))}
-          <div className="flex items-center justify-between border-t pt-3 text-sm">
-            <span className="text-muted-foreground">Zwischensumme</span>
-            <span className="font-semibold tabular-nums">{ehFormatEH(result.groupSums[group.id])} EH</span>
+          <div className="flex items-center justify-between border-t-2 border-t-foreground/80 pt-3 text-sm">
+            <span className="font-semibold text-muted-foreground">Zwischensumme</span>
+            <span className="text-lg font-extrabold tabular-nums">{ehFormatEH(result.groupSums[group.id])} EH</span>
           </div>
           <div className="flex items-center gap-3">
             <label className="flex-1 text-xs text-muted-foreground">
@@ -99,7 +107,7 @@ export function EhRechner() {
                 onChange={(e) => setMult((s) => ({ ...s, [group.id]: Number(e.target.value) || 0 }))}
               />
             </label>
-            <span className="whitespace-nowrap text-sm font-semibold tabular-nums">
+            <span className="whitespace-nowrap text-sm font-bold tabular-nums text-[#155767]">
               {ehFormatEUR(result.groupEur[group.id])} €
             </span>
           </div>
@@ -119,17 +127,24 @@ export function EhRechner() {
         automatisch berechnet und zur Zwischensumme addiert. Eingaben werden nicht gespeichert.
       </div>
 
-      <Card>
+      <Card className="border-none bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
         <CardContent className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-xs text-muted-foreground">Gesamt Einheiten</div>
-            <div className="text-2xl font-bold tabular-nums">{ehFormatEH(result.grandTotal)} EH</div>
+            <div className="text-xs text-white/60">Gesamt Einheiten</div>
+            <div className="text-2xl font-extrabold tabular-nums">{ehFormatEH(result.grandTotal)} EH</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">Gesamt in €</div>
-            <div className="text-2xl font-bold tabular-nums">{ehFormatEUR(result.grandTotalEur)} €</div>
+            <div className="text-xs text-white/60">Gesamt in €</div>
+            <div className="text-2xl font-extrabold tabular-nums">{ehFormatEUR(result.grandTotalEur)} €</div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onReset}>Zurücksetzen</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10 hover:text-white"
+            onClick={onReset}
+          >
+            Zurücksetzen
+          </Button>
         </CardContent>
       </Card>
 

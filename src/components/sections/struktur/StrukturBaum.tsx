@@ -52,6 +52,8 @@ export function StrukturBaum({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [nameDraft, setNameDraft] = useState("")
   const [roleDraft, setRoleDraft] = useState("")
+  const [colorDraft, setColorDraft] = useState<string | null>(null)
+  const [statusDraft, setStatusDraft] = useState("")
   const [noteDraft, setNoteDraft] = useState("")
   const [linkMode, setLinkMode] = useState(false)
   const [linkSrc, setLinkSrc] = useState<string | null>(null)
@@ -139,6 +141,8 @@ export function StrukturBaum({
     setSelectedId(n.id)
     setNameDraft(n.name)
     setRoleDraft(n.role || "")
+    setColorDraft(n.color ?? null)
+    setStatusDraft(n.status || "")
     setNoteDraft("")
   }
   function closePanel() {
@@ -285,6 +289,9 @@ export function StrukturBaum({
     closePanel()
   }
 
+  // Name, Rolle, Farbe und Status hängen an einem gemeinsamen "Speichern"-Button —
+  // nichts davon wird beim Ändern automatisch übernommen (anders als im Original,
+  // wo Farbe/Status sofort speicherten; auf Nutzerwunsch vereinheitlicht).
   function saveFields() {
     if (!selectedId || !isEditor) return
     const name = nameDraft.trim()
@@ -294,21 +301,10 @@ export function StrukturBaum({
     if (n) {
       n.name = name
       n.role = roleDraft.trim()
+      n.color = colorDraft
+      n.status = statusDraft || null
       persist({ tree: next })
     }
-  }
-
-  function setColor(colorKey: string | null) {
-    if (!selectedId || !isEditor) return
-    const next = deepClone(doc.tree)
-    const n = sbFind(next, selectedId)
-    if (n) { n.color = colorKey; persist({ tree: next }) }
-  }
-  function setStatus(value: string) {
-    if (!selectedId || !isEditor) return
-    const next = deepClone(doc.tree)
-    const n = sbFind(next, selectedId)
-    if (n) { n.status = value || null; persist({ tree: next }) }
   }
   function addNote() {
     if (!isEditor || !selectedId) return
@@ -534,22 +530,20 @@ export function StrukturBaum({
                 {roleDraft && !SB_ROLES.includes(roleDraft) && <option value={roleDraft}>{roleDraft}</option>}
               </select>
             </label>
-            {isEditor && <Button size="sm" onClick={saveFields} className="mb-4">Änderungen speichern</Button>}
-
             <div className="mb-4">
               <div className="mb-1.5 text-xs text-muted-foreground">Farbe</div>
               <div className="flex flex-wrap gap-1.5">
                 {SB_COLORS.map((c) => (
                   <button
                     key={c.key} type="button" disabled={!isEditor} title={c.label}
-                    onClick={() => setColor(c.key)}
-                    className={cn("size-6 rounded-full border-2", selected.color === c.key ? "border-foreground" : "border-transparent")}
+                    onClick={() => setColorDraft(c.key)}
+                    className={cn("size-6 rounded-full border-2", colorDraft === c.key ? "border-foreground" : "border-transparent")}
                     style={{ background: c.hex }}
                   />
                 ))}
                 <button
-                  type="button" disabled={!isEditor} title="Keine Farbe" onClick={() => setColor(null)}
-                  className={cn("flex size-6 items-center justify-center rounded-full border text-xs", !selected.color && "border-foreground")}
+                  type="button" disabled={!isEditor} title="Keine Farbe" onClick={() => setColorDraft(null)}
+                  className={cn("flex size-6 items-center justify-center rounded-full border text-xs", !colorDraft && "border-foreground")}
                 >
                   ✕
                 </button>
@@ -559,15 +553,17 @@ export function StrukturBaum({
             <label className="mb-4 flex flex-col gap-1 text-xs text-muted-foreground">
               Status
               <select
-                value={selected.status || ""}
+                value={statusDraft}
                 disabled={!isEditor}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) => setStatusDraft(e.target.value)}
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm"
               >
                 <option value="">— kein Status —</option>
                 {Object.entries(SB_STATUS).map(([key, v]) => <option key={key} value={key}>{v.label}</option>)}
               </select>
             </label>
+
+            {isEditor && <Button size="sm" onClick={saveFields} className="mb-4 w-full">Speichern</Button>}
 
             {isEditor && (
               <div className="mb-4 flex flex-wrap gap-2">
