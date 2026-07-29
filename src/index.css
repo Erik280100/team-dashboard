@@ -30,7 +30,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: var(--navy);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: var(--brand-grey-light);
+  --muted-foreground: var(--navy);
   --accent: oklch(0.97 0 0);
   --accent-foreground: var(--navy);
   --destructive: var(--brand-red);
