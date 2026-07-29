@@ -19,15 +19,17 @@ export function Rechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="inline-flex w-fit rounded-lg border p-1">
+      <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-              tab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+              tab === t.id
+                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
             )}
           >
             {t.label}

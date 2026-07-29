@@ -20,15 +20,17 @@ function ToggleGroup<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="inline-flex rounded-md border p-0.5">
+    <div className="flex flex-wrap gap-1.5">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
           className={cn(
-            "rounded px-3 py-1 text-xs font-medium transition-colors",
-            value === o.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+            "rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+            value === o.value
+              ? "border-transparent bg-primary text-primary-foreground"
+              : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
           )}
         >
           {o.label}
@@ -53,7 +55,7 @@ function Stepper({
       <input
         id={id} type="number" min={0} step={step} value={value}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
-        className="h-8 w-24 rounded-md border border-input bg-background px-2 text-center text-sm tabular-nums"
+        className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-center text-sm tabular-nums"
       />
       <button type="button" className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted"
         onClick={() => onChange(value + step)}>+</button>
@@ -153,7 +155,7 @@ export function RenditeRechner() {
               Laufzeit (Jahre)
               <input type="number" min={1} max={65} step={1} value={jahre}
                 onChange={(e) => setJahre(Number(e.target.value) || 20)}
-                className="h-8 w-24 rounded-md border border-input bg-background px-2 text-sm" />
+                className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -162,7 +164,7 @@ export function RenditeRechner() {
               </span>
               <input type="number" min={0} step={0.5} value={waPct} disabled={!waEnabled}
                 onChange={(e) => setWaPct(Number(e.target.value) || 0)}
-                className="h-8 w-24 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50" />
+                className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm disabled:opacity-50" />
             </label>
           </div>
           <div className="flex flex-wrap items-end gap-4">
@@ -175,7 +177,7 @@ export function RenditeRechner() {
               Eigene Performance (% p.a.)
               <input type="number" step={0.1} placeholder="z. B. 5,5" value={customPerf}
                 onChange={(e) => onCustomPerf(e.target.value)}
-                className="h-8 w-32 rounded-md border border-input bg-background px-2 text-sm" />
+                className="h-8 w-32 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
             </label>
           </div>
         </CardContent>
@@ -195,19 +197,19 @@ export function RenditeRechner() {
                 Ausgabeaufschlag (%)
                 <input type="number" min={0} step={0.1} value={ausgabeaufschlag}
                   onChange={(e) => setAusgabeaufschlag(Number(e.target.value) || 0)}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm" />
+                  className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Depotgebühr / TER (% p.a.)
                 <input type="number" min={0} step={0.05} value={depotgebuehr}
                   onChange={(e) => setDepotgebuehr(Number(e.target.value) || 0)}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm" />
+                  className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 agE-/Dividendenrendite (% p.a.)
                 <input type="number" min={0} step={0.1} value={ageRendite}
                   onChange={(e) => setAgeRendite(Number(e.target.value) || 0)}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm" />
+                  className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
             </div>
             {depotHint && <div className="text-xs text-muted-foreground">{depotHint}</div>}

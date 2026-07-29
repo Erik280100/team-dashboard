@@ -59,7 +59,7 @@ export function UmdrehRechner() {
               <input type="number" min={0} step={10} value={inputs.praemie}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => set("praemie", Number(e.target.value) || 0)}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
+                className="h-9 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Einheiten alt
@@ -82,7 +82,7 @@ export function UmdrehRechner() {
                 <input type="number" min={0} step={0.1} value={inputs[key]}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => set(key, Number(e.target.value) || 0)}
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
+                  className="h-9 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
             ))}
           </div>
@@ -136,7 +136,7 @@ export function UmdrehRechner() {
           <Button
             variant="ghost"
             size="sm"
-            className="text-white hover:bg-white/10 hover:text-white"
+            className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
             onClick={onReset}
           >
             Zurücksetzen
