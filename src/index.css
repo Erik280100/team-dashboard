@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -139,4 +138,101 @@
   summary {
     cursor: pointer;
   }
+}
+
+/* Guide-/Karriere-Inhalte (dangerouslySetInnerHTML aus src/lib/data/guide.ts,career.ts) —
+   1:1 aus legacy/index.html:1138-1166 übernommen, damit Überschriften-Farben,
+   Tabellen und Download-Buttons wie im Original aussehen statt generischem Prose-Stil. */
+.career-plan {
+  line-height: 1.6;
+}
+.career-plan h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.career-plan h3 {
+  margin: 26px 0 10px;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--teal);
+}
+.career-plan h3:first-of-type {
+  margin-top: 0;
+}
+.career-plan p {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: var(--brand-grey);
+}
+.career-plan ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  font-size: 13.5px;
+  color: var(--brand-grey);
+}
+.career-plan li {
+  margin-bottom: 4px;
+}
+.career-plan a {
+  color: var(--teal);
+}
+.career-plan table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 20px;
+  font-size: 13px;
+}
+.career-plan th {
+  text-align: left;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--brand-grey-light);
+  font-weight: 700;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--navy);
+}
+.career-plan td {
+  padding: 10px;
+  border-bottom: 1px solid var(--brand-border);
+  color: var(--navy);
+}
+.career-plan tr:last-child td {
+  border-bottom: none;
+}
+@media (max-width: 600px) {
+  .career-plan table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* legacy/index.html:165-187 — Buttons, u.a. die Download-Links in Guide-Inhalten */
+.btn {
+  display: inline-block;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--mint), var(--mint-2));
+  color: var(--navy);
+  box-shadow: 0 4px 14px rgba(63, 203, 142, 0.35);
+}
+.btn-small {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  border-radius: 8px;
 }

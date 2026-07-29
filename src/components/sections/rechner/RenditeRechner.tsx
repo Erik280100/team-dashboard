@@ -263,7 +263,7 @@ export function RenditeRechner() {
       <Card>
         <CardContent>
           <h3 className="mb-3 text-sm font-semibold">Wertentwicklung im Vergleich</h3>
-          <div className="h-[280px]">
+          <div className="h-[460px]">
             <Line
               data={{
                 labels: years,

@@ -79,7 +79,7 @@ export function Karriere() {
       <Card>
         <CardContent>
           <div
-            className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-primary"
+            className="career-plan"
             dangerouslySetInnerHTML={{ __html: plan.html }}
           />
         </CardContent>

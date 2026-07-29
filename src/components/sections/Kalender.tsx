@@ -5,7 +5,7 @@
 // bearbeitbar (kein isEditor-Gate), identisch zum Original.
 import { Card, CardContent } from "@/components/ui/card"
 import { initials } from "@/lib/calc/format"
-import type { AttendanceEntry, EmployeeRow } from "@/types/dashboard"
+import type { AttendanceEntry } from "@/types/dashboard"
 import { getAttendanceEntry } from "@/hooks/useAttendanceDoc"
 import { cn } from "@/lib/utils"
 
@@ -79,11 +79,12 @@ function AttendanceToggle({
 }
 
 export function Kalender({
-  rows,
+  employeeNames,
   attendance,
   setAttendanceEntry,
 }: {
-  rows: EmployeeRow[]
+  /** Namen aus dem Strukturbaum, bereits alphabetisch sortiert. */
+  employeeNames: string[]
   attendance: Record<string, AttendanceEntry>
   setAttendanceEntry: (name: string, patch: Partial<AttendanceEntry>) => void
 }) {
@@ -125,14 +126,14 @@ export function Kalender({
           <div className="mb-1 flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold">Anwesenheitsliste</h2>
             <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-              {rows.length} Mitarbeiter
+              {employeeNames.length} Mitarbeiter
             </span>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
             Jede·r kann hier selbst an-/abhaken. Bei Abwesenheit bitte kurz den Absagegrund eintragen.
           </p>
 
-          {rows.length === 0 ? (
+          {employeeNames.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">Noch keine Mitarbeiter angelegt.</div>
           ) : (
             <div className="overflow-x-auto">
@@ -145,34 +146,34 @@ export function Kalender({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => {
-                    const a = getAttendanceEntry(attendance, r.name)
+                  {employeeNames.map((name) => {
+                    const a = getAttendanceEntry(attendance, name)
                     return (
-                      <tr key={r.name} className="border-b last:border-0">
+                      <tr key={name} className="border-b last:border-0">
                         <td className="px-2 py-2">
                           <div className="flex items-center gap-2">
                             <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
-                              {initials(r.name)}
+                              {initials(name)}
                             </div>
-                            {r.name}
+                            {name}
                           </div>
                         </td>
                         <td className="px-2 py-2">
                           <AttendanceToggle
-                            label={`Seminar – ${r.name}`}
+                            label={`Seminar – ${name}`}
                             present={a.seminar}
                             reason={a.seminarReason}
-                            onToggle={(present) => setAttendanceEntry(r.name, { seminar: present, ...(present ? { seminarReason: "" } : {}) })}
-                            onReasonChange={(reason) => setAttendanceEntry(r.name, { seminarReason: reason })}
+                            onToggle={(present) => setAttendanceEntry(name, { seminar: present, ...(present ? { seminarReason: "" } : {}) })}
+                            onReasonChange={(reason) => setAttendanceEntry(name, { seminarReason: reason })}
                           />
                         </td>
                         <td className="px-2 py-2">
                           <AttendanceToggle
-                            label={`Training – ${r.name}`}
+                            label={`Training – ${name}`}
                             present={a.training}
                             reason={a.trainingReason}
-                            onToggle={(present) => setAttendanceEntry(r.name, { training: present, ...(present ? { trainingReason: "" } : {}) })}
-                            onReasonChange={(reason) => setAttendanceEntry(r.name, { trainingReason: reason })}
+                            onToggle={(present) => setAttendanceEntry(name, { training: present, ...(present ? { trainingReason: "" } : {}) })}
+                            onReasonChange={(reason) => setAttendanceEntry(name, { trainingReason: reason })}
                           />
                         </td>
                       </tr>

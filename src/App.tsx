@@ -1,7 +1,9 @@
 // App-Shell — Äquivalent zum <div class="app"> Grundgerüst aus legacy/index.html
 // (Sidebar-Nav, Topbar, Banner, Section-Routing). Section-Inhalte selbst folgen
 // in Phase 3; hier steht Navigation, Auth und die Datenschicht-Verdrahtung.
+import { useMemo } from "react"
 import { ConfirmProvider } from "@/hooks/useConfirm"
+import { sbAll } from "@/lib/calc/struktur"
 import { useAuth } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
@@ -36,6 +38,13 @@ function App() {
   const dashboard = useDashboardDoc()
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
+
+  // Anwesenheitsliste zeigt die Mitarbeiter aus dem Strukturbaum (nicht der
+  // Team-Tabelle), alphabetisch sortiert.
+  const attendanceNames = useMemo(
+    () => sbAll(orgChart.tree).map((n) => n.name).sort((a, b) => a.localeCompare(b, "de")),
+    [orgChart.tree]
+  )
 
   return (
     <ConfirmProvider>
@@ -90,7 +99,7 @@ function App() {
                 {section === id && id === "guide" && <Guide />}
                 {section === id && id === "kalender" && (
                   <Kalender
-                    rows={dashboard.rows}
+                    employeeNames={attendanceNames}
                     attendance={attendance.attendance}
                     setAttendanceEntry={attendance.setAttendanceEntry}
                   />
