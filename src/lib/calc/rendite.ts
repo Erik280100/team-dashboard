@@ -5,6 +5,41 @@
 export const RR_KEST = 0.275
 
 export type Provider = "merkur" | "helvetia"
+export type DepotProvider = "flatex" | "traderepublic"
+
+// Depot-Presets: Kosten laut Online-Angaben der Broker (Stand 2026). Sparplanausführung
+// ist bei beiden gebührenfrei (Ausgabeaufschlag = 0), ein Einmalerlag (Einzelorder)
+// kostet aber pauschal eine fixe Ordergebühr in €. (legacy/index.html:3534–3544)
+export const RR_DEPOT_PRESETS: Record<DepotProvider, { ausgabeaufschlag: number; depotgebuehr: number; flatFee: number; feeLabel: string }> = {
+  flatex: { ausgabeaufschlag: 0, depotgebuehr: 1.45, flatFee: 5.9, feeLabel: "5,90 €" },
+  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 1.45, flatFee: 1.0, feeLabel: "1 €" },
+}
+
+// legacy/index.html:3546–3569
+export const RR_FLV_COSTS: Record<Provider, [string, string][]> = {
+  merkur: [
+    ["Versicherungssteuer (laufend)", "4 %"],
+    ["Verwaltungskosten von Prämie", "4 %"],
+    ["Abschlusskosten (Zillmerung)", "4 % · Monat 1–60"],
+    ["Laufende Depotkosten", "0,20 % p.a."],
+    ["Kickbacks (Prämie)", "+0,13 % p.a."],
+    ["Einmalerlag Abschlusskosten", "4 %"],
+    ["Einmalerlag Verwaltung", "0,35 % p.a."],
+    ["Einmalerlag VSt", "4 % (≥15 J.) / 11 % (<15 J.)"],
+    ["Kickbacks (Einmalerlag)", "+0,835 % p.a."],
+    ["Fixkosten (nur bei Einmalerlag)", "2 €/Monat"],
+  ],
+  helvetia: [
+    ["Versicherungssteuer (laufend)", "4 %"],
+    ["Verwaltungskosten von Prämie", "7 %"],
+    ["Abschlusskosten (Zillmerung)", "7 % · Monat 1–60"],
+    ["Laufende Depotkosten", "0,348 % p.a."],
+    ["Kickbacks Jahr 1–7", "+0,20 % p.a."],
+    ["Kickbacks ab Jahr 8", "+0,40 % p.a."],
+    ["Einmalerlag Gesamtkosten", "9,62 % (≥15 J.) / 15,77 % (<15 J.)"],
+    ["Einmalerlag Hüllenkosten", "0,348 % p.a."],
+  ],
+}
 
 /** Monatlicher Zinssatz aus einer jährlichen Performance (stetige Verzinsung über 12 Monate). */
 export function rrRate(pa: number): number {

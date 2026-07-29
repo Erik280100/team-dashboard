@@ -12,6 +12,7 @@ import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
 import { Overview } from "@/components/sections/Overview"
 import { Team } from "@/components/sections/Team"
+import { Rechner } from "@/components/sections/Rechner"
 
 const SECTION_LABELS: Record<SectionId, string> = {
   overview: "Übersicht",
@@ -82,7 +83,8 @@ function App() {
                     isEditor={auth.isEditor}
                   />
                 )}
-                {section === id && id !== "overview" && id !== "team" && (
+                {section === id && id === "rechner" && <Rechner />}
+                {section === id && !["overview", "team", "rechner"].includes(id) && (
                   <div className="text-sm text-muted-foreground">
                     {SECTION_LABELS[id]} — Inhalt folgt in Phase 3 der Migration.
                   </div>
