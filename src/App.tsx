@@ -48,9 +48,9 @@ function App() {
 
   return (
     <ConfirmProvider>
-      <div className="flex min-h-svh bg-background text-foreground">
+      <div className="flex h-svh overflow-hidden bg-background text-foreground">
         <Sidebar section={section} onNavigate={navigateTo} />
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
           <Topbar auth={auth} dashboard={dashboard} />
 
           {!CLOUD_CONFIGURED && (

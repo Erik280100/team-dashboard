@@ -129,6 +129,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* legacy/index.html:31-32 — dieselbe Schriftfamilie wie im Original */
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
   /* Tailwinds Preflight setzt button { cursor: default } zurück — alle
      klickbaren Steuerelemente sollen aber wie überall sonst einen Pointer zeigen. */
