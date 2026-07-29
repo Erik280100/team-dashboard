@@ -53,7 +53,7 @@ export function EhRechner() {
         <CardContent className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold">{group.title}</h3>
           {items.map((it) => (
-            <div key={it.id} className="grid grid-cols-[1fr_auto_auto_auto] items-end gap-3 border-b pb-3 last:border-0 last:pb-0">
+            <div key={it.id} className="grid grid-cols-[1fr_auto_auto_7rem] items-end gap-3 border-b pb-3 last:border-0 last:pb-0">
               <div className="min-w-0">
                 <div className="text-sm font-medium">{it.label}</div>
                 <div className="text-xs text-muted-foreground">Auszahlung: {it.payout}</div>
@@ -96,18 +96,18 @@ export function EhRechner() {
             <span className="font-semibold text-muted-foreground">Zwischensumme</span>
             <span className="text-lg font-extrabold tabular-nums">{ehFormatEH(result.groupSums[group.id])} EH</span>
           </div>
-          <div className="flex items-center gap-3">
-            <label className="flex-1 text-xs text-muted-foreground">
+          <div className="mt-2 flex items-center gap-1.5">
+            <label className="shrink-0 text-[11px] font-semibold text-muted-foreground">
               Multiplikator (€ / EH)
-              <input
-                type="number" min={0} step={0.5}
-                className="mt-1 h-8 w-full rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm"
-                value={mult[group.id]}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => setMult((s) => ({ ...s, [group.id]: Number(e.target.value) || 0 }))}
-              />
             </label>
-            <span className="whitespace-nowrap text-sm font-bold tabular-nums text-[#155767]">
+            <input
+              type="number" min={0} step={0.5}
+              className="ml-2 h-7 w-16 shrink-0 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-[12.5px]"
+              value={mult[group.id]}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setMult((s) => ({ ...s, [group.id]: Number(e.target.value) || 0 }))}
+            />
+            <span className="ml-auto shrink-0 whitespace-nowrap text-[13.5px] font-bold tabular-nums text-[#155767]">
               {ehFormatEUR(result.groupEur[group.id])} €
             </span>
           </div>
@@ -131,11 +131,11 @@ export function EhRechner() {
         <CardContent className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-xs text-white/60">Gesamt Einheiten</div>
-            <div className="text-2xl font-extrabold tabular-nums">{ehFormatEH(result.grandTotal)} EH</div>
+            <div className="text-4xl font-extrabold tabular-nums">{ehFormatEH(result.grandTotal)} EH</div>
           </div>
           <div>
             <div className="text-xs text-white/60">Gesamt in €</div>
-            <div className="text-2xl font-extrabold tabular-nums">{ehFormatEUR(result.grandTotalEur)} €</div>
+            <div className="text-4xl font-extrabold tabular-nums">{ehFormatEUR(result.grandTotalEur)} €</div>
           </div>
           <Button
             variant="ghost"
