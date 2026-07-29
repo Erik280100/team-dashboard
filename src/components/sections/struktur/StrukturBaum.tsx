@@ -477,7 +477,7 @@ export function StrukturBaum({
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openAddChild(n.id) }}
-                      className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border bg-background text-xs font-bold shadow-sm hover:bg-muted"
+                      className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border bg-background text-xs font-bold text-foreground shadow-sm hover:bg-muted"
                       aria-label={`Person unter ${n.name} hinzufügen`}
                     >
                       +
