@@ -230,8 +230,8 @@ export function Overview({
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className={DARK_CARD}>
           <DarkCardHeader title="Team-Fortschritt" sub="Ist / Team-Ziel, Einheiten" />
-          <CardContent>
-            <div className="relative h-[220px]">
+          <CardContent className="flex flex-1 flex-col">
+            <div className="relative mx-auto aspect-square w-full max-w-[280px] flex-1">
               <Doughnut
                 data={{
                   labels: ["Erreicht (Ist)", "Offen bis Ziel"],
@@ -246,8 +246,8 @@ export function Overview({
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  cutout: "72%",
-                  plugins: { legend: DARK_LEGEND },
+                  cutout: "76%",
+                  plugins: { legend: { display: false } },
                 }}
                 aria-label={
                   doughnut.hasData
@@ -256,14 +256,18 @@ export function Overview({
                 }
                 role="img"
               />
-              <div className="pointer-events-none absolute inset-0 top-0 flex flex-col items-center justify-center pb-8">
-                <div className="text-xl font-bold text-white">
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-3xl font-extrabold text-white">
                   {doughnut.hasData ? `${doughnut.pct}%` : "—"}
                 </div>
-                <div className="text-[10px] text-white/50">
+                <div className="mt-1 text-xs text-white/50">
                   {doughnut.hasData ? `${fmt(doughnut.totalIst)} / ${fmt(doughnut.target)}` : "Kein Ziel gesetzt"}
                 </div>
               </div>
+            </div>
+            <div className="mt-4 flex justify-center gap-4 text-xs text-white/70">
+              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[#64DDA3]" />Erreicht (Ist)</span>
+              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-white/20" />Offen bis Ziel</span>
             </div>
           </CardContent>
         </Card>

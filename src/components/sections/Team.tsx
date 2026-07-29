@@ -130,18 +130,18 @@ export function Team({
         </Select>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="max-h-[65vh] overflow-auto rounded-lg border">
         <table className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2 text-center" colSpan={3}>Plan (AT / BT / ET)</th>
-              <th className="px-3 py-2 text-center" colSpan={3}>Ist (AT / BT / ET)</th>
-              <th className="px-3 py-2">Soll</th>
-              <th className="px-3 py-2">Ist</th>
-              <th className="px-3 py-2">Fortschritt</th>
-              <th className="px-3 py-2" />
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Status</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={3}>Plan (AT / BT / ET)</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={3}>Ist (AT / BT / ET)</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Soll</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Ist</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Fortschritt</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur" />
             </tr>
           </thead>
           <tbody>
@@ -253,18 +253,26 @@ export function Team({
           </tbody>
           {list.length > 0 && (
             <tfoot>
-              <tr className="border-t-2 border-t-foreground/70 bg-primary/15 text-sm">
-                <td className="px-3 py-2.5 font-bold">Summe</td>
-                <td />
-                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.atPlan)}</td>
-                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.btPlan)}</td>
-                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.etPlan)}</td>
-                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.atIst)}</td>
-                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.btIst)}</td>
-                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.etIst)}</td>
-                <td className="px-2 py-2.5 font-bold tabular-nums">{fmt(totals.soll)}</td>
-                <td className="px-2 py-2.5 font-bold tabular-nums">{fmt(totals.ist)}</td>
-                <td /><td />
+              <tr className="text-sm">
+                {(() => {
+                  const cell = "sticky bottom-0 z-10 border-t-2 border-t-foreground/70 bg-[#DFF7EC] px-2 py-2.5 font-bold tabular-nums"
+                  return (
+                    <>
+                      <td className={cn(cell, "px-3")}>Summe</td>
+                      <td className={cell} />
+                      <td className={cn(cell, "text-center")}>{fmt(totals.atPlan)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.btPlan)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.etPlan)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.atIst)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.btIst)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.etIst)}</td>
+                      <td className={cell}>{fmt(totals.soll)}</td>
+                      <td className={cell}>{fmt(totals.ist)}</td>
+                      <td className={cell} />
+                      <td className={cell} />
+                    </>
+                  )
+                })()}
               </tr>
             </tfoot>
           )}
