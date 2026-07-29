@@ -126,6 +126,37 @@ export function sbGetRateForRole(
   return Number(roleRates[role]) || 0
 }
 
+export interface RosterEntry {
+  name: string
+  role: string
+  status: string | null
+  managerName: string | null
+  depth: number
+}
+
+/**
+ * Mitarbeiterliste aus dem Strukturbaum ableiten (Pre-Order, wie sbAll),
+ * für die Spiegelung auf der Mitarbeiter-Seite (analog zur Anwesenheitsliste,
+ * die sbAll direkt nutzt). Personen mit Status "vielleicht" (Kommt vielleicht)
+ * werden ausgelassen — sie haben laut Fachlichkeit ohnehin keinen Unterbaum,
+ * darunterliegende Kinder erben trotzdem den nächsten sichtbaren Vorgesetzten.
+ */
+export function sbRoster(tree: SbNode | null): RosterEntry[] {
+  if (!tree) return []
+  const out: RosterEntry[] = []
+  function walk(n: SbNode, managerName: string | null, depth: number) {
+    const visible = n.status !== "vielleicht"
+    if (visible) {
+      out.push({ name: n.name, role: n.role || "", status: n.status ?? null, managerName, depth })
+    }
+    const nextManager = visible ? n.name : managerName
+    const nextDepth = visible ? depth + 1 : depth
+    ;(n.children || []).forEach((c) => walk(c, nextManager, nextDepth))
+  }
+  walk(tree, null, 0)
+  return out
+}
+
 /** Breite des Teilbaums unter n (für die horizontale Zentrierung beim Layout). */
 export function sbSubtreeWidth(n: SbNode): number {
   if (!n.children || !n.children.length) return SB_NW

@@ -1,39 +1,45 @@
 // Mitarbeiter-Sektion — Äquivalent zu section-team aus legacy/index.html:1721–1764.
-// Datenlogik (Filter/Sortierung, Zeilen-Highlight, Summenzeile) aus
-// src/lib/calc/team.ts (golden-master-getestet). Bearbeitung committet über
-// dashboard.saveRows (localStorage + Cloud-Push wie im Original, siehe
-// useDashboardDoc), inkl. Tages-Snapshot-Fortschreibung.
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+// Die Personenliste wird seit dem Strukturbaum-Umbau vollständig aus dem
+// Strukturbaum gespiegelt (analog zur Anwesenheitsliste, die sbAll(orgTree)
+// nutzt) — Anlegen/Entfernen von Personen passiert nur noch im Strukturbaum.
+// Leistungszahlen bleiben in dashboard.rows (localStorage + Cloud-Push wie im
+// Original, siehe useDashboardDoc) und werden per Name mit dem Baum verknüpft
+// (mergeRosterWithRows aus src/lib/calc/team.ts, golden-master-getestet).
+import { useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
-import { useConfirm } from "@/hooks/useConfirm"
-import { fmt, initials, monthWeekProgress, pctOf, progressClass, type TeamGoal } from "@/lib/calc/format"
-import { getFilteredSorted, rowHighlight, teamTotals, type IndexedRow, type TeamFilter, type TeamSort } from "@/lib/calc/team"
-import { sbEsc, sbGetRateForRole, sbGetRoleForName, type SbNode } from "@/lib/calc/struktur"
-import type { EmployeeRow } from "@/types/dashboard"
+import { fmt, initials, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
+import {
+  getMergedFilteredSorted, mergeRosterWithRows, rowHighlight, teamTotals,
+  type MergedRow, type TeamFilter, type TeamSort,
+} from "@/lib/calc/team"
+import { sbEsc, sbGetRateForRole, sbRoster, type SbNode } from "@/lib/calc/struktur"
 import { cn } from "@/lib/utils"
 
-const emptyRow = (): EmployeeRow => ({
-  name: "Neuer Mitarbeiter",
-  isNew: true,
-  atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
-  soll: 0, ist: 0,
-  joinDate: new Date().toISOString().slice(0, 10),
-})
+/** Baseline-Zeile für eine Strukturbaum-Person, die noch keine Zahlen in
+ * dashboard.rows hat (Upsert beim ersten Bearbeiten eines Felds). */
+function newRowFor(name: string): EmployeeRow {
+  return {
+    name,
+    isNew: false,
+    atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
+    soll: 0, ist: 0,
+    joinDate: "",
+  }
+}
 
 function NumField({
   row, field, wide, isEditor, onCommit,
 }: {
-  row: IndexedRow
+  row: MergedRow
   field: "atPlan" | "btPlan" | "etPlan" | "atIst" | "btIst" | "etIst" | "soll" | "ist"
   wide?: boolean
   isEditor: boolean
-  onCommit: (idx: number, field: string, value: number) => void
+  onCommit: (row: MergedRow, field: string, value: number) => void
 }) {
   return (
     <input
-      key={`${row._idx}-${field}-${row[field]}`}
+      key={`${row.rowIndex}-${row.name}-${field}-${row[field]}`}
       type="number"
       disabled={!isEditor}
       defaultValue={Number(row[field] || 0)}
@@ -44,7 +50,7 @@ function NumField({
         "disabled:opacity-60",
         wide ? "w-20" : "w-16"
       )}
-      onBlur={(e) => onCommit(row._idx, field, Number(e.target.value) || 0)}
+      onBlur={(e) => onCommit(row, field, Number(e.target.value) || 0)}
     />
   )
 }
@@ -67,35 +73,34 @@ export function Team({
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<TeamFilter>("all")
   const [sort, setSort] = useState<TeamSort>("name")
-  const confirm = useConfirm()
 
-  const list = getFilteredSorted(rows, search, filter, sort)
+  const roster = useMemo(() => sbRoster(orgTree), [orgTree])
+  const merged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
+  const list = getMergedFilteredSorted(merged, search, filter, sort)
   const wp = monthWeekProgress(teamGoal)
   const totals = teamTotals(list)
 
-  function commitField(idx: number, field: string, value: number | string) {
-    const next = rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r))
-    saveRows(next)
+  function commitField(entry: MergedRow, field: string, value: number | string) {
+    if (entry.rowIndex !== null) {
+      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...r, [field]: value } : r))
+      saveRows(next)
+    } else {
+      saveRows([...rows, { ...newRowFor(entry.name), [field]: value }])
+    }
   }
 
-  function toggleNew(idx: number) {
-    const next = rows.map((r, i) => {
-      if (i !== idx) return r
-      const isNew = !r.isNew
-      const joinDate = isNew && !r.joinDate ? new Date().toISOString().slice(0, 10) : r.joinDate
-      return { ...r, isNew, joinDate }
-    })
-    saveRows(next)
-  }
-
-  async function deleteRow(idx: number) {
-    const ok = await confirm(`„${rows[idx].name}" wirklich entfernen?`)
-    if (!ok) return
-    saveRows(rows.filter((_, i) => i !== idx))
-  }
-
-  function addRow() {
-    saveRows([...rows, emptyRow()])
+  function toggleNew(entry: MergedRow) {
+    if (entry.rowIndex !== null) {
+      const next = rows.map((r, i) => {
+        if (i !== entry.rowIndex) return r
+        const isNew = !r.isNew
+        const joinDate = isNew && !r.joinDate ? new Date().toISOString().slice(0, 10) : r.joinDate
+        return { ...r, isNew, joinDate }
+      })
+      saveRows(next)
+    } else {
+      saveRows([...rows, { ...newRowFor(entry.name), isNew: true, joinDate: new Date().toISOString().slice(0, 10) }])
+    }
   }
 
   return (
@@ -104,10 +109,15 @@ export function Team({
         <h2 className="text-lg font-semibold">
           Mitarbeiter-Übersicht{" "}
           <span className="ml-2 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {list.length === rows.length ? `${rows.length} Mitarbeiter` : `${list.length} von ${rows.length} Mitarbeitern`}
+            {list.length === merged.length ? `${merged.length} Mitarbeiter` : `${list.length} von ${merged.length} Mitarbeitern`}
           </span>
         </h2>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Die Liste wird aus dem Strukturbaum gespiegelt (Personen mit Status „Kommt vielleicht" werden ausgeblendet).
+        Personen fügst du im Strukturbaum hinzu oder entfernst sie dort.
+      </p>
 
       <div className="flex flex-wrap gap-3">
         <Input
@@ -124,6 +134,7 @@ export function Team({
         </Select>
         <Select aria-label="Mitarbeiter sortieren" value={sort} onChange={(e) => setSort(e.target.value as TeamSort)} className="w-64">
           <option value="name">Sortieren: Name (A–Z)</option>
+          <option value="manager">Nach Führungskraft (Struktur)</option>
           <option value="progress-desc">Fortschritt (hoch → niedrig)</option>
           <option value="progress-asc">Fortschritt (niedrig → hoch)</option>
           <option value="einheiten-desc">Einheiten Ist (absteigend)</option>
@@ -141,55 +152,47 @@ export function Team({
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Soll</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Ist</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Fortschritt</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur" />
             </tr>
           </thead>
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                  {rows.length === 0 ? "Noch keine Mitarbeiter angelegt." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
+                <td colSpan={10} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                  {merged.length === 0 ? "Noch keine Personen im Strukturbaum erfasst." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
                 </td>
               </tr>
             ) : (
               list.map((r) => {
                 const pct = pctOf(r)
                 const highlight = rowHighlight(r, wp)
-                const role = sbGetRoleForName(orgTree, r.name)
-                const rate = role ? sbGetRateForRole(orgRoleRates, role) : 0
+                const rate = r.role ? sbGetRateForRole(orgRoleRates, r.role) : 0
+                const indent = sort === "manager" ? r.depth * 14 : 0
                 return (
                   <tr
-                    key={r._idx}
+                    key={`${r.rowIndex}-${r.name}`}
                     className={cn(
                       "border-b border-foreground/20 last:border-0",
                       highlight === "at-above" && "bg-emerald-50 dark:bg-emerald-950/30",
                       highlight === "at-below" && "bg-red-50 dark:bg-red-950/30"
                     )}
                   >
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2" style={{ paddingLeft: 12 + indent }}>
                       <div className="flex items-center gap-2">
                         <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
                           {initials(r.name as string)}
                         </div>
                         <div className="min-w-0">
-                          <input
-                            key={`${r._idx}-name-${r.name}`}
-                            type="text"
-                            disabled={!isEditor}
-                            defaultValue={r.name as string}
-                            aria-label="Name"
-                            className="w-40 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium outline-none hover:border-input focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-80"
-                            onBlur={(e) => commitField(r._idx, "name", e.target.value)}
-                          />
-                          {role && (
+                          <div className="truncate text-sm font-medium">{r.name}</div>
+                          {(r.role || r.managerName) && (
                             <div
                               className="truncate text-xs text-muted-foreground"
                               dangerouslySetInnerHTML={{
                                 __html:
-                                  sbEsc(role) +
+                                  sbEsc(r.role || "") +
                                   (rate > 0
                                     ? ` · ${(Number(r.ist || 0) * rate).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-                                    : ""),
+                                    : "") +
+                                  (r.managerName ? ` · unter ${sbEsc(r.managerName)}` : ""),
                               }}
                             />
                           )}
@@ -200,7 +203,7 @@ export function Team({
                       <button
                         type="button"
                         disabled={!isEditor}
-                        onClick={() => toggleNew(r._idx)}
+                        onClick={() => toggleNew(r)}
                         aria-pressed={!!r.isNew}
                         aria-label={`Status ${r.name}: ${r.isNew ? "Neu" : "Bestand"}, umschalten`}
                         className={cn(
@@ -233,19 +236,6 @@ export function Team({
                         <span className="text-xs font-medium tabular-nums">{pct}%</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2">
-                      {isEditor && (
-                        <button
-                          type="button"
-                          title="Entfernen"
-                          aria-label={`${r.name} entfernen`}
-                          onClick={() => deleteRow(r._idx)}
-                          className="rounded-md px-2 py-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </td>
                   </tr>
                 )
               })
@@ -269,7 +259,6 @@ export function Team({
                       <td className={cell}>{fmt(totals.soll)}</td>
                       <td className={cell}>{fmt(totals.ist)}</td>
                       <td className={cell} />
-                      <td className={cell} />
                     </>
                   )
                 })()}
@@ -278,13 +267,6 @@ export function Team({
           )}
         </table>
       </div>
-
-      {isEditor && (
-        <div className="flex items-center gap-3">
-          <Button size="sm" onClick={addRow}>+ Mitarbeiter hinzufügen</Button>
-          <span className="text-xs text-muted-foreground">Neue Zeile wird unten angehängt.</span>
-        </div>
-      )}
     </div>
   )
 }

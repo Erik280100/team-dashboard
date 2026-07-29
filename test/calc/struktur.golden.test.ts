@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   sbAll, sbFind, sbFindByName, sbFindByLastName, sbLastWord,
   sbGetRoleForName, sbGetRateForRole, sbSubtreeWidth, sbLayout, sbLine, sbEsc,
+  sbRoster,
   type SbNode,
 } from "../../src/lib/calc/struktur"
 // @ts-expect-error – plain JS fixture, keine Typen nötig
@@ -84,5 +85,47 @@ describe("struktur: golden master vs. legacy", () => {
     expect(sbEsc('<b>Test & "Quote"</b>\nzeile2')).toBe(
       legacy.sbEsc('<b>Test & "Quote"</b>\nzeile2')
     )
+  })
+})
+
+describe("sbRoster", () => {
+  function hierarchyTree(): SbNode {
+    // Erik → Noah, David → (unter David) Josef, Nico
+    return {
+      id: "erik", name: "Erik", role: "Geschäftsstellenleiter",
+      children: [
+        { id: "noah", name: "Noah", role: "Mitarbeiter", children: [] },
+        {
+          id: "david", name: "David", role: "Teamleiter",
+          children: [
+            { id: "josef", name: "Josef", role: "FT1", children: [] },
+            { id: "nico", name: "Nico", role: "FT1", children: [] },
+          ],
+        },
+      ],
+    }
+  }
+
+  it("returns nodes in pre-order with managerName/depth reflecting the tree", () => {
+    const entries = sbRoster(hierarchyTree())
+    expect(entries.map((e) => e.name)).toEqual(["Erik", "Noah", "David", "Josef", "Nico"])
+    expect(entries.map((e) => e.managerName)).toEqual([null, "Erik", "Erik", "David", "David"])
+    expect(entries.map((e) => e.depth)).toEqual([0, 1, 1, 2, 2])
+  })
+
+  it("excludes nodes with status 'vielleicht' but keeps their children with the next visible manager", () => {
+    const tree = hierarchyTree()
+    // David kommt vielleicht -> David selbst raus, Josef/Nico bleiben, Vorgesetzter wird Erik
+    tree.children![1].status = "vielleicht"
+    const entries = sbRoster(tree)
+    expect(entries.map((e) => e.name)).toEqual(["Erik", "Noah", "Josef", "Nico"])
+    const josef = entries.find((e) => e.name === "Josef")
+    const nico = entries.find((e) => e.name === "Nico")
+    expect(josef?.managerName).toBe("Erik")
+    expect(nico?.managerName).toBe("Erik")
+  })
+
+  it("returns an empty list for a null tree", () => {
+    expect(sbRoster(null)).toEqual([])
   })
 })

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { getFilteredSorted, rowHighlight, teamTotals, type TeamFilter, type TeamSort } from "../../src/lib/calc/team"
+import {
+  getFilteredSorted, getMergedFilteredSorted, mergeRosterWithRows, rowHighlight, teamTotals,
+  type TeamFilter, type TeamSort,
+} from "../../src/lib/calc/team"
+import { sbRoster, type SbNode } from "../../src/lib/calc/struktur"
 import type { EmployeeRow } from "../../src/lib/calc/format"
 // @ts-expect-error – plain JS fixture, keine Typen nötig
 import * as legacy from "../legacy-fixtures/team.legacy.js"
@@ -40,5 +44,73 @@ describe("team: golden master vs. legacy", () => {
   it("teamTotals matches", () => {
     expect(teamTotals(sampleRows())).toEqual(legacy.teamTotals(sampleRows()))
     expect(teamTotals([])).toEqual(legacy.teamTotals([]))
+  })
+})
+
+describe("mergeRosterWithRows / getMergedFilteredSorted", () => {
+  function hierarchyTree(): SbNode {
+    // Erik → Noah, David → (unter David) Josef, Nico
+    return {
+      id: "erik", name: "Erik Bindar", role: "Geschäftsstellenleiter",
+      children: [
+        { id: "noah", name: "Noah Vanek", role: "Mitarbeiter", children: [] },
+        {
+          id: "david", name: "David Schrey", role: "Teamleiter",
+          children: [
+            { id: "josef", name: "Josef Nagel", role: "FT1", children: [] },
+            { id: "nico", name: "Nico Kiem", role: "FT1", children: [] },
+          ],
+        },
+      ],
+    }
+  }
+
+  it("'manager' sort keeps the tree pre-order (Erik → Noah, David → Josef, Nico)", () => {
+    const roster = sbRoster(hierarchyTree())
+    const merged = mergeRosterWithRows(roster, [])
+    const list = getMergedFilteredSorted(merged, "", "all", "manager")
+    expect(list.map((r) => r.name)).toEqual([
+      "Erik Bindar", "Noah Vanek", "David Schrey", "Josef Nagel", "Nico Kiem",
+    ])
+  })
+
+  it("excludes tree nodes with status 'vielleicht' from the mirrored list", () => {
+    const tree = hierarchyTree()
+    tree.children![1].status = "vielleicht" // David kommt vielleicht
+    const roster = sbRoster(tree)
+    const merged = mergeRosterWithRows(roster, [])
+    expect(merged.map((r) => r.name)).toEqual(["Erik Bindar", "Noah Vanek", "Josef Nagel", "Nico Kiem"])
+  })
+
+  it("assigns numeric fields from dashboard.rows by exact name, falling back to last-name match", () => {
+    const roster = sbRoster(hierarchyTree())
+    const rows: EmployeeRow[] = [
+      { name: "Erik Bindar", soll: 100, ist: 80, isNew: true },
+      { name: "Vanek", soll: 40, ist: 20, isNew: false }, // Nachname-Fallback -> Noah Vanek
+    ]
+    const merged = mergeRosterWithRows(roster, rows)
+    const erik = merged.find((r) => r.name === "Erik Bindar")
+    const noah = merged.find((r) => r.name === "Noah Vanek")
+    const david = merged.find((r) => r.name === "David Schrey")
+    expect(erik?.soll).toBe(100)
+    expect(erik?.rowIndex).toBe(0)
+    expect(noah?.soll).toBe(40)
+    expect(noah?.rowIndex).toBe(1)
+    expect(david?.rowIndex).toBeNull()
+    expect(david?.soll).toBe(0)
+  })
+
+  it("does not assign the same rows entry to two different roster entries", () => {
+    const tree: SbNode = {
+      id: "a", name: "Anna Weber", role: "",
+      children: [{ id: "b", name: "Weber", role: "", children: [] }], // gleicher Nachname
+    }
+    const roster = sbRoster(tree)
+    const rows: EmployeeRow[] = [{ name: "Anna Weber", soll: 10, ist: 5 }]
+    const merged = mergeRosterWithRows(roster, rows)
+    const [first, second] = merged
+    expect(first.rowIndex).toBe(0)
+    expect(second.rowIndex).toBeNull()
+    expect(second.soll).toBe(0)
   })
 })
