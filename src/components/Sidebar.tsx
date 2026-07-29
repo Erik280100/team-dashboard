@@ -29,8 +29,8 @@ export function Sidebar({
       aria-label="Hauptnavigation"
       className="flex w-64 shrink-0 flex-col gap-1 border-r bg-sidebar p-4 text-sidebar-foreground"
     >
-      <div className="mb-1 flex items-baseline gap-1 px-2 text-xl font-bold">
-        <span className="text-sidebar-primary">fi</span>
+      <div className="mb-1.5 flex items-baseline gap-0.5 px-1.5 text-[26px] font-extrabold">
+        <span className="italic text-sidebar-primary">fi</span>
         <span>nova</span>
       </div>
       <div className="mb-4 px-2 text-xs text-sidebar-foreground/60">
