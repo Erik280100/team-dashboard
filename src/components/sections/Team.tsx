@@ -161,7 +161,7 @@ export function Team({
                   <tr
                     key={r._idx}
                     className={cn(
-                      "border-b last:border-0",
+                      "border-b border-foreground/20 last:border-0",
                       highlight === "at-above" && "bg-emerald-50 dark:bg-emerald-950/30",
                       highlight === "at-below" && "bg-red-50 dark:bg-red-950/30"
                     )}
@@ -253,17 +253,17 @@ export function Team({
           </tbody>
           {list.length > 0 && (
             <tfoot>
-              <tr className="border-t bg-muted/30 text-xs font-semibold">
-                <td className="px-3 py-2">Summe</td>
+              <tr className="border-t-2 border-t-foreground/70 bg-primary/15 text-sm">
+                <td className="px-3 py-2.5 font-bold">Summe</td>
                 <td />
-                <td className="px-2 py-2 text-center tabular-nums">{fmt(totals.atPlan)}</td>
-                <td className="px-2 py-2 text-center tabular-nums">{fmt(totals.btPlan)}</td>
-                <td className="px-2 py-2 text-center tabular-nums">{fmt(totals.etPlan)}</td>
-                <td className="px-2 py-2 text-center tabular-nums">{fmt(totals.atIst)}</td>
-                <td className="px-2 py-2 text-center tabular-nums">{fmt(totals.btIst)}</td>
-                <td className="px-2 py-2 text-center tabular-nums">{fmt(totals.etIst)}</td>
-                <td className="px-2 py-2 tabular-nums">{fmt(totals.soll)}</td>
-                <td className="px-2 py-2 tabular-nums">{fmt(totals.ist)}</td>
+                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.atPlan)}</td>
+                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.btPlan)}</td>
+                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.etPlan)}</td>
+                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.atIst)}</td>
+                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.btIst)}</td>
+                <td className="px-2 py-2.5 text-center font-bold tabular-nums">{fmt(totals.etIst)}</td>
+                <td className="px-2 py-2.5 font-bold tabular-nums">{fmt(totals.soll)}</td>
+                <td className="px-2 py-2.5 font-bold tabular-nums">{fmt(totals.ist)}</td>
                 <td /><td />
               </tr>
             </tfoot>

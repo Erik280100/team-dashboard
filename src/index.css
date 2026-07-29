@@ -131,4 +131,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwinds Preflight setzt button { cursor: default } zurück — alle
+     klickbaren Steuerelemente sollen aber wie überall sonst einen Pointer zeigen. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select,
+  summary {
+    cursor: pointer;
+  }
 }
