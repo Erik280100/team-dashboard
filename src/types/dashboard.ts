@@ -30,11 +30,22 @@ export interface AttendanceDoc {
   entries: Record<string, AttendanceEntry>
 }
 
+export interface OrgChartNote {
+  text: string
+  date: string
+}
+
+export interface OrgChartConn {
+  from: string
+  to: string
+  label?: string
+}
+
 /** finova/orgchart */
 export interface OrgChartDoc {
   tree: SbNode
-  notes: Record<string, { text: string }[]>
-  conns: unknown[]
+  notes: Record<string, OrgChartNote[]>
+  conns: OrgChartConn[]
   rates: Record<string, number>
 }
 

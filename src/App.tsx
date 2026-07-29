@@ -17,6 +17,7 @@ import { Karriere } from "@/components/sections/Karriere"
 import { Guide } from "@/components/sections/Guide"
 import { Kalender } from "@/components/sections/Kalender"
 import { Partner } from "@/components/sections/Partner"
+import { StrukturBaum } from "@/components/sections/struktur/StrukturBaum"
 
 const SECTION_LABELS: Record<SectionId, string> = {
   overview: "Übersicht",
@@ -95,12 +96,13 @@ function App() {
                   />
                 )}
                 {section === id && id === "partner" && <Partner />}
-                {section === id &&
-                  !["overview", "team", "rechner", "karriere", "guide", "kalender", "partner"].includes(id) && (
-                    <div className="text-sm text-muted-foreground">
-                      {SECTION_LABELS[id]} — Inhalt folgt in Phase 3 der Migration.
-                    </div>
-                  )}
+                {section === id && id === "struktur" && (
+                  <StrukturBaum
+                    doc={{ tree: orgChart.tree, notes: orgChart.notes, conns: orgChart.conns, rates: orgChart.rates }}
+                    isEditor={auth.isEditor}
+                    saveOrgChart={orgChart.saveOrgChart}
+                  />
+                )}
               </section>
             ))}
           </div>
