@@ -1,7 +1,7 @@
 // Firestore-Dokumentformen + Startdaten — 1:1 aus der Legacy-App übernommen
 // (legacy/index.html:2248–2283, 4151–4177), damit neue und alte App exakt
 // dieselben Datenstrukturen lesen/schreiben.
-import type { EmployeeRow, TeamGoal } from "@/lib/calc/format"
+import { defaultPeriod, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import type { PlanId, SbNode } from "@/lib/calc/struktur"
 
 export type { EmployeeRow, TeamGoal }
@@ -59,14 +59,6 @@ export const GOAL_KEY = "finova_dashboard_goal_v1"
 export const HISTORY_KEY = "finova_dashboard_history_v1"
 export const ATTENDANCE_KEY = "finova_dashboard_attendance_v1"
 export const SB_STORAGE_KEY = "finova_orgchart_data_v1"
-
-function defaultPeriod() {
-  const now = new Date()
-  const first = new Date(now.getFullYear(), now.getMonth(), 1)
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const toISO = (d: Date) => d.toISOString().slice(0, 10)
-  return { periodStart: toISO(first), periodEnd: toISO(last) }
-}
 
 export const STARTER_GOAL: TeamGoal = {
   note: "",

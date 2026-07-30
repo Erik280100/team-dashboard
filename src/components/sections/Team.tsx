@@ -52,6 +52,7 @@ export function Team({
   orgTree,
   orgPlanRates,
   isEditor,
+  now,
 }: {
   rows: EmployeeRow[]
   saveRows: (next: EmployeeRow[]) => void
@@ -59,6 +60,11 @@ export function Team({
   orgTree: SbNode
   orgPlanRates: Record<PlanId, Record<string, number>>
   isEditor: boolean
+  /** Referenzzeitpunkt für monthWeekProgress — im Archiv-Modus ein Tag nach
+   * periodEnd (siehe archiveNow() in lib/calc/archive.ts), damit die
+   * Rot/Grün-Einfärbung gegen den vollen Monatsplan bewertet statt gegen einen
+   * wochenanteiligen Stand zum heutigen Datum. Live per Default new Date(). */
+  now?: Date
 }) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<TeamFilter>("all")
@@ -68,7 +74,7 @@ export function Team({
   const roster = useMemo(() => sbRoster(orgTree), [orgTree])
   const merged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
   const list = getMergedFilteredSorted(merged, search, filter, sort)
-  const wp = monthWeekProgress(teamGoal)
+  const wp = monthWeekProgress(teamGoal, now ?? new Date())
   const totals = teamTotals(list)
   const earnings = useMemo(() => computeEarnings(merged, orgPlanRates), [merged, orgPlanRates])
   const grandTotalEur = useMemo(

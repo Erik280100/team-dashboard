@@ -1,12 +1,20 @@
 // Kopfzeile — Äquivalent zu .topbar aus legacy/index.html:1591–1617 (Titel,
 // Auth-Box, Sync-Status, Export/Import). Export/Import operieren auf
 // rows/teamGoal wie exportBtn/importFile in legacy/index.html:3241–3284.
+// Zusätzlich: globaler Monatswähler + "Monat abschließen" (Monats-Archiv,
+// siehe useMonthArchive.ts) — nur in Übersicht/Mitarbeiter/Strukturbaum sichtbar.
 import { useRef, type ChangeEvent } from "react"
 import { Button } from "@/components/ui/button"
+import { Select } from "@/components/ui/select"
 import { AuthBox } from "@/components/AuthBox"
 import { useConfirm } from "@/hooks/useConfirm"
 import type { useAuth } from "@/hooks/useAuth"
 import type { UseDashboardDocResult } from "@/hooks/useDashboardDoc"
+import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
+import type { SectionId } from "@/hooks/useHashSection"
+import { MONTH_CLOSE_ENABLED, monthLabel } from "@/lib/calc/archive"
+import { CLOUD_CONFIGURED } from "@/lib/firebase"
+import type { MonthKey } from "@/types/archive"
 import { STARTER_GOAL } from "@/types/dashboard"
 
 const SYNC_STATUS_TEXT: Record<string, string> = {
@@ -16,15 +24,49 @@ const SYNC_STATUS_TEXT: Record<string, string> = {
   error: "Cloud-Verbindung fehlgeschlagen — nur lokal gespeichert.",
 }
 
+const ARCHIVE_SECTIONS = new Set<SectionId>(["overview", "team", "struktur"])
+
 export function Topbar({
   auth,
   dashboard,
+  section,
+  archive,
+  archiveMonth,
+  onSelectMonth,
+  canEdit,
+  onCloseMonth,
 }: {
   auth: ReturnType<typeof useAuth>
   dashboard: UseDashboardDocResult
+  section: SectionId
+  archive: UseMonthArchiveResult
+  archiveMonth: MonthKey | null
+  onSelectMonth: (month: MonthKey | null) => void
+  /** Editor UND kein Archiv-Monat gewählt — steuert Export/Import/Abschluss-Button. */
+  canEdit: boolean
+  onCloseMonth: () => void
 }) {
   const confirm = useConfirm()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const isArchive = archiveMonth !== null
+  const showMonthPicker = ARCHIVE_SECTIONS.has(section) && archive.index.length > 0
+
+  function stepMonth(dir: -1 | 1) {
+    const months = archive.index.map((e) => e.month) // aufsteigend
+    if (archiveMonth === null) {
+      // "Laufender Monat" -> eine Stufe zurück ins Archiv (neuester Monat).
+      if (dir === -1 && months.length > 0) onSelectMonth(months[months.length - 1])
+      return
+    }
+    const idx = months.indexOf(archiveMonth)
+    const nextIdx = idx + dir
+    if (nextIdx < 0) return
+    if (nextIdx >= months.length) {
+      onSelectMonth(null) // über den neuesten Archiv-Monat hinaus -> zurück live
+      return
+    }
+    onSelectMonth(months[nextIdx])
+  }
 
   function onExport() {
     const payload = { rows: dashboard.rows, teamGoal: dashboard.teamGoal }
@@ -76,17 +118,56 @@ export function Topbar({
     <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4">
       <div>
         <h1 className="text-xl font-bold">Team Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Ziele & Fortschritt — laufender Monat</p>
+        <p className="text-sm text-muted-foreground">
+          {isArchive ? `Ziele & Fortschritt — ${monthLabel(archiveMonth)} (Archiv)` : "Ziele & Fortschritt — laufender Monat"}
+        </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
+        {showMonthPicker && (
+          <div className="flex items-center gap-1.5 rounded-md border px-1.5 py-1">
+            <Button size="icon" variant="ghost" className="size-7" aria-label="Vorheriger Monat" onClick={() => stepMonth(-1)}>
+              ◀
+            </Button>
+            <Select
+              aria-label="Monat auswählen"
+              value={archiveMonth ?? "live"}
+              onChange={(e) => onSelectMonth(e.target.value === "live" ? null : e.target.value)}
+              className="w-44 border-0 shadow-none"
+            >
+              <option value="live">Laufender Monat</option>
+              {[...archive.index].reverse().map((e) => (
+                <option key={e.month} value={e.month}>{e.label}</option>
+              ))}
+            </Select>
+            <Button
+              size="icon" variant="ghost" className="size-7" aria-label="Nächster Monat"
+              disabled={archiveMonth === null}
+              onClick={() => stepMonth(1)}
+            >
+              ▶
+            </Button>
+          </div>
+        )}
+        {!isArchive && auth.isEditor && CLOUD_CONFIGURED && (
+          <Button
+            size="sm"
+            onClick={onCloseMonth}
+            disabled={archive.closing || !MONTH_CLOSE_ENABLED}
+            title={MONTH_CLOSE_ENABLED ? undefined : "Vorübergehend deaktiviert"}
+          >
+            Monat abschließen
+          </Button>
+        )}
         <AuthBox auth={auth} />
         <span role="status" aria-live="polite" className="text-xs text-muted-foreground">
           {SYNC_STATUS_TEXT[dashboard.syncStatus]}
         </span>
-        <Button size="sm" variant="ghost" onClick={onExport}>
-          Export
-        </Button>
-        {auth.isEditor && (
+        {!isArchive && (
+          <Button size="sm" variant="ghost" onClick={onExport}>
+            Export
+          </Button>
+        )}
+        {canEdit && (
           <>
             <Button size="sm" variant="ghost" onClick={() => fileInputRef.current?.click()}>
               Import

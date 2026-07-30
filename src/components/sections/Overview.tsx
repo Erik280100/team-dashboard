@@ -9,7 +9,7 @@ import { Bar, Doughnut, Line, Pie } from "react-chartjs-2"
 import { Users, Star, UserPlus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { DARK_GRID, DARK_TICK } from "@/lib/chartSetup"
+import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
 import { fmt } from "@/lib/calc/format"
 import {
   barChartData, doughnutData, goalProgress, leaderboardData, recruitProgress,
@@ -17,13 +17,6 @@ import {
 } from "@/lib/calc/overview"
 import type { EmployeeRow, HistoryEntry, TeamGoal } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
-
-const DARK_LEGEND = { labels: { color: "#DCEAE6", boxWidth: 12, font: { size: 11 } }, position: "top" as const }
-
-// Original: linear-gradient(160deg, #16323F 0%, #0B1F2A 100%) — durchgängig für
-// alle Kacheln der Übersicht (kpi-card, kpi-card-mini, panel-dark), nicht nur Charts.
-const DARK_CARD = "border-white/10 bg-[linear-gradient(160deg,#16323F_0%,#0B1F2A_100%)] text-white"
-const DARK_INPUT = "border-white/20 bg-white/10 text-white placeholder:text-white/40 [color-scheme:dark]"
 
 function DarkCardHeader({ title, sub }: { title: string; sub: string }) {
   return (
@@ -40,17 +33,23 @@ export function Overview({
   history,
   saveGoal,
   isEditor,
+  now,
 }: {
   rows: EmployeeRow[]
   teamGoal: TeamGoal
   history: HistoryEntry[]
   saveGoal: (next: TeamGoal) => void
   isEditor: boolean
+  /** Referenzzeitpunkt für den Zielverlauf — im Archiv-Modus ein Tag nach
+   * periodEnd (siehe archiveNow() in lib/calc/archive.ts), damit die
+   * Ist-Kurve den vollen abgeschlossenen Monat zeigt statt am heutigen Datum
+   * abzuschneiden. Live per Default new Date(). */
+  now?: Date
 }) {
   const kpis = summaryKpis(rows)
   const goal = goalProgress(rows)
   const recruit = recruitProgress(rows, teamGoal)
-  const timeline = timelineData(teamGoal, rows, history)
+  const timeline = timelineData(teamGoal, rows, history, now ?? new Date())
   const bars = barChartData(rows)
   const doughnut = doughnutData(rows)
   const shares = revenueShareData(rows)

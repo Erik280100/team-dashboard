@@ -39,6 +39,9 @@ export interface UseDashboardDocResult {
   saveRows: (next: EmployeeRow[]) => void
   /** teamGoal ersetzen, lokal cachen, in die Cloud pushen. */
   saveGoal: (next: TeamGoal) => void
+  /** rows+teamGoal+history in einem Zug ersetzen (ein einzelner Cloud-Push,
+   * ohne recordSnapshot) — für den Monatsabschluss-Reset (useMonthArchive). */
+  saveAll: (next: DashboardDoc) => void
 }
 
 export function useDashboardDoc(): UseDashboardDocResult {
@@ -128,5 +131,20 @@ export function useDashboardDoc(): UseDashboardDocResult {
     [pushToCloud]
   )
 
-  return { rows, teamGoal, history, syncStatus, saveRows, saveGoal }
+  const saveAll = useCallback(
+    (next: DashboardDoc) => {
+      setRows(next.rows)
+      setTeamGoal(next.teamGoal)
+      setHistory(next.history)
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next.rows))
+        localStorage.setItem(GOAL_KEY, JSON.stringify(next.teamGoal))
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(next.history))
+      } catch { /* noop */ }
+      pushToCloud(next)
+    },
+    [pushToCloud]
+  )
+
+  return { rows, teamGoal, history, syncStatus, saveRows, saveGoal, saveAll }
 }

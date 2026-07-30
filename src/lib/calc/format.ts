@@ -41,6 +41,11 @@ export function fmt(n: number | undefined | null): string {
   return Number(n || 0).toLocaleString("de-AT")
 }
 
+/** Euro-Betrag mit fixen 2 Nachkommastellen (de-AT), z. B. für Vergütungssummen. */
+export function fmtEur(n: number | undefined | null): string {
+  return Number(n || 0).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 export function pctOf(r: Pick<EmployeeRow, "soll" | "ist">): number {
   return r.soll > 0 ? Math.round((r.ist / r.soll) * 100) : 0
 }

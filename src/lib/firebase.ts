@@ -26,6 +26,11 @@ export let stateDocRef: DocumentReference | null = null
 export let attendanceDocRef: DocumentReference | null = null
 export let orgChartDocRef: DocumentReference | null = null
 
+// Monats-Archiv (siehe src/hooks/useMonthArchive.ts) — neue Dokumente in derselben
+// finova-Collection, von der Legacy-App unbenutzt (sie greift nur die drei Pfade
+// oben direkt an und listet die Collection nie), daher hier ohne Rückwirkung.
+export let archiveIndexDocRef: DocumentReference | null = null
+
 if (CLOUD_CONFIGURED) {
   try {
     app = initializeApp(firebaseConfig)
@@ -33,8 +38,14 @@ if (CLOUD_CONFIGURED) {
     stateDocRef = doc(firestore, "finova", "dashboard")
     attendanceDocRef = doc(firestore, "finova", "attendance")
     orgChartDocRef = doc(firestore, "finova", "orgchart")
+    archiveIndexDocRef = doc(firestore, "finova", "archive_index")
     auth = getAuth(app)
   } catch (err) {
     console.error("Firebase-Initialisierung fehlgeschlagen", err)
   }
+}
+
+/** Dokument-Referenz für einen archivierten Monat (finova/snapshot_<YYYY-MM>). */
+export function snapshotDocRef(month: string): DocumentReference | null {
+  return firestore ? doc(firestore, "finova", `snapshot_${month}`) : null
 }
