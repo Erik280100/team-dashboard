@@ -6,10 +6,14 @@
 // über beliebig viele Führungsebenen kaskadierend statt nur Berater→FK.
 //
 // Kernregel bei Gleichstand zweier Führungskräfte auf derselben Stufe (mit dem
-// Nutzer abgestimmt): die untere Person wird um 0,50 €/EH aufgestockt, die
-// direkt darüberliegende Person bekommt ebenfalls 0,50 €/EH — beides zusammen
-// (1,00 €/EH) geht der nächsthöheren Ebene ab. In Summe wird über die ganze
-// Kette stets exakt der Satz der obersten erreichten Stufe ausgeschüttet.
+// Nutzer abgestimmt): NUR die obere der beiden gleichrangigen Führungskräfte
+// bekommt einen Bonus von 0,50 €/EH — die untere (die den Satz bereits über
+// eine echte Differenz oder als Produzent erreicht hat) bekommt nichts on top.
+// Dieser Bonus ist ein reiner Zuschlag, kein Abzug von einer höheren Ebene: die
+// Differenzbeträge selbst bleiben immer exakt Satz-oben minus Satz-unten.
+// Pro erreichter Satzstufe (Kette-Plateau) ist höchstens 1x ein Gleichstand-
+// Bonus möglich — eine dritte gleichrangige Person auf derselben Stufe bekommt
+// nichts mehr, erst eine echte höhere Stufe eröffnet wieder eine neue Chance.
 //
 // Wichtig: Differenzvergütung läuft ausschließlich entlang der eigenen
 // Vorgesetztenkette (MergedRow.managerName) des Produzenten — Führungskräfte in
@@ -136,17 +140,13 @@ export function computeEarnings(
       const producerRate = sbGetPlanRate(planRates, producer.role, planId)
       credit(producer.name, planId, "eigen", u, producerRate, producer.name)
 
-      // c: bereits durch die Kette abgedeckter Satz. base: höchster Stufensatz,
-      // der (ohne Gleichstands-Zuschläge) in der Kette bisher erreicht wurde —
-      // bestimmt, wer noch als "gleichauf" zählt. lastName ist erst gesetzt,
-      // sobald eine echte Führungskraft per "differenz" den Satz des Produzenten
-      // überboten hat — vorher (null) darf die Gleichstandsregel nicht greifen,
-      // sonst bekäme der Produzent Differenzvergütung auf seine eigene Produktion
-      // (Satz-Gleichstand mit dem direkten Vorgesetzten ist kein "gleichauf"
-      // zwischen zwei Führungskräften, sondern schlicht: keine Differenz).
+      // c: bereits durch echte Differenz abgedeckter Satz (startet beim eigenen
+      // Satz des Produzenten). tieUsedAtLevel: ob auf dem aktuellen Satz-Plateau
+      // bereits ein Gleichstand-Bonus vergeben wurde — wird bei jeder echten
+      // Differenz (neues Plateau) zurückgesetzt, sodass pro Stufe höchstens 1x
+      // ein Bonus möglich ist.
       let c = producerRate
-      let base = producerRate
-      let lastName: string | null = null
+      let tieUsedAtLevel = false
       let managerName = producer.managerName
       const visited = new Set<string>([producer.name])
       let depth = 0
@@ -163,15 +163,13 @@ export function computeEarnings(
           if (rA > c) {
             credit(manager.name, planId, "differenz", u, rA - c, producer.name)
             c = rA
-            base = rA
-            lastName = manager.name
-          } else if (rA > 0 && rA === base && lastName) {
-            credit(lastName, planId, "gleichstand", u, 0.5, producer.name)
+            tieUsedAtLevel = false
+          } else if (rA > 0 && rA === c && !tieUsedAtLevel) {
+            // Nur die obere Seite des Gleichstands bekommt den Bonus — die
+            // untere (Produzent oder bereits per Differenz bezahlte Führungs-
+            // kraft) hat ihren Anteil schon erhalten.
             credit(manager.name, planId, "gleichstand", u, 0.5, producer.name)
-            c += 1
-            lastName = manager.name
-            // base bleibt bewusst unverändert: eine dritte gleichstufige Person
-            // gilt wieder als "gleichauf" zu base, nicht zum bereits erhöhten c.
+            tieUsedAtLevel = true
           }
         }
         managerName = manager.managerName

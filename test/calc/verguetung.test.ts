@@ -82,19 +82,19 @@ describe("computeEarnings: Kaskade ohne Gleichstand", () => {
 })
 
 describe("computeEarnings: Gleichstand zweier Geschäftsstellenleiter", () => {
-  it("GSL A (unten) produziert selbst: kein Gleichstand auf die eigene Produktion — GSL B (gleicher Satz) bekommt nichts, Direktor die volle Differenz", () => {
+  it("GSL A (unten) produziert selbst: keine Differenz auf sich selbst, GSL B (gleicher Satz) bekommt den Gleichstand-Bonus, Direktor die Differenz darüber", () => {
     const merged: MergedRow[] = [
       row("Direktor", "Direktor", null),
       row("GSL B", "Geschäftsstellenleiter", "Direktor"),
       row("GSL A", "Geschäftsstellenleiter", "GSL B", { insurance: 1 }),
     ]
     const e = computeEarnings(merged, RATES)
-    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(5.5) // nur Eigenproduktion, keine Differenz auf sich selbst
-    expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0) // gleicher Satz wie der Produzent = keine Differenz
-    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(2.5) // 8 - 5,5, GSL B trägt nichts zur Kette bei
+    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(5.5) // nur Eigenproduktion, keine Differenz/Gleichstand auf sich selbst
+    expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0.5) // Gleichstand-Bonus (obere Seite), nicht abgezogen von Direktor
+    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(2.5) // 8 - 5,5, unabhängig vom Gleichstand-Bonus
   })
 
-  it("ein FT2 unter GSL A produziert: 2,00 / 4,00 / 0,50 / 1,50", () => {
+  it("ein FT2 unter GSL A produziert: GSL A bekommt nur die reine Differenz, GSL B den Gleichstand-Bonus obendrauf", () => {
     const merged: MergedRow[] = [
       row("Direktor", "Direktor", null),
       row("GSL B", "Geschäftsstellenleiter", "Direktor"),
@@ -103,14 +103,14 @@ describe("computeEarnings: Gleichstand zweier Geschäftsstellenleiter", () => {
     ]
     const e = computeEarnings(merged, RATES)
     expect(insuranceOf(e, "FT2").total).toBeCloseTo(2)
-    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(4)
-    expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0.5)
-    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(1.5)
+    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(3.5) // 5,5 - 2, keine zusätzliche Gleichstand-Gutschrift (untere Seite)
+    expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0.5) // Gleichstand-Bonus (obere Seite)
+    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(2.5) // 8 - 5,5, unabhängig vom Gleichstand-Bonus
   })
 })
 
 describe("computeEarnings: drei gleiche Stufen hintereinander", () => {
-  it("alle drei auf dem Satz des Produzenten: niemand bekommt Differenz, da keine Stufe je über den Satz des Produzenten hinauskommt", () => {
+  it("alle drei auf dem Satz des Produzenten: nur TL2 (direkt darüber) bekommt den einmaligen Gleichstand-Bonus, TL3 nichts mehr (nur 1x pro Stufe)", () => {
     const merged: MergedRow[] = [
       row("TL3", "Teamleiter", null),
       row("TL2", "Teamleiter", "TL3"),
@@ -119,13 +119,13 @@ describe("computeEarnings: drei gleiche Stufen hintereinander", () => {
     const e = computeEarnings(merged, RATES)
     expect(insuranceOf(e, "TL1").own).toBeCloseTo(4)
     expect(insuranceOf(e, "TL1").total).toBeCloseTo(4) // keine Gleichstands-Gutschrift auf die eigene Produktion
-    expect(insuranceOf(e, "TL2").diff).toBeCloseTo(0)
-    expect(insuranceOf(e, "TL3").diff).toBeCloseTo(0)
+    expect(insuranceOf(e, "TL2").diff).toBeCloseTo(0.5)
+    expect(insuranceOf(e, "TL3").diff).toBeCloseTo(0) // Stufe bereits durch TL2 "verbraucht"
   })
 })
 
-describe("computeEarnings: Ebene wird durch Gleichstand aufgezehrt", () => {
-  it("FT2 -> TL A -> TL B -> GSL -> Direktor: GSL liegt über der Gleichstand-Deckung (5,5 > 5) und bekommt den Rest bis dahin", () => {
+describe("computeEarnings: zwei getrennte Gleichstand-Boni auf verschiedenen Stufen derselben Kette", () => {
+  it("FT2 -> TL A -> TL B -> GSL -> Direktor: TL B und Direktor bekommen ihre reine Differenz/Bonus, TL A und GSL keinen Zusatz-Bonus (untere Seite)", () => {
     const merged: MergedRow[] = [
       row("Direktor", "Direktor", null),
       row("GSL", "Geschäftsstellenleiter", "Direktor"),
@@ -135,11 +135,24 @@ describe("computeEarnings: Ebene wird durch Gleichstand aufgezehrt", () => {
     ]
     const e = computeEarnings(merged, RATES)
     expect(insuranceOf(e, "FT2").own).toBeCloseTo(2)
-    // TL A: normale Differenz (4 - 2 = 2) + 0,5 Gleichstand (untere Hälfte TL A/TL B) = 2,5
-    expect(insuranceOf(e, "TL A").diff).toBeCloseTo(2.5)
-    expect(insuranceOf(e, "TL B").diff).toBeCloseTo(0.5)
-    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(0.5) // 5,5 - 5 (durch Gleichstand bereits gedeckter Satz)
+    expect(insuranceOf(e, "TL A").diff).toBeCloseTo(2) // reine Differenz 4 - 2, kein Bonus (untere Seite des TL-Gleichstands)
+    expect(insuranceOf(e, "TL B").diff).toBeCloseTo(0.5) // Gleichstand-Bonus (obere Seite)
+    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(1.5) // reine Differenz 5,5 - 4
     expect(insuranceOf(e, "Direktor").diff).toBeCloseTo(2.5) // 8 - 5,5
+  })
+})
+
+describe("computeEarnings: Regression — TL-Produktion mit echter GSL-Differenz gefolgt von GSL-Gleichstand", () => {
+  it("Noah (TL) produziert unter Erik (GSL) unter Georg (GSL): Erik bekommt nur die reine Differenz, keinen Gleichstand-Bonus obendrauf — der geht an Georg", () => {
+    const merged: MergedRow[] = [
+      row("Georg", "Geschäftsstellenleiter", null),
+      row("Erik", "Geschäftsstellenleiter", "Georg"),
+      row("Noah", "Teamleiter", "Erik", { insurance: 629 }),
+    ]
+    const e = computeEarnings(merged, RATES)
+    expect(insuranceOf(e, "Noah").own).toBeCloseTo(629 * 4)
+    expect(insuranceOf(e, "Erik").diff).toBeCloseTo(629 * 1.5) // reine Differenz 5,5 - 4, KEIN Gleichstand-Zuschlag
+    expect(insuranceOf(e, "Georg").diff).toBeCloseTo(629 * 0.5) // Gleichstand-Bonus (obere Seite, gleicher GSL-Satz wie Erik)
   })
 })
 
