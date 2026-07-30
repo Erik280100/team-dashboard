@@ -82,16 +82,16 @@ describe("computeEarnings: Kaskade ohne Gleichstand", () => {
 })
 
 describe("computeEarnings: Gleichstand zweier Geschäftsstellenleiter", () => {
-  it("GSL A (unten) produziert selbst: 5,50 / 0,50 / 2,00", () => {
+  it("GSL A (unten) produziert selbst: kein Gleichstand auf die eigene Produktion — GSL B (gleicher Satz) bekommt nichts, Direktor die volle Differenz", () => {
     const merged: MergedRow[] = [
       row("Direktor", "Direktor", null),
       row("GSL B", "Geschäftsstellenleiter", "Direktor"),
       row("GSL A", "Geschäftsstellenleiter", "GSL B", { insurance: 1 }),
     ]
     const e = computeEarnings(merged, RATES)
-    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(5.5)
-    expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0.5)
-    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(2)
+    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(5) // nur Eigenproduktion, keine Differenz auf sich selbst
+    expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0) // gleicher Satz wie der Produzent = keine Differenz
+    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(3) // 8 - 5, GSL B trägt nichts zur Kette bei
   })
 
   it("ein FT2 unter GSL A produziert: 2,00 / 3,50 / 0,50 / 2,00", () => {
@@ -110,20 +110,17 @@ describe("computeEarnings: Gleichstand zweier Geschäftsstellenleiter", () => {
 })
 
 describe("computeEarnings: drei gleiche Stufen hintereinander", () => {
-  it("die mittlere Person bekommt zweimal 0,50 (als untere und als obere Paarungshälfte)", () => {
+  it("alle drei auf dem Satz des Produzenten: niemand bekommt Differenz, da keine Stufe je über den Satz des Produzenten hinauskommt", () => {
     const merged: MergedRow[] = [
       row("TL3", "Teamleiter", null),
       row("TL2", "Teamleiter", "TL3"),
       row("TL1", "Teamleiter", "TL2", { insurance: 1 }),
     ]
     const e = computeEarnings(merged, RATES)
-    // TL1 (Produzent) bekommt zusätzlich zur Eigenproduktion 0,50 Gleichstand
-    // (untere Hälfte der ersten Paarung TL1/TL2) — wie im GSL-Eigenproduktions-
-    // Beispiel oben (5,00 -> 5,50).
     expect(insuranceOf(e, "TL1").own).toBeCloseTo(4)
-    expect(insuranceOf(e, "TL1").total).toBeCloseTo(4.5)
-    expect(insuranceOf(e, "TL2").diff).toBeCloseTo(1) // 0,5 (unten, Paarung 1) + 0,5 (oben, Paarung 2)
-    expect(insuranceOf(e, "TL3").diff).toBeCloseTo(0.5)
+    expect(insuranceOf(e, "TL1").total).toBeCloseTo(4) // keine Gleichstands-Gutschrift auf die eigene Produktion
+    expect(insuranceOf(e, "TL2").diff).toBeCloseTo(0)
+    expect(insuranceOf(e, "TL3").diff).toBeCloseTo(0)
   })
 })
 

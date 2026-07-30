@@ -138,10 +138,15 @@ export function computeEarnings(
 
       // c: bereits durch die Kette abgedeckter Satz. base: höchster Stufensatz,
       // der (ohne Gleichstands-Zuschläge) in der Kette bisher erreicht wurde —
-      // bestimmt, wer noch als "gleichauf" zählt.
+      // bestimmt, wer noch als "gleichauf" zählt. lastName ist erst gesetzt,
+      // sobald eine echte Führungskraft per "differenz" den Satz des Produzenten
+      // überboten hat — vorher (null) darf die Gleichstandsregel nicht greifen,
+      // sonst bekäme der Produzent Differenzvergütung auf seine eigene Produktion
+      // (Satz-Gleichstand mit dem direkten Vorgesetzten ist kein "gleichauf"
+      // zwischen zwei Führungskräften, sondern schlicht: keine Differenz).
       let c = producerRate
       let base = producerRate
-      let lastName = producer.name // hält aktuell die Stufe `base`
+      let lastName: string | null = null
       let managerName = producer.managerName
       const visited = new Set<string>([producer.name])
       let depth = 0
@@ -160,7 +165,7 @@ export function computeEarnings(
             c = rA
             base = rA
             lastName = manager.name
-          } else if (rA > 0 && rA === base) {
+          } else if (rA > 0 && rA === base && lastName) {
             credit(lastName, planId, "gleichstand", u, 0.5, producer.name)
             credit(manager.name, planId, "gleichstand", u, 0.5, producer.name)
             c += 1
