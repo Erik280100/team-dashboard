@@ -2,12 +2,20 @@
 // legacy/index.html:2035–2112 (Fixtermine-Wochenkalender: statisch;
 // Anwesenheitsliste: renderAttendance()/attendanceCell()/onAttendanceToggle()/
 // onAttendanceReasonChange() aus :2419–2491). Anwesenheit ist für alle
-// bearbeitbar (kein isEditor-Gate), identisch zum Original.
+// bearbeitbar (kein isEditor-Gate), identisch zum Original. Der
+// "Zurücksetzen"-Button ist neu und nur für eingeloggte Nutzer sichtbar.
+import { useMemo, useState } from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Select } from "@/components/ui/select"
 import { initials } from "@/lib/calc/format"
+import type { RosterEntry } from "@/lib/calc/struktur"
 import type { AttendanceEntry } from "@/types/dashboard"
 import { getAttendanceEntry } from "@/hooks/useAttendanceDoc"
+import { useConfirm } from "@/hooks/useConfirm"
 import { cn } from "@/lib/utils"
+
+type AttendanceSort = "name" | "struktur"
 
 interface CalEvent {
   label: string
@@ -79,15 +87,34 @@ function AttendanceToggle({
 }
 
 export function Kalender({
-  employeeNames,
+  employeeRoster,
   attendance,
   setAttendanceEntry,
+  resetAttendance,
+  isEditor,
 }: {
-  /** Namen aus dem Strukturbaum, bereits alphabetisch sortiert. */
-  employeeNames: string[]
+  /** Roster aus dem Strukturbaum (Personen mit Status „Kommt vielleicht" bereits ausgeblendet, Reihenfolge = Struktur). */
+  employeeRoster: RosterEntry[]
   attendance: Record<string, AttendanceEntry>
   setAttendanceEntry: (name: string, patch: Partial<AttendanceEntry>) => void
+  resetAttendance: () => void
+  /** Reset-Button nur für eingeloggte Nutzer sichtbar. */
+  isEditor: boolean
 }) {
+  const [sort, setSort] = useState<AttendanceSort>("name")
+  const confirm = useConfirm()
+
+  const sortedRoster = useMemo(() => {
+    if (sort === "name") return [...employeeRoster].sort((a, b) => a.name.localeCompare(b.name, "de"))
+    return employeeRoster // "struktur": Roster-Vorordnung (Baum-Vorordnung) unverändert lassen
+  }, [employeeRoster, sort])
+
+  async function onResetAttendance() {
+    const ok = await confirm("Anwesenheitsliste wirklich für alle zurücksetzen?")
+    if (!ok) return
+    resetAttendance()
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -123,17 +150,34 @@ export function Kalender({
 
       <Card>
         <CardContent>
-          <div className="mb-1 flex items-center justify-between gap-3">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-sm font-semibold">Anwesenheitsliste</h2>
-            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-              {employeeNames.length} Mitarbeiter
-            </span>
+            <div className="flex items-center gap-3">
+              <Select
+                aria-label="Anwesenheitsliste sortieren"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as AttendanceSort)}
+                className="w-48"
+              >
+                <option value="name">Sortieren: Name (A–Z)</option>
+                <option value="struktur">Nach Struktur</option>
+              </Select>
+              {isEditor && (
+                <Button variant="outline" size="sm" onClick={onResetAttendance}>
+                  Zurücksetzen
+                </Button>
+              )}
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                {employeeRoster.length} Mitarbeiter
+              </span>
+            </div>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
             Jede·r kann hier selbst an-/abhaken. Bei Abwesenheit bitte kurz den Absagegrund eintragen.
+            Personen mit Status „Kommt vielleicht" werden hier nicht angezeigt.
           </p>
 
-          {employeeNames.length === 0 ? (
+          {employeeRoster.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">Noch keine Mitarbeiter angelegt.</div>
           ) : (
             <div className="overflow-x-auto">
@@ -146,7 +190,7 @@ export function Kalender({
                   </tr>
                 </thead>
                 <tbody>
-                  {employeeNames.map((name) => {
+                  {sortedRoster.map(({ name }) => {
                     const a = getAttendanceEntry(attendance, name)
                     return (
                       <tr key={name} className="border-b last:border-0">

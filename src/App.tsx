@@ -3,7 +3,7 @@
 // in Phase 3; hier steht Navigation, Auth und die Datenschicht-Verdrahtung.
 import { useMemo } from "react"
 import { ConfirmProvider } from "@/hooks/useConfirm"
-import { DEFAULT_PLAN_RATES, PLAN_IDS, sbAll, sbRoster, type PlanId } from "@/lib/calc/struktur"
+import { DEFAULT_PLAN_RATES, PLAN_IDS, sbRoster, type PlanId } from "@/lib/calc/struktur"
 import { mergeRosterWithRows, newRowFor } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { useAuth } from "@/hooks/useAuth"
@@ -41,16 +41,10 @@ function App() {
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
 
-  // Anwesenheitsliste zeigt die Mitarbeiter aus dem Strukturbaum (nicht der
-  // Team-Tabelle), alphabetisch sortiert.
-  const attendanceNames = useMemo(
-    () => sbAll(orgChart.tree).map((n) => n.name).sort((a, b) => a.localeCompare(b, "de")),
-    [orgChart.tree]
-  )
-
   // Mitarbeiterliste (wie auf der Team-Seite: aus dem Strukturbaum gespiegelt,
   // "Kommt vielleicht" ausgeblendet), gemergt mit den aktuellen Einheiten — für
-  // den Mitarbeiter-Dropdown im EH-Rechner ("Übernehmen"-Buchung).
+  // den Mitarbeiter-Dropdown im EH-Rechner ("Übernehmen"-Buchung) und die
+  // Anwesenheitsliste (die dieselbe gefilterte Roster-Reihenfolge nutzt).
   const roster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
   const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
   const rechnerEmployees = useMemo(
@@ -134,9 +128,11 @@ function App() {
                 {section === id && id === "guide" && <Guide />}
                 {section === id && id === "kalender" && (
                   <Kalender
-                    employeeNames={attendanceNames}
+                    employeeRoster={roster}
                     attendance={attendance.attendance}
                     setAttendanceEntry={attendance.setAttendanceEntry}
+                    resetAttendance={attendance.resetAttendance}
+                    isEditor={auth.isEditor}
                   />
                 )}
                 {section === id && id === "partner" && <Partner />}

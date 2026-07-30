@@ -37,6 +37,7 @@ export function getAttendanceEntry(
 export interface UseAttendanceDocResult {
   attendance: Record<string, AttendanceEntry>
   setAttendanceEntry: (name: string, patch: Partial<AttendanceEntry>) => void
+  resetAttendance: () => void
 }
 
 export function useAttendanceDoc(): UseAttendanceDocResult {
@@ -85,5 +86,18 @@ export function useAttendanceDoc(): UseAttendanceDocResult {
     }
   }, [])
 
-  return { attendance, setAttendanceEntry }
+  /** Setzt alle Anwesenheits-Einträge auf die Defaults zurück (leeres Dokument). */
+  const resetAttendance = useCallback(() => {
+    const next = {}
+    setAttendance(next)
+    try { localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(next)) } catch { /* noop */ }
+    const docRef = attendanceDocRef
+    if (CLOUD_CONFIGURED && attendanceReady.current && docRef) {
+      setDoc(docRef, { entries: next }).catch((err) =>
+        console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)
+      )
+    }
+  }, [])
+
+  return { attendance, setAttendanceEntry, resetAttendance }
 }
