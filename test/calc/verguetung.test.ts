@@ -156,6 +156,36 @@ describe("computeEarnings: Regression — TL-Produktion mit echter GSL-Differenz
   })
 })
 
+describe("computeEarnings: Quellen werden auf das direkte Unterbau-Kind gebündelt", () => {
+  it("Georgs Gleichstand-Zeilen zeigen nur 'Erik'/'Elias' (nicht deren Mitarbeiter Noah/David), Eriks Differenz-Zeile zeigt nur 'David' (nicht dessen Mitarbeiter Josef/Nico)", () => {
+    const merged: MergedRow[] = [
+      row("Georg", "Geschäftsstellenleiter", null),
+      row("Erik", "Geschäftsstellenleiter", "Georg"),
+      row("Elias", "Geschäftsstellenleiter", "Georg"),
+      row("Noah", "Teamleiter", "Erik", { insurance: 100 }),
+      row("David", "Teamleiter", "Erik", { insurance: 50 }),
+      row("Josef", "FT1", "David", { insurance: 10 }),
+      row("Nico", "FT1", "David", { insurance: 20 }),
+    ]
+    const e = computeEarnings(merged, RATES)
+
+    // Eriks Differenz kommt von seinen direkten Kindern Noah und David — nicht
+    // von Josef/Nico einzeln, obwohl deren Produktion über David zu Erik läuft.
+    const erikSources = e.get("Erik")!.diff.insurance.sources
+    expect(erikSources.find((s) => s.fromName === "Noah")?.units).toBeCloseTo(100)
+    expect(erikSources.find((s) => s.fromName === "David")?.units).toBeCloseTo(50 + 10 + 20)
+    expect(erikSources.some((s) => s.fromName === "Josef" || s.fromName === "Nico")).toBe(false)
+
+    // Georgs Gleichstand-Zeile zeigt nur "Erik" (gebündelt aus Eriks eigener
+    // Produktion + Noah + David + Josef + Nico), nicht die einzelnen Namen.
+    const georgSources = e.get("Georg")!.diff.insurance.sources
+    expect(georgSources.length).toBe(1)
+    expect(georgSources[0].fromName).toBe("Erik")
+    expect(georgSources[0].kind).toBe("gleichstand")
+    expect(georgSources[0].units).toBeCloseTo(100 + 50 + 10 + 20) // Erik selbst produziert hier 0
+  })
+})
+
 describe("computeEarnings: Nicht-Führungsstufe bekommt keine Differenz", () => {
   it("ein FT über einer Führungskraft in der Kette wird übersprungen, aber die Kette läuft weiter", () => {
     const merged: MergedRow[] = [

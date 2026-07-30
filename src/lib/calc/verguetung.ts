@@ -125,7 +125,17 @@ export function computeEarnings(
       earnings.ownTotal += amount
     } else {
       earnings.diff[planId].amount += amount
-      earnings.diff[planId].sources.push({ fromName, units, ratePerUnit, amount, kind })
+      // Pro direktem Unterbau-Kind (fromName) und Art (kind) nur eine Zeile:
+      // Produktion, die tiefer im Unterbaum dieses Kindes entsteht, wird hier
+      // dazugerechnet statt als eigene Zeile je Ursprungs-Produzent zu erscheinen.
+      const sources = earnings.diff[planId].sources
+      const existing = sources.find((s) => s.fromName === fromName && s.kind === kind)
+      if (existing) {
+        existing.units += units
+        existing.amount += amount
+      } else {
+        sources.push({ fromName, units, ratePerUnit, amount, kind })
+      }
       earnings.diffTotal += amount
     }
     earnings.total += amount
@@ -147,6 +157,13 @@ export function computeEarnings(
       // ein Bonus möglich ist.
       let c = producerRate
       let tieUsedAtLevel = false
+      // Wer in der Anzeige als "Von" erscheint: das direkte Unterbau-Kind auf
+      // dem Weg zur jeweils gutgeschriebenen Führungskraft, nicht der ganz
+      // unten stehende Ursprungs-Produzent — Produktion, die tiefer im
+      // Unterbau dieses Kindes entsteht, wird so bei dessen direktem Chef
+      // gebündelt (z. B. Josef/Nico unter David, David/Noah unter Erik) statt
+      // als einzelne Zeile je Ursprungs-Produzent aufzuscheinen.
+      let fromName = producer.name
       let managerName = producer.managerName
       const visited = new Set<string>([producer.name])
       let depth = 0
@@ -161,17 +178,18 @@ export function computeEarnings(
         if (isLeadRole(manager.role)) {
           const rA = sbGetPlanRate(planRates, manager.role, planId)
           if (rA > c) {
-            credit(manager.name, planId, "differenz", u, rA - c, producer.name)
+            credit(manager.name, planId, "differenz", u, rA - c, fromName)
             c = rA
             tieUsedAtLevel = false
           } else if (rA > 0 && rA === c && !tieUsedAtLevel) {
             // Nur die obere Seite des Gleichstands bekommt den Bonus — die
             // untere (Produzent oder bereits per Differenz bezahlte Führungs-
             // kraft) hat ihren Anteil schon erhalten.
-            credit(manager.name, planId, "gleichstand", u, 0.5, producer.name)
+            credit(manager.name, planId, "gleichstand", u, 0.5, fromName)
             tieUsedAtLevel = true
           }
         }
+        fromName = manager.name
         managerName = manager.managerName
       }
     })
