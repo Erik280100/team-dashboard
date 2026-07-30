@@ -92,7 +92,7 @@ export const DEFAULT_PLAN_RATES: Record<PlanId, Record<string, number>> = {
   insurance: {
     Direktor: 8,
     Regionalleiter: 7,
-    Geschäftsstellenleiter: 5,
+    Geschäftsstellenleiter: 5.5,
     Teamleiter: 4,
     FT4: 3,
     FT3: 2.5,

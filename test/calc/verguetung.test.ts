@@ -70,8 +70,8 @@ describe("computeEarnings: Kaskade ohne Gleichstand", () => {
     const e = computeEarnings(merged, RATES)
     expect(insuranceOf(e, "FT2").own).toBeCloseTo(2)
     expect(insuranceOf(e, "TL").diff).toBeCloseTo(2) // 4 - 2
-    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(1) // 5 - 4
-    expect(insuranceOf(e, "RL").diff).toBeCloseTo(2) // 7 - 5
+    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(1.5) // 5,5 - 4
+    expect(insuranceOf(e, "RL").diff).toBeCloseTo(1.5) // 7 - 5,5
     expect(insuranceOf(e, "Direktor").diff).toBeCloseTo(1) // 8 - 7
     const totalPaidOut = PLAN_IDS.reduce(
       (s, p) => s + [...e.values()].reduce((s2, x) => s2 + x.own[p].amount + x.diff[p].amount, 0),
@@ -89,12 +89,12 @@ describe("computeEarnings: Gleichstand zweier Geschäftsstellenleiter", () => {
       row("GSL A", "Geschäftsstellenleiter", "GSL B", { insurance: 1 }),
     ]
     const e = computeEarnings(merged, RATES)
-    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(5) // nur Eigenproduktion, keine Differenz auf sich selbst
+    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(5.5) // nur Eigenproduktion, keine Differenz auf sich selbst
     expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0) // gleicher Satz wie der Produzent = keine Differenz
-    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(3) // 8 - 5, GSL B trägt nichts zur Kette bei
+    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(2.5) // 8 - 5,5, GSL B trägt nichts zur Kette bei
   })
 
-  it("ein FT2 unter GSL A produziert: 2,00 / 3,50 / 0,50 / 2,00", () => {
+  it("ein FT2 unter GSL A produziert: 2,00 / 4,00 / 0,50 / 1,50", () => {
     const merged: MergedRow[] = [
       row("Direktor", "Direktor", null),
       row("GSL B", "Geschäftsstellenleiter", "Direktor"),
@@ -103,9 +103,9 @@ describe("computeEarnings: Gleichstand zweier Geschäftsstellenleiter", () => {
     ]
     const e = computeEarnings(merged, RATES)
     expect(insuranceOf(e, "FT2").total).toBeCloseTo(2)
-    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(3.5)
+    expect(insuranceOf(e, "GSL A").total).toBeCloseTo(4)
     expect(insuranceOf(e, "GSL B").total).toBeCloseTo(0.5)
-    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(2)
+    expect(insuranceOf(e, "Direktor").total).toBeCloseTo(1.5)
   })
 })
 
@@ -125,7 +125,7 @@ describe("computeEarnings: drei gleiche Stufen hintereinander", () => {
 })
 
 describe("computeEarnings: Ebene wird durch Gleichstand aufgezehrt", () => {
-  it("FT2 -> TL A -> TL B -> GSL -> Direktor: GSL bekommt 0,00 €, Direktor den Rest", () => {
+  it("FT2 -> TL A -> TL B -> GSL -> Direktor: GSL liegt über der Gleichstand-Deckung (5,5 > 5) und bekommt den Rest bis dahin", () => {
     const merged: MergedRow[] = [
       row("Direktor", "Direktor", null),
       row("GSL", "Geschäftsstellenleiter", "Direktor"),
@@ -138,8 +138,8 @@ describe("computeEarnings: Ebene wird durch Gleichstand aufgezehrt", () => {
     // TL A: normale Differenz (4 - 2 = 2) + 0,5 Gleichstand (untere Hälfte TL A/TL B) = 2,5
     expect(insuranceOf(e, "TL A").diff).toBeCloseTo(2.5)
     expect(insuranceOf(e, "TL B").diff).toBeCloseTo(0.5)
-    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(0) // GSL-Satz (5) bereits durch Gleichstand abgedeckt
-    expect(insuranceOf(e, "Direktor").diff).toBeCloseTo(3) // 8 - 5
+    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(0.5) // 5,5 - 5 (durch Gleichstand bereits gedeckter Satz)
+    expect(insuranceOf(e, "Direktor").diff).toBeCloseTo(2.5) // 8 - 5,5
   })
 })
 
@@ -152,7 +152,7 @@ describe("computeEarnings: Nicht-Führungsstufe bekommt keine Differenz", () => 
     ]
     const e = computeEarnings(merged, RATES)
     expect(insuranceOf(e, "FT4-oben").diff).toBe(0)
-    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(4) // 5 - 1, FT4 wird übersprungen
+    expect(insuranceOf(e, "GSL").diff).toBeCloseTo(4.5) // 5,5 - 1, FT4 wird übersprungen
   })
 })
 
@@ -170,7 +170,7 @@ describe("computeEarnings: Seitenzweige bekommen nichts", () => {
     expect(insuranceOf(e, "GSL X").total).toBe(0)
     expect(insuranceOf(e, "TL X").total).toBe(0)
     expect(insuranceOf(e, "TL Y").diff).toBeCloseTo(2)
-    expect(insuranceOf(e, "GSL Y").diff).toBeCloseTo(1)
+    expect(insuranceOf(e, "GSL Y").diff).toBeCloseTo(1.5)
   })
 })
 
