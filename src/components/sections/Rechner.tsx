@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { EhRechner } from "@/components/sections/rechner/EhRechner"
 import { UmdrehRechner } from "@/components/sections/rechner/UmdrehRechner"
 import { RenditeRechner } from "@/components/sections/rechner/RenditeRechner"
+import type { PlanId } from "@/lib/calc/struktur"
 
 type RechnerTab = "eh" | "umdreh" | "rendite"
 
@@ -14,7 +15,13 @@ const TABS: { id: RechnerTab; label: string }[] = [
   { id: "rendite", label: "Renditerechner" },
 ]
 
-export function Rechner() {
+export function Rechner({
+  employees, isEditor, onApplyUnits,
+}: {
+  employees: { name: string; role: string; units: Record<PlanId, number> }[]
+  isEditor: boolean
+  onApplyUnits: (name: string, units: Record<PlanId, number>) => void
+}) {
   const [tab, setTab] = useState<RechnerTab>("eh")
 
   return (
@@ -37,7 +44,9 @@ export function Rechner() {
         ))}
       </div>
 
-      {tab === "eh" && <EhRechner />}
+      {tab === "eh" && (
+        <EhRechner employees={employees} isEditor={isEditor} onApplyUnits={onApplyUnits} />
+      )}
       {tab === "umdreh" && <UmdrehRechner />}
       {tab === "rendite" && <RenditeRechner />}
     </div>

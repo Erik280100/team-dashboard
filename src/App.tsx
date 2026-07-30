@@ -3,7 +3,9 @@
 // in Phase 3; hier steht Navigation, Auth und die Datenschicht-Verdrahtung.
 import { useMemo } from "react"
 import { ConfirmProvider } from "@/hooks/useConfirm"
-import { sbAll } from "@/lib/calc/struktur"
+import { DEFAULT_PLAN_RATES, PLAN_IDS, sbAll, sbRoster, type PlanId } from "@/lib/calc/struktur"
+import { mergeRosterWithRows, newRowFor } from "@/lib/calc/team"
+import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { useAuth } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
@@ -45,6 +47,33 @@ function App() {
     () => sbAll(orgChart.tree).map((n) => n.name).sort((a, b) => a.localeCompare(b, "de")),
     [orgChart.tree]
   )
+
+  // Mitarbeiterliste (wie auf der Team-Seite: aus dem Strukturbaum gespiegelt,
+  // "Kommt vielleicht" ausgeblendet), gemergt mit den aktuellen Einheiten — für
+  // den Mitarbeiter-Dropdown im EH-Rechner ("Übernehmen"-Buchung).
+  const roster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
+  const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
+  const rechnerEmployees = useMemo(
+    () => merged.map((m) => ({ name: m.name, role: m.role, units: readPlanUnits(m) })),
+    [merged]
+  )
+
+  /** Bucht Einheiten (je Karriereplan) additiv auf einen Mitarbeiter — siehe
+   * "Übernehmen"-Button im EH-Rechner. Legt bei Bedarf eine neue Zeile in
+   * dashboard.rows an, analog zu Team.tsx commitField/commitPlanUnits. */
+  function applyUnitsToEmployee(name: string, delta: Record<PlanId, number>) {
+    const entry = merged.find((m) => m.name === name)
+    if (!entry) return
+    const current = readPlanUnits(entry)
+    const next = {} as Record<PlanId, number>
+    PLAN_IDS.forEach((p) => { next[p] = (Number(current[p]) || 0) + (Number(delta[p]) || 0) })
+    if (entry.rowIndex !== null) {
+      const nextRows = dashboard.rows.map((r, i) => (i === entry.rowIndex ? withPlanUnits(r, next) : r))
+      dashboard.saveRows(nextRows)
+    } else {
+      dashboard.saveRows([...dashboard.rows, withPlanUnits(newRowFor(entry.name), next)])
+    }
+  }
 
   return (
     <ConfirmProvider>
@@ -90,11 +119,17 @@ function App() {
                     saveRows={dashboard.saveRows}
                     teamGoal={dashboard.teamGoal}
                     orgTree={orgChart.tree}
-                    orgRoleRates={orgChart.rates}
+                    orgPlanRates={orgChart.planRates ?? DEFAULT_PLAN_RATES}
                     isEditor={auth.isEditor}
                   />
                 )}
-                {section === id && id === "rechner" && <Rechner />}
+                {section === id && id === "rechner" && (
+                  <Rechner
+                    employees={rechnerEmployees}
+                    isEditor={auth.isEditor}
+                    onApplyUnits={applyUnitsToEmployee}
+                  />
+                )}
                 {section === id && id === "karriere" && <Karriere />}
                 {section === id && id === "guide" && <Guide />}
                 {section === id && id === "kalender" && (
@@ -107,7 +142,10 @@ function App() {
                 {section === id && id === "partner" && <Partner />}
                 {section === id && id === "struktur" && (
                   <StrukturBaum
-                    doc={{ tree: orgChart.tree, notes: orgChart.notes, conns: orgChart.conns, rates: orgChart.rates }}
+                    doc={{
+                      tree: orgChart.tree, notes: orgChart.notes, conns: orgChart.conns,
+                      rates: orgChart.rates, planRates: orgChart.planRates,
+                    }}
                     isEditor={auth.isEditor}
                     saveOrgChart={orgChart.saveOrgChart}
                   />

@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
 import {
+  DEFAULT_PLAN_RATES, PLAN_IDS, PLAN_LABELS,
   SB_COLORS, SB_NH, SB_NW, SB_ROLES, SB_STATUS, SB_VG,
   sbAll, sbEsc, sbFind, sbLayout, sbLine,
-  type SbNode,
+  type PlanId, type SbNode,
 } from "@/lib/calc/struktur"
 import type { OrgChartDoc } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
@@ -58,7 +59,9 @@ export function StrukturBaum({
   const [linkMode, setLinkMode] = useState(false)
   const [linkSrc, setLinkSrc] = useState<string | null>(null)
   const [ratesOpen, setRatesOpen] = useState(false)
-  const [ratesDraft, setRatesDraft] = useState<Record<string, string>>({})
+  const [ratesDraft, setRatesDraft] = useState<Record<PlanId, Record<string, string>>>(
+    {} as Record<PlanId, Record<string, string>>
+  )
   const [fullscreen, setFullscreen] = useState(false)
   const [scale, setScale] = useState(1)
 
@@ -69,6 +72,7 @@ export function StrukturBaum({
   >(null)
   const [dlgName, setDlgName] = useState("")
   const [dlgRole, setDlgRole] = useState("")
+  const [dlgStatus, setDlgStatus] = useState("")
   const [dlgLabel, setDlgLabel] = useState("")
 
   const dragRef = useRef<{
@@ -253,11 +257,12 @@ export function StrukturBaum({
     if (dialog.kind === "add-child") {
       const name = dlgName.trim()
       if (!name) { alert("Bitte einen Namen eingeben."); return }
+      if (!dlgStatus) { alert("Bitte einen Status wählen."); return }
       const next = deepClone(doc.tree)
       const parent = sbFind(next, dialog.parentId)
       if (parent) {
         parent.children = parent.children || []
-        parent.children.push({ id: newNodeId(), name, role: dlgRole.trim() || "Mitarbeiter", children: [] })
+        parent.children.push({ id: newNodeId(), name, role: dlgRole.trim() || "Mitarbeiter", status: dlgStatus, children: [] })
         persist({ tree: next })
       }
     } else {
@@ -323,26 +328,44 @@ export function StrukturBaum({
     persist({ notes: { ...doc.notes, [selectedId]: list } })
   }
 
+  function draftFromPlanRates(planRates: Record<PlanId, Record<string, number>>): Record<PlanId, Record<string, string>> {
+    const draft = {} as Record<PlanId, Record<string, string>>
+    PLAN_IDS.forEach((planId) => {
+      draft[planId] = {}
+      SB_ROLES.forEach((r) => {
+        const v = planRates[planId]?.[r]
+        draft[planId][r] = v != null ? String(v) : ""
+      })
+    })
+    return draft
+  }
   function openRates() {
     if (!isEditor) return
-    const draft: Record<string, string> = {}
-    SB_ROLES.forEach((r) => { draft[r] = doc.rates[r] != null ? String(doc.rates[r]) : "" })
-    setRatesDraft(draft)
+    setRatesDraft(draftFromPlanRates(doc.planRates ?? DEFAULT_PLAN_RATES))
     setRatesOpen(true)
   }
+  function resetRatesToDefaults() {
+    setRatesDraft(draftFromPlanRates(DEFAULT_PLAN_RATES))
+  }
   function saveRates() {
-    const rates: Record<string, number> = {}
-    SB_ROLES.forEach((r) => {
-      const v = parseFloat(ratesDraft[r])
-      if (v > 0) rates[r] = v
+    const planRates = {} as Record<PlanId, Record<string, number>>
+    PLAN_IDS.forEach((planId) => {
+      planRates[planId] = {}
+      SB_ROLES.forEach((r) => {
+        const v = parseFloat(ratesDraft[planId]?.[r])
+        if (v > 0) planRates[planId][r] = v
+      })
     })
-    persist({ rates })
+    // Legacy-Spiegel: das alte `rates`-Feld (nur Insurance) bleibt für
+    // legacy/index.html gepflegt, siehe OrgChartDoc.rates-Kommentar.
+    persist({ rates: planRates.insurance, planRates })
     setRatesOpen(false)
   }
 
   function openAddChild(parentId: string) {
     setDlgName("")
     setDlgRole("")
+    setDlgStatus("")
     setDialog({ kind: "add-child", parentId })
   }
 
@@ -658,6 +681,17 @@ export function StrukturBaum({
                 <option value="">Bezeichnung / Rolle wählen…</option>
                 {SB_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
+              <select
+                required
+                value={dlgStatus}
+                onChange={(e) => setDlgStatus(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="">Status wählen…</option>
+                {Object.entries(SB_STATUS).map(([key, s]) => (
+                  <option key={key} value={key}>{s.label}</option>
+                ))}
+              </select>
             </div>
           ) : (
             <Input
@@ -677,30 +711,56 @@ export function StrukturBaum({
 
       {/* Dialog: Stufensätze */}
       <Dialog open={ratesOpen} onOpenChange={setRatesOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>💶 Stufensätze</DialogTitle>
-            <DialogDescription>Euro pro Einheit (EH) je Karrierestufe — wird z.B. auf der Mitarbeiterseite verwendet.</DialogDescription>
+            <DialogDescription>
+              Euro pro Einheit (EH) je Karrierestufe und Karriereplan — wird auf der Mitarbeiterseite verwendet.
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex max-h-[50vh] flex-col gap-2 overflow-auto">
-            {SB_ROLES.map((r) => (
-              <div key={r} className="flex items-center justify-between gap-3">
-                <label className="text-sm font-medium">{r}</label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number" step={0.01} min={0} placeholder="0,00"
-                    value={ratesDraft[r] ?? ""}
-                    onChange={(e) => setRatesDraft((s) => ({ ...s, [r]: e.target.value }))}
-                    className="h-8 w-24 rounded-md border border-input bg-background px-2 text-right text-sm"
-                  />
-                  <span className="text-xs text-muted-foreground">€/EH</span>
-                </div>
-              </div>
-            ))}
+          <div className="max-h-[55vh] overflow-auto rounded-md border">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="sticky top-0 bg-muted/95 text-left text-xs font-semibold text-muted-foreground backdrop-blur">
+                  <th className="px-3 py-1.5">Stufe</th>
+                  {PLAN_IDS.map((planId) => (
+                    <th key={planId} className="px-2 py-1.5 text-right">{PLAN_LABELS[planId]}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SB_ROLES.map((r) => (
+                  <tr key={r} className="border-t">
+                    <td className="px-3 py-1.5 font-medium">{r}</td>
+                    {PLAN_IDS.map((planId) => (
+                      <td key={planId} className="px-2 py-1.5 text-right">
+                        <input
+                          type="number" step={0.01} min={0} placeholder="0,00"
+                          aria-label={`${PLAN_LABELS[planId]} – ${r}`}
+                          value={ratesDraft[planId]?.[r] ?? ""}
+                          onChange={(e) =>
+                            setRatesDraft((s) => ({
+                              ...s,
+                              [planId]: { ...s[planId], [r]: e.target.value },
+                            }))
+                          }
+                          className="h-8 w-20 rounded-md border border-input bg-background px-2 text-right text-sm"
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRatesOpen(false)}>Abbrechen</Button>
-            <Button onClick={saveRates}>Speichern</Button>
+          <DialogFooter className="sm:justify-between">
+            <Button variant="ghost" size="sm" onClick={resetRatesToDefaults} className="text-muted-foreground">
+              Auf Karriereplan-Werte zurücksetzen
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setRatesOpen(false)}>Abbrechen</Button>
+              <Button onClick={saveRates}>Speichern</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

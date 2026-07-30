@@ -55,12 +55,89 @@ export const SB_ROLES = [
   "Regionalleiter",
   "Geschäftsstellenleiter",
   "Teamleiter",
-  "Kundenberater",
   "FT4",
   "FT3",
   "FT2",
   "FT1",
 ]
+
+// Führungsstufen, die ab Teamleiter differenzberechtigt sind (siehe verguetung.ts).
+export const SB_LEAD_ROLES = ["Direktor", "Regionalleiter", "Geschäftsstellenleiter", "Teamleiter"]
+
+export function isLeadRole(role: string): boolean {
+  return SB_LEAD_ROLES.includes(role)
+}
+
+// ---- Karrierepläne (Einheiten-Vergütung) ----
+// Die vier Sparten aus den Karriereplänen (siehe src/lib/data/career.ts /
+// src/lib/calc/eh.ts EH_GROUPS — dieselben ids, hier eigenständig deklariert,
+// damit struktur.ts nicht von eh.ts abhängen muss).
+export const PLAN_IDS = ["insurance", "investment", "credit", "realestate"] as const
+export type PlanId = (typeof PLAN_IDS)[number]
+
+export const PLAN_LABELS: Record<PlanId, string> = {
+  insurance: "Insurance",
+  investment: "Investment",
+  credit: "Credit",
+  realestate: "Real Estate",
+}
+
+/**
+ * Euro pro Einheit je Karrierestufe und Karriereplan, aus den Karriereplänen
+ * übernommen (Stand: Nutzerangabe 2026-07-30). Dient als Vorbelegung im
+ * Stufensätze-Dialog (StrukturBaum.tsx) und als Fallback, solange kein
+ * OrgChartDoc.planRates gespeichert ist.
+ */
+export const DEFAULT_PLAN_RATES: Record<PlanId, Record<string, number>> = {
+  insurance: {
+    Direktor: 8,
+    Regionalleiter: 7,
+    Geschäftsstellenleiter: 5,
+    Teamleiter: 4,
+    FT4: 3,
+    FT3: 2.5,
+    FT2: 2,
+    FT1: 1,
+  },
+  investment: {
+    Direktor: 6.5,
+    Regionalleiter: 5.5,
+    Geschäftsstellenleiter: 4.5,
+    Teamleiter: 3.5,
+    FT4: 2.5,
+    FT3: 2.5,
+    FT2: 2,
+    FT1: 1,
+  },
+  credit: {
+    Direktor: 4,
+    Regionalleiter: 4,
+    Geschäftsstellenleiter: 3,
+    Teamleiter: 3,
+    FT4: 2.5,
+    FT3: 2.5,
+    FT2: 2,
+    FT1: 1,
+  },
+  realestate: {
+    Direktor: 2.5,
+    Regionalleiter: 2.25,
+    Geschäftsstellenleiter: 2,
+    Teamleiter: 1.75,
+    FT4: 1.5,
+    FT3: 1.5,
+    FT2: 1.5,
+    FT1: 1,
+  },
+}
+
+export function sbGetPlanRate(
+  planRates: Record<PlanId, Record<string, number>>,
+  role: string,
+  planId: PlanId
+): number {
+  return Number(planRates?.[planId]?.[role]) || 0
+}
 
 /** Alle Knoten des Teilbaums (inkl. n selbst) als flache Liste. */
 export function sbAll(n: SbNode, a: SbNode[] = []): SbNode[] {

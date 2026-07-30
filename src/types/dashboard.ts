@@ -2,7 +2,7 @@
 // (legacy/index.html:2248–2283, 4151–4177), damit neue und alte App exakt
 // dieselben Datenstrukturen lesen/schreiben.
 import type { EmployeeRow, TeamGoal } from "@/lib/calc/format"
-import type { SbNode } from "@/lib/calc/struktur"
+import type { PlanId, SbNode } from "@/lib/calc/struktur"
 
 export type { EmployeeRow, TeamGoal }
 
@@ -46,7 +46,12 @@ export interface OrgChartDoc {
   tree: SbNode
   notes: Record<string, OrgChartNote[]>
   conns: OrgChartConn[]
+  /** Legacy-Feld: Insurance-Sätze je Stufe (Spiegel von planRates.insurance, siehe
+   * useOrgChartDoc.saveOrgChart), damit legacy/index.html weiter funktioniert. */
   rates: Record<string, number>
+  /** Euro pro Einheit je Karrierestufe und Karriereplan. Optional — fehlt es,
+   * gelten die Default-Sätze aus DEFAULT_PLAN_RATES (struktur.ts). */
+  planRates?: Record<PlanId, Record<string, number>>
 }
 
 export const STORAGE_KEY = "finova_dashboard_data_v1"

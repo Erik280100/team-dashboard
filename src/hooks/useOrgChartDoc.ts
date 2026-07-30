@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { onSnapshot, setDoc } from "firebase/firestore"
 import { CLOUD_CONFIGURED, orgChartDocRef } from "@/lib/firebase"
+import { DEFAULT_PLAN_RATES } from "@/lib/calc/struktur"
 import { SB_DEFAULT_TREE, SB_STORAGE_KEY, type OrgChartDoc } from "@/types/dashboard"
 
 function loadLocalOrgChart(): OrgChartDoc {
@@ -17,6 +18,7 @@ function loadLocalOrgChart(): OrgChartDoc {
           notes: parsed.notes || {},
           conns: parsed.conns || [],
           rates: parsed.rates || {},
+          planRates: parsed.planRates || DEFAULT_PLAN_RATES,
         }
       }
     }
@@ -28,6 +30,7 @@ function loadLocalOrgChart(): OrgChartDoc {
     notes: {},
     conns: [],
     rates: {},
+    planRates: DEFAULT_PLAN_RATES,
   }
 }
 
@@ -57,6 +60,7 @@ export function useOrgChartDoc(): UseOrgChartDocResult {
               notes: data.notes || {},
               conns: data.conns || [],
               rates: data.rates || {},
+              planRates: data.planRates || DEFAULT_PLAN_RATES,
             }
             setDocState(next)
             try { localStorage.setItem(SB_STORAGE_KEY, JSON.stringify(next)) } catch { /* noop */ }

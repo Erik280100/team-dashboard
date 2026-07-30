@@ -4,11 +4,17 @@
 // Modul-globalen `rows`/`teamGoal` operierten, nehmen diese hier explizit als
 // Parameter entgegen — Verhalten sonst identisch.
 // Golden-Master-Test: test/calc/format.golden.test.ts.
+import type { PlanId } from "./struktur"
 
 export interface EmployeeRow {
   name: string
   soll: number
+  /** Gesamteinheiten — denormalisierte Summe von ehByPlan, siehe verguetung.ts. */
   ist: number
+  /** Einheiten je Karriereplan (insurance/investment/credit/realestate). Fehlt dieses
+   * Feld (Altbestand vor der Karrierepläne-Aufteilung), gilt ist als reiner
+   * Insurance-Wert — siehe readPlanUnits() in verguetung.ts. */
+  ehByPlan?: Partial<Record<PlanId, number>>
   isNew?: boolean
   joinDate?: string
   at?: number

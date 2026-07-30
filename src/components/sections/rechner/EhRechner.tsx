@@ -1,10 +1,18 @@
 // EH-Rechner — Äquivalent zu initEHRechner() aus legacy/index.html:3356–3456.
-// Reine Client-Berechnung, nichts wird gespeichert (wie im Original).
+// Reine Client-Berechnung, nichts wird gespeichert (wie im Original) — außer
+// beim expliziten "Auf Mitarbeiter buchen" (nur isEditor), das die berechneten
+// Einheiten je Sparte additiv auf einen Mitarbeiter überträgt (siehe
+// App.tsx applyUnitsToEmployee / verguetung.ts).
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Select } from "@/components/ui/select"
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
 import { calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
+import { PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
 
 // legacy/index.html:821-824 — Gruppen-Akzentfarbe (oberer Rand der Karte)
 const GROUP_ACCENT: Record<EhGroup["id"], string> = {
@@ -30,13 +38,31 @@ function defaultMult(): Record<EhGroup["id"], number> {
   return m
 }
 
-export function EhRechner() {
+function round2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+export function EhRechner({
+  employees, isEditor, onApplyUnits,
+}: {
+  employees: { name: string; role: string; units: Record<PlanId, number> }[]
+  isEditor: boolean
+  onApplyUnits: (name: string, units: Record<PlanId, number>) => void
+}) {
   const [g, setG] = useState(defaultG)
   const [j, setJ] = useState(defaultJ)
   const [mult, setMult] = useState(defaultMult)
+  const [selectedName, setSelectedName] = useState("")
+  const [bookingOpen, setBookingOpen] = useState(false)
+  const [lastBooked, setLastBooked] = useState<string | null>(null)
   const confirm = useConfirm()
 
   const result = calcEh({ g, j, mult })
+  const bookedUnits = EH_GROUPS.reduce((acc, group) => {
+    acc[group.id] = round2(result.groupSums[group.id] || 0)
+    return acc
+  }, {} as Record<PlanId, number>)
+  const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
 
   async function onReset() {
     const ok = await confirm("Alle Eingaben im EH-Rechner wirklich zurücksetzen?")
@@ -44,6 +70,13 @@ export function EhRechner() {
     setG(defaultG())
     setJ(defaultJ())
     setMult(defaultMult())
+  }
+
+  function onConfirmBooking() {
+    if (!selectedEmployee) return
+    onApplyUnits(selectedEmployee.name, bookedUnits)
+    setLastBooked(selectedEmployee.name)
+    setBookingOpen(false)
   }
 
   function renderGroup(group: EhGroup) {
@@ -128,23 +161,55 @@ export function EhRechner() {
       </div>
 
       <Card className="border-none bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="text-xs text-white/60">Gesamt Einheiten</div>
-            <div className="text-4xl font-extrabold tabular-nums">{ehFormatEH(result.grandTotal)} EH</div>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-xs text-white/60">Gesamt Einheiten</div>
+              <div className="text-4xl font-extrabold tabular-nums">{ehFormatEH(result.grandTotal)} EH</div>
+            </div>
+            <div>
+              <div className="text-xs text-white/60">Gesamt in €</div>
+              <div className="text-4xl font-extrabold tabular-nums">{ehFormatEUR(result.grandTotalEur)} €</div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+              onClick={onReset}
+            >
+              Zurücksetzen
+            </Button>
           </div>
-          <div>
-            <div className="text-xs text-white/60">Gesamt in €</div>
-            <div className="text-4xl font-extrabold tabular-nums">{ehFormatEUR(result.grandTotalEur)} €</div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
-            onClick={onReset}
-          >
-            Zurücksetzen
-          </Button>
+
+          {isEditor && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-white/15 pt-3">
+              <Select
+                aria-label="Mitarbeiter für Übernahme wählen"
+                value={selectedName}
+                onChange={(e) => setSelectedName(e.target.value)}
+                className="w-56 border-white/25 bg-white/10 text-white [&>svg]:text-white/70"
+              >
+                <option value="" className="text-foreground">Mitarbeiter wählen…</option>
+                {employees.map((emp) => (
+                  <option key={emp.name} value={emp.name} className="text-foreground">
+                    {emp.name}
+                  </option>
+                ))}
+              </Select>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                disabled={!selectedEmployee || result.grandTotal <= 0}
+                onClick={() => setBookingOpen(true)}
+              >
+                Auf Mitarbeiter buchen
+              </Button>
+              {lastBooked && (
+                <span className="text-xs text-white/70">Zuletzt gebucht auf {lastBooked}.</span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -154,6 +219,55 @@ export function EhRechner() {
           {sideGroups.map(renderGroup)}
         </div>
       </div>
+
+      {isEditor && selectedEmployee && (
+        <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Einheiten auf {selectedEmployee.name} buchen?</DialogTitle>
+              <DialogDescription>
+                Die berechneten Einheiten werden je Karriereplan zu den bestehenden Einheiten addiert.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-hidden rounded-md border">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
+                    <th className="px-3 py-1.5">Plan</th>
+                    <th className="px-3 py-1.5 text-right">Vorher</th>
+                    <th className="px-3 py-1.5 text-right">+ Neu</th>
+                    <th className="px-3 py-1.5 text-right">Nachher</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {EH_GROUPS.map((group) => {
+                    const before = Number(selectedEmployee.units[group.id]) || 0
+                    const added = bookedUnits[group.id] || 0
+                    return (
+                      <tr key={group.id} className="border-t">
+                        <td className="px-3 py-1.5">{PLAN_LABELS[group.id]}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                          {ehFormatEH(before)}
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                          {added > 0 ? `+ ${ehFormatEH(added)}` : "–"}
+                        </td>
+                        <td className="px-3 py-1.5 text-right font-semibold tabular-nums">
+                          {ehFormatEH(before + added)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBookingOpen(false)}>Abbrechen</Button>
+              <Button onClick={onConfirmBooking}>Buchen</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

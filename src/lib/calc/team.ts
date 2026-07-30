@@ -7,6 +7,20 @@ import type { RosterEntry } from "@/lib/calc/struktur"
 export type TeamFilter = "all" | "new" | "existing"
 export type TeamSort = "name" | "progress-desc" | "progress-asc" | "einheiten-desc" | "manager"
 
+/** Baseline-Zeile für eine Strukturbaum-Person, die noch keine Zahlen in
+ * dashboard.rows hat (Upsert beim ersten Bearbeiten eines Felds/Buchen von
+ * Einheiten — siehe Team.tsx commitField/commitPlanUnits und App.tsx
+ * applyUnitsToEmployee). */
+export function newRowFor(name: string): EmployeeRow {
+  return {
+    name,
+    isNew: false,
+    atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
+    soll: 0, ist: 0,
+    joinDate: "",
+  }
+}
+
 export interface IndexedRow extends EmployeeRow {
   _idx: number
 }
@@ -88,6 +102,7 @@ export function mergeRosterWithRows(roster: RosterEntry[], rows: EmployeeRow[]):
       etIst: Number(row?.etIst) || 0,
       soll: Number(row?.soll) || 0,
       ist: Number(row?.ist) || 0,
+      ehByPlan: row?.ehByPlan,
       role: entry.role,
       managerName: entry.managerName,
       depth: entry.depth,

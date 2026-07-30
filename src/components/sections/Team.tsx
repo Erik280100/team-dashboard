@@ -10,29 +10,19 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { fmt, initials, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import {
-  getMergedFilteredSorted, mergeRosterWithRows, rowHighlight, teamTotals,
+  getMergedFilteredSorted, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
 } from "@/lib/calc/team"
-import { sbEsc, sbGetRateForRole, sbRoster, type SbNode } from "@/lib/calc/struktur"
+import { sbRoster, type PlanId, type SbNode } from "@/lib/calc/struktur"
+import { computeEarnings, withPlanUnits } from "@/lib/calc/verguetung"
+import { EmployeeEarningsDialog } from "@/components/sections/team/EmployeeEarningsDialog"
 import { cn } from "@/lib/utils"
-
-/** Baseline-Zeile für eine Strukturbaum-Person, die noch keine Zahlen in
- * dashboard.rows hat (Upsert beim ersten Bearbeiten eines Felds). */
-function newRowFor(name: string): EmployeeRow {
-  return {
-    name,
-    isNew: false,
-    atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
-    soll: 0, ist: 0,
-    joinDate: "",
-  }
-}
 
 function NumField({
   row, field, wide, isEditor, onCommit,
 }: {
   row: MergedRow
-  field: "atPlan" | "btPlan" | "etPlan" | "atIst" | "btIst" | "etIst" | "soll" | "ist"
+  field: "atPlan" | "btPlan" | "etPlan" | "atIst" | "btIst" | "etIst" | "soll"
   wide?: boolean
   isEditor: boolean
   onCommit: (row: MergedRow, field: string, value: number) => void
@@ -60,25 +50,33 @@ export function Team({
   saveRows,
   teamGoal,
   orgTree,
-  orgRoleRates,
+  orgPlanRates,
   isEditor,
 }: {
   rows: EmployeeRow[]
   saveRows: (next: EmployeeRow[]) => void
   teamGoal: TeamGoal
   orgTree: SbNode
-  orgRoleRates: Record<string, number>
+  orgPlanRates: Record<PlanId, Record<string, number>>
   isEditor: boolean
 }) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<TeamFilter>("all")
   const [sort, setSort] = useState<TeamSort>("name")
+  const [detailName, setDetailName] = useState<string | null>(null)
 
   const roster = useMemo(() => sbRoster(orgTree), [orgTree])
   const merged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
   const list = getMergedFilteredSorted(merged, search, filter, sort)
   const wp = monthWeekProgress(teamGoal)
   const totals = teamTotals(list)
+  const earnings = useMemo(() => computeEarnings(merged, orgPlanRates), [merged, orgPlanRates])
+  const grandTotalEur = useMemo(
+    () => [...earnings.values()].reduce((s, e) => s + e.total, 0),
+    [earnings]
+  )
+  const detailEntry = detailName ? merged.find((r) => r.name === detailName) ?? null : null
+  const detailEarnings = detailName ? earnings.get(detailName) ?? null : null
 
   function commitField(entry: MergedRow, field: string, value: number | string) {
     if (entry.rowIndex !== null) {
@@ -86,6 +84,15 @@ export function Team({
       saveRows(next)
     } else {
       saveRows([...rows, { ...newRowFor(entry.name), [field]: value }])
+    }
+  }
+
+  function saveUnits(entry: MergedRow, units: Record<PlanId, number>) {
+    if (entry.rowIndex !== null) {
+      const next = rows.map((r, i) => (i === entry.rowIndex ? withPlanUnits(r, units) : r))
+      saveRows(next)
+    } else {
+      saveRows([...rows, withPlanUnits(newRowFor(entry.name), units)])
     }
   }
 
@@ -165,7 +172,7 @@ export function Team({
               list.map((r) => {
                 const pct = pctOf(r)
                 const highlight = rowHighlight(r, wp)
-                const rate = r.role ? sbGetRateForRole(orgRoleRates, r.role) : 0
+                const rowEarnings = earnings.get(r.name)
                 const indent = sort === "manager" ? r.depth * 14 : 0
                 return (
                   <tr
@@ -184,17 +191,22 @@ export function Team({
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium">{r.name}</div>
                           {(r.role || r.managerName) && (
-                            <div
-                              className="truncate text-xs text-muted-foreground"
-                              dangerouslySetInnerHTML={{
-                                __html:
-                                  sbEsc(r.role || "") +
-                                  (rate > 0
-                                    ? ` · ${(Number(r.ist || 0) * rate).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-                                    : "") +
-                                  (r.managerName ? ` · unter ${sbEsc(r.managerName)}` : ""),
-                              }}
-                            />
+                            <div className="truncate text-xs text-muted-foreground">
+                              {r.role}
+                              {rowEarnings && rowEarnings.total > 0 && (
+                                <>
+                                  {" · "}
+                                  <button
+                                    type="button"
+                                    onClick={() => setDetailName(r.name)}
+                                    className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+                                  >
+                                    {rowEarnings.total.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                  </button>
+                                </>
+                              )}
+                              {r.managerName ? ` · unter ${r.managerName}` : ""}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -221,7 +233,16 @@ export function Team({
                     <td className="px-2 py-2"><NumField row={r} field="btIst" isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2"><NumField row={r} field="etIst" isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2"><NumField row={r} field="ist" wide isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="px-2 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setDetailName(r.name)}
+                        aria-label={`Einheiten-Details – ${r.name}`}
+                        className="h-8 w-20 rounded-md border border-transparent px-2 text-right text-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 hover:border-input hover:bg-muted"
+                      >
+                        {fmt(r.ist)}
+                      </button>
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
@@ -258,7 +279,9 @@ export function Team({
                       <td className={cn(cell, "text-center")}>{fmt(totals.etIst)}</td>
                       <td className={cell}>{fmt(totals.soll)}</td>
                       <td className={cell}>{fmt(totals.ist)}</td>
-                      <td className={cell} />
+                      <td className={cn(cell, "whitespace-nowrap")}>
+                        {grandTotalEur.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </td>
                     </>
                   )
                 })()}
@@ -267,6 +290,18 @@ export function Team({
           )}
         </table>
       </div>
+
+      {detailEntry && detailEarnings && (
+        <EmployeeEarningsDialog
+          open={!!detailName}
+          onOpenChange={(open) => !open && setDetailName(null)}
+          name={detailEntry.name}
+          role={detailEntry.role}
+          earnings={detailEarnings}
+          isEditor={isEditor}
+          onSaveUnits={(units) => saveUnits(detailEntry, units)}
+        />
+      )}
     </div>
   )
 }
