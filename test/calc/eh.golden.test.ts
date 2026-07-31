@@ -5,8 +5,16 @@ import * as legacy from "../legacy-fixtures/eh.legacy.js"
 
 describe("eh: golden master vs. legacy", () => {
   it("item/group definitions match structurally", () => {
-    expect(EH_ITEMS.map((i) => i.id)).toEqual(legacy.EH_ITEMS.map((i: { id: string }) => i.id))
+    // "flv-ee" ist eine bewusste Erweiterung ohne Legacy-Pendant und wird
+    // aus dem Strukturvergleich ausgenommen.
+    expect(EH_ITEMS.filter((i) => i.id !== "flv-ee").map((i) => i.id))
+      .toEqual(legacy.EH_ITEMS.map((i: { id: string }) => i.id))
     expect(EH_GROUPS.map((g) => g.id)).toEqual(legacy.EH_GROUPS.map((g: { id: string }) => g.id))
+  })
+
+  it("flv-ee: Zuzahlungsbetrag x 5,5% / 10,5", () => {
+    const item = EH_ITEMS.find((i) => i.id === "flv-ee")!
+    expect(item.calc(0, 1000)).toBeCloseTo((1000 * 0.055) / 10.5)
   })
 
   const inputScenarios: EhInputs[] = [
@@ -30,7 +38,9 @@ describe("eh: golden master vs. legacy", () => {
     for (const inputs of inputScenarios) {
       const a = calcEh(inputs)
       const b = legacy.calcEhLegacy(inputs)
-      expect(a.perItem).toEqual(b.perItem)
+      // "flv-ee" hat kein Legacy-Pendant (siehe oben) und wird beim Vergleich ausgenommen.
+      const { "flv-ee": _flvEe, ...aPerItem } = a.perItem
+      expect(aPerItem).toEqual(b.perItem)
       expect(a.groupSums).toEqual(b.groupSums)
       expect(a.groupEur).toEqual(b.groupEur)
       expect(a.grandTotal).toBe(b.grandTotal)

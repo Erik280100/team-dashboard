@@ -86,8 +86,8 @@ export function EhRechner({
         <CardContent className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold">{group.title}</h3>
           {items.map((it) => (
-            <div key={it.id} className="grid grid-cols-[1fr_auto_auto_7rem] items-end gap-3 border-b pb-3 last:border-0 last:pb-0">
-              <div className="min-w-0">
+            <div key={it.id} className="grid grid-cols-2 items-end gap-3 border-b pb-3 last:border-0 last:pb-0 sm:grid-cols-[1fr_auto_auto_7rem]">
+              <div className="col-span-2 min-w-0 sm:col-span-1">
                 <div className="text-sm font-medium">{it.label}</div>
                 <div className="text-xs text-muted-foreground">Auszahlung: {it.payout}</div>
               </div>
@@ -119,7 +119,7 @@ export function EhRechner({
                   />
                 </label>
               )}
-              <div className="text-right">
+              <div className="col-span-2 text-right sm:col-span-1">
                 <div className="text-base font-bold tabular-nums text-[#155767]">{ehFormatEH(result.perItem[it.id])}</div>
                 <div className="text-xs text-muted-foreground">EH</div>
               </div>

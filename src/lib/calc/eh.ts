@@ -59,6 +59,14 @@ export const EH_ITEMS: EhItem[] = [
     calc: (g, j) => ((j * 2.14) / 35) * Math.min(g, 35),
   },
   {
+    id: "flv-ee",
+    label: "FLV EE",
+    sparte: "insurance",
+    payout: "einmalig",
+    jLabel: "Zuzahlungsbetrag (€)",
+    calc: (_g, j) => (j * 0.055) / 10.5,
+  },
+  {
     id: "ableben",
     label: "Ableben",
     sparte: "insurance",

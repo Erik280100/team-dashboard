@@ -86,6 +86,9 @@ function AppShell() {
   const [archiveMonth, setArchiveMonth] = useState<MonthKey | null>(null)
   const isArchive = archiveMonth !== null
 
+  // Mobil: Sidebar ist standardmäßig eingeklappt (off-canvas), siehe Sidebar.tsx.
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   // Archiv-Modus verlassen, sobald eine Sektion ohne Monatswähler aktiv wird
   // (Rechner/Karriere/Guide/Kalender/Partner/Statistik zeigen immer live/den
   // eigenen Zeitraum).
@@ -186,7 +189,12 @@ function AppShell() {
 
   return (
     <div className="flex h-svh overflow-hidden bg-background text-foreground">
-      <Sidebar section={section} onNavigate={navigateTo} />
+      <Sidebar
+        section={section}
+        onNavigate={navigateTo}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
       <main className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
         <Topbar
           auth={auth}
@@ -197,6 +205,7 @@ function AppShell() {
           onSelectMonth={setArchiveMonth}
           canEdit={auth.isEditor && !isArchive}
           onCloseMonth={handleCloseMonth}
+          onToggleSidebar={() => setSidebarOpen((o) => !o)}
         />
 
         {!CLOUD_CONFIGURED && (

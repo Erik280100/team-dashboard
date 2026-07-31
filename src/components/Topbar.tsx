@@ -4,6 +4,7 @@
 // Zusätzlich: globaler Monatswähler + "Monat abschließen" (Monats-Archiv,
 // siehe useMonthArchive.ts) — nur in Übersicht/Mitarbeiter/Strukturbaum sichtbar.
 import { useRef, type ChangeEvent } from "react"
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import { AuthBox } from "@/components/AuthBox"
@@ -35,6 +36,7 @@ export function Topbar({
   onSelectMonth,
   canEdit,
   onCloseMonth,
+  onToggleSidebar,
 }: {
   auth: ReturnType<typeof useAuth>
   dashboard: UseDashboardDocResult
@@ -45,6 +47,7 @@ export function Topbar({
   /** Editor UND kein Archiv-Monat gewählt — steuert Export/Import/Abschluss-Button. */
   canEdit: boolean
   onCloseMonth: () => void
+  onToggleSidebar: () => void
 }) {
   const confirm = useConfirm()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -115,12 +118,23 @@ export function Topbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4">
-      <div>
-        <h1 className="text-xl font-bold">Team Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          {isArchive ? `Ziele & Fortschritt — ${monthLabel(archiveMonth)} (Archiv)` : "Ziele & Fortschritt — laufender Monat"}
-        </p>
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-4 md:px-6">
+      <div className="flex items-center gap-3">
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label="Menü öffnen"
+          onClick={onToggleSidebar}
+          className="lg:hidden"
+        >
+          <Menu aria-hidden="true" className="size-5" />
+        </Button>
+        <div>
+          <h1 className="text-xl font-bold">Team Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            {isArchive ? `Ziele & Fortschritt — ${monthLabel(archiveMonth)} (Archiv)` : "Ziele & Fortschritt — laufender Monat"}
+          </p>
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         {showMonthPicker && (
