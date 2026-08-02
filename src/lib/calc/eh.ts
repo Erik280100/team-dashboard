@@ -190,12 +190,12 @@ export function ehFormatEUR(n: number): string {
 }
 
 export interface EhInputs {
-  /** g-Wert pro Item-Id (nur für Items mit hasG relevant). */
-  g: Record<string, number>
-  /** j-Wert (Prämie/Betrag) pro Item-Id. */
-  j: Record<string, number>
-  /** Multiplikator (€/EH) pro Gruppen-Id. */
-  mult: Record<EhGroup["id"], number>
+  /** g-Wert pro Item-Id (nur für Items mit hasG relevant). String erlaubt für leere Inputfelder. */
+  g: Record<string, number | string>
+  /** j-Wert (Prämie/Betrag) pro Item-Id. String erlaubt für leere Inputfelder. */
+  j: Record<string, number | string>
+  /** Multiplikator (€/EH) pro Gruppen-Id. String erlaubt für leere Inputfelder. */
+  mult: Record<EhGroup["id"], number | string>
 }
 
 export interface EhResult {

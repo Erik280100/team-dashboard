@@ -43,48 +43,55 @@ function ToggleGroup<T extends string>({
 function Stepper({
   value, onChange, step, id,
 }: {
-  value: number
-  onChange: (v: number) => void
+  value: string
+  onChange: (v: string) => void
   step: number
   id: string
 }) {
+  const numValue = Number(value) || 0
   return (
     <div className="flex items-center gap-1">
       <button type="button" className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted"
-        onClick={() => onChange(Math.max(0, value - step))}>−</button>
+        onClick={() => onChange(String(Math.max(0, numValue - step)))}>−</button>
       <input
         id={id} type="number" min={0} step={step} value={value}
-        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
+        onChange={(e) => onChange(e.target.value)}
         className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-center text-sm tabular-nums"
       />
       <button type="button" className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted"
-        onClick={() => onChange(value + step)}>+</button>
+        onClick={() => onChange(String(numValue + step))}>+</button>
     </div>
   )
 }
 
 export function RenditeRechner() {
-  const [monat, setMonat] = useState(200)
-  const [einmal, setEinmal] = useState(0)
-  const [jahre, setJahre] = useState(20)
+  const [monat, setMonat] = useState("200")
+  const [einmal, setEinmal] = useState("0")
+  const [jahre, setJahre] = useState("20")
   const [waEnabled, setWaEnabled] = useState(false)
-  const [waPct, setWaPct] = useState(3)
+  const [waPct, setWaPct] = useState("3")
   const [perfPreset, setPerfPreset] = useState<number | null>(6)
   const [customPerf, setCustomPerf] = useState("")
   const [provider, setProvider] = useState<Provider>("merkur")
   const [depotProvider, setDepotProvider] = useState<DepotProvider | "sonstiges">("flatex")
-  const [ausgabeaufschlag, setAusgabeaufschlag] = useState(5)
-  const [depotgebuehr, setDepotgebuehr] = useState(1.45)
-  const [ageRendite, setAgeRendite] = useState(2.0)
+  const [ausgabeaufschlag, setAusgabeaufschlag] = useState("5")
+  const [depotgebuehr, setDepotgebuehr] = useState("1.45")
+  const [ageRendite, setAgeRendite] = useState("2")
+
+  const monatNum = Number(monat) || 0
+  const einmalNum = Number(einmal) || 0
+  const ausgabeaufschlagNum = Number(ausgabeaufschlag) || 0
+  const depotgebuehrNum = Number(depotgebuehr) || 0
+  const ageRenditeNum = Number(ageRendite) || 0
 
   const perf = (customPerf !== "" && !isNaN(parseFloat(customPerf)) ? parseFloat(customPerf) : perfPreset ?? 6) / 100
-  const jahreClamped = Math.min(65, Math.max(1, Math.round(jahre) || 20))
-  const waPctEff = waEnabled ? Math.max(0, waPct) / 100 : 0
+  const jahreClamped = Math.min(65, Math.max(1, Math.round(Number(jahre) || 0) || 20))
+  const waPctEff = waEnabled ? Math.max(0, Number(waPct) || 0) / 100 : 0
   const depotFixFee = depotProvider !== "sonstiges" ? RR_DEPOT_PRESETS[depotProvider].flatFee : 0
 
   function selectDepotProvider(p: DepotProvider | "sonstiges") {
     setDepotProvider(p)
-    if (p !== "sonstiges") setDepotgebuehr(RR_DEPOT_PRESETS[p].depotgebuehr)
+    if (p !== "sonstiges") setDepotgebuehr(String(RR_DEPOT_PRESETS[p].depotgebuehr))
   }
   function selectPerfPreset(p: number) {
     setPerfPreset(p)
@@ -96,17 +103,17 @@ export function RenditeRechner() {
   }
 
   const { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY } = useMemo(() => {
-    const flvMonthly = simulateFLV(provider, monat, einmal, jahreClamped, perf, waPctEff)
-    const fondssparerMonthly = simulateFondssparer(monat, jahreClamped, perf, waPctEff)
-    const fondsdepotMonthly = simulateFondsdepot(monat, einmal, jahreClamped, perf, ausgabeaufschlag, depotgebuehr, ageRendite, depotFixFee)
-    const vvMonthly = simulateVV(monat, einmal, jahreClamped, perf, ageRendite)
+    const flvMonthly = simulateFLV(provider, monatNum, einmalNum, jahreClamped, perf, waPctEff)
+    const fondssparerMonthly = simulateFondssparer(monatNum, jahreClamped, perf, waPctEff)
+    const fondsdepotMonthly = simulateFondsdepot(monatNum, einmalNum, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, depotFixFee)
+    const vvMonthly = simulateVV(monatNum, einmalNum, jahreClamped, perf, ageRenditeNum)
 
     const years: number[] = []
     const einbezahlt: number[] = []
     const flvY: number[] = [], fondssparerY: number[] = [], fondsdepotY: number[] = [], vvY: number[] = []
     for (let y = 0; y <= jahreClamped; y++) {
       years.push(y)
-      einbezahlt.push(monat * 12 * y + einmal)
+      einbezahlt.push(monatNum * 12 * y + einmalNum)
       const idx = y * 12
       flvY.push(flvMonthly[idx])
       fondssparerY.push(fondssparerMonthly[idx])
@@ -114,10 +121,10 @@ export function RenditeRechner() {
       vvY.push(vvMonthly[idx])
     }
     return { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY }
-  }, [provider, monat, einmal, jahreClamped, perf, waPctEff, ausgabeaufschlag, depotgebuehr, ageRendite, depotFixFee])
+  }, [provider, monatNum, einmalNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, depotFixFee])
 
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
-  const finalEinbezahltFondssparer = monat * 12 * jahreClamped
+  const finalEinbezahltFondssparer = monatNum * 12 * jahreClamped
   const products = [
     { name: "FLV", end: flvY[flvY.length - 1], einbezahlt: finalEinbezahlt },
     { name: "Fondssparer", end: fondssparerY[fondssparerY.length - 1], einbezahlt: finalEinbezahltFondssparer },
@@ -126,7 +133,7 @@ export function RenditeRechner() {
   ]
 
   const depotHint = depotProvider !== "sonstiges"
-    ? (einmal > 0
+    ? (einmalNum > 0
         ? `Sparplan gebührenfrei — zzgl. ${RR_DEPOT_PRESETS[depotProvider].feeLabel} einmalige Ordergebühr auf den Einmalerlag`
         : `Sparplan gebührenfrei — bei Einmalerlag fällt eine fixe Ordergebühr von ${RR_DEPOT_PRESETS[depotProvider].feeLabel} an`)
     : ""
@@ -154,7 +161,7 @@ export function RenditeRechner() {
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Laufzeit (Jahre)
               <input type="number" min={1} max={65} step={1} value={jahre}
-                onChange={(e) => setJahre(Number(e.target.value) || 20)}
+                onChange={(e) => setJahre(e.target.value)}
                 className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -163,7 +170,7 @@ export function RenditeRechner() {
                 Wertanpassung p.a. (%)
               </span>
               <input type="number" min={0} step={0.5} value={waPct} disabled={!waEnabled}
-                onChange={(e) => setWaPct(Number(e.target.value) || 0)}
+                onChange={(e) => setWaPct(e.target.value)}
                 className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm disabled:opacity-50" />
             </label>
           </div>
@@ -196,19 +203,19 @@ export function RenditeRechner() {
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Ausgabeaufschlag (%)
                 <input type="number" min={0} step={0.1} value={ausgabeaufschlag}
-                  onChange={(e) => setAusgabeaufschlag(Number(e.target.value) || 0)}
+                  onChange={(e) => setAusgabeaufschlag(e.target.value)}
                   className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Depotgebühr / TER (% p.a.)
                 <input type="number" min={0} step={0.05} value={depotgebuehr}
-                  onChange={(e) => setDepotgebuehr(Number(e.target.value) || 0)}
+                  onChange={(e) => setDepotgebuehr(e.target.value)}
                   className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 agE-/Dividendenrendite (% p.a.)
                 <input type="number" min={0} step={0.1} value={ageRendite}
-                  onChange={(e) => setAgeRendite(Number(e.target.value) || 0)}
+                  onChange={(e) => setAgeRendite(e.target.value)}
                   className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
             </div>
@@ -234,7 +241,7 @@ export function RenditeRechner() {
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Kosten (von Prämiensumme)</span><span>5,06 %</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten (am Vermögen)</span><span>0,516 % p.a.</span></div>
             <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
-            {einmal > 0 && (
+            {einmalNum > 0 && (
               <div className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                 Kein Einmalerlag verfügbar — der eingegebene Einmalerlag fließt bei diesem Produkt nicht ins Depot.
               </div>

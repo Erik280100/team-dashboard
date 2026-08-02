@@ -56,6 +56,7 @@ export function Overview({
   const leaderboard = leaderboardData(rows)
 
   const [noteDraft, setNoteDraft] = useState(teamGoal.note)
+  const [recruitGoalDraft, setRecruitGoalDraft] = useState(String(teamGoal.recruitGoal))
 
   function commitField<K extends keyof TeamGoal>(key: K, value: TeamGoal[K]) {
     saveGoal({ ...teamGoal, [key]: value })
@@ -415,9 +416,14 @@ export function Overview({
               <Input
                 type="number"
                 className={cn("w-24 text-2xl font-bold", DARK_INPUT)}
-                value={teamGoal.recruitGoal}
+                value={recruitGoalDraft}
                 disabled={!isEditor}
-                onChange={(e) => commitField("recruitGoal", Number(e.target.value) || 0)}
+                onChange={(e) => setRecruitGoalDraft(e.target.value)}
+                onBlur={() => {
+                  const next = Number(recruitGoalDraft) || 0
+                  setRecruitGoalDraft(String(next))
+                  if (next !== teamGoal.recruitGoal) commitField("recruitGoal", next)
+                }}
               />
               <span className="text-sm text-white/60">neue Mitarbeiter (Ziel)</span>
             </div>

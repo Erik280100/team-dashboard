@@ -22,19 +22,19 @@ const GROUP_ACCENT: Record<EhGroup["id"], string> = {
   realestate: "#B07CC6",
 }
 
-function defaultG(): Record<string, number> {
-  const g: Record<string, number> = {}
-  EH_ITEMS.forEach((it) => { if (it.hasG) g[it.id] = it.gDefault ?? 0 })
+function defaultG(): Record<string, string> {
+  const g: Record<string, string> = {}
+  EH_ITEMS.forEach((it) => { if (it.hasG) g[it.id] = String(it.gDefault ?? 0) })
   return g
 }
-function defaultJ(): Record<string, number> {
-  const j: Record<string, number> = {}
-  EH_ITEMS.forEach((it) => { j[it.id] = 0 })
+function defaultJ(): Record<string, string> {
+  const j: Record<string, string> = {}
+  EH_ITEMS.forEach((it) => { j[it.id] = "0" })
   return j
 }
-function defaultMult(): Record<EhGroup["id"], number> {
-  const m = {} as Record<EhGroup["id"], number>
-  EH_GROUPS.forEach((g) => { m[g.id] = g.multDefault })
+function defaultMult(): Record<EhGroup["id"], string> {
+  const m = {} as Record<EhGroup["id"], string>
+  EH_GROUPS.forEach((g) => { m[g.id] = String(g.multDefault) })
   return m
 }
 
@@ -97,9 +97,9 @@ export function EhRechner({
                   <input
                     type="number" min={0} step={1} max={it.gMax}
                     className="h-8 w-20 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm"
-                    value={g[it.id] ?? 0}
+                    value={g[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
-                    onChange={(e) => setG((s) => ({ ...s, [it.id]: Number(e.target.value) || 0 }))}
+                    onChange={(e) => setG((s) => ({ ...s, [it.id]: e.target.value }))}
                   />
                 </label>
               ) : (
@@ -113,9 +113,9 @@ export function EhRechner({
                   <input
                     type="number" min={0} step={10}
                     className="h-8 w-28 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm"
-                    value={j[it.id] ?? 0}
+                    value={j[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
-                    onChange={(e) => setJ((s) => ({ ...s, [it.id]: Number(e.target.value) || 0 }))}
+                    onChange={(e) => setJ((s) => ({ ...s, [it.id]: e.target.value }))}
                   />
                 </label>
               )}
@@ -136,9 +136,9 @@ export function EhRechner({
             <input
               type="number" min={0} step={0.5}
               className="ml-2 h-7 w-16 shrink-0 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-[12.5px]"
-              value={mult[group.id]}
+              value={mult[group.id] ?? ""}
               onFocus={(e) => e.target.select()}
-              onChange={(e) => setMult((s) => ({ ...s, [group.id]: Number(e.target.value) || 0 }))}
+              onChange={(e) => setMult((s) => ({ ...s, [group.id]: e.target.value }))}
             />
             <span className="ml-auto shrink-0 whitespace-nowrap text-[13.5px] font-bold tabular-nums text-[#155767]">
               {ehFormatEUR(result.groupEur[group.id])} €

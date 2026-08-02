@@ -3,12 +3,23 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useConfirm } from "@/hooks/useConfirm"
-import { calcUmdreh, UM_EH_ALT, UM_EH_NEU, type UmdrehInputs } from "@/lib/calc/umdreh"
+import { calcUmdreh, UM_EH_ALT, UM_EH_NEU } from "@/lib/calc/umdreh"
 import { ehFormatEUR } from "@/lib/calc/eh"
 import { cn } from "@/lib/utils"
 
-const defaultInputs: UmdrehInputs = {
-  praemie: 100, beraterAlt: 0, beraterNeu: 0, fkAlt: 0, fkNeu: 0, stornoActive: false,
+// Zahlenfelder werden als Rohtext gehalten, damit das Inputfeld auch leer sein
+// kann — bei der Berechnung wird ein leeres Feld intern als 0 behandelt.
+interface UmdrehDraft {
+  praemie: string
+  beraterAlt: string
+  beraterNeu: string
+  fkAlt: string
+  fkNeu: string
+  stornoActive: boolean
+}
+
+const defaultInputs: UmdrehDraft = {
+  praemie: "100", beraterAlt: "0", beraterNeu: "0", fkAlt: "0", fkNeu: "0", stornoActive: false,
 }
 
 function DiffValue({ value, onDark }: { value: number; onDark?: boolean }) {
@@ -26,11 +37,18 @@ function DiffValue({ value, onDark }: { value: number; onDark?: boolean }) {
 }
 
 export function UmdrehRechner() {
-  const [inputs, setInputs] = useState<UmdrehInputs>(defaultInputs)
+  const [inputs, setInputs] = useState<UmdrehDraft>(defaultInputs)
   const confirm = useConfirm()
-  const r = calcUmdreh(inputs)
+  const r = calcUmdreh({
+    praemie: Number(inputs.praemie) || 0,
+    beraterAlt: Number(inputs.beraterAlt) || 0,
+    beraterNeu: Number(inputs.beraterNeu) || 0,
+    fkAlt: Number(inputs.fkAlt) || 0,
+    fkNeu: Number(inputs.fkNeu) || 0,
+    stornoActive: inputs.stornoActive,
+  })
 
-  function set<K extends keyof UmdrehInputs>(key: K, value: UmdrehInputs[K]) {
+  function set<K extends keyof UmdrehDraft>(key: K, value: UmdrehDraft[K]) {
     setInputs((s) => ({ ...s, [key]: value }))
   }
 
@@ -58,7 +76,7 @@ export function UmdrehRechner() {
               Prämie (€)
               <input type="number" min={0} step={10} value={inputs.praemie}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => set("praemie", Number(e.target.value) || 0)}
+                onChange={(e) => set("praemie", e.target.value)}
                 className="h-9 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -81,7 +99,7 @@ export function UmdrehRechner() {
                 {label}
                 <input type="number" min={0} step={0.1} value={inputs[key]}
                   onFocus={(e) => e.target.select()}
-                  onChange={(e) => set(key, Number(e.target.value) || 0)}
+                  onChange={(e) => set(key, e.target.value)}
                   className="h-9 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
               </label>
             ))}
