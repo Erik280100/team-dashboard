@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select"
 import { initials } from "@/lib/calc/format"
 import { relevantGroups, relevantItemIds, type Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
+import type { RosterEntry } from "@/lib/calc/struktur"
 import { useConfirm } from "@/hooks/useConfirm"
 import { cn } from "@/lib/utils"
 
@@ -24,24 +25,27 @@ function fmtEur(n: number): string {
 }
 
 function NewCaseForm({
-  onAdd, isEditor,
+  onAdd, isEditor, employeeNames,
 }: {
-  onAdd: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung }) => void
+  onAdd: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => void
   isEditor: boolean
+  employeeNames: string[]
 }) {
   const [name, setName] = useState("")
   const [betrag, setBetrag] = useState("")
   const [art, setArt] = useState<FinanzierungArt>("neu")
   const [beschaeftigung, setBeschaeftigung] = useState<Beschaeftigung>("unselbststaendig")
+  const [betreuer, setBetreuer] = useState("")
 
   function submit() {
     const trimmed = name.trim()
     if (!trimmed) return
-    onAdd({ name: trimmed, betrag: Number(betrag) || 0, art, beschaeftigung })
+    onAdd({ name: trimmed, betrag: Number(betrag) || 0, art, beschaeftigung, betreuer })
     setName("")
     setBetrag("")
     setArt("neu")
     setBeschaeftigung("unselbststaendig")
+    setBetreuer("")
   }
 
   return (
@@ -100,6 +104,21 @@ function NewCaseForm({
               <option value="selbststaendig">Selbstständig</option>
             </Select>
           </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-betreuer">Zuständiger Mitarbeiter</label>
+            <Select
+              id="fin-betreuer"
+              value={betreuer}
+              onChange={(e) => setBetreuer(e.target.value)}
+              disabled={!isEditor}
+              className="w-48"
+            >
+              <option value="">– auswählen –</option>
+              {employeeNames.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </Select>
+          </div>
           <Button onClick={submit} disabled={!isEditor || !name.trim()}>
             Anlegen
           </Button>
@@ -142,24 +161,28 @@ function ChecklistGrid({
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">Wichtig: alle Dateien in ein separates PDF.</p>
+      <p className="text-xs font-bold text-muted-foreground">Wichtig: alle Dateien in ein separates PDF.</p>
     </div>
   )
 }
 
 export function Finanzierungen({
-  cases, addCase, patchCase, toggleDoc, removeCase, isEditor,
+  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, employeeRoster,
 }: {
   cases: FinanzierungCase[]
-  addCase: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung }) => void
+  addCase: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => void
   patchCase: (id: string, patch: Partial<FinanzierungCase>) => void
   toggleDoc: (id: string, itemId: string, checked: boolean) => void
   removeCase: (id: string) => void
   isEditor: boolean
+  /** Aktive Mitarbeiter aus dem Strukturbaum-Roster (siehe App.tsx `roster`), für die Betreuer-Auswahl. */
+  employeeRoster: RosterEntry[]
 }) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const confirm = useConfirm()
+
+  const employeeNames = [...employeeRoster].map((e) => e.name).sort((a, b) => a.localeCompare(b, "de"))
 
   async function onRemove(fc: FinanzierungCase) {
     const ok = await confirm(`Kreditfall „${fc.name}" wirklich löschen?`)
@@ -179,7 +202,7 @@ export function Finanzierungen({
 
   return (
     <div className="flex flex-col gap-6">
-      <NewCaseForm onAdd={addCase} isEditor={isEditor} />
+      <NewCaseForm onAdd={addCase} isEditor={isEditor} employeeNames={employeeNames} />
 
       <Card>
         <CardHeader>
@@ -207,6 +230,7 @@ export function Finanzierungen({
                   <tr className="border-b bg-muted/95 text-left text-xs font-semibold text-muted-foreground backdrop-blur">
                     <th className="w-8 px-2 py-2" />
                     <th className="px-2 py-2">Person</th>
+                    <th className="px-2 py-2">Betreuer</th>
                     <th className="px-2 py-2">Art</th>
                     <th className="px-3 py-2 text-right">Kreditsumme</th>
                     <th className="px-3 py-2">Unterlagen</th>
@@ -243,6 +267,7 @@ export function Finanzierungen({
                               {fc.name}
                             </div>
                           </td>
+                          <td className="px-2 py-2 text-muted-foreground">{fc.betreuer || "—"}</td>
                           <td className="px-2 py-2">
                             <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
                               {ART_LABEL[fc.art]}
@@ -319,7 +344,7 @@ export function Finanzierungen({
                         {isOpen && (
                           <tr className="border-b bg-muted/30 last:border-0">
                             <td className="px-2 py-2" />
-                            <td colSpan={7} className="px-3 py-3">
+                            <td colSpan={8} className="px-3 py-3">
                               <div className="mb-3 flex flex-wrap items-end gap-3">
                                 <div className="flex flex-col gap-1">
                                   <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
@@ -373,6 +398,21 @@ export function Finanzierungen({
                                     <option value="selbststaendig">Selbstständig</option>
                                   </Select>
                                 </div>
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-betreuer-${fc.id}`}>Zuständiger Mitarbeiter</label>
+                                  <Select
+                                    id={`fin-edit-betreuer-${fc.id}`}
+                                    value={fc.betreuer || ""}
+                                    onChange={(e) => patchCase(fc.id, { betreuer: e.target.value })}
+                                    disabled={!isEditor}
+                                    className="w-48"
+                                  >
+                                    <option value="">– auswählen –</option>
+                                    {employeeNames.map((n) => (
+                                      <option key={n} value={n}>{n}</option>
+                                    ))}
+                                  </Select>
+                                </div>
                               </div>
                               <ChecklistGrid
                                 fc={fc}
@@ -390,6 +430,7 @@ export function Finanzierungen({
                   <tr className="border-t font-semibold">
                     <td className="px-2 py-2" />
                     <td className="px-2 py-2">Gesamt</td>
+                    <td className="px-2 py-2" />
                     <td className="px-2 py-2" />
                     <td className="px-3 py-2 text-right tabular-nums">{fmtEur(totalBetrag)}</td>
                     <td className="px-3 py-2" />

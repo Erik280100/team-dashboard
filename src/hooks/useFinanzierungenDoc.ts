@@ -39,6 +39,7 @@ export interface UseFinanzierungenDocResult {
     betrag: number
     art: FinanzierungArt
     beschaeftigung: Beschaeftigung
+    betreuer: string
   }) => void
   patchCase: (id: string, patch: Partial<FinanzierungCase>) => void
   toggleDoc: (id: string, itemId: string, checked: boolean) => void
@@ -86,13 +87,14 @@ export function useFinanzierungenDoc(): UseFinanzierungenDocResult {
   }, [])
 
   const addCase = useCallback(
-    (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung }) => {
+    (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => {
       const next: FinanzierungCase = {
         id: newCaseId(),
         name: init.name,
         betrag: init.betrag,
         art: init.art,
         beschaeftigung: init.beschaeftigung,
+        betreuer: init.betreuer,
         docs: {},
         aufbereitet: false,
         eingereicht: false,

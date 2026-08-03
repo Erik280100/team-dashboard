@@ -63,6 +63,8 @@ export interface FinanzierungCase {
   betrag: number
   art: FinanzierungArt
   beschaeftigung: Beschaeftigung
+  /** Name des zuständigen Mitarbeiters (aus dem Strukturbaum-Roster). */
+  betreuer: string
   /** Item-ID (siehe lib/data/finanzierung.ts) -> abgehakt. */
   docs: Record<string, boolean>
   aufbereitet: boolean

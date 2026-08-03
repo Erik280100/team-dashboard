@@ -316,6 +316,7 @@ function AppShell() {
                   addCase={finanzierungen.addCase}
                   patchCase={finanzierungen.patchCase}
                   toggleDoc={finanzierungen.toggleDoc}
+                  employeeRoster={roster}
                   removeCase={finanzierungen.removeCase}
                   isEditor={auth.isEditor}
                 />
