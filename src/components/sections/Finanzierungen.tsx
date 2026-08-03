@@ -16,9 +16,15 @@ import { useConfirm } from "@/hooks/useConfirm"
 import { cn } from "@/lib/utils"
 
 const ART_LABEL: Record<FinanzierungArt, string> = {
-  neu: "Neu",
+  hauskauf: "Hauskauf",
+  wohnungskauf: "Wohnungskauf",
+  hausbau: "Hausbau",
+  umbau: "Umbau",
+  sanierung: "Sanierung",
   umschuldung: "Umschuldung",
 }
+
+const ART_OPTIONS: FinanzierungArt[] = ["hauskauf", "wohnungskauf", "hausbau", "umbau", "sanierung", "umschuldung"]
 
 function fmtEur(n: number): string {
   return Number(n || 0).toLocaleString("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
@@ -33,7 +39,7 @@ function NewCaseForm({
 }) {
   const [name, setName] = useState("")
   const [betrag, setBetrag] = useState("")
-  const [art, setArt] = useState<FinanzierungArt>("neu")
+  const [art, setArt] = useState<FinanzierungArt>("hauskauf")
   const [beschaeftigung, setBeschaeftigung] = useState<Beschaeftigung>("unselbststaendig")
   const [betreuer, setBetreuer] = useState("")
 
@@ -43,7 +49,7 @@ function NewCaseForm({
     onAdd({ name: trimmed, betrag: Number(betrag) || 0, art, beschaeftigung, betreuer })
     setName("")
     setBetrag("")
-    setArt("neu")
+    setArt("hauskauf")
     setBeschaeftigung("unselbststaendig")
     setBetreuer("")
   }
@@ -87,8 +93,9 @@ function NewCaseForm({
               disabled={!isEditor}
               className="w-40"
             >
-              <option value="neu">Neu aufgenommen</option>
-              <option value="umschuldung">Umschuldung</option>
+              {ART_OPTIONS.map((a) => (
+                <option key={a} value={a}>{ART_LABEL[a]}</option>
+              ))}
             </Select>
           </div>
           <div className="flex flex-col gap-1">
@@ -381,8 +388,9 @@ export function Finanzierungen({
                                     disabled={!isEditor}
                                     className="w-40"
                                   >
-                                    <option value="neu">Neu aufgenommen</option>
-                                    <option value="umschuldung">Umschuldung</option>
+                                    {ART_OPTIONS.map((a) => (
+                                      <option key={a} value={a}>{ART_LABEL[a]}</option>
+                                    ))}
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
