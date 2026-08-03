@@ -170,6 +170,48 @@ describe("computePromotionProgress: Geschäftsstellenleiter (Punkte nur direkte 
   })
 })
 
+describe("computePromotionProgress: Regionalleiter/Direktor zählen FT-Agenten NICHT als Punkt", () => {
+  it("Regression: GSL mit direkten FT3/FT4-Kindern und zwei GSL-Kindern zählt nur die GSL, nicht die FT-Agenten", () => {
+    // Reproduziert den gemeldeten Fall "Georg": Ali (FT4) und Delia/Podlipnig
+    // (FT3) sind direkte Kinder, dürfen aber für Regionalleiter NICHT als Punkt
+    // zählen — der Plan verlangt dafür "ab der Stufe Kundenberater", was es in
+    // dieser App nicht gibt. Nur Teamleiter (2) und Geschäftsstellenleiter (4)
+    // zählen.
+    const merged = [
+      row("Georg", "Geschäftsstellenleiter", null),
+      row("Ali", "FT4", "Georg", { insurance: 5000 }),
+      row("Delia", "FT3", "Georg", { insurance: 3000 }),
+      row("TL", "Teamleiter", "Georg"),
+      row("GSL1", "Geschäftsstellenleiter", "Georg"),
+      row("GSL2", "Geschäftsstellenleiter", "Georg"),
+    ]
+    const p = get(computePromotionProgress(merged), "Georg")
+    expect(p.nextRole).toBe("Regionalleiter")
+    const pktCrit = p.criteria.find((c) => c.kind === "punkte")!
+    expect(pktCrit.have).toBe(10) // 2 (TL) + 4 (GSL1) + 4 (GSL2), Ali/Delia zählen 0
+    const bySource = Object.fromEntries(pktCrit.sources!.map((s) => [s.name, s]))
+    expect(bySource["Ali"]).toEqual({ name: "Ali", role: "FT4", value: 0, excludedReason: "zählt erst ab Teamleiter" })
+    expect(bySource["Delia"]).toEqual({ name: "Delia", role: "FT3", value: 0, excludedReason: "zählt erst ab Teamleiter" })
+    expect(bySource["TL"].value).toBe(2)
+    expect(bySource["GSL1"].value).toBe(4)
+  })
+
+  it("Direktor zählt zusätzlich direkt angeworbene Regionalleiter mit 8 Punkten, FT-Agenten weiterhin 0", () => {
+    const merged = [
+      row("Chef", "Regionalleiter", null),
+      row("Trainee", "FT2", "Chef", { insurance: 500 }),
+      row("RL", "Regionalleiter", "Chef"),
+    ]
+    const p = get(computePromotionProgress(merged), "Chef")
+    expect(p.nextRole).toBe("Direktor")
+    const pktCrit = p.criteria.find((c) => c.kind === "punkte")!
+    expect(pktCrit.have).toBe(8)
+    const bySource = Object.fromEntries(pktCrit.sources!.map((s) => [s.name, s]))
+    expect(bySource["Trainee"]).toEqual({ name: "Trainee", role: "FT2", value: 0, excludedReason: "zählt erst ab Teamleiter" })
+    expect(bySource["RL"].value).toBe(8)
+  })
+})
+
 describe("computePromotionProgress: Punkte-Quellen sind nachvollziehbar", () => {
   it("Regression: GSL mit 2 Teamleitern + 1 FT1-Kind zeigt 4 Punkte mit nachvollziehbarer Quelle je Kind", () => {
     // Reproduziert den gemeldeten Fall "Erik": 2 direkte Teamleiter (je 2 Punkte)
@@ -187,7 +229,9 @@ describe("computePromotionProgress: Punkte-Quellen sind nachvollziehbar", () => 
     expect(bySource["Noah"]).toMatchObject({ value: 2, excludedReason: undefined })
     expect(bySource["David"]).toMatchObject({ value: 2, excludedReason: undefined })
     expect(bySource["Mansur"].value).toBe(0)
-    expect(bySource["Mansur"].excludedReason).toMatch(/ab FT2/)
+    // Regionalleiter zählt laut Plan nur ab Teamleiter als Punkt (kein FT-Tier,
+    // anders als beim Geschäftsstellenleiter) — siehe eigene Tests weiter unten.
+    expect(bySource["Mansur"].excludedReason).toMatch(/ab Teamleiter/)
   })
 
   it("Regression: Teamleiter mit einem produktionslosen FT4-Kind bekommt trotzdem den vollen Punkt dafür", () => {

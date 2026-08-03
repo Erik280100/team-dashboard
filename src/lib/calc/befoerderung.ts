@@ -19,9 +19,13 @@
 //    auf ein Monatsziel heruntergerechnet (Schwelle / (Quartale × 3)), weil die
 //    App nur den laufenden Umsatzmonat führt, nicht die letzten Quartale.
 // 3. Die im Original für Regionalleiter/Direktor genannte Punktregel "direkt
-//    angeworbener Agent ab der Stufe Kundenberater = 1 Punkt" wird — wie beim
-//    Geschäftsstellenleiter — auf "ab FT2" übertragen, da die
-//    Kundenberater-Schiene entfällt.
+//    angeworbener Agent ab der Stufe Kundenberater = 1 Punkt" hat KEINE
+//    Entsprechung in dieser App (die Kundenberater-Schiene entfällt) — FT-Agenten
+//    zählen für Regionalleiter/Direktor daher 0 Punkte, anders als beim
+//    Geschäftsstellenleiter, dessen eigene "ab FT2"-Regel unverändert gilt. Für
+//    Regionalleiter/Direktor zählen nur direkt angeworbene Teamleiter,
+//    Geschäftsstellenleiter (und für Direktor zusätzlich Regionalleiter) —
+//    siehe pointWeights je StageRequirement unten.
 // 4. Die Erleichterungs-Schwellen (65.000 / 350.000 / 1.000.000 EH) beziehen
 //    sich im Original auf historische Gesamtproduktion; hier wird die im Tool
 //    vorhandene (aktuelle) Gesamtproduktion des Unterbaus herangezogen.
@@ -29,9 +33,9 @@
 //    punktemäßige Wertung eines einzelnen FT-Agenten werden NICHT geprüft
 //    (Nutzerentscheidung) — ein Blick auf den Einzelumsatz einer dritten
 //    Person wirkte im Panel verwirrender als hilfreich. Punkte richten sich
-//    ausschließlich nach der Rolle (STAGE_POINTS); die Umsatz-Komponente der
-//    Beförderung läuft stattdessen vollständig über das separate
-//    Gruppenproduktion-Kriterium (Person + gesamter Unterbau).
+//    ausschließlich nach der Rolle (pointWeights je StageRequirement); die
+//    Umsatz-Komponente der Beförderung läuft stattdessen vollständig über das
+//    separate Gruppenproduktion-Kriterium (Person + gesamter Unterbau).
 import type { MergedRow } from "./team"
 import { readPlanUnits, sumPlanUnits } from "./verguetung"
 
@@ -47,17 +51,6 @@ export const CAREER_LADDER = [
   "Direktor",
 ] as const
 
-/** Punktwert einer Stufe, wenn eine Person dieser Stufe DIREKT angeworben ist
- * (zählt für die Geschäftsstellenleiter-/Regionalleiter-/Direktor-Beförderung). */
-export const STAGE_POINTS: Record<string, number> = {
-  FT2: 1,
-  FT3: 1,
-  FT4: 1,
-  Teamleiter: 2,
-  Geschäftsstellenleiter: 4,
-  Regionalleiter: 8,
-}
-
 export interface StageRequirement {
   /** Stufe, die mit diesen Werten ERREICHT wird. */
   role: string
@@ -67,10 +60,14 @@ export interface StageRequirement {
   recruits?: number
   recruitsRelaxed?: number
   recruitsRelaxedFromOwnUnits?: number
-  /** Punkte aus DIREKTEN Kindern (STAGE_POINTS) — ab Geschäftsstellenleiter. */
+  /** Punkte aus DIREKTEN Kindern. */
   points?: number
   pointsRelaxed?: number
   pointsRelaxedFromGroupUnits?: number
+  /** Punktwert je Rolle eines direkten Kindes — pro Zielstufe unterschiedlich,
+   * weil der Plan pro Ebene eine andere Einstiegsstufe für den ersten Punkt
+   * definiert (siehe Modul-Kommentar Annahme 3). Rollen ohne Eintrag zählen 0. */
+  pointWeights?: Record<string, number>
   /** Gesamtproduktion (alle Sparten, Person + gesamter Unterbau) über `quarters` Quartale. */
   groupUnits?: number
   quarters?: number
@@ -91,6 +88,7 @@ export const STAGE_REQUIREMENTS: StageRequirement[] = [
   {
     role: "Geschäftsstellenleiter",
     points: 4,
+    pointWeights: { FT2: 1, FT3: 1, FT4: 1, Teamleiter: 2 },
     pointsRelaxed: 3,
     pointsRelaxedFromGroupUnits: 65000,
     groupUnits: 20000,
@@ -99,6 +97,7 @@ export const STAGE_REQUIREMENTS: StageRequirement[] = [
   {
     role: "Regionalleiter",
     points: 12,
+    pointWeights: { Teamleiter: 2, Geschäftsstellenleiter: 4 },
     pointsRelaxed: 9,
     pointsRelaxedFromGroupUnits: 350000,
     groupUnits: 75000,
@@ -107,6 +106,7 @@ export const STAGE_REQUIREMENTS: StageRequirement[] = [
   {
     role: "Direktor",
     points: 20,
+    pointWeights: { Teamleiter: 2, Geschäftsstellenleiter: 4, Regionalleiter: 8 },
     pointsRelaxed: 16,
     pointsRelaxedFromGroupUnits: 1000000,
     groupUnits: 150000,
@@ -139,18 +139,35 @@ export function gesamtproduktion(row: Pick<MergedRow, "ist" | "ehByPlan">): numb
   return sumPlanUnits(readPlanUnits(row))
 }
 
-/** Warum ein direktes Kind 0 Punkte beiträgt — für die transparente Aufschlüsselung
- * im UI (siehe CriterionSource unten), damit z. B. "Erik = 4 Punkte" nicht als
- * Blackbox erscheint. Einzig mögliche Ursache: die Rolle liegt unter FT2 — der
- * individuelle Umsatz einer dritten Person fließt hier bewusst nicht ein
- * (siehe Annahme 5 im Modul-Kommentar), die Umsatz-Komponente steckt separat
- * im Gruppenproduktion-Kriterium. */
-function pointExclusionReason(child: MergedRow): string | undefined {
-  return pointsForChild(child) === 0 ? "Rolle zählt nicht (ab FT2 nötig)" : undefined
+function pointsForChild(child: MergedRow, weights: Record<string, number>): number {
+  return weights[normRole(child.role)] || 0
 }
 
-function pointsForChild(child: MergedRow): number {
-  return STAGE_POINTS[normRole(child.role)] || 0
+/** Niedrigste Rolle mit einem Punktwert > 0 in `weights` — für die
+ * Ausschluss-Begründung ("zählt erst ab Teamleiter" statt einer Blackbox-0). */
+function lowestQualifyingRole(weights: Record<string, number>): string | undefined {
+  let best: string | undefined
+  let bestRank = Infinity
+  for (const role of Object.keys(weights)) {
+    if (weights[role] <= 0) continue
+    const r = rankOf(role)
+    if (r < bestRank) {
+      bestRank = r
+      best = role
+    }
+  }
+  return best
+}
+
+/** Warum ein direktes Kind 0 Punkte beiträgt — für die transparente Aufschlüsselung
+ * im UI (siehe CriterionSource unten), damit z. B. "Erik = 4 Punkte" nicht als
+ * Blackbox erscheint. Der individuelle Umsatz einer dritten Person fließt hier
+ * bewusst nicht ein (siehe Annahme 5), die Umsatz-Komponente steckt separat im
+ * Gruppenproduktion-Kriterium — einzige Ursache ist die Rolle. */
+function pointExclusionReason(child: MergedRow, weights: Record<string, number>): string | undefined {
+  if (pointsForChild(child, weights) > 0) return undefined
+  const min = lowestQualifyingRole(weights)
+  return min ? `zählt erst ab ${min}` : "Rolle zählt hier nicht"
 }
 
 interface SubtreeAgg {
@@ -300,8 +317,9 @@ export function computePromotionProgress(
     }
 
     if (requirement?.points) {
+      const weights = requirement.pointWeights ?? {}
       const kids = childrenOf.get(person.name) || []
-      const have = kids.reduce((s, k) => s + pointsForChild(k), 0)
+      const have = kids.reduce((s, k) => s + pointsForChild(k, weights), 0)
       const groupSub = computeSubtree(person.name, childrenOf, byName, subtreeCache, 0)
       let need = requirement.points
       let relaxed = false
@@ -315,7 +333,7 @@ export function computePromotionProgress(
       }
       const sources: CriterionSource[] = kids.map((kid) => ({
         name: kid.name, role: normRole(kid.role),
-        value: pointsForChild(kid), excludedReason: pointExclusionReason(kid),
+        value: pointsForChild(kid, weights), excludedReason: pointExclusionReason(kid, weights),
       }))
       criteria.push({
         kind: "punkte",
