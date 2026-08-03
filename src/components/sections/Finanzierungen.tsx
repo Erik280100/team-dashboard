@@ -210,8 +210,8 @@ export function Finanzierungen({
                     <th className="px-2 py-2">Art</th>
                     <th className="px-3 py-2 text-right">Kreditsumme</th>
                     <th className="px-3 py-2">Unterlagen</th>
-                    <th className="px-2 py-2 text-center">Daten aufbereitet</th>
-                    <th className="px-2 py-2 text-center">Eingereicht</th>
+                    <th className="px-2 py-2 text-center">Daten aufbereitet (MA)</th>
+                    <th className="px-2 py-2 text-center">Eingereicht (VB)</th>
                     <th className="px-2 py-2" />
                   </tr>
                 </thead>
@@ -268,7 +268,7 @@ export function Finanzierungen({
                               checked={fc.aufbereitet}
                               onChange={(e) => patchCase(fc.id, { aufbereitet: e.target.checked })}
                               disabled={!isEditor}
-                              aria-label={`Daten aufbereitet – ${fc.name}`}
+                              aria-label={`Daten aufbereitet (MA) – ${fc.name}`}
                               className="size-4"
                             />
                           </td>
@@ -278,7 +278,7 @@ export function Finanzierungen({
                               checked={fc.eingereicht}
                               onChange={(e) => patchCase(fc.id, { eingereicht: e.target.checked })}
                               disabled={!isEditor}
-                              aria-label={`Eingereicht – ${fc.name}`}
+                              aria-label={`Eingereicht (VB) – ${fc.name}`}
                               className="size-4"
                             />
                           </td>
