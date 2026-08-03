@@ -67,6 +67,7 @@ export interface FinanzierungCase {
   docs: Record<string, boolean>
   aufbereitet: boolean
   eingereicht: boolean
+  archived: boolean
   createdAt: string
 }
 

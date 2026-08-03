@@ -96,6 +96,7 @@ export function useFinanzierungenDoc(): UseFinanzierungenDocResult {
         docs: {},
         aufbereitet: false,
         eingereicht: false,
+        archived: false,
         createdAt: new Date().toISOString(),
       }
       commit([...latest.current, next])

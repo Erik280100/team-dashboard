@@ -3,7 +3,7 @@
 // Credit), siehe lib/data/finanzierung.ts. Dumme/kontrollierte Sektion: Firestore-
 // Zugriff läuft ausschließlich über useFinanzierungenDoc() in App.tsx.
 import { Fragment, useState } from "react"
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react"
+import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -158,6 +158,7 @@ export function Finanzierungen({
   isEditor: boolean
 }) {
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const confirm = useConfirm()
 
   async function onRemove(fc: FinanzierungCase) {
@@ -166,7 +167,15 @@ export function Finanzierungen({
     removeCase(fc.id)
   }
 
-  const totalBetrag = cases.reduce((s, c) => s + Number(c.betrag || 0), 0)
+  async function onArchive(fc: FinanzierungCase) {
+    const ok = await confirm(`Kreditfall „${fc.name}" wirklich archivieren?`)
+    if (!ok) return
+    patchCase(fc.id, { archived: true })
+  }
+
+  const archivedCount = cases.filter((c) => c.archived).length
+  const visibleCases = cases.filter((c) => !!c.archived === showArchived)
+  const totalBetrag = visibleCases.reduce((s, c) => s + Number(c.betrag || 0), 0)
 
   return (
     <div className="flex flex-col gap-6">
@@ -175,15 +184,22 @@ export function Finanzierungen({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
-            <CardTitle>Kreditfälle</CardTitle>
-            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-              {cases.length} Fälle
-            </span>
+            <CardTitle>{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowArchived((s) => !s)}>
+                {showArchived ? "Zurück zu aktiven Fällen" : `Archiv anzeigen (${archivedCount})`}
+              </Button>
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                {visibleCases.length} Fälle
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          {cases.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">Noch keine Kreditfälle angelegt.</div>
+          {visibleCases.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              {showArchived ? "Keine archivierten Kreditfälle." : "Noch keine Kreditfälle angelegt."}
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full min-w-[900px] border-collapse text-sm">
@@ -196,11 +212,11 @@ export function Finanzierungen({
                     <th className="px-3 py-2">Unterlagen</th>
                     <th className="px-2 py-2 text-center">Daten aufbereitet</th>
                     <th className="px-2 py-2 text-center">Eingereicht</th>
-                    <th className="w-10 px-2 py-2" />
+                    <th className="px-2 py-2" />
                   </tr>
                 </thead>
                 <tbody>
-                  {cases.map((fc) => {
+                  {visibleCases.map((fc) => {
                     const relevant = relevantItemIds(fc.beschaeftigung)
                     const done = relevant.filter((id) => fc.docs[id]).length
                     const isOpen = expanded === fc.id
@@ -268,14 +284,35 @@ export function Finanzierungen({
                           </td>
                           <td className="px-2 py-2 text-right">
                             {isEditor && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onRemove(fc)}
-                                aria-label={`Kreditfall ${fc.name} löschen`}
-                              >
-                                <Trash2 className="size-4" />
-                              </Button>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => onRemove(fc)}
+                                  aria-label={`Kreditfall ${fc.name} löschen`}
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                                {fc.archived ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => patchCase(fc.id, { archived: false })}
+                                    aria-label={`Kreditfall ${fc.name} wiederherstellen`}
+                                  >
+                                    <ArchiveRestore className="size-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onArchive(fc)}
+                                    aria-label={`Kreditfall ${fc.name} archivieren`}
+                                  >
+                                    <Archive className="size-4" />
+                                  </Button>
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>
