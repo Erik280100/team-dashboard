@@ -1,6 +1,6 @@
 // Hauptnavigation — Äquivalent zur .sidebar-Nav aus legacy/index.html:1571–1588.
 import {
-  LayoutDashboard, Users, Network, BarChart3, Calculator, TrendingUp, BookOpen, Calendar, Link2, X,
+  LayoutDashboard, Users, Network, BarChart3, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -15,6 +15,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon }[] = [
   { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
   { id: "guide", label: "Guide", icon: BookOpen },
   { id: "kalender", label: "Kalender/Anwesenheitsliste", icon: Calendar },
+  { id: "finanzierungen", label: "Finanzierungen", icon: Landmark },
   { id: "partner", label: "Partnerportale", icon: Link2 },
 ]
 

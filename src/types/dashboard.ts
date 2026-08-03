@@ -3,6 +3,7 @@
 // dieselben Datenstrukturen lesen/schreiben.
 import { defaultPeriod, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import type { PlanId, SbNode } from "@/lib/calc/struktur"
+import type { Beschaeftigung } from "@/lib/data/finanzierung"
 
 export type { EmployeeRow, TeamGoal }
 
@@ -54,11 +55,32 @@ export interface OrgChartDoc {
   planRates?: Record<PlanId, Record<string, number>>
 }
 
+export type FinanzierungArt = "neu" | "umschuldung"
+
+export interface FinanzierungCase {
+  id: string
+  name: string
+  betrag: number
+  art: FinanzierungArt
+  beschaeftigung: Beschaeftigung
+  /** Item-ID (siehe lib/data/finanzierung.ts) -> abgehakt. */
+  docs: Record<string, boolean>
+  aufbereitet: boolean
+  eingereicht: boolean
+  createdAt: string
+}
+
+/** finova/financings */
+export interface FinanzierungenDoc {
+  cases: FinanzierungCase[]
+}
+
 export const STORAGE_KEY = "finova_dashboard_data_v1"
 export const GOAL_KEY = "finova_dashboard_goal_v1"
 export const HISTORY_KEY = "finova_dashboard_history_v1"
 export const ATTENDANCE_KEY = "finova_dashboard_attendance_v1"
 export const SB_STORAGE_KEY = "finova_orgchart_data_v1"
+export const FINANZIERUNGEN_KEY = "finova_finanzierungen_v1"
 
 export const STARTER_GOAL: TeamGoal = {
   note: "",

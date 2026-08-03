@@ -31,6 +31,10 @@ export let orgChartDocRef: DocumentReference | null = null
 // oben direkt an und listet die Collection nie), daher hier ohne Rückwirkung.
 export let archiveIndexDocRef: DocumentReference | null = null
 
+// Finanzierungen/Kreditfälle (siehe src/hooks/useFinanzierungenDoc.ts) — ebenfalls
+// ein neues Dokument in derselben Collection, das die Legacy-Seite nicht kennt.
+export let financingsDocRef: DocumentReference | null = null
+
 if (CLOUD_CONFIGURED) {
   try {
     app = initializeApp(firebaseConfig)
@@ -39,6 +43,7 @@ if (CLOUD_CONFIGURED) {
     attendanceDocRef = doc(firestore, "finova", "attendance")
     orgChartDocRef = doc(firestore, "finova", "orgchart")
     archiveIndexDocRef = doc(firestore, "finova", "archive_index")
+    financingsDocRef = doc(firestore, "finova", "financings")
     auth = getAuth(app)
   } catch (err) {
     console.error("Firebase-Initialisierung fehlgeschlagen", err)

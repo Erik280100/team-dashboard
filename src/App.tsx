@@ -19,6 +19,7 @@ import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSect
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
 import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
 import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
+import { useFinanzierungenDoc } from "@/hooks/useFinanzierungenDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { Sidebar } from "@/components/Sidebar"
@@ -30,6 +31,7 @@ import { Rechner } from "@/components/sections/Rechner"
 import { Karriere } from "@/components/sections/Karriere"
 import { Guide } from "@/components/sections/Guide"
 import { Kalender } from "@/components/sections/Kalender"
+import { Finanzierungen } from "@/components/sections/Finanzierungen"
 import { Partner } from "@/components/sections/Partner"
 import { StrukturBaum } from "@/components/sections/struktur/StrukturBaum"
 import { Statistik } from "@/components/sections/Statistik"
@@ -45,6 +47,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   karriere: "Karrierepläne",
   guide: "Guide",
   kalender: "Kalender/Anwesenheitsliste",
+  finanzierungen: "Finanzierungen",
   partner: "Partnerportale",
 }
 
@@ -81,6 +84,7 @@ function AppShell() {
   const dashboard = useDashboardDoc()
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
+  const finanzierungen = useFinanzierungenDoc()
   const archive = useMonthArchive(auth.isEditor)
 
   const [archiveMonth, setArchiveMonth] = useState<MonthKey | null>(null)
@@ -303,6 +307,16 @@ function AppShell() {
                   attendance={attendance.attendance}
                   setAttendanceEntry={attendance.setAttendanceEntry}
                   resetAttendance={attendance.resetAttendance}
+                  isEditor={auth.isEditor}
+                />
+              )}
+              {section === id && id === "finanzierungen" && (
+                <Finanzierungen
+                  cases={finanzierungen.cases}
+                  addCase={finanzierungen.addCase}
+                  patchCase={finanzierungen.patchCase}
+                  toggleDoc={finanzierungen.toggleDoc}
+                  removeCase={finanzierungen.removeCase}
                   isEditor={auth.isEditor}
                 />
               )}
