@@ -9,6 +9,7 @@ import {
   simulateFLV, simulateFondsdepot, simulateFondssparer, simulateVV,
   type DepotProvider, type Provider,
 } from "@/lib/calc/rendite"
+import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
 
 const PERF_PRESETS = [3, 6, 9]
 
@@ -258,11 +259,16 @@ export function RenditeRechner() {
               onChange={setProvider}
             />
             <div className="flex flex-col gap-1">
-              {RR_FLV_COSTS[provider].map(([label, val]) => (
+              {(provider === "merkur" ? merkurKostenZeilen(monatNum, jahreClamped) : RR_FLV_COSTS.helvetia).map(([label, val]) => (
                 <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
               ))}
             </div>
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
+            {provider === "merkur" && (
+              <div className="text-[10.5px] text-muted-foreground">
+                Sparprämie kalibriert auf echte Merkur-Angebote (Stand 08/2026, zwei Fonds, Annahme 6 % p.a.)
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

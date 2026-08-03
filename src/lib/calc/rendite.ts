@@ -1,6 +1,9 @@
 // Renditerechner — 1:1 portiert aus legacy/index.html:3532–3740.
 // Reine Funktionen, keine DOM-Zugriffe. Bei jeder Änderung: Golden-Master-Test
-// in test/calc/rendite.golden.test.ts muss weiterhin grün bleiben.
+// in test/calc/rendite.golden.test.ts muss weiterhin grün bleiben (gilt nicht für
+// den Merkur-Prämientopf in simulateFLV — der ist gegen echte Angebote kalibriert,
+// siehe merkurFlv.ts und test/calc/merkur.reference.test.ts).
+import { simulateMerkurFLVEinmal, simulateMerkurFLVPraemie } from "./merkurFlv"
 
 export const RR_KEST = 0.275
 
@@ -15,20 +18,10 @@ export const RR_DEPOT_PRESETS: Record<DepotProvider, { ausgabeaufschlag: number;
   traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 1.45, flatFee: 1.0, feeLabel: "1 €" },
 }
 
-// legacy/index.html:3546–3569
-export const RR_FLV_COSTS: Record<Provider, [string, string][]> = {
-  merkur: [
-    ["Versicherungssteuer (laufend)", "4 %"],
-    ["Verwaltungskosten von Prämie", "4 %"],
-    ["Abschlusskosten (Zillmerung)", "4 % · Monat 1–60"],
-    ["Laufende Depotkosten", "0,20 % p.a."],
-    ["Kickbacks (Prämie)", "+0,13 % p.a."],
-    ["Einmalerlag Abschlusskosten", "4 %"],
-    ["Einmalerlag Verwaltung", "0,35 % p.a."],
-    ["Einmalerlag VSt", "4 % (≥15 J.) / 11 % (<15 J.)"],
-    ["Kickbacks (Einmalerlag)", "+0,835 % p.a."],
-    ["Fixkosten (nur bei Einmalerlag)", "2 €/Monat"],
-  ],
+// legacy/index.html:3546–3569. Merkur ist hier bewusst NICHT mehr enthalten — die
+// Kostenzeilen hängen bei Merkur von Prämie & Laufzeit ab und kommen daher aus
+// merkurKostenZeilen() in merkurFlv.ts (kalibriert gegen echte Angebote).
+export const RR_FLV_COSTS: Record<"helvetia", [string, string][]> = {
   helvetia: [
     ["Versicherungssteuer (laufend)", "4 %"],
     ["Verwaltungskosten von Prämie", "7 %"],
@@ -61,32 +54,32 @@ export function simulateFLV(
   perf: number,
   waPct = 0
 ): number[] {
+  if (provider === "merkur") {
+    const praemieValues = simulateMerkurFLVPraemie(monat, jahre, perf, waPct)
+    if (einmal <= 0) return praemieValues
+    const einmalValues = simulateMerkurFLVEinmal(einmal, jahre, perf)
+    return praemieValues.map((v, i) => v + einmalValues[i])
+  }
+
   const months = jahre * 12
   const r = rrRate(perf)
   const waRateMonthly = waPct > 0 ? Math.pow(1 + waPct, 1 / 12) - 1 : 0
   const vst = 0.04
-  const adminPraemie = provider === "merkur" ? 0.04 : 0.07
-  const abschlussPraemie = provider === "merkur" ? 0.04 : 0.07
-  const depotCostPraemiePa = provider === "merkur" ? 0.002 : 0.00348
-  const depotCostEinmalPa = provider === "merkur" ? 0.002 + 0.0035 : 0.00348
+  const adminPraemie = 0.07
+  const abschlussPraemie = 0.07
+  const depotCostPraemiePa = 0.00348
+  const depotCostEinmalPa = 0.00348
   const gesamtBrutto = monat * 12 * jahre
   const zillmerMonatlich = (abschlussPraemie * gesamtBrutto) / 60
-  const fixMonatlich = provider === "merkur" && einmal > 0 ? 2 : 0
 
-  function kickbackPa(m: number, leg: "praemie" | "einmal"): number {
-    if (provider === "merkur") return leg === "einmal" ? 0.00835 : 0.0013
+  function kickbackPa(m: number): number {
     return m <= 84 ? 0.002 : 0.004
   }
 
   let depotP = 0
   let depotE = 0
   if (einmal > 0) {
-    if (provider === "merkur") {
-      const vstEinmal = jahre >= 15 ? 0.04 : 0.11
-      depotE = einmal * (1 - vstEinmal) - einmal * 0.04
-    } else {
-      depotE = einmal * (jahre >= 15 ? 0.9038 : 0.8423)
-    }
+    depotE = einmal * (jahre >= 15 ? 0.9038 : 0.8423)
     if (depotE < 0) depotE = 0
   }
 
@@ -101,14 +94,13 @@ export function simulateFLV(
     depotP += invest
     depotP *= 1 + r
     depotP -= depotP * (depotCostPraemiePa / 12)
-    depotP += depotP * (kickbackPa(m, "praemie") / 12)
+    depotP += depotP * (kickbackPa(m) / 12)
     if (depotP < 0) depotP = 0
 
     if (einmal > 0) {
       depotE *= 1 + r
       depotE -= depotE * (depotCostEinmalPa / 12)
-      depotE += depotE * (kickbackPa(m, "einmal") / 12)
-      depotE -= fixMonatlich
+      depotE += depotE * (kickbackPa(m) / 12)
       if (depotE < 0) depotE = 0
     }
     values.push(depotP + depotE)
