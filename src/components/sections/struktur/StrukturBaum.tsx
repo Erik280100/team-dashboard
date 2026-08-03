@@ -11,14 +11,33 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
+import { computePromotionProgress, type PromotionProgress } from "@/lib/calc/befoerderung"
+import { fmt, type EmployeeRow } from "@/lib/calc/format"
 import {
   DEFAULT_PLAN_RATES, PLAN_IDS, PLAN_LABELS,
   SB_COLORS, SB_NH, SB_NW, SB_ROLES, SB_STATUS, SB_VG,
-  sbAll, sbEsc, sbFind, sbLayout, sbLine,
+  sbAll, sbEsc, sbFind, sbLayout, sbLine, sbRoster,
   type PlanId, type SbNode,
 } from "@/lib/calc/struktur"
+import { mergeRosterWithRows } from "@/lib/calc/team"
 import type { OrgChartDoc } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
+
+const CRITERION_UNIT: Record<string, string> = {
+  eigenproduktion: "EH",
+  mitarbeiter: "Mitarbeiter",
+  punkte: "Punkte",
+  gruppenproduktion: "EH/Monat",
+}
+
+/** Kompakter Tooltip-Text für den Fortschrittsstreifen am Knoten (title-Attribut). */
+function promotionTooltip(p: PromotionProgress | undefined): string | undefined {
+  if (!p || !p.nextRole) return undefined
+  const open = p.criteria.filter((c) => c.missing > 0)
+  if (open.length === 0) return `✓ Bereit für ${p.nextRole}`
+  const parts = open.map((c) => `noch ${fmt(c.missing)} ${CRITERION_UNIT[c.kind] ?? ""}`.trim())
+  return `→ ${p.nextRole}: ${parts.join(", ")}`
+}
 
 function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
@@ -39,9 +58,12 @@ function detachNode(root: SbNode, id: string): SbNode | null {
 }
 
 export function StrukturBaum({
-  doc, isEditor, saveOrgChart,
+  doc, rows, isEditor, saveOrgChart,
 }: {
   doc: OrgChartDoc
+  /** Leistungszahlen (Einheiten je Karriereplan) für den Beförderungs-Fortschritt,
+   * siehe lib/calc/befoerderung.ts — live dashboard.rows oder ein Archiv-Snapshot. */
+  rows: EmployeeRow[]
   isEditor: boolean
   saveOrgChart: (next: OrgChartDoc) => void
 }) {
@@ -99,6 +121,12 @@ export function StrukturBaum({
     nodes.forEach((n) => (m[n.id] = n))
     return m
   }, [nodes])
+
+  // Beförderungs-Fortschritt je Person, für Streifen am Knoten + Panel-Block.
+  // Läuft über den unveränderten doc.tree (nicht laidOutTree), Layout ist hier egal.
+  const roster = useMemo(() => sbRoster(doc.tree), [doc.tree])
+  const merged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
+  const promotionByName = useMemo(() => computePromotionProgress(merged), [merged])
 
   const chartW = Math.max(...nodes.map((n) => (n.x ?? 0) + SB_NW)) + 70
   const chartH = Math.max(...nodes.map((n) => (n.y ?? 0) + SB_NH)) + 70
@@ -410,6 +438,8 @@ export function StrukturBaum({
   const drag = dragRef.current
   void dragTick
 
+  const selectedPromotion = selected ? promotionByName.get(selected.name) : undefined
+
   return (
     <div ref={rootRef} className="flex flex-col gap-4 bg-background p-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -463,14 +493,16 @@ export function StrukturBaum({
               const isDropTarget = drag?.active && drag.targetId === n.id
               const isDragging = drag?.active && drag.nodeId === n.id
               const noteCount = (doc.notes[n.id] || []).length
+              const promotion = promotionByName.get(n.name)
               return (
                 <div
                   key={n.id}
                   data-sb-node={n.id}
+                  title={promotionTooltip(promotion)}
                   onPointerDown={(e) => onNodePointerDown(e, n)}
                   onClick={() => onNodeClick(n)}
                   className={cn(
-                    "absolute flex cursor-pointer select-none flex-col items-center justify-center rounded-lg border px-2 text-center shadow-sm transition-shadow hover:shadow-md",
+                    "absolute flex cursor-pointer select-none flex-col items-center justify-center overflow-hidden rounded-lg border px-2 text-center shadow-sm transition-shadow hover:shadow-md",
                     isDragging && "opacity-40",
                     isDropTarget && "ring-2 ring-primary",
                     linkMode && linkSrc === n.id && "ring-2 ring-amber-500"
@@ -483,6 +515,14 @@ export function StrukturBaum({
                 >
                   <span className="truncate text-[12px] font-semibold leading-tight">{n.name}</span>
                   {n.role && <span className="truncate text-[10px] leading-tight opacity-80">{n.role}</span>}
+                  {promotion?.nextRole && (
+                    <span className="absolute inset-x-0 bottom-0 h-1 bg-black/10">
+                      <span
+                        className={cn("block h-full", promotion.ready ? "bg-emerald-500" : "bg-primary")}
+                        style={{ width: `${Math.round(promotion.fraction * 100)}%` }}
+                      />
+                    </span>
+                  )}
                   {noteCount > 0 && (
                     <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
                       {noteCount}
@@ -585,6 +625,55 @@ export function StrukturBaum({
                 {Object.entries(SB_STATUS).map(([key, v]) => <option key={key} value={key}>{v.label}</option>)}
               </select>
             </label>
+
+            {selectedPromotion && (
+              <div className="mb-4 rounded-md border bg-muted/30 p-3">
+                <div className="mb-2 text-xs font-semibold">
+                  {selectedPromotion.nextRole
+                    ? <>🎯 Nächste Stufe: {selectedPromotion.nextRole}</>
+                    : "🏆 Höchste Stufe erreicht"}
+                </div>
+                {selectedPromotion.criteria.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {selectedPromotion.criteria.map((c) => {
+                      const pct = c.need > 0 ? Math.min(100, Math.round((c.have / c.need) * 100)) : 100
+                      const done = c.have >= c.need
+                      return (
+                        <div key={c.kind}>
+                          <div className="mb-0.5 flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground">
+                              {c.label}
+                              {c.relaxed && " (erleichtert)"}
+                            </span>
+                            <span className="font-medium tabular-nums">
+                              {fmt(c.have)} / {fmt(c.need)}
+                            </span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={cn("h-full rounded-full", done ? "bg-emerald-500" : "bg-primary")}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {selectedPromotion.ready && (
+                  <div className="mt-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                    ✓ Alle erfassten Kriterien für {selectedPromotion.nextRole} erfüllt
+                  </div>
+                )}
+                {selectedPromotion.nextRole && (
+                  <div className="mt-2 text-[10px] leading-snug text-muted-foreground">
+                    Gruppenproduktion = Person + gesamter Unterbau, alle Sparten · Ziel/Monat aus
+                    dem Quartalsziel des Karriereplans hochgerechnet. Realisierungsquote, Wartezeiten
+                    und die Bestätigung durch die Geschäftsführung sind hier nicht geprüft.
+                  </div>
+                )}
+              </div>
+            )}
 
             {isEditor && <Button size="sm" onClick={saveFields} className="mb-4 w-full">Speichern</Button>}
 

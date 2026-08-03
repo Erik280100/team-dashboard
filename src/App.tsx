@@ -329,6 +329,7 @@ function AppShell() {
                   <StrukturBaum
                     key={archiveMonth ?? "live"}
                     doc={view.orgDoc}
+                    rows={view.rows}
                     isEditor={auth.isEditor && !isArchive}
                     saveOrgChart={isArchive ? blocked : orgChart.saveOrgChart}
                   />
