@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   computePromotionProgress, eigenproduktion, gesamtproduktion,
-  MIN_OWN_UNITS_PER_MONTH_FOR_POINT, STAGE_REQUIREMENTS,
+  STAGE_REQUIREMENTS,
   type PromotionProgress,
 } from "../../src/lib/calc/befoerderung"
 import type { PlanId } from "../../src/lib/calc/struktur"
@@ -146,14 +146,10 @@ describe("computePromotionProgress: Geschäftsstellenleiter (Punkte nur direkte 
     expect(pktCrit.need).toBe(4)
   })
 
-  it("FT-Kind unter der Mindestproduktion (100 EH/Monat) gibt keinen Punkt, darüber schon", () => {
-    const low = [row("Chef", "Teamleiter", null), row("Kind", "FT2", "Chef", { insurance: 99 })]
-    const pLow = get(computePromotionProgress(low), "Chef")
-    expect(pLow.criteria.find((c) => c.kind === "punkte")!.have).toBe(0)
-
-    const high = [row("Chef", "Teamleiter", null), row("Kind", "FT2", "Chef", { insurance: MIN_OWN_UNITS_PER_MONTH_FOR_POINT })]
-    const pHigh = get(computePromotionProgress(high), "Chef")
-    expect(pHigh.criteria.find((c) => c.kind === "punkte")!.have).toBe(1)
+  it("ein FT2-Kind ohne Produktion diesen Monat zählt trotzdem als Punkt (Rolle allein entscheidet, kein Umsatz-Blick auf Dritte)", () => {
+    const merged = [row("Chef", "Teamleiter", null), row("Kind", "FT2", "Chef", { insurance: 0 })]
+    const p = get(computePromotionProgress(merged), "Chef")
+    expect(p.criteria.find((c) => c.kind === "punkte")!.have).toBe(1)
   })
 
   it("Erleichterung: 3 statt 4 Punkte reichen ab 65.000 EH Gruppenproduktion", () => {
@@ -171,6 +167,61 @@ describe("computePromotionProgress: Geschäftsstellenleiter (Punkte nur direkte 
     // Gruppenproduktion (65000 Chef + 600 Kinder = 65600) liegt weit über dem
     // Monatsziel (round(20000/6) = 3333) -> beide Kriterien erfüllt.
     expect(p.ready).toBe(true)
+  })
+})
+
+describe("computePromotionProgress: Punkte-Quellen sind nachvollziehbar", () => {
+  it("Regression: GSL mit 2 Teamleitern + 1 FT1-Kind zeigt 4 Punkte mit nachvollziehbarer Quelle je Kind", () => {
+    // Reproduziert den gemeldeten Fall "Erik": 2 direkte Teamleiter (je 2 Punkte)
+    // + 1 direktes FT1-Kind (zählt nicht, da unter FT2) = 4 Punkte, nicht 3.
+    const merged = [
+      row("Erik", "Geschäftsstellenleiter", null),
+      row("Noah", "Teamleiter", "Erik"),
+      row("David", "Teamleiter", "Erik"),
+      row("Mansur", "FT1", "Erik", { insurance: 500 }),
+    ]
+    const p = get(computePromotionProgress(merged), "Erik")
+    const pktCrit = p.criteria.find((c) => c.kind === "punkte")!
+    expect(pktCrit.have).toBe(4)
+    const bySource = Object.fromEntries(pktCrit.sources!.map((s) => [s.name, s]))
+    expect(bySource["Noah"]).toMatchObject({ value: 2, excludedReason: undefined })
+    expect(bySource["David"]).toMatchObject({ value: 2, excludedReason: undefined })
+    expect(bySource["Mansur"].value).toBe(0)
+    expect(bySource["Mansur"].excludedReason).toMatch(/ab FT2/)
+  })
+
+  it("Regression: Teamleiter mit einem produktionslosen FT4-Kind bekommt trotzdem den vollen Punkt dafür", () => {
+    // Reproduziert den gemeldeten Fall "David": einziges direktes Kind ist FT4,
+    // hat aber 0 EH in allen Sparten diesen Monat. Auf Nutzerwunsch fließt der
+    // Einzelumsatz eines Kindes NICHT mehr in die Punktewertung ein (nur die
+    // Rolle) — Josef zählt also den vollen FT4-Punkt.
+    const merged = [
+      row("David", "Teamleiter", null),
+      row("Josef", "FT4", "David", { insurance: 0, investment: 0, credit: 0, realestate: 0 }),
+    ]
+    const p = get(computePromotionProgress(merged), "David")
+    const pktCrit = p.criteria.find((c) => c.kind === "punkte")!
+    expect(pktCrit.have).toBe(1)
+    expect(pktCrit.sources).toEqual([
+      { name: "Josef", role: "FT4", value: 1, excludedReason: undefined },
+    ])
+  })
+})
+
+describe("computePromotionProgress: Mitarbeiter-Quellen sind nach direktem Zweig aufgeschlüsselt", () => {
+  it("zeigt je direktem Kind, wie viele Rekruten (es selbst + sein Unterbau) beiträgt", () => {
+    const merged = [
+      row("Chef", "FT4", null),
+      row("Kind1", "FT2", "Chef"),
+      row("Enkel1", "FT2", "Kind1"),
+      row("Kind2", "FT1", "Chef"), // zählt selbst nicht, hat aber auch keinen Unterbau
+    ]
+    const p = get(computePromotionProgress(merged), "Chef")
+    const maCrit = p.criteria.find((c) => c.kind === "mitarbeiter")!
+    const bySource = Object.fromEntries(maCrit.sources!.map((s) => [s.name, s]))
+    expect(bySource["Kind1"].value).toBe(2) // Kind1 selbst + Enkel1
+    expect(bySource["Kind2"].value).toBe(0)
+    expect(bySource["Kind2"].excludedReason).toBeDefined()
   })
 })
 

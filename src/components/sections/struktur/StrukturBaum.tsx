@@ -655,6 +655,25 @@ export function StrukturBaum({
                               style={{ width: `${pct}%` }}
                             />
                           </div>
+                          {c.sources && c.sources.length > 0 && (
+                            <ul className="mt-1 flex flex-col gap-0.5 border-l pl-2">
+                              {c.sources.map((s) => (
+                                <li
+                                  key={s.name}
+                                  className={cn(
+                                    "flex items-center justify-between text-[10px]",
+                                    s.excludedReason ? "text-muted-foreground/70" : "text-muted-foreground"
+                                  )}
+                                >
+                                  <span className="truncate">
+                                    {s.name} <span className="opacity-70">({s.role})</span>
+                                    {s.excludedReason && <span className="italic"> — {s.excludedReason}</span>}
+                                  </span>
+                                  <span className="shrink-0 pl-2 tabular-nums">{s.value}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                       )
                     })}

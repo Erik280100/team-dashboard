@@ -25,6 +25,13 @@
 // 4. Die Erleichterungs-Schwellen (65.000 / 350.000 / 1.000.000 EH) beziehen
 //    sich im Original auf historische Gesamtproduktion; hier wird die im Tool
 //    vorhandene (aktuelle) Gesamtproduktion des Unterbaus herangezogen.
+// 5. Die im Original geforderten ≥300 EH Eigenumsatz/Quartal für die
+//    punktemäßige Wertung eines einzelnen FT-Agenten werden NICHT geprüft
+//    (Nutzerentscheidung) — ein Blick auf den Einzelumsatz einer dritten
+//    Person wirkte im Panel verwirrender als hilfreich. Punkte richten sich
+//    ausschließlich nach der Rolle (STAGE_POINTS); die Umsatz-Komponente der
+//    Beförderung läuft stattdessen vollständig über das separate
+//    Gruppenproduktion-Kriterium (Person + gesamter Unterbau).
 import type { MergedRow } from "./team"
 import { readPlanUnits, sumPlanUnits } from "./verguetung"
 
@@ -50,10 +57,6 @@ export const STAGE_POINTS: Record<string, number> = {
   Geschäftsstellenleiter: 4,
   Regionalleiter: 8,
 }
-
-/** Ab dieser monatlichen Eigenproduktion (Insurance) zählt ein FT-Agent als
- * Punkt (= 300 EH Eigenumsatz pro Quartal im Original, siehe Modul-Kommentar). */
-export const MIN_OWN_UNITS_PER_MONTH_FOR_POINT = 100
 
 export interface StageRequirement {
   /** Stufe, die mit diesen Werten ERREICHT wird. */
@@ -136,13 +139,18 @@ export function gesamtproduktion(row: Pick<MergedRow, "ist" | "ehByPlan">): numb
   return sumPlanUnits(readPlanUnits(row))
 }
 
+/** Warum ein direktes Kind 0 Punkte beiträgt — für die transparente Aufschlüsselung
+ * im UI (siehe CriterionSource unten), damit z. B. "Erik = 4 Punkte" nicht als
+ * Blackbox erscheint. Einzig mögliche Ursache: die Rolle liegt unter FT2 — der
+ * individuelle Umsatz einer dritten Person fließt hier bewusst nicht ein
+ * (siehe Annahme 5 im Modul-Kommentar), die Umsatz-Komponente steckt separat
+ * im Gruppenproduktion-Kriterium. */
+function pointExclusionReason(child: MergedRow): string | undefined {
+  return pointsForChild(child) === 0 ? "Rolle zählt nicht (ab FT2 nötig)" : undefined
+}
+
 function pointsForChild(child: MergedRow): number {
-  const role = normRole(child.role)
-  const pts = STAGE_POINTS[role] || 0
-  if (pts === 0) return 0
-  const isFtRole = role === "FT2" || role === "FT3" || role === "FT4"
-  if (isFtRole && eigenproduktion(child) < MIN_OWN_UNITS_PER_MONTH_FOR_POINT) return 0
-  return pts
+  return STAGE_POINTS[normRole(child.role)] || 0
 }
 
 interface SubtreeAgg {
@@ -185,6 +193,17 @@ function computeSubtree(
 
 export type CriterionKind = "eigenproduktion" | "mitarbeiter" | "punkte" | "gruppenproduktion"
 
+/** Aufschlüsselung eines "punkte"/"mitarbeiter"-Kriteriums nach direkten Kindern —
+ * macht z. B. "4 Punkte" oder "0 Punkte" nachvollziehbar statt einer Blackbox-Zahl. */
+export interface CriterionSource {
+  name: string
+  role: string
+  /** Beitrag dieser Person (+ bei "mitarbeiter" ihres Unterbaus) zum have-Wert. */
+  value: number
+  /** Gesetzt, wenn diese Person NICHT (oder nicht voll) mitzählt, mit Begründung. */
+  excludedReason?: string
+}
+
 export interface Criterion {
   kind: CriterionKind
   label: string
@@ -193,6 +212,8 @@ export interface Criterion {
   missing: number
   /** Gesetzt, wenn eine Erleichterungsregel den need-Wert gesenkt hat. */
   relaxed?: boolean
+  /** Nur bei "punkte" und "mitarbeiter": Beitrag je direktem Kind. */
+  sources?: CriterionSource[]
 }
 
 export interface PromotionProgress {
@@ -262,10 +283,19 @@ export function computePromotionProgress(
         need = requirement.recruitsRelaxed
         relaxed = true
       }
+      const kids = childrenOf.get(person.name) || []
+      const sources: CriterionSource[] = kids.map((kid) => {
+        const kidSub = computeSubtree(kid.name, childrenOf, byName, subtreeCache, 0)
+        const value = (rankOf(normRole(kid.role)) >= 1 ? 1 : 0) + kidSub.recruits
+        return {
+          name: kid.name, role: normRole(kid.role), value,
+          excludedReason: value === 0 ? "kein Agent ab FT2 in diesem Zweig" : undefined,
+        }
+      })
       criteria.push({
         kind: "mitarbeiter",
-        label: "Geworbene Agenten ab FT2 (Team)",
-        have: sub.recruits, need, missing: Math.max(0, need - sub.recruits), relaxed,
+        label: "Geworbene Agenten ab FT2 (direkt oder indirekt)",
+        have: sub.recruits, need, missing: Math.max(0, need - sub.recruits), relaxed, sources,
       })
     }
 
@@ -283,10 +313,14 @@ export function computePromotionProgress(
         need = requirement.pointsRelaxed
         relaxed = true
       }
+      const sources: CriterionSource[] = kids.map((kid) => ({
+        name: kid.name, role: normRole(kid.role),
+        value: pointsForChild(kid), excludedReason: pointExclusionReason(kid),
+      }))
       criteria.push({
         kind: "punkte",
-        label: "Punkte (direkt angeworben)",
-        have, need, missing: Math.max(0, need - have), relaxed,
+        label: "Punkte (nur direkt angeworben)",
+        have, need, missing: Math.max(0, need - have), relaxed, sources,
       })
     }
 
