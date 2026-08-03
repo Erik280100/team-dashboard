@@ -43,6 +43,7 @@ export const SB_COLORS = [
 ] as const
 
 export const SB_STATUS: Record<string, { label: string; color: string }> = {
+  neu: { label: "Neu", color: "#2563EB" },
   vollzeit: { label: "Vollzeit", color: "#16A34A" },
   teilzeit: { label: "Teilzeit", color: "#D97706" },
   keine: { label: "Keine Zeit", color: "#DC2626" },
