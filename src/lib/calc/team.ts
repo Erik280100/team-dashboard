@@ -18,6 +18,7 @@ export function newRowFor(name: string): EmployeeRow {
     atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
     soll: 0, ist: 0,
     joinDate: "",
+    bonus: 0,
   }
 }
 
@@ -103,6 +104,7 @@ export function mergeRosterWithRows(roster: RosterEntry[], rows: EmployeeRow[]):
       soll: Number(row?.soll) || 0,
       ist: Number(row?.ist) || 0,
       ehByPlan: row?.ehByPlan,
+      bonus: Number(row?.bonus) || 0,
       role: entry.role,
       managerName: entry.managerName,
       depth: entry.depth,

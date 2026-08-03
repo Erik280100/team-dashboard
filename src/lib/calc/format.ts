@@ -15,6 +15,8 @@ export interface EmployeeRow {
    * Feld (Altbestand vor der Karrierepläne-Aufteilung), gilt ist als reiner
    * Insurance-Wert — siehe readPlanUnits() in verguetung.ts. */
   ehByPlan?: Partial<Record<PlanId, number>>
+  /** Manuell erfasster Bonusbetrag (€), wird zur Gesamtvergütung addiert. */
+  bonus?: number
   isNew?: boolean
   joinDate?: string
   at?: number

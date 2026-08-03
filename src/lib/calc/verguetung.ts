@@ -74,6 +74,8 @@ export interface EmployeeEarnings {
   diff: Record<PlanId, { amount: number; sources: DiffSource[] }>
   ownTotal: number
   diffTotal: number
+  /** Manuell erfasster Bonusbetrag (€, aus EmployeeRow.bonus), fließt in `total` ein. */
+  bonus: number
   total: number
 }
 
@@ -84,7 +86,7 @@ function emptyEarnings(name: string): EmployeeEarnings {
     own[p] = { units: 0, rate: 0, amount: 0 }
     diff[p] = { amount: 0, sources: [] }
   })
-  return { name, own, diff, ownTotal: 0, diffTotal: 0, total: 0 }
+  return { name, own, diff, ownTotal: 0, diffTotal: 0, bonus: 0, total: 0 }
 }
 
 // Schutz gegen zyklische managerName-Ketten (sollte im Strukturbaum nicht
@@ -104,7 +106,12 @@ export function computeEarnings(
   merged.forEach((r) => byName.set(r.name, r))
 
   const result = new Map<string, EmployeeEarnings>()
-  merged.forEach((r) => result.set(r.name, emptyEarnings(r.name)))
+  merged.forEach((r) => {
+    const e = emptyEarnings(r.name)
+    e.bonus = Number(r.bonus) || 0
+    e.total += e.bonus
+    result.set(r.name, e)
+  })
 
   function credit(
     name: string,

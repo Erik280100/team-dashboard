@@ -33,7 +33,7 @@ function draftFromEarnings(earnings: EmployeeEarnings): Record<PlanId, string> {
 }
 
 export function EmployeeEarningsDialog({
-  open, onOpenChange, name, role, earnings, isEditor, onSaveUnits,
+  open, onOpenChange, name, role, earnings, isEditor, onSaveUnits, onSaveBonus,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -42,19 +42,27 @@ export function EmployeeEarningsDialog({
   earnings: EmployeeEarnings
   isEditor: boolean
   onSaveUnits: (units: Record<PlanId, number>) => void
+  onSaveBonus: (bonus: number) => void
 }) {
   const [draft, setDraft] = useState<Record<PlanId, string>>(() => draftFromEarnings(earnings))
+  const [bonusDraft, setBonusDraft] = useState<string>(() => String(earnings.bonus || 0))
 
   // Entwurf neu aufsetzen, wenn der Dialog für eine (neue) Person geöffnet wird
   // — nicht bei jedem earnings-Update, sonst würden Tastatureingaben durch den
   // nächsten Render überschrieben.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (open) setDraft(draftFromEarnings(earnings)) }, [open, name])
+  useEffect(() => {
+    if (open) {
+      setDraft(draftFromEarnings(earnings))
+      setBonusDraft(String(earnings.bonus || 0))
+    }
+  }, [open, name])
 
   function handleSave() {
     const units = {} as Record<PlanId, number>
     PLAN_IDS.forEach((planId) => { units[planId] = Number(draft[planId]) || 0 })
     onSaveUnits(units)
+    onSaveBonus(Number(bonusDraft) || 0)
     onOpenChange(false)
   }
 
@@ -169,6 +177,29 @@ export function EmployeeEarningsDialog({
                   </tfoot>
                 </table>
               </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+            <label htmlFor="bonus-input" className="font-medium">Bonus (manuell)</label>
+            {isEditor ? (
+              <div className="flex items-center gap-1">
+                <input
+                  id="bonus-input"
+                  type="number"
+                  step="0.01"
+                  value={bonusDraft}
+                  aria-label={`Bonus – ${name}`}
+                  className={cn(
+                    "h-7 w-28 rounded-md border border-input bg-background px-2 text-right text-sm tabular-nums shadow-xs outline-none",
+                    "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                  )}
+                  onChange={(e) => setBonusDraft(e.target.value)}
+                />
+                <span className="text-muted-foreground">€</span>
+              </div>
+            ) : (
+              <span className="tabular-nums">{fmtEur(earnings.bonus)} €</span>
             )}
           </div>
 

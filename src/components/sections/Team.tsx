@@ -102,6 +102,15 @@ export function Team({
     }
   }
 
+  function saveBonus(entry: MergedRow, bonus: number) {
+    if (entry.rowIndex !== null) {
+      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...r, bonus } : r))
+      saveRows(next)
+    } else {
+      saveRows([...rows, { ...newRowFor(entry.name), bonus }])
+    }
+  }
+
   function toggleNew(entry: MergedRow) {
     if (entry.rowIndex !== null) {
       const next = rows.map((r, i) => {
@@ -306,6 +315,7 @@ export function Team({
           earnings={detailEarnings}
           isEditor={isEditor}
           onSaveUnits={(units) => saveUnits(detailEntry, units)}
+          onSaveBonus={(bonus) => saveBonus(detailEntry, bonus)}
         />
       )}
     </div>
