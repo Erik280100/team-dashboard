@@ -31,8 +31,6 @@ export interface PartnerCompany {
   sparten: PartnerSparte[]
   description: string
   contacts: PartnerContact[]
-  /** Vermittler-/Flotten-/Agenturnummern u.ä. */
-  notes?: string[]
 }
 
 /** "0664 96 27 337" / "00049 511 9565-599" / "+43 5 04487-240" → gültiger
@@ -58,7 +56,6 @@ export function companyHaystack(c: PartnerCompany): { text: string; digits: stri
       ...(ct.phones ?? []).flatMap((p) => [p.label, p.note ?? ""]),
       ...(ct.emails ?? []),
     ]),
-    ...(c.notes ?? []),
   ]
   const text = parts.join(" ").toLowerCase()
   const digits = text.replace(/[^\d]/g, "")
@@ -127,7 +124,6 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         ],
       },
     ],
-    notes: ["Flottennummer 046135"],
   },
   {
     id: "arag", name: "ARAG", initials: "AR",
@@ -195,7 +191,6 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["martin.prandl@corum-am.com"],
       },
     ],
-    notes: ["Beraternummer: 4127"],
   },
   {
     id: "ergo-das", name: "ERGO / DAS", initials: "ER",
@@ -388,7 +383,6 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         phones: [{ kind: "tel", label: "01/710 48 400" }],
       },
     ],
-    notes: ["Agenturnummer: 4775391"],
   },
   {
     id: "hannoversche", name: "Hannoversche", initials: "HA",
@@ -404,13 +398,12 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         ],
       },
     ],
-    notes: ["Vermittlernr.: VL106081-001"],
   },
   {
     id: "helvetia", name: "Helvetia", initials: "HV",
     legalName: "Helvetia Versicherungen AG · Gürtelturmplatz 1, 8020 Graz",
     badge: "Vollsortiment", sparten: ["sach", "leben"],
-    description: "KFZ, Eigenheim/Haushalt, Lebensversicherung. Eingeloggt über Partnerportal mit Sonderrabatten.",
+    description: "KFZ, Eigenheim/Haushalt, Lebensversicherung.",
     contacts: [
       {
         name: "Jörg Scheriau", role: "Verkaufsleiter Sachversicherungen",
@@ -576,7 +569,6 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["harald.gruber@passportcard.de"],
       },
     ],
-    notes: ["Vermittlernr.: 42683"],
   },
   {
     id: "roland", name: "Roland Rechtsschutz", initials: "RO",
@@ -593,7 +585,6 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["Markus.Grutschnig@roland-rechtsschutz.at"],
       },
     ],
-    notes: ["Vermittlernr.: 802487 Finova"],
   },
   {
     id: "ruv", name: "R+V Allgemeine Versicherung", initials: "RV",
@@ -744,7 +735,6 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["j.pfingstner@wienerverein.at"],
       },
     ],
-    notes: ["Vermittlernr.: 99984"],
   },
   {
     id: "wuestenrot", name: "Wüstenrot", initials: "WÜ",
@@ -763,7 +753,6 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["MBT5@wuestenrot.at"],
       },
     ],
-    notes: ["Vermittlernr.: 2001283-7 FINOVA GmbH"],
   },
   {
     id: "wwk", name: "WWK", initials: "WK",

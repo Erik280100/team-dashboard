@@ -1,15 +1,16 @@
-// Ansprechpersonen bei Partnergesellschaften — funktional äquivalent zur
-// separaten Vorlage "Partnergesellschaften.html" (Suche + Sparten-Filter +
-// Karten-Grid), optisch an das Dashboard-Theme angepasst statt eigenem
-// Finova-Header. Daten aus partnerCompanies.ts.
+// Vermittlernummern bei Partnergesellschaften — gleiches Muster wie
+// PartnerGesellschaften.tsx / PartnerRabatte.tsx (Suche + Sparten-Filter +
+// Karten-Grid), nur mit Vermittler-/Beraternummern statt Kontaktpersonen bzw.
+// Rabattsätzen. Daten aus partnerVermittlernummern.ts.
 import { useMemo, useState } from "react"
-import { Mail, Phone, Search, Smartphone } from "lucide-react"
+import { Hash, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import {
-  companyHaystack, PARTNER_COMPANIES, telHref,
-  type PartnerCompany, type PartnerContact, type PartnerSparte,
-} from "@/lib/data/partnerCompanies"
+  PARTNER_VERMITTLERNUMMERN, vermittlernummerHaystack,
+  type PartnerVermittlernummer, type VermittlernummerSection,
+} from "@/lib/data/partnerVermittlernummern"
+import type { PartnerSparte } from "@/lib/data/partnerCompanies"
 
 const SPARTEN: { id: PartnerSparte | "all"; label: string }[] = [
   { id: "all", label: "Alle" },
@@ -20,35 +21,30 @@ const SPARTEN: { id: PartnerSparte | "all"; label: string }[] = [
   { id: "sonstige", label: "Sonstige" },
 ]
 
-const COMPANIES_WITH_HAYSTACK = PARTNER_COMPANIES.map((c) => ({ company: c, haystack: companyHaystack(c) }))
+const NUMBERS_WITH_HAYSTACK = PARTNER_VERMITTLERNUMMERN.map((c) => ({ company: c, haystack: vermittlernummerHaystack(c) }))
 
-function ContactBlock({ contact }: { contact: PartnerContact }) {
+function NummerSectionBlock({ section }: { section: VermittlernummerSection }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="text-xs font-bold text-foreground">{contact.name}</div>
-      {contact.role && <div className="text-[11px] text-muted-foreground">{contact.role}</div>}
-      {contact.phones?.map((p, i) => (
-        <div key={i} className="flex items-center gap-1.5 text-[13px]">
-          {p.kind === "mobil"
-            ? <Smartphone className="size-3.5 shrink-0 text-[var(--teal)]" />
-            : <Phone className="size-3.5 shrink-0 text-[var(--teal)]" />}
-          <a href={`tel:${telHref(p.label)}`} className="font-semibold text-[var(--teal)] hover:text-[var(--mint-2)]">
-            {p.label}
-          </a>
-          {p.note && <span className="text-[11px] text-muted-foreground">{p.note}</span>}
-        </div>
-      ))}
-      {contact.emails?.map((e) => (
-        <div key={e} className="flex items-center gap-1.5 text-xs">
-          <Mail className="size-3.5 shrink-0 text-muted-foreground" />
-          <a href={`mailto:${e}`} className="text-muted-foreground hover:text-[var(--teal)]">{e}</a>
-        </div>
-      ))}
+    <div className="flex flex-col gap-1.5">
+      {section.title && (
+        <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{section.title}</div>
+      )}
+      <div className="flex flex-col gap-1">
+        {section.lines.map((line, i) => (
+          <div key={i} className="flex items-baseline justify-between gap-3 text-[13px]">
+            <span className="text-foreground">
+              {line.label}
+              {line.note && <span className="ml-1 text-[11px] text-muted-foreground">({line.note})</span>}
+            </span>
+            <span className="shrink-0 whitespace-nowrap font-bold text-[var(--teal)]">{line.value}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-function CompanyCard({ company }: { company: PartnerCompany }) {
+function NummerCard({ company }: { company: PartnerVermittlernummer }) {
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start gap-3 border-b-2 border-[var(--mint)] bg-gradient-to-br from-[var(--navy)] to-[var(--teal)] px-4 py-3.5">
@@ -57,43 +53,51 @@ function CompanyCard({ company }: { company: PartnerCompany }) {
         </span>
         <div className="flex-1">
           <h3 className="text-sm font-extrabold leading-tight text-white">{company.name}</h3>
-          <div className="mt-0.5 text-[11px] leading-snug text-white/55">{company.legalName}</div>
+          {company.legalName && (
+            <div className="mt-0.5 text-[11px] leading-snug text-white/55">{company.legalName}</div>
+          )}
         </div>
         <span className="shrink-0 whitespace-nowrap rounded-md bg-[var(--mint)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--navy)]">
           {company.badge}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2.5 px-4 py-4">
-        <div className="text-xs leading-relaxed text-muted-foreground">{company.description}</div>
-        <div className="flex flex-col gap-2">
-          {company.contacts.map((contact, i) => (
-            <div key={i} className="flex flex-col gap-2">
-              {i > 0 && <div className="h-px bg-border" />}
-              <ContactBlock contact={contact} />
-            </div>
-          ))}
-        </div>
+      <div className="flex flex-1 flex-col gap-3 px-4 py-4">
+        {company.sections.map((section, i) => (
+          <div key={i} className="flex flex-col gap-3">
+            {i > 0 && <div className="h-px bg-border" />}
+            <NummerSectionBlock section={section} />
+          </div>
+        ))}
+        {company.notes && company.notes.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {company.notes.map((n) => (
+              <span key={n} className="rounded bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-[var(--teal)]">
+                {n}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-export function PartnerGesellschaften() {
+export function PartnerVermittlernummern() {
   const [query, setQuery] = useState("")
   const [sparte, setSparte] = useState<PartnerSparte | "all">("all")
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     const qDigits = q.replace(/[^\d]/g, "")
-    return COMPANIES_WITH_HAYSTACK.filter(({ company, haystack }) => {
+    return NUMBERS_WITH_HAYSTACK.filter(({ company, haystack }) => {
       const matchesSparte = sparte === "all" || company.sparten.includes(sparte)
       const matchesQuery = !q || haystack.text.includes(q) || (qDigits.length > 0 && haystack.digits.includes(qDigits))
       return matchesSparte && matchesQuery
     }).map(({ company }) => company)
   }, [query, sparte])
 
-  const total = PARTNER_COMPANIES.length
+  const total = PARTNER_VERMITTLERNUMMERN.length
 
   return (
     <div className="flex flex-col gap-4">
@@ -103,7 +107,7 @@ export function PartnerGesellschaften() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Partner, Ansprechpartner oder Telefonnummer suchen …"
+            placeholder="Partner oder Vermittlernummer suchen …"
             className="pl-9"
           />
         </div>
@@ -133,12 +137,12 @@ export function PartnerGesellschaften() {
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-16 text-center text-muted-foreground">
-          <Search className="size-8" />
+          <Hash className="size-8" />
           <p className="text-sm">Keine Ergebnisse für <strong>&quot;{query}&quot;</strong></p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((c) => <CompanyCard key={c.id} company={c} />)}
+          {filtered.map((c) => <NummerCard key={c.id} company={c} />)}
         </div>
       )}
     </div>

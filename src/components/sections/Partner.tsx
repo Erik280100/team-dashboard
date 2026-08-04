@@ -6,12 +6,16 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { PartnerPortale } from "@/components/sections/partner/PartnerPortale"
 import { PartnerGesellschaften } from "@/components/sections/partner/PartnerGesellschaften"
+import { PartnerRabatte } from "@/components/sections/partner/PartnerRabatte"
+import { PartnerVermittlernummern } from "@/components/sections/partner/PartnerVermittlernummern"
 
-type PartnerTab = "portale" | "gesellschaften"
+type PartnerTab = "portale" | "gesellschaften" | "rabatte" | "vermittlernummern"
 
 const TABS: { id: PartnerTab; label: string }[] = [
   { id: "portale", label: "Portale" },
   { id: "gesellschaften", label: "Ansprechpersonen" },
+  { id: "rabatte", label: "Rabattmöglichkeiten" },
+  { id: "vermittlernummern", label: "Vermittlernummern" },
 ]
 
 export function Partner() {
@@ -39,6 +43,8 @@ export function Partner() {
 
       {tab === "portale" && <PartnerPortale />}
       {tab === "gesellschaften" && <PartnerGesellschaften />}
+      {tab === "rabatte" && <PartnerRabatte />}
+      {tab === "vermittlernummern" && <PartnerVermittlernummern />}
     </div>
   )
 }
