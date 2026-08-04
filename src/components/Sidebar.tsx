@@ -16,7 +16,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon }[] = [
   { id: "guide", label: "Guide", icon: BookOpen },
   { id: "kalender", label: "Kalender/Anwesenheitsliste", icon: Calendar },
   { id: "finanzierungen", label: "Finanzierungen", icon: Landmark },
-  { id: "partner", label: "Partnerportale", icon: Link2 },
+  { id: "partner", label: "Partner", icon: Link2 },
 ]
 
 export function Sidebar({

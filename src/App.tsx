@@ -48,7 +48,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   guide: "Guide",
   kalender: "Kalender/Anwesenheitsliste",
   finanzierungen: "Finanzierungen",
-  partner: "Partnerportale",
+  partner: "Partner",
 }
 
 // Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus (siehe

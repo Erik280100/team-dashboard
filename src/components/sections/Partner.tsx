@@ -1,23 +1,44 @@
-// Partnerportale — Äquivalent zu initPartnerPortals() aus legacy/index.html:4786–4795.
-import { PARTNER_PORTALS } from "@/lib/data/partners"
+// Partner-Sektion — Reiter-Shell mit den Portal-Kacheln (unverändert aus der
+// vorherigen Partner.tsx, jetzt in partner/PartnerPortale.tsx) und den neuen
+// Ansprechpersonen bei Partnergesellschaften (partner/PartnerGesellschaften.tsx).
+// Pill-Tab-Muster 1:1 aus Rechner.tsx / Guide.tsx übernommen.
+import { useState } from "react"
+import { cn } from "@/lib/utils"
+import { PartnerPortale } from "@/components/sections/partner/PartnerPortale"
+import { PartnerGesellschaften } from "@/components/sections/partner/PartnerGesellschaften"
+
+type PartnerTab = "portale" | "gesellschaften"
+
+const TABS: { id: PartnerTab; label: string }[] = [
+  { id: "portale", label: "Portale" },
+  { id: "gesellschaften", label: "Ansprechpersonen" },
+]
 
 export function Partner() {
+  const [tab, setTab] = useState<PartnerTab>("portale")
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-      {PARTNER_PORTALS.map((p) => (
-        <a
-          key={p.name}
-          href={p.url}
-          target="_blank"
-          rel="noopener"
-          className="flex flex-col items-center gap-2 rounded-lg border bg-card p-4 text-center transition-colors hover:bg-muted"
-        >
-          <span className="flex size-10 items-center justify-center text-2xl">
-            {p.icon ? <img src={p.icon} alt="" className="size-10 object-contain" /> : "🏢"}
-          </span>
-          <span className="text-xs font-medium leading-tight">{p.name}</span>
-        </a>
-      ))}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+              tab === t.id
+                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "portale" && <PartnerPortale />}
+      {tab === "gesellschaften" && <PartnerGesellschaften />}
     </div>
   )
 }
