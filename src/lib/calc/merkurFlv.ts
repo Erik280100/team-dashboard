@@ -50,7 +50,8 @@ export const MERKUR_ZILLMER_PCT = 0.068
 export const MERKUR_ERTRAGSAUFSCHLAG_PA = 0.00585
 export const MERKUR_DYNAMIK_WIRKSAMKEIT = 0.912
 
-function interpLinear(x: number, points: [number, number][]): number {
+/** Lineare Interpolation/Randfortschreibung über Stützstellen, sortiert nach x. Auch von fondssparer.ts genutzt. */
+export function interpLinear(x: number, points: [number, number][]): number {
   const sorted = [...points].sort((a, b) => a[0] - b[0])
   if (x <= sorted[0][0]) return sorted[0][1]
   if (x >= sorted[sorted.length - 1][0]) return sorted[sorted.length - 1][1]

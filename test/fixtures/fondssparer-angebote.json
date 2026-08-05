@@ -1,0 +1,851 @@
+{
+  "_hinweis": "Echte Fondssparer-Angebote, vom User am 2026-08-05 erfasst. Annahme: 6 % p.a. Wertentwicklung, immer dieselben zwei Fonds, Dynamik = 3 % nominal p.a. Diese Datei ist die einzige Wahrheitsquelle fuer test/calc/fondssparer.reference.test.ts und test/calc/fondssparer.calibrate.test.ts. Bei neuen echten Angeboten hier ergaenzen, nicht in den Tests hardcoden.",
+  "annahmePerfPa": 0.06,
+  "dynamikNominalPa": 0.03,
+  "_kostenRohHinweis": "Vom User gelieferte Kostenstruktur je Laufzeit. Sparpraemie = Anteil der Praemie, der nach Versicherungssteuer + Kosten in den Fondsanteil fliesst. Aendert sich laut User nicht durch Dynamik. 5-Jahres-Werte nachgeliefert (urspruenglich nicht in der ersten Kostentabelle enthalten).",
+  "kostenRoh": [
+    {
+      "jahre": 5,
+      "sparpraemie": 91.03,
+      "kostenVermoegenMtl": 0.025,
+      "risikokostenMtl": 0,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 10,
+      "sparpraemie": 91.07,
+      "kostenVermoegenMtl": 0.031,
+      "risikokostenMtl": 0,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 15,
+      "sparpraemie": 91.08,
+      "kostenVermoegenMtl": 0.036,
+      "risikokostenMtl": 0,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 20,
+      "sparpraemie": 91.09,
+      "kostenVermoegenMtl": 0.038,
+      "risikokostenMtl": 0.001,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 25,
+      "sparpraemie": 91.09,
+      "kostenVermoegenMtl": 0.039,
+      "risikokostenMtl": 0.001,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 30,
+      "sparpraemie": 91.09,
+      "kostenVermoegenMtl": 0.04,
+      "risikokostenMtl": 0.001,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 35,
+      "sparpraemie": 91.1,
+      "kostenVermoegenMtl": 0.041,
+      "risikokostenMtl": 0.001,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 40,
+      "sparpraemie": 91.1,
+      "kostenVermoegenMtl": 0.042,
+      "risikokostenMtl": 0.002,
+      "fondskostenPa": 1.89
+    },
+    {
+      "jahre": 45,
+      "sparpraemie": 91.1,
+      "kostenVermoegenMtl": 0.042,
+      "risikokostenMtl": 0.003,
+      "fondskostenPa": 1.89
+    }
+  ],
+  "_faelleHinweis": "Ablaufleistungen je 'monat' EUR Monatsbeitrag, 'jahre' Laufzeit, mit/ohne Dynamik. 'ziel' ist die vom User gelieferte Ablaufleistung in EUR.",
+  "faelle": [
+    {
+      "monat": 50,
+      "jahre": 5,
+      "dynamik": false,
+      "ziel": 3156
+    },
+    {
+      "monat": 50,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 7633
+    },
+    {
+      "monat": 50,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 8014
+    },
+    {
+      "monat": 50,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 13233
+    },
+    {
+      "monat": 50,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 14933
+    },
+    {
+      "monat": 50,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 20520
+    },
+    {
+      "monat": 50,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 24650
+    },
+    {
+      "monat": 50,
+      "jahre": 25,
+      "dynamik": false,
+      "ziel": 29996
+    },
+    {
+      "monat": 50,
+      "jahre": 25,
+      "dynamik": true,
+      "ziel": 38115
+    },
+    {
+      "monat": 50,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 42304
+    },
+    {
+      "monat": 50,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 56567
+    },
+    {
+      "monat": 50,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 58274
+    },
+    {
+      "monat": 50,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 81626
+    },
+    {
+      "monat": 50,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 78940
+    },
+    {
+      "monat": 50,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 105546
+    },
+    {
+      "monat": 50,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 160312
+    },
+    {
+      "monat": 100,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 15264
+    },
+    {
+      "monat": 100,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 16019
+    },
+    {
+      "monat": 100,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 26461
+    },
+    {
+      "monat": 100,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 29840
+    },
+    {
+      "monat": 100,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 41032
+    },
+    {
+      "monat": 100,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 49259
+    },
+    {
+      "monat": 100,
+      "jahre": 25,
+      "dynamik": false,
+      "ziel": 59979
+    },
+    {
+      "monat": 100,
+      "jahre": 25,
+      "dynamik": true,
+      "ziel": 76171
+    },
+    {
+      "monat": 100,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 84589
+    },
+    {
+      "monat": 100,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 113058
+    },
+    {
+      "monat": 100,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 116521
+    },
+    {
+      "monat": 100,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 163153
+    },
+    {
+      "monat": 100,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 157844
+    },
+    {
+      "monat": 100,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 230587
+    },
+    {
+      "monat": 100,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 211045
+    },
+    {
+      "monat": 100,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 320460
+    },
+    {
+      "monat": 150,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 22898
+    },
+    {
+      "monat": 150,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 24033
+    },
+    {
+      "monat": 150,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 39694
+    },
+    {
+      "monat": 150,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 44772
+    },
+    {
+      "monat": 150,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 126893
+    },
+    {
+      "monat": 150,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 169622
+    },
+    {
+      "monat": 150,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 174795
+    },
+    {
+      "monat": 150,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 244781
+    },
+    {
+      "monat": 150,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 236783
+    },
+    {
+      "monat": 150,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 345949
+    },
+    {
+      "monat": 150,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 316592
+    },
+    {
+      "monat": 150,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 480777
+    },
+    {
+      "monat": 200,
+      "jahre": 5,
+      "dynamik": false,
+      "ziel": 12623
+    },
+    {
+      "monat": 200,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 30530
+    },
+    {
+      "monat": 200,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 32041
+    },
+    {
+      "monat": 200,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 52925
+    },
+    {
+      "monat": 200,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 59687
+    },
+    {
+      "monat": 200,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 82068
+    },
+    {
+      "monat": 200,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 98526
+    },
+    {
+      "monat": 200,
+      "jahre": 25,
+      "dynamik": false,
+      "ziel": 119964
+    },
+    {
+      "monat": 200,
+      "jahre": 25,
+      "dynamik": true,
+      "ziel": 152356
+    },
+    {
+      "monat": 200,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 169187
+    },
+    {
+      "monat": 200,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 226128
+    },
+    {
+      "monat": 200,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 233055
+    },
+    {
+      "monat": 200,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 326328
+    },
+    {
+      "monat": 200,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 315705
+    },
+    {
+      "monat": 200,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 461202
+    },
+    {
+      "monat": 200,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 422114
+    },
+    {
+      "monat": 200,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 640951
+    },
+    {
+      "monat": 250,
+      "jahre": 5,
+      "dynamik": false,
+      "ziel": 15779
+    },
+    {
+      "monat": 250,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 38162
+    },
+    {
+      "monat": 250,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 40052
+    },
+    {
+      "monat": 250,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 66156
+    },
+    {
+      "monat": 250,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 74614
+    },
+    {
+      "monat": 250,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 102584
+    },
+    {
+      "monat": 250,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 123169
+    },
+    {
+      "monat": 250,
+      "jahre": 25,
+      "dynamik": false,
+      "ziel": 149954
+    },
+    {
+      "monat": 250,
+      "jahre": 25,
+      "dynamik": true,
+      "ziel": 190458
+    },
+    {
+      "monat": 250,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 211482
+    },
+    {
+      "monat": 250,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 282681
+    },
+    {
+      "monat": 250,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 291316
+    },
+    {
+      "monat": 250,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 407934
+    },
+    {
+      "monat": 250,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 394627
+    },
+    {
+      "monat": 250,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 576533
+    },
+    {
+      "monat": 250,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 527637
+    },
+    {
+      "monat": 250,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 801229
+    },
+    {
+      "monat": 300,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 45796
+    },
+    {
+      "monat": 300,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 48063
+    },
+    {
+      "monat": 300,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 79389
+    },
+    {
+      "monat": 300,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 89534
+    },
+    {
+      "monat": 300,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 123105
+    },
+    {
+      "monat": 300,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 147797
+    },
+    {
+      "monat": 300,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 253786
+    },
+    {
+      "monat": 300,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 339203
+    },
+    {
+      "monat": 300,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 349590
+    },
+    {
+      "monat": 300,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 489500
+    },
+    {
+      "monat": 300,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 473566
+    },
+    {
+      "monat": 300,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 691813
+    },
+    {
+      "monat": 300,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 633183
+    },
+    {
+      "monat": 300,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 961441
+    },
+    {
+      "monat": 400,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 61062
+    },
+    {
+      "monat": 400,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 64085
+    },
+    {
+      "monat": 400,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 105853
+    },
+    {
+      "monat": 400,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 119384
+    },
+    {
+      "monat": 400,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 164142
+    },
+    {
+      "monat": 400,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 197072
+    },
+    {
+      "monat": 400,
+      "jahre": 25,
+      "dynamik": false,
+      "ziel": 239936
+    },
+    {
+      "monat": 400,
+      "jahre": 25,
+      "dynamik": true,
+      "ziel": 304736
+    },
+    {
+      "monat": 400,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 338385
+    },
+    {
+      "monat": 400,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 452291
+    },
+    {
+      "monat": 400,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 466124
+    },
+    {
+      "monat": 400,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 652698
+    },
+    {
+      "monat": 400,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 631428
+    },
+    {
+      "monat": 400,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 922465
+    },
+    {
+      "monat": 400,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 844253
+    },
+    {
+      "monat": 400,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 1281988
+    },
+    {
+      "monat": 500,
+      "jahre": 10,
+      "dynamik": false,
+      "ziel": 76326
+    },
+    {
+      "monat": 500,
+      "jahre": 10,
+      "dynamik": true,
+      "ziel": 80103
+    },
+    {
+      "monat": 500,
+      "jahre": 15,
+      "dynamik": false,
+      "ziel": 132315
+    },
+    {
+      "monat": 500,
+      "jahre": 15,
+      "dynamik": true,
+      "ziel": 149223
+    },
+    {
+      "monat": 500,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 205174
+    },
+    {
+      "monat": 500,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 246330
+    },
+    {
+      "monat": 500,
+      "jahre": 25,
+      "dynamik": false,
+      "ziel": 299915
+    },
+    {
+      "monat": 500,
+      "jahre": 25,
+      "dynamik": true,
+      "ziel": 380906
+    },
+    {
+      "monat": 500,
+      "jahre": 30,
+      "dynamik": false,
+      "ziel": 422974
+    },
+    {
+      "monat": 500,
+      "jahre": 30,
+      "dynamik": true,
+      "ziel": 565344
+    },
+    {
+      "monat": 500,
+      "jahre": 35,
+      "dynamik": false,
+      "ziel": 582646
+    },
+    {
+      "monat": 500,
+      "jahre": 35,
+      "dynamik": true,
+      "ziel": 815846
+    },
+    {
+      "monat": 500,
+      "jahre": 40,
+      "dynamik": false,
+      "ziel": 789272
+    },
+    {
+      "monat": 500,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 1153044
+    },
+    {
+      "monat": 500,
+      "jahre": 45,
+      "dynamik": false,
+      "ziel": 1055298
+    },
+    {
+      "monat": 500,
+      "jahre": 45,
+      "dynamik": true,
+      "ziel": 1602436
+    }
+  ],
+  "_ausgeschlossenHinweis": "Zwei Datenpunkte, die der User als fehlerhaft bestaetigt hat und die deshalb NICHT in 'faelle' einfliessen: (1) 50 EUR/40J/mit Dynamik=15358 hat offensichtlich eine fuehrende 1 verloren (100 EUR->230587, 500 EUR->1153044, beide durch 2 bzw. 10 geteilt ergeben ~115300 statt 15358). (2) Die 150-EUR-Zeilen fuer 20 und 25 Jahre sind vertauscht (alle anderen Praemienstufen zeigen konsistent: 20J je 50 EUR = 20517-20520, 25J je 50 EUR = 29991-29996; die 150-EUR-Werte fuer 20J passen exakt zu den 25J-Werten anderer Stufen und umgekehrt).",
+  "ausgeschlossen": [
+    {
+      "monat": 50,
+      "jahre": 40,
+      "dynamik": true,
+      "ziel": 15358
+    },
+    {
+      "monat": 150,
+      "jahre": 20,
+      "dynamik": false,
+      "ziel": 89975
+    },
+    {
+      "monat": 150,
+      "jahre": 20,
+      "dynamik": true,
+      "ziel": 114283
+    },
+    {
+      "monat": 150,
+      "jahre": 25,
+      "dynamik": false,
+      "ziel": 61552
+    },
+    {
+      "monat": 150,
+      "jahre": 25,
+      "dynamik": true,
+      "ziel": 73908
+    }
+  ]
+}

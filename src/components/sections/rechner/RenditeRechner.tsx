@@ -9,6 +9,7 @@ import {
   simulateFLV, simulateFondsdepot, simulateFondssparer, simulateVV,
   type DepotProvider, type Provider,
 } from "@/lib/calc/rendite"
+import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
 import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
 
 const PERF_PRESETS = [3, 6, 9]
@@ -129,7 +130,13 @@ export function RenditeRechner() {
   }, [provider, monatNum, einmalNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, depotFixFee])
 
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
-  const finalEinbezahltFondssparer = monatNum * 12 * jahreClamped
+  // Fondssparer bekommt keinen Einmalerlag, dafür aber — anders als die Chart-Linie
+  // "Einbezahlt*" oben — die tatsächlich gezahlten, jährlich dynamisierten Prämien (bei
+  // Wertanpassung steigt die reale Monatsprämie um waPctEff p.a., nicht nur der Depotwert).
+  let finalEinbezahltFondssparer = 0
+  for (let y = 0; y < jahreClamped; y++) {
+    finalEinbezahltFondssparer += monatNum * 12 * Math.pow(1 + waPctEff, y)
+  }
   const products = [
     { name: "FLV", end: flvY[flvY.length - 1], einbezahlt: finalEinbezahlt },
     { name: "Fondssparer", end: fondssparerY[fondssparerY.length - 1], einbezahlt: finalEinbezahltFondssparer },
@@ -242,10 +249,15 @@ export function RenditeRechner() {
         <Card>
           <CardContent className="flex flex-col gap-2">
             <h3 className="text-sm font-semibold">Fondssparer</h3>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Versicherungssteuer</span><span>3,85 %</span></div>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Kosten (von Prämiensumme)</span><span>5,06 %</span></div>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten (am Vermögen)</span><span>0,516 % p.a.</span></div>
+            <div className="flex flex-col gap-1">
+              {fondssparerKostenZeilen(jahreClamped).map(([label, val]) => (
+                <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
+              ))}
+            </div>
             <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
+            <div className="text-[10.5px] text-muted-foreground">
+              Kalibriert auf echte Angebote (zwei Fonds, Annahme 6 % p.a.)
+            </div>
             {einmalNum > 0 && (
               <div className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                 Kein Einmalerlag verfügbar — der eingegebene Einmalerlag fließt bei diesem Produkt nicht ins Depot.

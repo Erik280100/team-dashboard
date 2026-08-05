@@ -1,8 +1,10 @@
 // Renditerechner — 1:1 portiert aus legacy/index.html:3532–3740.
 // Reine Funktionen, keine DOM-Zugriffe. Bei jeder Änderung: Golden-Master-Test
 // in test/calc/rendite.golden.test.ts muss weiterhin grün bleiben (gilt nicht für
-// den Merkur-Prämientopf in simulateFLV — der ist gegen echte Angebote kalibriert,
-// siehe merkurFlv.ts und test/calc/merkur.reference.test.ts).
+// den Merkur-Prämientopf in simulateFLV und für simulateFondssparer — beide sind
+// gegen echte Angebote kalibriert, siehe merkurFlv.ts / fondssparer.ts und
+// test/calc/merkur.reference.test.ts / test/calc/fondssparer.reference.test.ts).
+import { simulateFondssparerKalibriert } from "./fondssparer"
 import { simulateMerkurFLVEinmal, simulateMerkurFLVPraemie } from "./merkurFlv"
 
 export const RR_KEST = 0.275
@@ -109,11 +111,10 @@ export function simulateFLV(
 }
 
 /**
- * Fondssparer: kein Einmalerlag, keine Zillmerung, keine Kickbacks.
- * Kosten lt. LV-InfoV-Kostenblatt (200/100 €/mon, 38J): Sparprämie 91,10 % der
- * Prämiensumme (Versicherungssteuer 3,85 % + Kosten 5,06 %), laufende Kosten
- * 0,043 % monatlich (0,516 % p.a.). Wertanpassung erhöht die mtl. Prämie jährlich
- * zum Vertragsjubiläum (Stufenmodell, ab dem 2. Versicherungsjahr).
+ * Fondssparer: kein Einmalerlag, keine Zillmerung, keine Kickbacks. Sparprämie, laufende
+ * Kosten und Ertragskurve sind laufzeitabhängig und gegen echte Angebote kalibriert (2 Fonds,
+ * Annahme 6 % p.a.) — siehe fondssparer.ts. Bewusst KEIN Golden-Master-Fall mehr (siehe
+ * Kopfkommentar dieser Datei), Abgleich läuft über test/calc/fondssparer.reference.test.ts.
  */
 export function simulateFondssparer(
   monat: number,
@@ -121,21 +122,7 @@ export function simulateFondssparer(
   perf: number,
   waPct = 0
 ): number[] {
-  const months = jahre * 12
-  const r = rrRate(perf)
-  let depot = 0
-  const values = [0]
-  for (let m = 1; m <= months; m++) {
-    const jahrIdx = Math.floor((m - 1) / 12)
-    const monatAngepasst = waPct > 0 ? monat * Math.pow(1 + waPct, jahrIdx) : monat
-    const netNachAbzug = monatAngepasst * 0.911
-    depot += netNachAbzug
-    depot *= 1 + r
-    depot -= depot * (0.00516 / 12)
-    if (depot < 0) depot = 0
-    values.push(depot)
-  }
-  return values
+  return simulateFondssparerKalibriert(monat, jahre, perf, waPct)
 }
 
 /** Fondsdepot: KESt via jährliche ausschüttungsgleiche Erträge (agE) + Rest-KESt beim Verkauf. */

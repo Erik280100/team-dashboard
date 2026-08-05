@@ -35,13 +35,10 @@ describe("rendite: golden master vs. legacy", () => {
     }
   })
 
-  it("simulateFondssparer matches across scenarios", () => {
-    for (const c of flvCases) {
-      const a = ts.simulateFondssparer(c.monat, c.jahre, c.perf, c.waPct)
-      const b = legacy.simulateFondssparer(c.monat, c.jahre, c.perf, c.waPct)
-      expect(a).toEqual(b)
-    }
-  })
+  // simulateFondssparer ist hier bewusst NICHT mehr dabei: das Modell wurde gegen echte
+  // Angebote kalibriert (siehe fondssparer.ts) und weicht daher absichtlich von der
+  // eingefrorenen Legacy-Referenz ab. Der Abgleich läuft stattdessen über
+  // test/calc/fondssparer.reference.test.ts.
 
   const fondsdepotCases = [
     { monat: 100, einmal: 0, jahre: 20, perf: 0.06, aa: 2.5, gebuehr: 0.5, age: 0.3, fixFee: 0 },
