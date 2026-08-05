@@ -16,7 +16,7 @@ const PERF_PRESETS = [3, 6, 9]
 function ToggleGroup<T extends string>({
   options, value, onChange,
 }: {
-  options: { value: T; label: string }[]
+  options: { value: T; label: string; disabled?: boolean }[]
   value: T
   onChange: (v: T) => void
 }) {
@@ -26,10 +26,13 @@ function ToggleGroup<T extends string>({
         <button
           key={o.value}
           type="button"
+          disabled={o.disabled}
           onClick={() => onChange(o.value)}
           className={cn(
             "rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
-            value === o.value
+            o.disabled
+              ? "cursor-not-allowed border-border bg-card text-muted-foreground/40"
+              : value === o.value
               ? "border-transparent bg-primary text-primary-foreground"
               : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
           )}
@@ -255,7 +258,7 @@ export function RenditeRechner() {
             <h3 className="text-sm font-semibold">FLV (Fondsgebundene Lebensversicherung)</h3>
             <ToggleGroup
               value={provider}
-              options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia" }]}
+              options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia", disabled: true }]}
               onChange={setProvider}
             />
             <div className="flex flex-col gap-1">
