@@ -45,24 +45,25 @@ function ToggleGroup<T extends string>({
 }
 
 function Stepper({
-  value, onChange, step, id,
+  value, onChange, step, id, disabled,
 }: {
   value: string
   onChange: (v: string) => void
   step: number
   id: string
+  disabled?: boolean
 }) {
   const numValue = Number(value) || 0
   return (
     <div className="flex items-center gap-1">
-      <button type="button" className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted"
+      <button type="button" disabled={disabled} className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
         onClick={() => onChange(String(Math.max(0, numValue - step)))}>−</button>
       <input
-        id={id} type="number" min={0} step={step} value={value}
+        id={id} type="number" min={0} step={step} value={value} disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-center text-sm tabular-nums"
+        className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-center text-sm tabular-nums disabled:opacity-40 disabled:cursor-not-allowed"
       />
-      <button type="button" className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted"
+      <button type="button" disabled={disabled} className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
         onClick={() => onChange(String(numValue + step))}>+</button>
     </div>
   )
@@ -159,8 +160,8 @@ export function RenditeRechner() {
               <Stepper id="rrMonat" value={monat} onChange={setMonat} step={25} />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Einmalerlag (€)
-              <Stepper id="rrEinmal" value={einmal} onChange={setEinmal} step={1000} />
+              Einmalerlag (€) — vorübergehend deaktiviert
+              <Stepper id="rrEinmal" value={einmal} onChange={setEinmal} step={1000} disabled />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Laufzeit (Jahre)
