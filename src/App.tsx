@@ -210,6 +210,12 @@ function AppShell() {
           canEdit={auth.isEditor && !isArchive}
           onCloseMonth={handleCloseMonth}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
+          attendance={attendance.attendance}
+          orgChart={{
+            tree: orgChart.tree, notes: orgChart.notes, conns: orgChart.conns,
+            rates: orgChart.rates, planRates: orgChart.planRates,
+          }}
+          financings={finanzierungen.cases}
         />
 
         {!CLOUD_CONFIGURED && (

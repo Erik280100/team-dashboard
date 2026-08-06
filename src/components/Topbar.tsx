@@ -16,7 +16,12 @@ import type { SectionId } from "@/hooks/useHashSection"
 import { MONTH_CLOSE_ENABLED, monthLabel } from "@/lib/calc/archive"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import type { MonthKey } from "@/types/archive"
-import { STARTER_GOAL } from "@/types/dashboard"
+import {
+  STARTER_GOAL,
+  type AttendanceEntry,
+  type FinanzierungCase,
+  type OrgChartDoc,
+} from "@/types/dashboard"
 
 const SYNC_STATUS_TEXT: Record<string, string> = {
   "not-configured": "",
@@ -37,6 +42,9 @@ export function Topbar({
   canEdit,
   onCloseMonth,
   onToggleSidebar,
+  attendance,
+  orgChart,
+  financings,
 }: {
   auth: ReturnType<typeof useAuth>
   dashboard: UseDashboardDocResult
@@ -48,6 +56,10 @@ export function Topbar({
   canEdit: boolean
   onCloseMonth: () => void
   onToggleSidebar: () => void
+  /** Für "Vollständiges Backup" — Daten, die im normalen Export (nur rows/teamGoal) fehlen. */
+  attendance: Record<string, AttendanceEntry>
+  orgChart: OrgChartDoc
+  financings: FinanzierungCase[]
 }) {
   const confirm = useConfirm()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -71,16 +83,34 @@ export function Topbar({
     onSelectMonth(months[nextIdx])
   }
 
-  function onExport() {
-    const payload = { rows: dashboard.rows, teamGoal: dashboard.teamGoal }
+  function downloadJson(payload: unknown, filenamePrefix: string) {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     const dateStr = new Date().toISOString().slice(0, 10)
     a.href = url
-    a.download = `finova_dashboard_backup_${dateStr}.json`
+    a.download = `${filenamePrefix}_${dateStr}.json`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  function onExport() {
+    downloadJson({ rows: dashboard.rows, teamGoal: dashboard.teamGoal }, "finova_dashboard_backup")
+  }
+
+  /** Deckt alles ab, was der normale Export (nur rows/teamGoal) auslässt:
+   * Ist-Verlauf, Anwesenheitsliste, Strukturbaum und Finanzierungen. Reiner
+   * Lese-Export zur Ablage — es gibt (noch) keinen passenden Import dafür. */
+  function onFullBackup() {
+    downloadJson(
+      {
+        dashboard: { rows: dashboard.rows, teamGoal: dashboard.teamGoal, history: dashboard.history },
+        attendance,
+        orgChart,
+        financings,
+      },
+      "finova_full_backup"
+    )
   }
 
   async function onImportFile(e: ChangeEvent<HTMLInputElement>) {
@@ -163,20 +193,25 @@ export function Topbar({
           </div>
         )}
         {!isArchive && auth.isEditor && CLOUD_CONFIGURED && (
-          <Button
-            size="sm"
-            onClick={onCloseMonth}
-            disabled={archive.closing || !MONTH_CLOSE_ENABLED}
-            title={MONTH_CLOSE_ENABLED ? undefined : "Vorübergehend deaktiviert"}
-          >
-            Monat abschließen
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={onFullBackup}>
+              Vollständiges Backup
+            </Button>
+            <Button
+              size="sm"
+              onClick={onCloseMonth}
+              disabled={archive.closing || !MONTH_CLOSE_ENABLED}
+              title={MONTH_CLOSE_ENABLED ? undefined : "Vorübergehend deaktiviert"}
+            >
+              Monat abschließen
+            </Button>
+          </>
         )}
         <AuthBox auth={auth} />
         <span role="status" aria-live="polite" className="text-xs text-muted-foreground">
           {SYNC_STATUS_TEXT[dashboard.syncStatus]}
         </span>
-        {!isArchive && (
+        {!isArchive && section === "overview" && (
           <Button size="sm" variant="ghost" onClick={onExport}>
             Export
           </Button>
