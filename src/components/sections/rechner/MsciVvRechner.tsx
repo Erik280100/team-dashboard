@@ -83,20 +83,20 @@ export function MsciVvRechner() {
               Einmalanlage (€)
               <input type="number" min={0} step={1000} value={kapital}
                 onChange={(e) => setKapital(e.target.value)}
-                className="h-8 w-40 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                className="h-8 w-40 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Monatliche Einzahlung (€)
               <input type="number" min={0} step={25} value={monatlich}
                 onChange={(e) => setMonatlich(e.target.value)}
-                className="h-8 w-40 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                className="h-8 w-40 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Anlagehorizont (Jahre)
               <div className="flex flex-wrap items-center gap-2">
                 <input type="number" min={1} max={40} step={1} value={horizont}
                   onChange={(e) => setHorizont(e.target.value)}
-                  className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                  className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
                 <div className="flex flex-wrap gap-1.5">
                   {HORIZON_PRESETS.map((p) => (
                     <button key={p} type="button" onClick={() => setHorizont(String(p))}
@@ -133,7 +133,7 @@ export function MsciVvRechner() {
             Ausschüttungsrendite VV (% p.a.)
             <input type="number" min={0} step={0.1} value={ausschuettungsrendite} disabled={!dividendenBonusEnabled}
               onChange={(e) => setAusschuettungsrendite(e.target.value)}
-              className="h-8 w-32 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm disabled:opacity-50" />
+              className="h-8 w-32 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm disabled:opacity-50" />
           </label>
         </CardContent>
       </Card>

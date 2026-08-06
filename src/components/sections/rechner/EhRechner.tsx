@@ -96,7 +96,7 @@ export function EhRechner({
                   {it.gLabel} ({it.gUnit})
                   <input
                     type="number" min={0} step={1} max={it.gMax}
-                    className="h-8 w-20 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm"
+                    className="h-8 w-20 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
                     value={g[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setG((s) => ({ ...s, [it.id]: e.target.value }))}
@@ -112,7 +112,7 @@ export function EhRechner({
                   {it.jLabel}
                   <input
                     type="number" min={0} step={10}
-                    className="h-8 w-28 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm"
+                    className="h-8 w-28 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
                     value={j[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setJ((s) => ({ ...s, [it.id]: e.target.value }))}
@@ -135,7 +135,7 @@ export function EhRechner({
             </label>
             <input
               type="number" min={0} step={0.5}
-              className="ml-2 h-7 w-16 shrink-0 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-[12.5px]"
+              className="ml-2 h-7 w-16 shrink-0 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-[12.5px]"
               value={mult[group.id] ?? ""}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setMult((s) => ({ ...s, [group.id]: e.target.value }))}

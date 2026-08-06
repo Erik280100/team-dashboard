@@ -1,13 +1,13 @@
 // Renditerechner — Äquivalent zu initRenditeRechner() aus legacy/index.html:3744–3978.
 import "@/lib/chartSetup"
-import { useMemo, useState } from "react"
+import { useMemo, useState, type CSSProperties } from "react"
 import { Line } from "react-chartjs-2"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
-  RR_DEPOT_PRESETS, RR_FLV_COSTS, rrFormatAxis, rrFormatEUR,
+  RR_DEPOT_PRESETS, RR_FLV_COSTS, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR,
   simulateFLV, simulateFondsdepot, simulateFondssparer, simulateVV,
-  type DepotProvider, type Provider,
+  type DepotProvider, type Provider, type RRProductKey,
 } from "@/lib/calc/rendite"
 import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
 import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
@@ -45,6 +45,14 @@ function ToggleGroup<T extends string>({
   )
 }
 
+function ProductDot({ colorKey }: { colorKey: RRProductKey }) {
+  return <span className="size-2.5 shrink-0 rounded-full" style={{ background: RR_PRODUCT_COLORS[colorKey].line }} />
+}
+
+function productCardStyle(colorKey: RRProductKey): CSSProperties {
+  return { borderTopColor: RR_PRODUCT_COLORS[colorKey].line, borderTopWidth: 3 }
+}
+
 function Stepper({
   value, onChange, step, id, disabled,
 }: {
@@ -62,7 +70,7 @@ function Stepper({
       <input
         id={id} type="number" min={0} step={step} value={value} disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-center text-sm tabular-nums disabled:opacity-40 disabled:cursor-not-allowed"
+        className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-center text-sm tabular-nums disabled:opacity-40 disabled:cursor-not-allowed"
       />
       <button type="button" disabled={disabled} className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
         onClick={() => onChange(String(numValue + step))}>+</button>
@@ -72,7 +80,6 @@ function Stepper({
 
 export function RenditeRechner() {
   const [monat, setMonat] = useState("200")
-  const [einmal, setEinmal] = useState("0")
   const [jahre, setJahre] = useState("20")
   const [waEnabled, setWaEnabled] = useState(false)
   const [waPct, setWaPct] = useState("3")
@@ -85,7 +92,6 @@ export function RenditeRechner() {
   const [ageRendite, setAgeRendite] = useState("2")
 
   const monatNum = Number(monat) || 0
-  const einmalNum = Number(einmal) || 0
   const ausgabeaufschlagNum = Number(ausgabeaufschlag) || 0
   const depotgebuehrNum = Number(depotgebuehr) || 0
   const ageRenditeNum = Number(ageRendite) || 0
@@ -93,7 +99,6 @@ export function RenditeRechner() {
   const perf = (customPerf !== "" && !isNaN(parseFloat(customPerf)) ? parseFloat(customPerf) : perfPreset ?? 6) / 100
   const jahreClamped = Math.min(65, Math.max(1, Math.round(Number(jahre) || 0) || 20))
   const waPctEff = waEnabled ? Math.max(0, Number(waPct) || 0) / 100 : 0
-  const depotFixFee = depotProvider !== "sonstiges" ? RR_DEPOT_PRESETS[depotProvider].flatFee : 0
 
   function selectDepotProvider(p: DepotProvider | "sonstiges") {
     setDepotProvider(p)
@@ -109,17 +114,17 @@ export function RenditeRechner() {
   }
 
   const { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY } = useMemo(() => {
-    const flvMonthly = simulateFLV(provider, monatNum, einmalNum, jahreClamped, perf, waPctEff)
+    const flvMonthly = simulateFLV(provider, monatNum, 0, jahreClamped, perf, waPctEff)
     const fondssparerMonthly = simulateFondssparer(monatNum, jahreClamped, perf, waPctEff)
-    const fondsdepotMonthly = simulateFondsdepot(monatNum, einmalNum, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, depotFixFee)
-    const vvMonthly = simulateVV(monatNum, einmalNum, jahreClamped, perf, ageRenditeNum)
+    const fondsdepotMonthly = simulateFondsdepot(monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum)
+    const vvMonthly = simulateVV(monatNum, 0, jahreClamped, perf, ageRenditeNum)
 
     const years: number[] = []
     const einbezahlt: number[] = []
     const flvY: number[] = [], fondssparerY: number[] = [], fondsdepotY: number[] = [], vvY: number[] = []
     for (let y = 0; y <= jahreClamped; y++) {
       years.push(y)
-      einbezahlt.push(monatNum * 12 * y + einmalNum)
+      einbezahlt.push(monatNum * 12 * y)
       const idx = y * 12
       flvY.push(flvMonthly[idx])
       fondssparerY.push(fondssparerMonthly[idx])
@@ -127,28 +132,24 @@ export function RenditeRechner() {
       vvY.push(vvMonthly[idx])
     }
     return { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY }
-  }, [provider, monatNum, einmalNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, depotFixFee])
+  }, [provider, monatNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum])
 
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
-  // Fondssparer bekommt keinen Einmalerlag, dafür aber — anders als die Chart-Linie
-  // "Einbezahlt*" oben — die tatsächlich gezahlten, jährlich dynamisierten Prämien (bei
+  // Fondssparer: die "Einbezahlt*"-Linie oben zeigt die nominelle Monatsprämie × Jahre;
+  // hier dagegen die tatsächlich gezahlten, jährlich dynamisierten Prämien (bei
   // Wertanpassung steigt die reale Monatsprämie um waPctEff p.a., nicht nur der Depotwert).
   let finalEinbezahltFondssparer = 0
   for (let y = 0; y < jahreClamped; y++) {
     finalEinbezahltFondssparer += monatNum * 12 * Math.pow(1 + waPctEff, y)
   }
-  const products = [
-    { name: "FLV", end: flvY[flvY.length - 1], einbezahlt: finalEinbezahlt },
-    { name: "Fondssparer", end: fondssparerY[fondssparerY.length - 1], einbezahlt: finalEinbezahltFondssparer },
-    { name: "Depot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt },
-    { name: "Vermögensverwaltung", end: vvY[vvY.length - 1], einbezahlt: finalEinbezahlt },
+  const products: { name: string; colorKey: RRProductKey; end: number; einbezahlt: number }[] = [
+    { name: "FLV", colorKey: "flv", end: flvY[flvY.length - 1], einbezahlt: finalEinbezahlt },
+    { name: "Fondssparer", colorKey: "fondssparer", end: fondssparerY[fondssparerY.length - 1], einbezahlt: finalEinbezahltFondssparer },
+    { name: "Depot", colorKey: "fondsdepot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt },
+    { name: "Vermögensverwaltung", colorKey: "vv", end: vvY[vvY.length - 1], einbezahlt: finalEinbezahlt },
   ]
 
-  const depotHint = depotProvider !== "sonstiges"
-    ? (einmalNum > 0
-        ? `Sparplan gebührenfrei — zzgl. ${RR_DEPOT_PRESETS[depotProvider].feeLabel} einmalige Ordergebühr auf den Einmalerlag`
-        : `Sparplan gebührenfrei — bei Einmalerlag fällt eine fixe Ordergebühr von ${RR_DEPOT_PRESETS[depotProvider].feeLabel} an`)
-    : ""
+  const depotHint = depotProvider !== "sonstiges" ? "Sparplan gebührenfrei" : ""
 
   return (
     <div className="flex flex-col gap-4">
@@ -161,20 +162,16 @@ export function RenditeRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Monatliche Einzahlung (€)
               <Stepper id="rrMonat" value={monat} onChange={setMonat} step={25} />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Einmalerlag (€) — vorübergehend deaktiviert
-              <Stepper id="rrEinmal" value={einmal} onChange={setEinmal} step={1000} disabled />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Laufzeit (Jahre)
               <input type="number" min={1} max={65} step={1} value={jahre}
                 onChange={(e) => setJahre(e.target.value)}
-                className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -183,7 +180,7 @@ export function RenditeRechner() {
               </span>
               <input type="number" min={0} step={0.5} value={waPct} disabled={!waEnabled}
                 onChange={(e) => setWaPct(e.target.value)}
-                className="h-8 w-24 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm disabled:opacity-50" />
+                className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm disabled:opacity-50" />
             </label>
           </div>
           <div className="flex flex-wrap items-end gap-4">
@@ -196,16 +193,16 @@ export function RenditeRechner() {
               Eigene Performance (% p.a.)
               <input type="number" step={0.1} placeholder="z. B. 5,5" value={customPerf}
                 onChange={(e) => onCustomPerf(e.target.value)}
-                className="h-8 w-32 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                className="h-8 w-32 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
             </label>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card style={productCardStyle("fondsdepot")}>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">Depot</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondsdepot" />Depot</h3>
             <ToggleGroup
               value={depotProvider}
               options={[{ value: "flatex", label: "flatex" }, { value: "traderepublic", label: "Trade Republic" }, { value: "sonstiges", label: "Sonstiges" }]}
@@ -216,19 +213,19 @@ export function RenditeRechner() {
                 Ausgabeaufschlag (%)
                 <input type="number" min={0} step={0.1} value={ausgabeaufschlag}
                   onChange={(e) => setAusgabeaufschlag(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Depotgebühr / TER (% p.a.)
                 <input type="number" min={0} step={0.05} value={depotgebuehr}
                   onChange={(e) => setDepotgebuehr(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 agE-/Dividendenrendite (% p.a.)
                 <input type="number" min={0} step={0.1} value={ageRendite}
                   onChange={(e) => setAgeRendite(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
               </label>
             </div>
             {depotHint && <div className="text-xs text-muted-foreground">{depotHint}</div>}
@@ -236,19 +233,18 @@ export function RenditeRechner() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card style={productCardStyle("vv")}>
           <CardContent className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold">Vermögensverwaltung</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>3 × Monatsbeitrag</span></div>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Ausgabeaufschlag Einmalerlag</span><span>5 %</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>2,09 % p.a.</span></div>
             <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-pflichtig (27,5 %)</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card style={productCardStyle("fondssparer")}>
           <CardContent className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold">Fondssparer</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
             <div className="flex flex-col gap-1">
               {fondssparerKostenZeilen(jahreClamped).map(([label, val]) => (
                 <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
@@ -258,17 +254,12 @@ export function RenditeRechner() {
             <div className="text-[10.5px] text-muted-foreground">
               Kalibriert auf echte Angebote (zwei Fonds, Annahme 6 % p.a.)
             </div>
-            {einmalNum > 0 && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                Kein Einmalerlag verfügbar — der eingegebene Einmalerlag fließt bei diesem Produkt nicht ins Depot.
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card style={productCardStyle("flv")}>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">FLV (Fondsgebundene Lebensversicherung)</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="flv" />FLV (Fondsgebundene Lebensversicherung)</h3>
             <ToggleGroup
               value={provider}
               options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia", disabled: true }]}
@@ -297,10 +288,10 @@ export function RenditeRechner() {
               data={{
                 labels: years,
                 datasets: [
-                  { label: "FLV", data: flvY, borderColor: "#155767", backgroundColor: "rgba(21,87,103,.08)", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Fondssparer", data: fondssparerY, borderColor: "#5B9BD5", backgroundColor: "rgba(91,155,213,.08)", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Depot", data: fondsdepotY, borderColor: "#B07CC6", backgroundColor: "rgba(176,124,198,.08)", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Vermögensverwaltung", data: vvY, borderColor: "#E7A94C", backgroundColor: "rgba(231,169,76,.08)", borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                  { label: "FLV", data: flvY, borderColor: RR_PRODUCT_COLORS.flv.line, backgroundColor: RR_PRODUCT_COLORS.flv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                  { label: "Fondssparer", data: fondssparerY, borderColor: RR_PRODUCT_COLORS.fondssparer.line, backgroundColor: RR_PRODUCT_COLORS.fondssparer.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                  { label: "Depot", data: fondsdepotY, borderColor: RR_PRODUCT_COLORS.fondsdepot.line, backgroundColor: RR_PRODUCT_COLORS.fondsdepot.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                  { label: "Vermögensverwaltung", data: vvY, borderColor: RR_PRODUCT_COLORS.vv.line, backgroundColor: RR_PRODUCT_COLORS.vv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
                   { label: "Einbezahlt*", data: einbezahlt, borderColor: "#8FA1A6", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0 },
                 ],
               }}
@@ -328,11 +319,14 @@ export function RenditeRechner() {
         {products.map((p) => {
           const diff = p.end - p.einbezahlt
           const positive = diff >= 0
+          const color = RR_PRODUCT_COLORS[p.colorKey]
           return (
-            <Card key={p.name}>
+            <Card key={p.name} style={{ ...productCardStyle(p.colorKey), backgroundColor: color.tint }}>
               <CardContent>
-                <div className="text-xs text-muted-foreground">{p.name}</div>
-                <div className="text-xl font-bold tabular-nums">{rrFormatEUR(p.end)}</div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: color.line }}>
+                  <ProductDot colorKey={p.colorKey} />{p.name}
+                </div>
+                <div className="mt-1 text-xl font-bold tabular-nums">{rrFormatEUR(p.end)}</div>
                 <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
                   {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
                 </div>
@@ -351,10 +345,10 @@ export function RenditeRechner() {
                 <tr className="border-b text-left text-xs font-semibold text-muted-foreground">
                   <th className="px-2 py-1.5">Jahr</th>
                   <th className="px-2 py-1.5">Einbezahlt</th>
-                  <th className="px-2 py-1.5">FLV</th>
-                  <th className="px-2 py-1.5">Fondssparer</th>
-                  <th className="px-2 py-1.5">Depot</th>
-                  <th className="px-2 py-1.5">VV</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.flv.line }}>FLV</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondssparer.line }}>Fondssparer</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV</th>
                 </tr>
               </thead>
               <tbody>

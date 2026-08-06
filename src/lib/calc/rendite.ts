@@ -9,15 +9,24 @@ import { simulateMerkurFLVEinmal, simulateMerkurFLVPraemie } from "./merkurFlv"
 
 export const RR_KEST = 0.275
 
+// Eine Farbe je Sparform, konsistent für Eingabe-Kachel, Chart-Linie und
+// Hochrechnungsergebnis-Kachel verwendet (siehe RenditeRechner.tsx).
+export type RRProductKey = "flv" | "fondssparer" | "fondsdepot" | "vv"
+export const RR_PRODUCT_COLORS: Record<RRProductKey, { line: string; fill: string; tint: string }> = {
+  flv: { line: "#155767", fill: "rgba(21,87,103,.08)", tint: "rgba(21,87,103,.05)" },
+  fondssparer: { line: "#5B9BD5", fill: "rgba(91,155,213,.08)", tint: "rgba(91,155,213,.06)" },
+  fondsdepot: { line: "#B07CC6", fill: "rgba(176,124,198,.08)", tint: "rgba(176,124,198,.06)" },
+  vv: { line: "#E7A94C", fill: "rgba(231,169,76,.08)", tint: "rgba(231,169,76,.06)" },
+}
+
 export type Provider = "merkur" | "helvetia"
 export type DepotProvider = "flatex" | "traderepublic"
 
 // Depot-Presets: Kosten laut Online-Angaben der Broker (Stand 2026). Sparplanausführung
-// ist bei beiden gebührenfrei (Ausgabeaufschlag = 0), ein Einmalerlag (Einzelorder)
-// kostet aber pauschal eine fixe Ordergebühr in €. (legacy/index.html:3534–3544)
-export const RR_DEPOT_PRESETS: Record<DepotProvider, { ausgabeaufschlag: number; depotgebuehr: number; flatFee: number; feeLabel: string }> = {
-  flatex: { ausgabeaufschlag: 0, depotgebuehr: 1.45, flatFee: 5.9, feeLabel: "5,90 €" },
-  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 1.45, flatFee: 1.0, feeLabel: "1 €" },
+// ist bei beiden gebührenfrei (Ausgabeaufschlag = 0). (legacy/index.html:3534–3544)
+export const RR_DEPOT_PRESETS: Record<DepotProvider, { ausgabeaufschlag: number; depotgebuehr: number }> = {
+  flatex: { ausgabeaufschlag: 0, depotgebuehr: 1.45 },
+  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 1.45 },
 }
 
 // legacy/index.html:3546–3569. Merkur ist hier bewusst NICHT mehr enthalten — die
@@ -31,8 +40,6 @@ export const RR_FLV_COSTS: Record<"helvetia", [string, string][]> = {
     ["Laufende Depotkosten", "0,348 % p.a."],
     ["Kickbacks Jahr 1–7", "+0,20 % p.a."],
     ["Kickbacks ab Jahr 8", "+0,40 % p.a."],
-    ["Einmalerlag Gesamtkosten", "9,62 % (≥15 J.) / 15,77 % (<15 J.)"],
-    ["Einmalerlag Hüllenkosten", "0,348 % p.a."],
   ],
 }
 

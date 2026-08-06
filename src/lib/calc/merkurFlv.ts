@@ -158,10 +158,5 @@ export function merkurKostenZeilen(monat: number, jahre: number): [string, strin
     ["Sparprämie (netto in Fondsanteil)", `${quotePct.toFixed(1).replace(".", ",")} % der Prämie`],
     ["Abschlusskosten (Zillmerung)", `${(MERKUR_ZILLMER_PCT * 100).toFixed(1).replace(".", ",")} % · Monat 1–60`],
     ["Fondsrabatte/Kickbacks (Ertrag)", `+${(MERKUR_ERTRAGSAUFSCHLAG_PA * 100).toFixed(2).replace(".", ",")} % p.a.`],
-    ["Einmalerlag Abschlusskosten", "4 %"],
-    ["Einmalerlag Verwaltung", "0,35 % p.a."],
-    ["Einmalerlag VSt", "4 % (≥15 J.) / 11 % (<15 J.)"],
-    ["Kickbacks (Einmalerlag)", "+0,835 % p.a."],
-    ["Fixkosten (nur bei Einmalerlag)", "2 €/Monat"],
   ]
 }

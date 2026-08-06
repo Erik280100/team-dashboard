@@ -77,7 +77,7 @@ export function UmdrehRechner() {
               <input type="number" min={0} step={10} value={inputs.praemie}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => set("praemie", e.target.value)}
-                className="h-9 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                className="h-9 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Einheiten alt
@@ -100,7 +100,7 @@ export function UmdrehRechner() {
                 <input type="number" min={0} step={0.1} value={inputs[key]}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => set(key, e.target.value)}
-                  className="h-9 rounded-md border border-input bg-[#EFFBF5] focus:outline-none focus:border-[#3FCB8E] px-2 text-sm" />
+                  className="h-9 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
               </label>
             ))}
           </div>
