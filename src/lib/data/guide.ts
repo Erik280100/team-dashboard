@@ -64,7 +64,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   ` },
   { id: 'credit', title: 'Finova Credit', html: `
     <h2>Nach dem AT – Nächste Schritte</h2>
-    <p>FCCM anlegen, danach 2x telefonieren und dem Kunden schicken.</p>
+    <p>FCCM anlegen, danach dem Kunden alles erklären.</p>
 
     <h3>Offene Klärungspunkte</h3>
     <ul>
@@ -79,13 +79,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
 
     <h3>Unterlagen (digital, je Dokument als separates PDF)</h3>
     <ul>
-      <li>Ausweiskopie</li>
-      <li>Meldezettel / Aufenthaltstitel</li>
-      <li>Fotos vom Objekt – außen</li>
-      <li>Fotos vom Objekt – innen</li>
-      <li>Baupläne</li>
-      <li>Exposé</li>
-      <li>Kaufanbot / Kaufvertrag</li>
+      <li>Unterlagen in Drive-Ordner speichern und umbenennen</li>
+      <li>Checkliste im Dashboard auf Seite <a href="https://erik280100.github.io/team-dashboard/#finanzierungen" target="_blank" rel="noopener">Finanzierungen</a> aktuell halten</li>
     </ul>
 
     <h3>Download</h3>
