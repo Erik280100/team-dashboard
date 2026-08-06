@@ -28,12 +28,15 @@ export const MONTH_CLOSE_ENABLED = true
 
 /**
  * Setzt die Ist-Werte einer Mitarbeiterzeile für den neuen Monat zurück
- * (Einheiten je Plan, AT/BT/ET-Ist) — Soll/Plan-Werte, Name, isNew und
- * joinDate bleiben unangetastet. Mutiert `rows` nicht.
+ * (Einheiten je Plan, AT/BT/ET-Ist, manueller Bonus) — Soll/Plan-Werte, Name,
+ * isNew und joinDate bleiben unangetastet. Der Bonus wird mitzurückgesetzt,
+ * weil er bereits im Snapshot des abgeschlossenen Monats archiviert ist —
+ * bliebe er stehen, würde er in jedem Folgemonat erneut in die €-Summe
+ * einfließen, obwohl keine neue Leistung dahintersteckt. Mutiert `rows` nicht.
  */
 export function resetRowsForNewMonth(rows: EmployeeRow[]): EmployeeRow[] {
   return rows.map((r) => {
-    const next: EmployeeRow = { ...r, ist: 0, atIst: 0, btIst: 0, etIst: 0 }
+    const next: EmployeeRow = { ...r, ist: 0, atIst: 0, btIst: 0, etIst: 0, bonus: 0 }
     if (r.ehByPlan) {
       const ehByPlan: NonNullable<EmployeeRow["ehByPlan"]> = {}
       PLAN_IDS.forEach((p) => { ehByPlan[p] = 0 })
