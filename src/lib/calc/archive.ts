@@ -19,12 +19,12 @@ import type {
 
 /**
  * Schalter für den "Monat abschließen"-Button (Topbar + Erinnerungs-Banner in
- * App.tsx). Vorübergehend auf false, bis das Monats-Archiv in der Praxis
- * verifiziert wurde — verhindert ein versehentliches Auslösen des (nicht
- * rückgängig zu machenden) Monatsabschlusses. Auf true setzen, sobald die
- * Firestore-Regeln geprüft und ein Testlauf erfolgreich war.
+ * App.tsx). Firestore-Regeln geprüft (Wildcard-Regel deckt finova/archive_index
+ * und finova/snapshot_<month> bereits ab wie alle anderen finova-Dokumente) —
+ * siehe test/calc/archive.test.ts für die Ableitungslogik. Der erste echte
+ * Monatsabschluss im Browser steht noch aus.
  */
-export const MONTH_CLOSE_ENABLED = false
+export const MONTH_CLOSE_ENABLED = true
 
 /**
  * Setzt die Ist-Werte einer Mitarbeiterzeile für den neuen Monat zurück
