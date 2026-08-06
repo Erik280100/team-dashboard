@@ -10,11 +10,11 @@ import type { PlanId } from "@/lib/calc/struktur"
 
 type RechnerTab = "eh" | "umdreh" | "rendite" | "msciVv"
 
-const TABS: { id: RechnerTab; label: string }[] = [
+const TABS: { id: RechnerTab; label: string; editorOnly?: boolean }[] = [
   { id: "eh", label: "EH-Rechner" },
   { id: "umdreh", label: "Umdrehrechner" },
   { id: "rendite", label: "Renditerechner" },
-  { id: "msciVv", label: "MSCI World vs. VV" },
+  { id: "msciVv", label: "MSCI World vs. VV", editorOnly: true },
 ]
 
 export function Rechner({
@@ -25,18 +25,20 @@ export function Rechner({
   onApplyUnits: (name: string, units: Record<PlanId, number>) => void
 }) {
   const [tab, setTab] = useState<RechnerTab>("eh")
+  const visibleTabs = TABS.filter((t) => !t.editorOnly || isEditor)
+  const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : visibleTabs[0].id
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
               "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-              tab === t.id
+              activeTab === t.id
                 ? "border-transparent bg-primary text-primary-foreground shadow-sm"
                 : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
             )}
@@ -46,12 +48,12 @@ export function Rechner({
         ))}
       </div>
 
-      {tab === "eh" && (
+      {activeTab === "eh" && (
         <EhRechner employees={employees} isEditor={isEditor} onApplyUnits={onApplyUnits} />
       )}
-      {tab === "umdreh" && <UmdrehRechner />}
-      {tab === "rendite" && <RenditeRechner />}
-      {tab === "msciVv" && <MsciVvRechner />}
+      {activeTab === "umdreh" && <UmdrehRechner />}
+      {activeTab === "rendite" && <RenditeRechner />}
+      {activeTab === "msciVv" && <MsciVvRechner />}
     </div>
   )
 }
