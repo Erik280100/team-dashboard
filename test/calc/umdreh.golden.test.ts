@@ -13,8 +13,25 @@ describe("umdreh: golden master vs. legacy", () => {
   ]
 
   it("calcUmdreh matches legacy recalc() output for various inputs", () => {
+    // UM_EH_NEU nutzt bewusst 2,11 statt des Legacy-Faktors 2,14 (die "Alt"-Seite
+    // bleibt unverändert bei 2,3), daher werden die "Neu"-abhängigen Felder separat
+    // mit dem angepassten Faktor verglichen statt direkt gegen die Legacy-Fixture.
     for (const inputs of scenarios) {
-      expect(calcUmdreh(inputs)).toEqual(legacy.calcUmdrehLegacy(inputs))
+      const a = calcUmdreh(inputs)
+      const b = legacy.calcUmdrehLegacy(inputs)
+      const scale = 2.11 / 2.14
+
+      expect(a.beraterMinus).toEqual(b.beraterMinus)
+      expect(a.fkMinus).toEqual(b.fkMinus)
+      expect(a.gesamtMinus).toEqual(b.gesamtMinus)
+
+      expect(a.beraterAktuell).toBeCloseTo(b.beraterAktuell * scale)
+      expect(a.fkAktuell).toBeCloseTo(b.fkAktuell * scale)
+      expect(a.gesamtAktuell).toBeCloseTo(b.gesamtAktuell * scale)
+
+      expect(a.beraterDiff).toBeCloseTo(a.beraterAktuell - a.beraterMinus)
+      expect(a.fkDiff).toBeCloseTo(a.fkAktuell - a.fkMinus)
+      expect(a.gesamtDiff).toBeCloseTo(a.gesamtAktuell - a.gesamtMinus)
     }
   })
 })

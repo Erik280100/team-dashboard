@@ -39,12 +39,27 @@ describe("eh: golden master vs. legacy", () => {
       const a = calcEh(inputs)
       const b = legacy.calcEhLegacy(inputs)
       // "flv-ee" hat kein Legacy-Pendant (siehe oben) und wird beim Vergleich ausgenommen.
-      const { "flv-ee": _flvEe, ...aPerItem } = a.perItem
-      expect(aPerItem).toEqual(b.perItem)
-      expect(a.groupSums).toEqual(b.groupSums)
-      expect(a.groupEur).toEqual(b.groupEur)
-      expect(a.grandTotal).toBe(b.grandTotal)
-      expect(a.grandTotalEur).toBe(b.grandTotalEur)
+      // "flv" nutzt bewusst 2,11 statt des Legacy-Faktors 2,14 und wird separat verglichen.
+      const { "flv-ee": _flvEe, flv: aFlv, ...aPerItem } = a.perItem
+      const { flv: bFlv, ...bPerItem } = b.perItem
+      expect(aPerItem).toEqual(bPerItem)
+      expect(aFlv).toBeCloseTo((bFlv / 2.14) * 2.11)
+
+      const groupDiff = aFlv - bFlv
+      const { insurance: aInsurance, ...aGroupSums } = a.groupSums
+      const { insurance: bInsurance, ...bGroupSums } = b.groupSums
+      expect(aGroupSums).toEqual(bGroupSums)
+      expect(aInsurance).toBeCloseTo(bInsurance + groupDiff)
+
+      const insuranceMult = Number(inputs.mult.insurance) || 0
+      const eurDiff = groupDiff * insuranceMult
+      const { insurance: aInsuranceEur, ...aGroupEur } = a.groupEur
+      const { insurance: bInsuranceEur, ...bGroupEur } = b.groupEur
+      expect(aGroupEur).toEqual(bGroupEur)
+      expect(aInsuranceEur).toBeCloseTo(bInsuranceEur + eurDiff)
+
+      expect(a.grandTotal).toBeCloseTo(b.grandTotal + groupDiff)
+      expect(a.grandTotalEur).toBeCloseTo(b.grandTotalEur + eurDiff)
     }
   })
 

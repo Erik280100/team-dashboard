@@ -2,7 +2,7 @@
 // aus recalc(), ohne DOM-Zugriffe). Golden-Master-Test: test/calc/umdreh.golden.test.ts.
 
 export const UM_EH_ALT = 2.3
-export const UM_EH_NEU = 2.14
+export const UM_EH_NEU = 2.11
 
 export interface UmdrehInputs {
   praemie: number

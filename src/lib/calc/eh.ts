@@ -56,7 +56,7 @@ export const EH_ITEMS: EhItem[] = [
     gDefault: 35,
     gMax: 35,
     jLabel: "Mtl. Prämie (€)",
-    calc: (g, j) => ((j * 2.14) / 35) * Math.min(g, 35),
+    calc: (g, j) => ((j * 2.11) / 35) * Math.min(g, 35),
   },
   {
     id: "flv-ee",
