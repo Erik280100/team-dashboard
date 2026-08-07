@@ -11,7 +11,7 @@ import type { EmployeeSeries } from "@/lib/calc/statistik"
 import type { ArchiveIndexEntry } from "@/types/archive"
 import { cn } from "@/lib/utils"
 
-type MatrixSort = "name" | "total-desc" | "trend-desc"
+type MatrixSort = "name" | "total-desc" | "trend-desc" | "struktur"
 
 export function EmployeeMatrix({
   months,
@@ -37,6 +37,7 @@ export function EmployeeMatrix({
   const sorted = [...filtered].sort((a, b) => {
     if (sort === "total-desc") return b.total - a.total
     if (sort === "trend-desc") return b.trend - a.trend
+    if (sort === "struktur") return a.structureIndex - b.structureIndex
     return a.name.localeCompare(b.name, "de")
   })
 
@@ -64,6 +65,7 @@ export function EmployeeMatrix({
             className="w-56 border-white/20 bg-white/10 text-white"
           >
             <option value="name" className="text-black">Sortieren: Name (A–Z)</option>
+            <option value="struktur" className="text-black">Nach Führungskraft (Struktur)</option>
             <option value="total-desc" className="text-black">Summe Einheiten (absteigend)</option>
             <option value="trend-desc" className="text-black">Trend (absteigend)</option>
           </Select>
@@ -101,7 +103,12 @@ export function EmployeeMatrix({
                       selectedName === s.name && "bg-white/10"
                     )}
                   >
-                    <td className="sticky left-0 z-10 bg-[#0B1F2A] px-3 py-2 font-medium text-white/90">{s.name}</td>
+                    <td
+                      className="sticky left-0 z-10 bg-[#0B1F2A] px-3 py-2 font-medium text-white/90"
+                      style={sort === "struktur" ? { paddingLeft: 12 + s.depth * 14 } : undefined}
+                    >
+                      {s.name}
+                    </td>
                     {s.cells.map((c) => {
                       const pc = progressClass(c.pct)
                       return (

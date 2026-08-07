@@ -115,6 +115,12 @@ export interface EmployeeSeries {
   name: string
   /** Rolle aus dem letzten Monat, in dem die Person im Strukturbaum vorkam. */
   role: string
+  /** Einrücktiefe im aktuellen (letzten) Strukturbaum, für die Struktur-Sortierung. */
+  depth: number
+  /** Position in der Baum-Vorordnung des letzten Snapshots (Führungskraft vor
+   * Untergebenen, analog Team.tsx-Sortierung "manager"). Personen, die im
+   * letzten Monat nicht mehr im Strukturbaum standen, landen ans Ende. */
+  structureIndex: number
   /** Gleiche Länge/Reihenfolge wie die übergebenen Snapshots (nach Monat sortiert). */
   cells: EmployeeMonthCell[]
   total: number
@@ -142,6 +148,14 @@ export function employeeMatrix(snapshots: MonthSnapshot[]): EmployeeSeries[] {
     return { snap, merged, earnings }
   })
 
+  const latest = perMonth[perMonth.length - 1]
+  const structureIndexByName = new Map<string, number>()
+  const depthByName = new Map<string, number>()
+  latest?.merged.forEach((m, i) => {
+    structureIndexByName.set(m.name, i)
+    depthByName.set(m.name, m.depth)
+  })
+
   return [...names]
     .sort((a, b) => a.localeCompare(b, "de"))
     .map((name) => {
@@ -161,7 +175,9 @@ export function employeeMatrix(snapshots: MonthSnapshot[]): EmployeeSeries[] {
       const total = present.reduce((s, c) => s + c.ist, 0)
       const avg = present.length > 0 ? total / present.length : 0
       const trend = present.length > 0 ? present[present.length - 1].ist - present[0].ist : 0
-      return { name, role, cells, total, avg, trend }
+      const depth = depthByName.get(name) ?? 0
+      const structureIndex = structureIndexByName.get(name) ?? Number.MAX_SAFE_INTEGER
+      return { name, role, depth, structureIndex, cells, total, avg, trend }
     })
 }
 

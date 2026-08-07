@@ -23,10 +23,20 @@ export function PlanSplitChart({ points }: { points: PlanSplitPoint[] }) {
           <p className="text-xs text-white/50">Insurance / Investment / Credit / Real Estate über den Zeitraum</p>
         </div>
         <div className="flex gap-1.5">
-          <Button size="sm" variant={mode === "absolute" ? "default" : "outline"} onClick={() => setMode("absolute")}>
+          <Button
+            size="sm"
+            variant={mode === "absolute" ? "default" : "outline"}
+            className={mode === "absolute" ? "" : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"}
+            onClick={() => setMode("absolute")}
+          >
             Absolut
           </Button>
-          <Button size="sm" variant={mode === "percent" ? "default" : "outline"} onClick={() => setMode("percent")}>
+          <Button
+            size="sm"
+            variant={mode === "percent" ? "default" : "outline"}
+            className={mode === "percent" ? "" : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"}
+            onClick={() => setMode("percent")}
+          >
             Prozentual
           </Button>
         </div>
