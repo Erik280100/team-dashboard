@@ -12,7 +12,6 @@ import {
   KREDIT_DEFAULTS, berechneAfaBemessungsgrundlage, berechneAfaJahre, berechneKreditbetrag,
   berechneTilgungsplan, effektivzinsPct, kreditFormatEUR, kreditFormatPct, type KreditSaetze,
 } from "@/lib/calc/kredit"
-import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
 import { berechneTilgungstraeger } from "@/lib/calc/tilgungstraeger"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
@@ -184,9 +183,7 @@ export function KreditRechner() {
         Frage "Makler ja/nein" automatisch die Kauf- und Kreditnebenkosten (Grunderwerbsteuer,
         Grundbuch, Vertragserrichtung, ggf. Maklerprovision, Kreditvertragserstellung,
         Pfandrechtseintragung) sowie den benötigten Kreditbetrag und den
-        Annuitätentilgungsplan. Sätze marktüblich für Österreich, Stand 2026 — in der Praxis
-        bankabhängig und daher unter "Kostensätze anpassen" veränderbar. Modellrechnung ohne
-        Gewähr, Eingaben werden nicht gespeichert.
+        Annuitätentilgungsplan.
       </div>
 
       <Card>
@@ -246,9 +243,9 @@ export function KreditRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <div>
-            <h3 className="text-sm font-semibold">Tilgungsträger — FLV-Sparplan (Merkur)</h3>
+            <h3 className="text-sm font-semibold">Sparform für schnellere Kreditabzahlung und Zinsersparnis</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Optional: parallel besparte fondsgebundene Lebensversicherung mit gleicher Laufzeit
+              Parallel besparte fondsgebundene Lebensversicherung mit gleicher Laufzeit
               wie der Kredit. Zeigt, ab wann das Guthaben die Restschuld übersteigt.
             </p>
           </div>
@@ -286,14 +283,6 @@ export function KreditRechner() {
           </p>
           {sparrateNum > 0 && (
             <>
-              <div className="flex flex-col gap-1 border-t pt-3">
-                {merkurKostenZeilen(sparrateNum, laufzeitClamped).map(([label, val]) => (
-                  <div key={label} className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span>{val}</span>
-                  </div>
-                ))}
-              </div>
               {(sparrateNum > 500 || sparrateNum < 50) && (
                 <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                   Die Sparprämien-Quote ist auf echte Merkur-Angebote im Bereich 50–500 €/Monat
