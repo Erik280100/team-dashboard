@@ -278,7 +278,7 @@ export function Finanzierungen({
                     <th className="px-3 py-2">Unterlagen</th>
                     <th className="px-2 py-2 text-center">Daten aufbereitet (MA)</th>
                     <th className="px-2 py-2 text-center">Eingereicht (VB)</th>
-                    <th className="px-2 py-2" />
+                    <th className="px-2 py-2 text-center">Kreditvertrag bekommen</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -347,45 +347,23 @@ export function Finanzierungen({
                               className="size-4"
                             />
                           </td>
-                          <td className="px-2 py-2 text-right">
-                            {isEditor && (
-                              <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => onRemove(fc)}
-                                  aria-label={`Kreditfall ${fc.name} löschen`}
-                                >
-                                  <Trash2 className="size-4" />
-                                </Button>
-                                {fc.archived ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => patchCase(fc.id, { archived: false })}
-                                    aria-label={`Kreditfall ${fc.name} wiederherstellen`}
-                                  >
-                                    <ArchiveRestore className="size-4" />
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => onArchive(fc)}
-                                    aria-label={`Kreditfall ${fc.name} archivieren`}
-                                  >
-                                    <Archive className="size-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            )}
+                          <td className="px-2 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={fc.kreditvertrag}
+                              onChange={(e) => patchCase(fc.id, { kreditvertrag: e.target.checked })}
+                              disabled={!isEditor}
+                              aria-label={`Kreditvertrag bekommen – ${fc.name}`}
+                              className="size-4"
+                            />
                           </td>
                         </tr>
                         {isOpen && (
                           <tr className="border-b bg-muted/30 last:border-0">
                             <td className="px-2 py-2" />
                             <td colSpan={8} className="px-3 py-3">
-                              <div className="mb-3 flex flex-wrap items-end gap-3">
+                              <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                                <div className="flex flex-wrap items-end gap-3">
                                 <div className="flex flex-col gap-1">
                                   <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
                                   <Input
@@ -454,6 +432,41 @@ export function Finanzierungen({
                                     ))}
                                   </Select>
                                 </div>
+                                </div>
+                                {isEditor && (
+                                  <div className="flex items-center gap-1">
+                                    {fc.archived ? (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => patchCase(fc.id, { archived: false })}
+                                        aria-label={`Kreditfall ${fc.name} wiederherstellen`}
+                                      >
+                                        <ArchiveRestore className="size-4" />
+                                        Wiederherstellen
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onArchive(fc)}
+                                        aria-label={`Kreditfall ${fc.name} archivieren`}
+                                      >
+                                        <Archive className="size-4" />
+                                        Archivieren
+                                      </Button>
+                                    )}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => onRemove(fc)}
+                                      aria-label={`Kreditfall ${fc.name} löschen`}
+                                    >
+                                      <Trash2 className="size-4" />
+                                      Löschen
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                               <ChecklistGrid
                                 fc={fc}

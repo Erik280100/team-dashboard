@@ -98,6 +98,7 @@ export function useFinanzierungenDoc(): UseFinanzierungenDocResult {
         docs: {},
         aufbereitet: false,
         eingereicht: false,
+        kreditvertrag: false,
         archived: false,
         createdAt: new Date().toISOString(),
       }
