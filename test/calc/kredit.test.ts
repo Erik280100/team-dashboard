@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
-  KREDIT_DEFAULTS, berechneKaufnebenkosten, berechneKreditbetrag, berechneTilgungsplan,
-  effektivzinsPct,
+  KREDIT_DEFAULTS, berechneAfaBemessungsgrundlage, berechneAfaJahre, berechneKaufnebenkosten,
+  berechneKreditbetrag, berechneTilgungsplan, effektivzinsPct,
 } from "../../src/lib/calc/kredit"
 
 describe("berechneTilgungsplan", () => {
@@ -138,5 +138,49 @@ describe("effektivzinsPct", () => {
     expect(effektivzinsPct(0, 1000, 360)).toBe(0)
     expect(effektivzinsPct(100000, 0, 360)).toBe(0)
     expect(effektivzinsPct(100000, 1000, 0)).toBe(0)
+  })
+})
+
+describe("berechneAfaBemessungsgrundlage", () => {
+  it("takes the flat 80% Gebäudeanteil default off the purchase price", () => {
+    expect(berechneAfaBemessungsgrundlage(400000, KREDIT_DEFAULTS.gebaeudeanteilPct)).toBeCloseTo(320000, 6)
+  })
+})
+
+describe("berechneAfaJahre", () => {
+  it("applies 3x AfA in year 1, 2x in year 2, and the normal rate from year 3 onward", () => {
+    const jahre = berechneAfaJahre(320000, 1.5, 5)
+    const normaleAfa = 320000 * 0.015
+    expect(jahre[0].faktor).toBe(3)
+    expect(jahre[0].afa).toBeCloseTo(normaleAfa * 3, 6)
+    expect(jahre[1].faktor).toBe(2)
+    expect(jahre[1].afa).toBeCloseTo(normaleAfa * 2, 6)
+    expect(jahre[2].faktor).toBe(1)
+    expect(jahre[2].afa).toBeCloseTo(normaleAfa, 6)
+    expect(jahre[3].afa).toBeCloseTo(normaleAfa, 6)
+    expect(jahre[4].afa).toBeCloseTo(normaleAfa, 6)
+  })
+
+  it("accumulates afaKumuliert correctly across years", () => {
+    const jahre = berechneAfaJahre(100000, 2, 4)
+    let laufendeSumme = 0
+    for (const j of jahre) {
+      laufendeSumme += j.afa
+      expect(j.afaKumuliert).toBeCloseTo(laufendeSumme, 6)
+    }
+  })
+
+  it("never depreciates beyond the Bemessungsgrundlage even with an extreme rate", () => {
+    // 10% rate * 3x in year 1 = 30% of basis, well within bounds; but push satz high enough
+    // that year 1 alone would exceed 100% without the cap.
+    const jahre = berechneAfaJahre(100000, 40, 3)
+    expect(jahre[0].afa).toBeLessThanOrEqual(100000)
+    expect(jahre[0].afaKumuliert).toBeLessThanOrEqual(100000)
+    expect(jahre[1].afa).toBe(0)
+    expect(jahre[2].afa).toBe(0)
+  })
+
+  it("returns an empty array for zero years", () => {
+    expect(berechneAfaJahre(100000, 1.5, 0)).toEqual([])
   })
 })

@@ -21,6 +21,8 @@ export interface KreditSaetze {
   pfandrechtPct: number
   nebengebuehrensicherstellungPct: number
   sonstigeKreditNK: number
+  gebaeudeanteilPct: number
+  afaSatzPct: number
 }
 
 export const KREDIT_DEFAULTS: KreditSaetze = {
@@ -34,6 +36,8 @@ export const KREDIT_DEFAULTS: KreditSaetze = {
   pfandrechtPct: 1.2,
   nebengebuehrensicherstellungPct: 20,
   sonstigeKreditNK: 0,
+  gebaeudeanteilPct: 80,
+  afaSatzPct: 1.5,
 }
 
 export interface KostenPosition {
@@ -234,6 +238,39 @@ export function berechneTilgungsplan(kreditbetrag: number, zinsPct: number, lauf
   const gesamtaufwand = K + gesamtzinsen
 
   return { rate, monate, jahre, gesamtzinsen, gesamtaufwand }
+}
+
+export interface AfaJahr {
+  jahr: number
+  faktor: number
+  afa: number
+  afaKumuliert: number
+}
+
+/** AfA-Bemessungsgrundlage (Gebäudewert): Grund und Boden ist nicht abschreibbar, daher nur
+ *  ein pauschaler Anteil des Kaufpreises (Default 80 % Gebäude / 20 % Grund). */
+export function berechneAfaBemessungsgrundlage(kaufpreis: number, gebaeudeanteilPct: number): number {
+  return Math.max(0, kaufpreis) * (Math.max(0, gebaeudeanteilPct) / 100)
+}
+
+/**
+ * Beschleunigte AfA für Gebäude (§ 8 Abs. 1a EStG): im ersten Jahr das Dreifache, im zweiten
+ * Jahr das Zweifache des linearen AfA-Satzes, ab dem dritten Jahr der normale (lineare) Satz.
+ */
+export function berechneAfaJahre(bemessungsgrundlage: number, afaSatzPct: number, jahre: number): AfaJahr[] {
+  const basis = Math.max(0, bemessungsgrundlage)
+  const satz = Math.max(0, afaSatzPct) / 100
+  const n = Math.max(0, Math.round(jahre))
+
+  const ergebnisse: AfaJahr[] = []
+  let kumuliert = 0
+  for (let j = 1; j <= n; j++) {
+    const faktor = j === 1 ? 3 : j === 2 ? 2 : 1
+    const afa = Math.max(0, Math.min(basis * satz * faktor, basis - kumuliert))
+    kumuliert += afa
+    ergebnisse.push({ jahr: j, faktor, afa, afaKumuliert: kumuliert })
+  }
+  return ergebnisse
 }
 
 /**

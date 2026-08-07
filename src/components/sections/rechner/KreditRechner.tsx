@@ -8,8 +8,8 @@ import { Line } from "react-chartjs-2"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
-  KREDIT_DEFAULTS, berechneKreditbetrag, berechneTilgungsplan, effektivzinsPct,
-  kreditFormatEUR, kreditFormatPct, type KreditSaetze,
+  KREDIT_DEFAULTS, berechneAfaBemessungsgrundlage, berechneAfaJahre, berechneKreditbetrag,
+  berechneTilgungsplan, effektivzinsPct, kreditFormatEUR, kreditFormatPct, type KreditSaetze,
 } from "@/lib/calc/kredit"
 
 const LAUFZEIT_PRESETS = [10, 15, 20, 25, 30]
@@ -55,13 +55,15 @@ export function KreditRechner() {
   const satzSetter = (key: keyof KreditSaetze) => (v: string) =>
     setSaetze((s) => ({ ...s, [key]: Number(v) || 0 }))
 
-  const { kredit, plan, effektivzins } = useMemo(() => {
+  const { kredit, plan, effektivzins, afaBemessungsgrundlage, afaJahre } = useMemo(() => {
     const kredit = berechneKreditbetrag({
       kaufpreis: kaufpreisNum, eigenmittel: eigenmittelNum, mitMakler, nkMitfinanziert, saetze,
     })
     const plan = berechneTilgungsplan(kredit.kreditbetrag, zinssatzClamped, laufzeitClamped)
     const effektivzins = effektivzinsPct(kredit.nettoAuszahlung, plan.rate, plan.monate.length)
-    return { kredit, plan, effektivzins }
+    const afaBemessungsgrundlage = berechneAfaBemessungsgrundlage(kaufpreisNum, saetze.gebaeudeanteilPct)
+    const afaJahre = berechneAfaJahre(afaBemessungsgrundlage, saetze.afaSatzPct, laufzeitClamped)
+    return { kredit, plan, effektivzins, afaBemessungsgrundlage, afaJahre }
   }, [kaufpreisNum, eigenmittelNum, mitMakler, nkMitfinanziert, saetze, zinssatzClamped, laufzeitClamped])
 
   // Kumulierte Zinsen je Monat, fürs Tooltip auf der Restschuld-Kurve.
@@ -168,6 +170,13 @@ export function KreditRechner() {
                   <SatzFeld label="Pfandrechtseintragung" value={String(saetze.pfandrechtPct)} onChange={satzSetter("pfandrechtPct")} />
                   <SatzFeld label="Nebengebührensicherstellung" value={String(saetze.nebengebuehrensicherstellungPct)} onChange={satzSetter("nebengebuehrensicherstellungPct")} />
                   <SatzFeld label="Sonstige Kreditnebenkosten" value={String(saetze.sonstigeKreditNK)} onChange={satzSetter("sonstigeKreditNK")} suffix="€" step={100} />
+                </div>
+              </div>
+              <div>
+                <h4 className="mb-2 text-xs font-semibold text-muted-foreground">AfA (steuerliche Abschreibung)</h4>
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  <SatzFeld label="Gebäudeanteil am Kaufpreis" value={String(saetze.gebaeudeanteilPct)} onChange={satzSetter("gebaeudeanteilPct")} />
+                  <SatzFeld label="AfA-Satz (linear, ab 3. Jahr)" value={String(saetze.afaSatzPct)} onChange={satzSetter("afaSatzPct")} />
                 </div>
               </div>
               <button type="button" onClick={() => setSaetze(KREDIT_DEFAULTS)}
@@ -337,7 +346,13 @@ export function KreditRechner() {
 
       <Card>
         <CardContent>
-          <h3 className="mb-3 text-sm font-semibold">Tilgungsplan (jährlich)</h3>
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-sm font-semibold">Tilgungsplan (jährlich)</h3>
+            <span className="text-xs text-muted-foreground">
+              AfA-Bemessungsgrundlage ({saetze.gebaeudeanteilPct.toLocaleString("de-AT")} % vom Kaufpreis):{" "}
+              <strong className="tabular-nums text-foreground">{kreditFormatEUR(afaBemessungsgrundlage)}</strong>
+            </span>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -346,19 +361,26 @@ export function KreditRechner() {
                   <th className="py-1 pr-3 text-right font-medium">Rate p.a.</th>
                   <th className="py-1 pr-3 text-right font-medium">Zinsen</th>
                   <th className="py-1 pr-3 text-right font-medium">Tilgung</th>
-                  <th className="py-1 text-right font-medium">Restschuld</th>
+                  <th className="py-1 pr-3 text-right font-medium">Restschuld</th>
+                  <th className="py-1 text-right font-medium">AfA</th>
                 </tr>
               </thead>
               <tbody>
-                {plan.jahre.map((j) => (
-                  <tr key={j.jahr} className="border-b border-border/50">
-                    <td className="py-1 pr-3 tabular-nums">{j.jahr}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.rateSumme)}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.zinsen)}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.tilgung)}</td>
-                    <td className="py-1 text-right tabular-nums">{kreditFormatEUR(j.restschuld)}</td>
-                  </tr>
-                ))}
+                {plan.jahre.map((j) => {
+                  const afa = afaJahre[j.jahr - 1]
+                  return (
+                    <tr key={j.jahr} className="border-b border-border/50">
+                      <td className="py-1 pr-3 tabular-nums">{j.jahr}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.rateSumme)}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.zinsen)}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.tilgung)}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.restschuld)}</td>
+                      <td className="py-1 text-right tabular-nums">
+                        {kreditFormatEUR(afa.afa)}{afa.faktor > 1 && <span className="text-muted-foreground"> (×{afa.faktor})</span>}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
               <tfoot>
                 <tr className="text-sm font-semibold">
@@ -366,7 +388,10 @@ export function KreditRechner() {
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(plan.gesamtaufwand)}</td>
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(plan.gesamtzinsen)}</td>
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(kredit.kreditbetrag)}</td>
-                  <td className="pt-2 text-right tabular-nums">0 €</td>
+                  <td className="pt-2 pr-3 text-right tabular-nums">0 €</td>
+                  <td className="pt-2 text-right tabular-nums">
+                    {kreditFormatEUR(afaJahre.reduce((s, a) => s + a.afa, 0))}
+                  </td>
                 </tr>
               </tfoot>
             </table>
