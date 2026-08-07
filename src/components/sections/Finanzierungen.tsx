@@ -26,6 +26,17 @@ const ART_LABEL: Record<FinanzierungArt, string> = {
 
 const ART_OPTIONS: FinanzierungArt[] = ["hauskauf", "wohnungskauf", "hausbau", "umbau", "sanierung", "umschuldung"]
 
+type SortKey = "standard" | "betreuer-asc" | "offen-asc" | "offen-desc"
+
+const SORT_LABEL: Record<SortKey, string> = {
+  standard: "Standard",
+  "betreuer-asc": "Betreuer (A-Z)",
+  "offen-asc": "Offene Unterlagen (wenig → viel)",
+  "offen-desc": "Offene Unterlagen (viel → wenig)",
+}
+
+const SORT_OPTIONS: SortKey[] = ["standard", "betreuer-asc", "offen-asc", "offen-desc"]
+
 function fmtEur(n: number): string {
   return Number(n || 0).toLocaleString("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
 }
@@ -187,6 +198,7 @@ export function Finanzierungen({
 }) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [sortKey, setSortKey] = useState<SortKey>("standard")
   const confirm = useConfirm()
 
   const employeeNames = [...employeeRoster].map((e) => e.name).sort((a, b) => a.localeCompare(b, "de"))
@@ -207,6 +219,18 @@ export function Finanzierungen({
   const visibleCases = cases.filter((c) => !!c.archived === showArchived)
   const totalBetrag = visibleCases.reduce((s, c) => s + Number(c.betrag || 0), 0)
 
+  const decoratedCases = visibleCases.map((fc) => {
+    const relevant = relevantItemIds(fc.beschaeftigung)
+    const done = relevant.filter((id) => fc.docs[id]).length
+    return { fc, relevant, done, offen: relevant.length - done }
+  })
+  const sortedCases = [...decoratedCases].sort((a, b) => {
+    if (sortKey === "betreuer-asc") return (a.fc.betreuer || "").localeCompare(b.fc.betreuer || "", "de")
+    if (sortKey === "offen-asc") return a.offen - b.offen
+    if (sortKey === "offen-desc") return b.offen - a.offen
+    return 0
+  })
+
   return (
     <div className="flex flex-col gap-6">
       <NewCaseForm onAdd={addCase} isEditor={isEditor} employeeNames={employeeNames} />
@@ -216,6 +240,17 @@ export function Finanzierungen({
           <div className="flex items-center justify-between gap-3">
             <CardTitle>{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
             <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-sort">Sortierung</label>
+              <Select
+                id="fin-sort"
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="w-56"
+              >
+                {SORT_OPTIONS.map((k) => (
+                  <option key={k} value={k}>{SORT_LABEL[k]}</option>
+                ))}
+              </Select>
               <Button variant="outline" size="sm" onClick={() => setShowArchived((s) => !s)}>
                 {showArchived ? "Zurück zu aktiven Fällen" : `Archiv anzeigen (${archivedCount})`}
               </Button>
@@ -247,9 +282,7 @@ export function Finanzierungen({
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleCases.map((fc) => {
-                    const relevant = relevantItemIds(fc.beschaeftigung)
-                    const done = relevant.filter((id) => fc.docs[id]).length
+                  {sortedCases.map(({ fc, relevant, done }) => {
                     const isOpen = expanded === fc.id
                     return (
                       <Fragment key={fc.id}>
