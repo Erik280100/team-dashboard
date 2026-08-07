@@ -174,12 +174,13 @@ export function Team({
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Soll</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Ist</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Fortschritt</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">€</th>
             </tr>
           </thead>
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={12} className="px-3 py-8 text-center text-sm text-muted-foreground">
                   {merged.length === 0 ? "Noch keine Personen im Strukturbaum erfasst." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
                 </td>
               </tr>
@@ -208,18 +209,6 @@ export function Team({
                           {(r.role || r.managerName) && (
                             <div className="truncate text-xs text-muted-foreground">
                               {r.role}
-                              {rowEarnings && rowEarnings.total > 0 && (
-                                <>
-                                  {" · "}
-                                  <button
-                                    type="button"
-                                    onClick={() => setDetailName(r.name)}
-                                    className="underline decoration-dotted underline-offset-2 hover:text-foreground"
-                                  >
-                                    {rowEarnings.total.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                                  </button>
-                                </>
-                              )}
                               {r.managerName ? ` · unter ${r.managerName}` : ""}
                             </div>
                           )}
@@ -272,6 +261,20 @@ export function Team({
                         <span className="text-xs font-medium tabular-nums">{pct}%</span>
                       </div>
                     </td>
+                    <td className="px-3 py-2 text-right">
+                      {rowEarnings && rowEarnings.total > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setDetailName(r.name)}
+                          aria-label={`Verdienst-Details – ${r.name}`}
+                          className="text-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 hover:text-foreground"
+                        >
+                          {rowEarnings.total.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
                   </tr>
                 )
               })
@@ -294,7 +297,8 @@ export function Team({
                       <td className={cn(cell, "text-center")}>{fmt(totals.etIst)}</td>
                       <td className={cell}>{fmt(totals.soll)}</td>
                       <td className={cell}>{fmt(totals.ist)}</td>
-                      <td className={cn(cell, "whitespace-nowrap")}>
+                      <td className={cell} />
+                      <td className={cn(cell, "whitespace-nowrap text-right")}>
                         {grandTotalEur.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </td>
                     </>
