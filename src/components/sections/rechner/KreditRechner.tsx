@@ -15,7 +15,7 @@ import {
 import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
 import { berechneTilgungstraeger } from "@/lib/calc/tilgungstraeger"
 
-const LAUFZEIT_PRESETS = [10, 15, 20, 25, 30, 35]
+const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 const PERF_PRESETS = [3, 6, 9]
 
 function PillGroup<T extends string>({
