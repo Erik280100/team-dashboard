@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import type { SectionId } from "@/hooks/useHashSection"
 
 const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon }[] = [
-  { id: "overview", label: "Übersicht", icon: LayoutDashboard },
+  { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "team", label: "Mitarbeiter", icon: Users },
   { id: "struktur", label: "Strukturbaum", icon: Network },
   { id: "statistik", label: "Statistik", icon: BarChart3 },

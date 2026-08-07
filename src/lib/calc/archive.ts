@@ -68,17 +68,16 @@ export function nextMonthGoal(goal: TeamGoal): TeamGoal {
 }
 
 /**
- * Monatsschlüssel ("YYYY-MM") eines Zeitraums, abgeleitet aus periodEnd (nicht
- * periodStart!) — defaultPeriod() nutzt intern toISOString() (UTC), was
- * periodStart in Zeitzonen östlich von UTC einen Tag zurückliegen lässt
- * (siehe format.golden.test.ts, das dieses Verhalten gegen die Legacy-Fixture
- * absichert und daher nicht korrigiert werden darf). periodEnd ist davon nicht
- * betroffen, da dort kein Monatswechsel an der Tagesgrenze stattfindet.
+ * Monatsschlüssel ("YYYY-MM") eines Zeitraums, abgeleitet aus periodStart (nicht
+ * periodEnd!). Ein Umsatzmonat läuft in der Praxis oft ein paar Tage in den
+ * Folgemonat hinein (z.B. 01.07.-05.08.), heißt aber trotzdem nach dem Monat,
+ * in dem er beginnt ("Juli", nicht "August") — periodEnd würde in diesem Fall
+ * den falschen Monat liefern.
  */
-export function monthKeyOf(goal: Pick<TeamGoal, "periodEnd">): MonthKey {
+export function monthKeyOf(goal: Pick<TeamGoal, "periodStart">): MonthKey {
   const def = defaultPeriod()
-  const end = parseISODate(goal.periodEnd || def.periodEnd)
-  return `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}`
+  const start = parseISODate(goal.periodStart || def.periodStart)
+  return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`
 }
 
 /** "2026-06" -> "Juni 2026" (de-AT). */
@@ -187,6 +186,20 @@ export function buildIndexEntry(snapshot: MonthSnapshot): ArchiveIndexEntry {
     closedAt: snapshot.closedAt,
     totals: monthTotals(snapshot.rows, snapshot.teamGoal, snapshot.orgChart.tree, snapshot.orgChart.planRates),
   }
+}
+
+/**
+ * Darf "Monat abschließen" überhaupt ausgelöst werden? Sperrt den Button, bis
+ * das heutige Datum das auf der Übersichtsseite eingetragene Ende des
+ * Umsatzmonats (periodEnd) erreicht oder überschritten hat — verhindert einen
+ * verfrühten Abschluss mitten im laufenden Monat.
+ */
+export function canCloseMonth(goal: Pick<TeamGoal, "periodEnd">, now: Date = new Date()): boolean {
+  const def = defaultPeriod()
+  const end = parseISODate(goal.periodEnd || def.periodEnd)
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  return today >= end
 }
 
 /**

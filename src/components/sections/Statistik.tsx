@@ -1,17 +1,16 @@
 // Statistik-Sektion — neue Seite, die abgeschlossene Monate (Monats-Archiv,
 // siehe useMonthArchive.ts) über einen frei wählbaren Zeitraum vergleicht:
-// Team-Trend, A/B-Monatsvergleich, Mitarbeiter-Entwicklung, Karriereplan-
-// Aufteilung. Trend/Vergleich/Split rechnen allein auf dem Archiv-Index
-// (keine Snapshot-Loads); nur die Mitarbeiter-Matrix/-Kurve brauchen die
-// vollen Monats-Snapshots und werden lazy nachgeladen.
+// Karriereplan-Aufteilung, A/B-Monatsvergleich, Mitarbeiter-Entwicklung.
+// Vergleich/Split rechnen allein auf dem Archiv-Index (keine Snapshot-Loads);
+// nur die Mitarbeiter-Matrix/-Kurve brauchen die vollen Monats-Snapshots und
+// werden lazy nachgeladen.
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { DARK_CARD } from "@/lib/chartSetup"
-import { employeeMatrix, monthsInRange, planSplit, teamTrend } from "@/lib/calc/statistik"
+import { employeeMatrix, monthsInRange, planSplit } from "@/lib/calc/statistik"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { MonthKey, MonthSnapshot } from "@/types/archive"
 import { MonthRangePicker } from "@/components/sections/statistik/MonthRangePicker"
-import { TeamTrendChart } from "@/components/sections/statistik/TeamTrendChart"
 import { MonthCompare } from "@/components/sections/statistik/MonthCompare"
 import { EmployeeMatrix } from "@/components/sections/statistik/EmployeeMatrix"
 import { EmployeeCurve } from "@/components/sections/statistik/EmployeeCurve"
@@ -66,7 +65,6 @@ export function Statistik({ archive }: { archive: UseMonthArchiveResult }) {
   )
   const selectedSeries = selectedName ? matrix.find((e) => e.name === selectedName) ?? null : null
 
-  const trend = useMemo(() => teamTrend(rangeEntries), [rangeEntries])
   const split = useMemo(() => planSplit(rangeEntries), [rangeEntries])
 
   if (index.length === 0) {
@@ -83,6 +81,12 @@ export function Statistik({ archive }: { archive: UseMonthArchiveResult }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {split.length > 0 ? (
+        <PlanSplitChart points={split} />
+      ) : (
+        <EmptyCard title="Karriereplan-Aufteilung" text="Für den gewählten Zeitraum sind keine abgeschlossenen Monate vorhanden." />
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Statistik</h2>
         {effectiveFrom && effectiveTo && (
@@ -94,12 +98,6 @@ export function Statistik({ archive }: { archive: UseMonthArchiveResult }) {
           />
         )}
       </div>
-
-      {trend.length > 0 ? (
-        <TeamTrendChart points={trend} />
-      ) : (
-        <EmptyCard title="Team-Trend" text="Für den gewählten Zeitraum sind keine abgeschlossenen Monate vorhanden." />
-      )}
 
       {index.length >= 2 && entryA && entryB ? (
         <MonthCompare
@@ -113,12 +111,6 @@ export function Statistik({ archive }: { archive: UseMonthArchiveResult }) {
         />
       ) : (
         <EmptyCard title="Monatsvergleich" text="Für den Vergleich werden mindestens zwei abgeschlossene Monate benötigt." />
-      )}
-
-      {split.length > 0 ? (
-        <PlanSplitChart points={split} />
-      ) : (
-        <EmptyCard title="Karriereplan-Aufteilung" text="Für den gewählten Zeitraum sind keine abgeschlossenen Monate vorhanden." />
       )}
 
       <EmployeeMatrix

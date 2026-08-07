@@ -68,7 +68,7 @@ export function EmployeeEarningsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{name}</DialogTitle>
           <DialogDescription>
@@ -76,7 +76,7 @@ export function EmployeeEarningsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 overflow-y-auto px-1">
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Eigene Einheiten</h4>
             <div className="overflow-hidden rounded-md border">

@@ -13,7 +13,7 @@ import type { useAuth } from "@/hooks/useAuth"
 import type { UseDashboardDocResult } from "@/hooks/useDashboardDoc"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { SectionId } from "@/hooks/useHashSection"
-import { MONTH_CLOSE_ENABLED, monthLabel } from "@/lib/calc/archive"
+import { MONTH_CLOSE_ENABLED, canCloseMonth, monthLabel } from "@/lib/calc/archive"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import type { MonthKey } from "@/types/archive"
 import {
@@ -200,8 +200,14 @@ export function Topbar({
             <Button
               size="sm"
               onClick={onCloseMonth}
-              disabled={archive.closing || !MONTH_CLOSE_ENABLED}
-              title={MONTH_CLOSE_ENABLED ? undefined : "Vorübergehend deaktiviert"}
+              disabled={archive.closing || !MONTH_CLOSE_ENABLED || !canCloseMonth(dashboard.teamGoal)}
+              title={
+                !MONTH_CLOSE_ENABLED
+                  ? "Vorübergehend deaktiviert"
+                  : !canCloseMonth(dashboard.teamGoal)
+                  ? "Erst ab Ende des eingestellten Umsatzmonats möglich"
+                  : undefined
+              }
             >
               Monat abschließen
             </Button>

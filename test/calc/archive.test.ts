@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
-  archiveNow, buildIndexEntry, buildSnapshot, isMonthCloseDue, monthKeyOf, monthLabel,
+  archiveNow, buildIndexEntry, buildSnapshot, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel,
   monthTotals, nextMonthGoal, resetRowsForNewMonth,
 } from "../../src/lib/calc/archive"
-import { defaultPeriod, monthWeekProgress } from "../../src/lib/calc/format"
+import { monthWeekProgress } from "../../src/lib/calc/format"
 import { timelineData } from "../../src/lib/calc/overview"
 import { DEFAULT_PLAN_RATES, sbRoster, type SbNode } from "../../src/lib/calc/struktur"
 import { mergeRosterWithRows, teamTotals } from "../../src/lib/calc/team"
@@ -73,21 +73,16 @@ describe("nextMonthGoal", () => {
 })
 
 describe("monthKeyOf / monthLabel", () => {
-  it("liefert den Monat aus periodEnd", () => {
+  it("liefert den Monat aus periodStart", () => {
     expect(monthKeyOf(GOAL)).toBe("2026-07")
     expect(monthLabel("2026-07")).toBe("Juli 2026")
   })
 
-  it("bleibt auch bei defaultPeriod()'s UTC-verschobenem periodStart korrekt", () => {
-    // defaultPeriod() nutzt toISOString() (UTC) und kann periodStart östlich von
-    // UTC einen Tag zurückdatieren — monthKeyOf() muss trotzdem den Monat von
-    // periodEnd treffen, das von diesem Bug nicht betroffen ist.
-    const def = defaultPeriod()
-    const key = monthKeyOf(def)
-    const [y, m] = key.split("-").map(Number)
-    const now = new Date()
-    expect(y).toBe(now.getFullYear())
-    expect(m).toBe(now.getMonth() + 1)
+  it("benennt einen in den Folgemonat hineinlaufenden Zeitraum nach dem Startmonat", () => {
+    // Praxisfall: Umsatzmonat 01.07.-05.08. ist "Juli", nicht "August".
+    const spanning: TeamGoal = { ...GOAL, periodStart: "2026-07-01", periodEnd: "2026-08-05" }
+    expect(monthKeyOf(spanning)).toBe("2026-07")
+    expect(monthLabel(monthKeyOf(spanning))).toBe("Juli 2026")
   })
 })
 
@@ -113,6 +108,18 @@ describe("isMonthCloseDue", () => {
   it("false, wenn der Monat schon archiviert ist", () => {
     const entry = { month: "2026-07" } as ArchiveIndexEntry
     expect(isMonthCloseDue(GOAL, [entry], new Date("2026-08-01"))).toBe(false)
+  })
+})
+
+describe("canCloseMonth", () => {
+  it("false vor periodEnd", () => {
+    expect(canCloseMonth(GOAL, new Date("2026-07-15"))).toBe(false)
+  })
+  it("true genau an periodEnd", () => {
+    expect(canCloseMonth(GOAL, new Date("2026-07-31"))).toBe(true)
+  })
+  it("true nach periodEnd", () => {
+    expect(canCloseMonth(GOAL, new Date("2026-08-01"))).toBe(true)
   })
 })
 

@@ -13,7 +13,7 @@ import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { DEFAULT_PLAN_RATES, PLAN_IDS, sbRoster, type PlanId } from "@/lib/calc/struktur"
 import { mergeRosterWithRows, newRowFor } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
-import { MONTH_CLOSE_ENABLED, archiveNow, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
+import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { useAuth } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
@@ -39,7 +39,7 @@ import type { MonthKey } from "@/types/archive"
 import type { OrgChartDoc } from "@/types/dashboard"
 
 const SECTION_LABELS: Record<SectionId, string> = {
-  overview: "Übersicht",
+  overview: "Dashboard",
   team: "Mitarbeiter",
   struktur: "Strukturbaum",
   statistik: "Statistik",
@@ -250,8 +250,14 @@ function AppShell() {
             <Button
               size="sm"
               onClick={handleCloseMonth}
-              disabled={archive.closing || !MONTH_CLOSE_ENABLED}
-              title={MONTH_CLOSE_ENABLED ? undefined : "Vorübergehend deaktiviert"}
+              disabled={archive.closing || !MONTH_CLOSE_ENABLED || !canCloseMonth(dashboard.teamGoal)}
+              title={
+                !MONTH_CLOSE_ENABLED
+                  ? "Vorübergehend deaktiviert"
+                  : !canCloseMonth(dashboard.teamGoal)
+                  ? "Erst ab Ende des eingestellten Umsatzmonats möglich"
+                  : undefined
+              }
             >
               Monat abschließen
             </Button>
