@@ -2,9 +2,18 @@
 // legacy/index.html:2197–2246. isEditor === true nur für eingeloggte Nutzer
 // (die drei angelegten Editor-Konten); ohne Firebase-Config bleibt die App
 // dauerhaft im Read-only-Modus (wie im Original).
+//
+// Besucher ohne echten Login werden im Hintergrund automatisch anonym
+// angemeldet (Firestore-Regel verlangt nur request.auth != null zum
+// Schreiben, siehe firestore.rules in der Firebase-Console). Das gibt jedem
+// ein gültiges Auth-Token, ohne dass ein sichtbarer Login nötig ist — genutzt
+// vom EH-Rechner ("Auf Mitarbeiter buchen", siehe App.tsx canBookUnits).
+// isEditor bleibt bewusst an einen echten (nicht-anonymen) Account gebunden,
+// damit Team-Seite/Struktur/Monatsabschluss weiterhin gesperrt sind.
 import { useEffect, useState } from "react"
 import {
   onAuthStateChanged,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
@@ -13,6 +22,7 @@ import { auth } from "@/lib/firebase"
 
 export interface UseAuthResult {
   user: User | null
+  /** Echter Login (E-Mail/Passwort) — nicht der automatische anonyme Login. */
   isEditor: boolean
   /** Bekannt erst nachdem der erste Auth-State empfangen wurde (verhindert Flackern). */
   ready: boolean
@@ -26,9 +36,15 @@ export function useAuth(): UseAuthResult {
 
   useEffect(() => {
     if (!auth) return
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const authInstance = auth
+    const unsub = onAuthStateChanged(authInstance, (u) => {
       setUser(u)
       setReady(true)
+      if (!u) {
+        signInAnonymously(authInstance).catch((err) => {
+          console.error("Anonyme Anmeldung fehlgeschlagen", err)
+        })
+      }
     })
     return unsub
   }, [])
@@ -49,5 +65,5 @@ export function useAuth(): UseAuthResult {
     await firebaseSignOut(auth)
   }
 
-  return { user, isEditor: !!user, ready, signIn, signOut }
+  return { user, isEditor: !!user && !user.isAnonymous, ready, signIn, signOut }
 }

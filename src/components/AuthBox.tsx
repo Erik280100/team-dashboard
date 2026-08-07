@@ -11,7 +11,7 @@ export function AuthBox({ auth }: { auth: ReturnType<typeof useAuth> }) {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (auth.user) {
+  if (auth.isEditor && auth.user) {
     return (
       <div className="flex items-center gap-2 text-sm">
         <span className="text-muted-foreground">

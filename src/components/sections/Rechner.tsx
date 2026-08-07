@@ -18,10 +18,13 @@ const TABS: { id: RechnerTab; label: string; editorOnly?: boolean }[] = [
 ]
 
 export function Rechner({
-  employees, isEditor, onApplyUnits,
+  employees, isEditor, canBookUnits, onApplyUnits,
 }: {
   employees: { name: string; role: string; units: Record<PlanId, number> }[]
   isEditor: boolean
+  /** Jeder (auch ohne echten Login, via automatischem anonymem Auth) darf im
+   * EH-Rechner Einheiten auf sich buchen — siehe useAuth.ts. */
+  canBookUnits: boolean
   onApplyUnits: (name: string, units: Record<PlanId, number>) => void
 }) {
   const [tab, setTab] = useState<RechnerTab>("eh")
@@ -49,7 +52,7 @@ export function Rechner({
       </div>
 
       {activeTab === "eh" && (
-        <EhRechner employees={employees} isEditor={isEditor} onApplyUnits={onApplyUnits} />
+        <EhRechner employees={employees} canBook={canBookUnits} onApplyUnits={onApplyUnits} />
       )}
       {activeTab === "umdreh" && <UmdrehRechner />}
       {activeTab === "rendite" && <RenditeRechner />}

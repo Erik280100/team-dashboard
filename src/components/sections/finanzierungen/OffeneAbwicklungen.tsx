@@ -43,10 +43,10 @@ function fmtEur(n: number): string {
 }
 
 function NewCaseForm({
-  onAdd, isEditor, employeeNames,
+  onAdd, canWrite, employeeNames,
 }: {
   onAdd: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => void
-  isEditor: boolean
+  canWrite: boolean
   employeeNames: string[]
 }) {
   const [name, setName] = useState("")
@@ -80,7 +80,7 @@ function NewCaseForm({
               placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              disabled={!isEditor}
+              disabled={!canWrite}
               className="w-48"
             />
           </div>
@@ -92,7 +92,7 @@ function NewCaseForm({
               placeholder="0"
               value={betrag}
               onChange={(e) => setBetrag(e.target.value)}
-              disabled={!isEditor}
+              disabled={!canWrite}
               className="w-36"
             />
           </div>
@@ -102,7 +102,7 @@ function NewCaseForm({
               id="fin-art"
               value={art}
               onChange={(e) => setArt(e.target.value as FinanzierungArt)}
-              disabled={!isEditor}
+              disabled={!canWrite}
               className="w-40"
             >
               {ART_OPTIONS.map((a) => (
@@ -116,7 +116,7 @@ function NewCaseForm({
               id="fin-beschaeftigung"
               value={beschaeftigung}
               onChange={(e) => setBeschaeftigung(e.target.value as Beschaeftigung)}
-              disabled={!isEditor}
+              disabled={!canWrite}
               className="w-40"
             >
               <option value="unselbststaendig">Unselbstständig</option>
@@ -129,7 +129,7 @@ function NewCaseForm({
               id="fin-betreuer"
               value={betreuer}
               onChange={(e) => setBetreuer(e.target.value)}
-              disabled={!isEditor}
+              disabled={!canWrite}
               className="w-48"
             >
               <option value="">– auswählen –</option>
@@ -138,7 +138,7 @@ function NewCaseForm({
               ))}
             </Select>
           </div>
-          <Button onClick={submit} disabled={!isEditor || !name.trim()}>
+          <Button onClick={submit} disabled={!canWrite || !name.trim()}>
             Anlegen
           </Button>
         </div>
@@ -148,10 +148,10 @@ function NewCaseForm({
 }
 
 function ChecklistGrid({
-  fc, isEditor, onToggleDoc,
+  fc, canWrite, onToggleDoc,
 }: {
   fc: FinanzierungCase
-  isEditor: boolean
+  canWrite: boolean
   onToggleDoc: (itemId: string, checked: boolean) => void
 }) {
   const groups = relevantGroups(fc.beschaeftigung)
@@ -167,7 +167,7 @@ function ChecklistGrid({
                   type="checkbox"
                   checked={!!fc.docs[item.id]}
                   onChange={(e) => onToggleDoc(item.id, e.target.checked)}
-                  disabled={!isEditor}
+                  disabled={!canWrite}
                   aria-label={`${item.label} – ${fc.name}`}
                   className="mt-0.5 size-4 shrink-0"
                 />
@@ -186,14 +186,17 @@ function ChecklistGrid({
 }
 
 export function OffeneAbwicklungen({
-  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, employeeRoster,
+  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, canWrite, employeeRoster,
 }: {
   cases: FinanzierungCase[]
   addCase: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => void
   patchCase: (id: string, patch: Partial<FinanzierungCase>) => void
   toggleDoc: (id: string, itemId: string, checked: boolean) => void
   removeCase: (id: string) => void
+  /** Stammdaten bearbeiten, Archivieren, Löschen — nur echte Logins. */
   isEditor: boolean
+  /** Anlegen + Checkliste/Status — auch anonym (siehe useAuth.ts). */
+  canWrite: boolean
   /** Aktive Mitarbeiter aus dem Strukturbaum-Roster (siehe App.tsx `roster`), für die Betreuer-Auswahl. */
   employeeRoster: RosterEntry[]
 }) {
@@ -234,7 +237,7 @@ export function OffeneAbwicklungen({
 
   return (
     <div className="flex flex-col gap-6">
-      <NewCaseForm onAdd={addCase} isEditor={isEditor} employeeNames={employeeNames} />
+      <NewCaseForm onAdd={addCase} canWrite={canWrite} employeeNames={employeeNames} />
 
       <Card>
         <CardHeader>
@@ -333,7 +336,7 @@ export function OffeneAbwicklungen({
                               type="checkbox"
                               checked={fc.aufbereitet}
                               onChange={(e) => patchCase(fc.id, { aufbereitet: e.target.checked })}
-                              disabled={!isEditor}
+                              disabled={!canWrite}
                               aria-label={`Daten aufbereitet (MA) – ${fc.name}`}
                               className="size-4"
                             />
@@ -343,7 +346,7 @@ export function OffeneAbwicklungen({
                               type="checkbox"
                               checked={fc.eingereicht}
                               onChange={(e) => patchCase(fc.id, { eingereicht: e.target.checked })}
-                              disabled={!isEditor}
+                              disabled={!canWrite}
                               aria-label={`Eingereicht (VB) – ${fc.name}`}
                               className="size-4"
                             />
@@ -353,7 +356,7 @@ export function OffeneAbwicklungen({
                               type="checkbox"
                               checked={fc.kreditvertrag}
                               onChange={(e) => patchCase(fc.id, { kreditvertrag: e.target.checked })}
-                              disabled={!isEditor}
+                              disabled={!canWrite}
                               aria-label={`Kreditvertrag bekommen – ${fc.name}`}
                               className="size-4"
                             />
@@ -471,7 +474,7 @@ export function OffeneAbwicklungen({
                               </div>
                               <ChecklistGrid
                                 fc={fc}
-                                isEditor={isEditor}
+                                canWrite={canWrite}
                                 onToggleDoc={(itemId, checked) => toggleDoc(fc.id, itemId, checked)}
                               />
                             </td>

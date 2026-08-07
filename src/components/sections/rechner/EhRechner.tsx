@@ -1,6 +1,7 @@
 // EH-Rechner — Äquivalent zu initEHRechner() aus legacy/index.html:3356–3456.
 // Reine Client-Berechnung, nichts wird gespeichert (wie im Original) — außer
-// beim expliziten "Auf Mitarbeiter buchen" (nur isEditor), das die berechneten
+// beim expliziten "Auf Mitarbeiter buchen" (jeder Besucher darf das, auch
+// ohne echten Login — siehe canBook/useAuth.ts), das die berechneten
 // Einheiten je Sparte additiv auf einen Mitarbeiter überträgt (siehe
 // App.tsx applyUnitsToEmployee / verguetung.ts).
 import { useState } from "react"
@@ -43,10 +44,11 @@ function round2(n: number): number {
 }
 
 export function EhRechner({
-  employees, isEditor, onApplyUnits,
+  employees, canBook, onApplyUnits,
 }: {
   employees: { name: string; role: string; units: Record<PlanId, number> }[]
-  isEditor: boolean
+  /** Steuert nur die Buchen-Sektion — jeder Besucher darf hier auf sich buchen. */
+  canBook: boolean
   onApplyUnits: (name: string, units: Record<PlanId, number>) => void
 }) {
   const [g, setG] = useState(defaultG)
@@ -181,7 +183,7 @@ export function EhRechner({
             </Button>
           </div>
 
-          {isEditor && (
+          {canBook && (
             <div className="flex flex-wrap items-center gap-2 border-t border-white/15 pt-3">
               <Select
                 aria-label="Mitarbeiter für Übernahme wählen"
@@ -220,7 +222,7 @@ export function EhRechner({
         </div>
       </div>
 
-      {isEditor && selectedEmployee && (
+      {canBook && selectedEmployee && (
         <Dialog open={bookingOpen} onOpenChange={setBookingOpen}>
           <DialogContent>
             <DialogHeader>

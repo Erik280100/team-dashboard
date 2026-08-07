@@ -308,6 +308,7 @@ function AppShell() {
                 <Rechner
                   employees={rechnerEmployees}
                   isEditor={auth.isEditor}
+                  canBookUnits={auth.ready && !!auth.user}
                   onApplyUnits={applyUnitsToEmployee}
                 />
               )}
@@ -331,6 +332,7 @@ function AppShell() {
                   employeeRoster={roster}
                   removeCase={finanzierungen.removeCase}
                   isEditor={auth.isEditor}
+                  canWrite={auth.ready && !!auth.user}
                 />
               )}
               {section === id && id === "partner" && <Partner />}

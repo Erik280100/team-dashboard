@@ -17,7 +17,7 @@ const TABS: { id: FinanzierungenTab; label: string }[] = [
 ]
 
 export function Finanzierungen({
-  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, employeeRoster,
+  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, canWrite, employeeRoster,
 }: {
   cases: FinanzierungCase[]
   addCase: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => void
@@ -25,6 +25,11 @@ export function Finanzierungen({
   toggleDoc: (id: string, itemId: string, checked: boolean) => void
   removeCase: (id: string) => void
   isEditor: boolean
+  /** Jeder (auch ohne echten Login, via automatischem anonymem Auth) darf
+   * Kreditfälle anlegen und die Checkliste/Status pflegen — siehe useAuth.ts
+   * und OffeneAbwicklungen.tsx. Stammdaten bearbeiten, Archivieren und Löschen
+   * bleiben isEditor vorbehalten. */
+  canWrite: boolean
   /** Aktive Mitarbeiter aus dem Strukturbaum-Roster (siehe App.tsx `roster`), für die Betreuer-Auswahl. */
   employeeRoster: RosterEntry[]
 }) {
@@ -58,6 +63,7 @@ export function Finanzierungen({
           toggleDoc={toggleDoc}
           removeCase={removeCase}
           isEditor={isEditor}
+          canWrite={canWrite}
           employeeRoster={employeeRoster}
         />
       )}
