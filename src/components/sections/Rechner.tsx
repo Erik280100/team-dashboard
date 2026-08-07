@@ -5,15 +5,17 @@ import { cn } from "@/lib/utils"
 import { EhRechner } from "@/components/sections/rechner/EhRechner"
 import { UmdrehRechner } from "@/components/sections/rechner/UmdrehRechner"
 import { RenditeRechner } from "@/components/sections/rechner/RenditeRechner"
+import { KreditRechner } from "@/components/sections/rechner/KreditRechner"
 import { MsciVvRechner } from "@/components/sections/rechner/MsciVvRechner"
 import type { PlanId } from "@/lib/calc/struktur"
 
-type RechnerTab = "eh" | "umdreh" | "rendite" | "msciVv"
+type RechnerTab = "eh" | "umdreh" | "rendite" | "finanzierung" | "msciVv"
 
 const TABS: { id: RechnerTab; label: string; editorOnly?: boolean }[] = [
   { id: "eh", label: "EH-Rechner" },
   { id: "umdreh", label: "Umdrehrechner" },
   { id: "rendite", label: "Renditerechner" },
+  { id: "finanzierung", label: "Finanzierungsrechner" },
   { id: "msciVv", label: "MSCI World vs. VV", editorOnly: true },
 ]
 
@@ -53,6 +55,7 @@ export function Rechner({
       )}
       {activeTab === "umdreh" && <UmdrehRechner />}
       {activeTab === "rendite" && <RenditeRechner />}
+      {activeTab === "finanzierung" && <KreditRechner />}
       {activeTab === "msciVv" && <MsciVvRechner />}
     </div>
   )
