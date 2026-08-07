@@ -80,8 +80,8 @@ export function KreditRechner() {
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
         <strong>Finanzierungsrechner:</strong> Ermittelt aus Kaufpreis, Eigenmitteln und der
         Frage "Makler ja/nein" automatisch die Kauf- und Kreditnebenkosten (Grunderwerbsteuer,
-        Grundbuch, Vertragserrichtung, ggf. Maklerprovision, Bearbeitungsgebühr,
-        Pfandrechtseintragung, Schätzgebühr) sowie den benötigten Kreditbetrag und den
+        Grundbuch, Vertragserrichtung, ggf. Maklerprovision, Kreditvertragserstellung,
+        Pfandrechtseintragung) sowie den benötigten Kreditbetrag und den
         Annuitätentilgungsplan. Sätze marktüblich für Österreich, Stand 2026 — in der Praxis
         bankabhängig und daher unter "Kostensätze anpassen" veränderbar. Modellrechnung ohne
         Gewähr, Eingaben werden nicht gespeichert.
@@ -163,11 +163,10 @@ export function KreditRechner() {
               </div>
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Kreditnebenkosten (von der Kreditsumme)</h4>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                  <SatzFeld label="Bearbeitungsgebühr" value={String(saetze.bearbeitungsgebuehrPct)} onChange={satzSetter("bearbeitungsgebuehrPct")} />
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  <SatzFeld label="Kreditvertragserstellung" value={String(saetze.kreditvertragserstellungPct)} onChange={satzSetter("kreditvertragserstellungPct")} />
                   <SatzFeld label="Pfandrechtseintragung" value={String(saetze.pfandrechtPct)} onChange={satzSetter("pfandrechtPct")} />
                   <SatzFeld label="Nebengebührensicherstellung" value={String(saetze.nebengebuehrensicherstellungPct)} onChange={satzSetter("nebengebuehrensicherstellungPct")} />
-                  <SatzFeld label="Schätzgebühr" value={String(saetze.schaetzgebuehr)} onChange={satzSetter("schaetzgebuehr")} suffix="€" step={50} />
                   <SatzFeld label="Sonstige Kreditnebenkosten" value={String(saetze.sonstigeKreditNK)} onChange={satzSetter("sonstigeKreditNK")} suffix="€" step={100} />
                 </div>
               </div>

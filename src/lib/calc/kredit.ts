@@ -5,10 +5,10 @@
 //
 // Sätze recherchiert (Stand 2026, marktüblich Österreich, siehe Quellen im Plan):
 // Grunderwerbsteuer 3,5 % (Regelsatz), Grundbucheintragung Eigentum 1,1 %, Vertragserrichtung
-// RA/Notar ~2 % netto, Maklerprovision ~3 % netto (jeweils + 20 % USt), Bearbeitungsgebühr
-// ~2 % der Kreditsumme, Pfandrechtseintragung 1,2 % + 20 % Nebengebührensicherstellung,
-// Schätzgebühr ~700 €. Die befristete Grundbuch-/Pfandrechtsbefreiung für Eigenheime ist am
-// 30.06.2026 ausgelaufen und wird hier bewusst nicht (mehr) berücksichtigt.
+// RA/Notar ~2 % netto, Maklerprovision ~3 % netto (jeweils + 20 % USt), Kreditvertragserstellung
+// ~3 % der Kreditsumme, Pfandrechtseintragung 1,2 % + 20 % Nebengebührensicherstellung. Die
+// befristete Grundbuch-/Pfandrechtsbefreiung für Eigenheime ist am 30.06.2026 ausgelaufen und
+// wird hier bewusst nicht (mehr) berücksichtigt.
 
 export interface KreditSaetze {
   grunderwerbsteuerPct: number
@@ -17,10 +17,9 @@ export interface KreditSaetze {
   maklerprovisionPct: number
   ustPct: number
   sonstigeKaufNK: number
-  bearbeitungsgebuehrPct: number
+  kreditvertragserstellungPct: number
   pfandrechtPct: number
   nebengebuehrensicherstellungPct: number
-  schaetzgebuehr: number
   sonstigeKreditNK: number
 }
 
@@ -31,10 +30,9 @@ export const KREDIT_DEFAULTS: KreditSaetze = {
   maklerprovisionPct: 3.0,
   ustPct: 20,
   sonstigeKaufNK: 0,
-  bearbeitungsgebuehrPct: 2.0,
+  kreditvertragserstellungPct: 3.0,
   pfandrechtPct: 1.2,
   nebengebuehrensicherstellungPct: 20,
-  schaetzgebuehr: 700,
   sonstigeKreditNK: 0,
 }
 
@@ -103,7 +101,7 @@ export interface KreditbetragErgebnis {
  * angenähert, sondern exakt aufgelöst:
  *
  *   bedarf = kaufpreis + kaufNK − eigenmittel + fixeKreditNK
- *   r      = bearbeitungPct + pfandrechtPct × (1 + ngsPct)      (als Anteile, nicht %)
+ *   r      = kreditvertragserstellungPct + pfandrechtPct × (1 + ngsPct)      (als Anteile, nicht %)
  *   K      = bedarf / (1 − r)
  */
 export function berechneKreditbetrag(eingabe: KreditbetragEingabe): KreditbetragErgebnis {
@@ -113,14 +111,14 @@ export function berechneKreditbetrag(eingabe: KreditbetragEingabe): Kreditbetrag
   const kaufNK = berechneKaufnebenkosten(kaufpreis, eingabe.mitMakler, saetze)
   const gesamtinvestitionOhneKreditNK = kaufpreis + kaufNK.summe
 
-  const fixeKreditNK = saetze.schaetzgebuehr + saetze.sonstigeKreditNK
+  const fixeKreditNK = saetze.sonstigeKreditNK
   const bedarf = Math.max(0, gesamtinvestitionOhneKreditNK - eigenmittel + fixeKreditNK)
 
   let kreditbetrag: number
   let warnung: string | undefined
 
   if (eingabe.nkMitfinanziert) {
-    const r = saetze.bearbeitungsgebuehrPct / 100
+    const r = saetze.kreditvertragserstellungPct / 100
       + (saetze.pfandrechtPct / 100) * (1 + saetze.nebengebuehrensicherstellungPct / 100)
     if (r >= 1) {
       // Theoretisch möglich bei absurd hohen Sätzen — dann lässt sich die Zirkularität
@@ -135,9 +133,8 @@ export function berechneKreditbetrag(eingabe: KreditbetragEingabe): Kreditbetrag
   }
 
   const kreditNKPositionen: KostenPosition[] = [
-    { label: "Bearbeitungsgebühr", betrag: kreditbetrag * (saetze.bearbeitungsgebuehrPct / 100), hinweis: `${saetze.bearbeitungsgebuehrPct.toLocaleString("de-AT")} % der Kreditsumme` },
+    { label: "Kreditvertragserstellung", betrag: kreditbetrag * (saetze.kreditvertragserstellungPct / 100), hinweis: `${saetze.kreditvertragserstellungPct.toLocaleString("de-AT")} % der Kreditsumme` },
     { label: "Pfandrechtseintragung (inkl. Nebengebührensicherstellung)", betrag: kreditbetrag * (saetze.pfandrechtPct / 100) * (1 + saetze.nebengebuehrensicherstellungPct / 100), hinweis: `${saetze.pfandrechtPct.toLocaleString("de-AT")} % + ${saetze.nebengebuehrensicherstellungPct.toLocaleString("de-AT")} % Aufschlag` },
-    { label: "Schätzgebühr", betrag: saetze.schaetzgebuehr, hinweis: "Fixbetrag" },
   ]
   if (saetze.sonstigeKreditNK > 0) {
     kreditNKPositionen.push({ label: "Sonstige Kreditnebenkosten", betrag: saetze.sonstigeKreditNK, hinweis: "Fixbetrag" })

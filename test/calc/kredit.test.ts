@@ -81,9 +81,9 @@ describe("berechneKreditbetrag", () => {
     const kredit = berechneKreditbetrag(eingabe)
 
     // Backsolve: K * (1 - r) should reproduce the non-financing-cost funding gap.
-    const r = KREDIT_DEFAULTS.bearbeitungsgebuehrPct / 100
+    const r = KREDIT_DEFAULTS.kreditvertragserstellungPct / 100
       + (KREDIT_DEFAULTS.pfandrechtPct / 100) * (1 + KREDIT_DEFAULTS.nebengebuehrensicherstellungPct / 100)
-    const bedarf = 400000 + kredit.kaufNK.summe - 80000 + KREDIT_DEFAULTS.schaetzgebuehr
+    const bedarf = 400000 + kredit.kaufNK.summe - 80000
     expect(kredit.kreditbetrag * (1 - r)).toBeCloseTo(bedarf, 2)
 
     // And the loan amount must actually cover purchase + all costs minus own funds.
