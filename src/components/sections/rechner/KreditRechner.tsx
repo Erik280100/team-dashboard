@@ -71,7 +71,7 @@ export function KreditRechner() {
   }, [plan.monate])
 
   const monthLabels = [0, ...plan.monate.map((m) => m.monat / 12)]
-  const restschuldLine = [plan.kreditbetrag, ...plan.monate.map((m) => m.restschuld)]
+  const restschuldLine = [kredit.kreditbetrag, ...plan.monate.map((m) => m.restschuld)]
 
   const eigenmittelquotePct = kredit.gesamtinvestition > 0 ? (eigenmittelNum / kredit.gesamtinvestition) * 100 : 0
 
