@@ -192,7 +192,7 @@ export function EhRechner({
                 className="w-56 border-white/25 bg-white/10 text-white [&>svg]:text-white/70"
               >
                 <option value="" className="text-foreground">Mitarbeiter wählen…</option>
-                {employees.map((emp) => (
+                {[...employees].sort((a, b) => a.name.localeCompare(b.name, "de")).map((emp) => (
                   <option key={emp.name} value={emp.name} className="text-foreground">
                     {emp.name}
                   </option>
