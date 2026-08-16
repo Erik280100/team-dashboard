@@ -61,10 +61,10 @@ const KIND_COLOR: Record<CalEvent["kind"], string> = {
   event: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
 }
 
-// Stundenraster: von 8:00 bis 21:00, 64px pro Stunde.
-const GRID_START_HOUR = 8
+// Stundenraster: von 9:00 bis 21:00, kompakt gehalten, damit alles ohne Scrollen sichtbar ist.
+const GRID_START_HOUR = 9
 const GRID_END_HOUR = 21
-const HOUR_HEIGHT = 64
+const HOUR_HEIGHT = 34
 const GRID_HOURS = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => GRID_START_HOUR + i)
 const GRID_HEIGHT = GRID_HOURS.length * HOUR_HEIGHT
 
@@ -200,13 +200,13 @@ export function Kalender({
                       <div
                         key={ev.label}
                         className={cn(
-                          "absolute inset-x-1 overflow-hidden rounded-md border px-2 py-1 text-[11px] font-medium",
+                          "absolute inset-x-1 overflow-hidden rounded-md border px-1.5 py-0.5 text-[10px] font-medium leading-tight",
                           KIND_COLOR[ev.kind]
                         )}
                         style={{ top: timeToY(ev.start), height: timeToY(ev.end) - timeToY(ev.start) }}
                       >
                         {ev.label}
-                        <div className="text-[10px] font-normal opacity-80">{ev.start}–{ev.end}</div>
+                        <div className="text-[9px] font-normal leading-tight opacity-80">{ev.start}–{ev.end}</div>
                       </div>
                     ))}
                   </div>
