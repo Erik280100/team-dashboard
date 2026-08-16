@@ -50,7 +50,7 @@ const KARRIEREPLAN_COLUMNS: {
   },
   {
     key: "B",
-    title: "B Mitarbeiter",
+    title: "B Geschäftspartner",
     sbColorKey: "blue",
     rows: [
       { label: "EH", value: "350 EH / Monat" },
@@ -85,7 +85,7 @@ const KARRIEREPLAN_COLUMNS: {
 /** Bedeutung ausgewählter Knotenfarben, als Legende neben der Überschrift angezeigt. */
 const SB_COLOR_LEGEND: { key: string; text: string }[] = [
   { key: "green", text: "A werdende Führungskraft" },
-  { key: "blue", text: "B Mitarbeiter" },
+  { key: "blue", text: "B Geschäftspartner" },
   { key: "purple", text: "C Nebenverdiener" },
 ]
 
@@ -1019,43 +1019,52 @@ export function StrukturBaum({
           <p className="text-xs text-muted-foreground">
             Kategorien A, B und C — Erwartungen und Gegenleistung der Führungskraft im Überblick.
           </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {KARRIEREPLAN_COLUMNS.map((col) => {
-              const c = SB_COLORS.find((sc) => sc.key === col.sbColorKey)
-              return (
-                <div key={col.key} className="overflow-hidden rounded-md border">
-                  <div
-                    className="px-3 py-2 text-center text-sm font-bold"
-                    style={{ background: c?.hex, color: c?.text }}
-                  >
-                    {col.title}
-                  </div>
-                  <table className="w-full text-xs">
-                    <tbody>
-                      {col.rows.map((r) => (
-                        <tr key={r.label} className="border-t">
-                          <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
-                          <td className="px-2 py-1.5 align-top">{r.value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="px-3 py-1.5 text-center text-xs font-bold text-white" style={{ background: "#F59E0B" }}>
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="w-32 border bg-muted/40 p-2" />
+                  {KARRIEREPLAN_COLUMNS.map((col) => {
+                    const c = SB_COLORS.find((sc) => sc.key === col.sbColorKey)
+                    return (
+                      <th
+                        key={col.key}
+                        className="border p-2 text-center font-bold"
+                        style={{ background: c?.hex, color: c?.text }}
+                      >
+                        {col.title}
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {KARRIEREPLAN_COLUMNS[0].rows.map((r, i) => (
+                  <tr key={r.label} className={i % 2 === 1 ? "bg-muted/20" : undefined}>
+                    <td className="border bg-muted/40 p-2 font-semibold">{r.label}</td>
+                    {KARRIEREPLAN_COLUMNS.map((col) => (
+                      <td key={col.key} className="border p-2 align-top">{col.rows[i]?.value}</td>
+                    ))}
+                  </tr>
+                ))}
+                <tr>
+                  <td className="border p-2 text-center font-bold text-white" style={{ background: "#F59E0B" }}>
                     Gegenleistung FK
-                  </div>
-                  <table className="w-full text-xs">
-                    <tbody>
-                      {col.gegenleistung.map((r) => (
-                        <tr key={r.label} className="border-t">
-                          <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
-                          <td className="px-2 py-1.5 align-top">{r.value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )
-            })}
+                  </td>
+                  {KARRIEREPLAN_COLUMNS.map((col) => (
+                    <td key={col.key} className="border p-2" style={{ background: "#F59E0B" }} />
+                  ))}
+                </tr>
+                {KARRIEREPLAN_COLUMNS[0].gegenleistung.map((r, i) => (
+                  <tr key={r.label} className={i % 2 === 1 ? "bg-muted/20" : undefined}>
+                    <td className="border bg-muted/40 p-2 font-semibold">{r.label}</td>
+                    {KARRIEREPLAN_COLUMNS.map((col) => (
+                      <td key={col.key} className="border p-2 align-top">{col.gegenleistung[i]?.value}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

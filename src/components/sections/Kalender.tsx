@@ -15,30 +15,46 @@ import { getAttendanceEntry } from "@/hooks/useAttendanceDoc"
 import { useConfirm } from "@/hooks/useConfirm"
 import { cn } from "@/lib/utils"
 
+type KalenderTab = "kalender" | "anwesenheit"
+
+const TABS: { id: KalenderTab; label: string }[] = [
+  { id: "kalender", label: "Kalender" },
+  { id: "anwesenheit", label: "Anwesenheitsliste" },
+]
+
 type AttendanceSort = "name" | "struktur"
 
 interface CalEvent {
   label: string
   time: string
-  kind: "buero" | "training" | "fuehrung"
+  kind: "buero" | "training" | "fuehrung" | "seminar" | "event"
 }
 
 const WEEK: { day: string; sub?: string; events: CalEvent[] }[] = [
-  { day: "Montag", sub: "Büro", events: [{ label: "Büro", time: "10:00–16:00", kind: "buero" }] },
-  { day: "Dienstag", events: [] },
   {
-    day: "Mittwoch", sub: "Führungskreis / Büro",
+    day: "Montag", sub: "PGs + Wochenplan",
+    events: [{ label: "PGs + Wochenplan", time: "10:00–20:00", kind: "buero" }],
+  },
+  {
+    day: "Dienstag", sub: "Termine + Kontakte",
+    events: [{ label: "Termine + Kontakte", time: "10:00–20:00", kind: "buero" }],
+  },
+  {
+    day: "Mittwoch", sub: "FK + Teleparty / Seminar",
     events: [
-      { label: "Führungskreis", time: "10:00–12:00", kind: "fuehrung" },
-      { label: "Büro", time: "13:00–21:00", kind: "buero" },
+      { label: "FK + Teleparty", time: "17:30–18:30", kind: "fuehrung" },
+      { label: "Seminar", time: "18:30–21:00", kind: "seminar" },
     ],
   },
-  { day: "Donnerstag", events: [] },
   {
-    day: "Freitag", sub: "Training / Büro",
+    day: "Donnerstag", sub: "Termine + Kontakte",
+    events: [{ label: "Termine + Kontakte", time: "10:00–20:00", kind: "buero" }],
+  },
+  {
+    day: "Freitag", sub: "Training / Monatsauftakt",
     events: [
       { label: "Training", time: "10:00–12:00", kind: "training" },
-      { label: "Büro", time: "12:00–16:00", kind: "buero" },
+      { label: "Monatsauftakt", time: "17:00–20:00", kind: "event" },
     ],
   },
   { day: "Samstag", events: [] },
@@ -49,6 +65,8 @@ const KIND_COLOR: Record<CalEvent["kind"], string> = {
   buero: "border-teal-500/40 bg-teal-500/10 text-teal-700 dark:text-teal-300",
   training: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
   fuehrung: "border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300",
+  seminar: "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  event: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
 }
 
 function AttendanceToggle({
@@ -101,6 +119,7 @@ export function Kalender({
   /** Reset-Button nur für eingeloggte Nutzer sichtbar. */
   isEditor: boolean
 }) {
+  const [tab, setTab] = useState<KalenderTab>("kalender")
   const [sort, setSort] = useState<AttendanceSort>("name")
   const confirm = useConfirm()
 
@@ -116,7 +135,26 @@ export function Kalender({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+              tab === t.id
+                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "kalender" && (
       <Card>
         <CardContent>
           <h2 className="mb-3 text-sm font-semibold">Fixtermine — Wochenkalender</h2>
@@ -141,13 +179,17 @@ export function Kalender({
             ))}
           </div>
           <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-teal-500" />Büro</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-teal-500" />Termine / Arbeit</span>
             <span><span className="mr-1.5 inline-block size-2 rounded-full bg-amber-500" />Training</span>
             <span><span className="mr-1.5 inline-block size-2 rounded-full bg-purple-500" />Führungskreis</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-blue-500" />Seminar</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-rose-500" />Monatsauftakt</span>
           </div>
         </CardContent>
       </Card>
+      )}
 
+      {tab === "anwesenheit" && (
       <Card>
         <CardContent>
           <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
@@ -229,6 +271,7 @@ export function Kalender({
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   )
 }
