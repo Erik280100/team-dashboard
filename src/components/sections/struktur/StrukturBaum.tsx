@@ -23,6 +23,64 @@ import { mergeRosterWithRows } from "@/lib/calc/team"
 import type { OrgChartDoc } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
+/** Statischer Inhalt für den "Karriereplan"-Dialog (Vorlage vom Nutzer, Kategorien A/B/C). */
+const KARRIEREPLAN_COLUMNS: {
+  key: string
+  title: string
+  color: string
+  rows: { label: string; value: string }[]
+  gegenleistung: { label: string; value: string }[]
+}[] = [
+  {
+    key: "A",
+    title: "A werdende Führungskraft",
+    color: "#65A30D",
+    rows: [
+      { label: "EH", value: "500 EH / Monat" },
+      { label: "ET", value: "3 / Monat" },
+      { label: "Erreichbarkeit", value: "Selbstverständlich für alle" },
+      { label: "Seminar/Training", value: "100% Anwesenheit" },
+      { label: "Termine", value: "Am Freitag muss immer Wochenplan mit Monatsplan übereinstimmen" },
+    ],
+    gegenleistung: [
+      { label: "PG", value: "1h pro Woche" },
+      { label: "Freizeit", value: "Jederzeit mit FKs bei Partys und Freizeitaktivitäten" },
+    ],
+  },
+  {
+    key: "B",
+    title: "B Mitarbeiter",
+    color: "#3730A3",
+    rows: [
+      { label: "EH", value: "350 EH / Monat" },
+      { label: "ET", value: "1 / Monat" },
+      { label: "Erreichbarkeit", value: "Selbstverständlich für alle" },
+      { label: "Seminar/Training", value: "80% Anwesenheit" },
+      { label: "Termine", value: "Wöchentliche Zielerreichungshilfestellung" },
+    ],
+    gegenleistung: [
+      { label: "PG", value: "30min pro Woche" },
+      { label: "Freizeit", value: "Wird bei Zielerfüllung eingeladen" },
+    ],
+  },
+  {
+    key: "C",
+    title: "C Nebenverdiener",
+    color: "#DB2777",
+    rows: [
+      { label: "EH", value: "500 EH / Quartal" },
+      { label: "ET", value: "Eigeninitiative" },
+      { label: "Erreichbarkeit", value: "Selbstverständlich für alle" },
+      { label: "Seminar/Training", value: "Ja/Nein" },
+      { label: "Termine", value: "MA muss eigenständig schauen, dass er seinen Aktivstatus hält" },
+    ],
+    gegenleistung: [
+      { label: "PG", value: "1x pro Monat" },
+      { label: "Freizeit", value: "Wird eingeladen bei Aufstieg zu B" },
+    ],
+  },
+]
+
 /** Bedeutung ausgewählter Knotenfarben, als Legende neben der Überschrift angezeigt. */
 const SB_COLOR_LEGEND: { key: string; text: string }[] = [
   { key: "purple", text: "Hält sich nicht an Abmachungen" },
@@ -89,6 +147,7 @@ export function StrukturBaum({
   const [linkMode, setLinkMode] = useState(false)
   const [linkSrc, setLinkSrc] = useState<string | null>(null)
   const [ratesOpen, setRatesOpen] = useState(false)
+  const [karriereplanOpen, setKarriereplanOpen] = useState(false)
   const [ratesDraft, setRatesDraft] = useState<Record<PlanId, Record<string, string>>>(
     {} as Record<PlanId, Record<string, string>>
   )
@@ -480,6 +539,7 @@ export function StrukturBaum({
             </Button>
           )}
           {isEditor && <Button size="sm" variant="ghost" onClick={openRates}>💶 Stufensätze</Button>}
+          <Button size="sm" variant="ghost" onClick={() => setKarriereplanOpen(true)}>📋 Karriereplan</Button>
           <Button size="sm" variant="ghost" onClick={toggleFullscreen}>
             {fullscreen ? "⤢ Vollbild beenden" : "⛶ Vollbild"}
           </Button>
@@ -921,6 +981,53 @@ export function StrukturBaum({
               <Button variant="outline" onClick={() => setRatesOpen(false)}>Abbrechen</Button>
               <Button onClick={saveRates}>Speichern</Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Karriereplan */}
+      <Dialog open={karriereplanOpen} onOpenChange={setKarriereplanOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>📋 Karriereplan</DialogTitle>
+            <DialogDescription>
+              Kategorien A, B und C — Erwartungen und Gegenleistung der Führungskraft im Überblick.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {KARRIEREPLAN_COLUMNS.map((col) => (
+              <div key={col.key} className="overflow-hidden rounded-md border">
+                <div className="px-3 py-2 text-center text-sm font-bold text-white" style={{ background: col.color }}>
+                  {col.title}
+                </div>
+                <table className="w-full text-xs">
+                  <tbody>
+                    {col.rows.map((r) => (
+                      <tr key={r.label} className="border-t">
+                        <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
+                        <td className="px-2 py-1.5 align-top">{r.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="px-3 py-1.5 text-center text-xs font-bold text-white" style={{ background: "#F59E0B" }}>
+                  Gegenleistung FK
+                </div>
+                <table className="w-full text-xs">
+                  <tbody>
+                    {col.gegenleistung.map((r) => (
+                      <tr key={r.label} className="border-t">
+                        <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
+                        <td className="px-2 py-1.5 align-top">{r.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setKarriereplanOpen(false)}>Schließen</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
