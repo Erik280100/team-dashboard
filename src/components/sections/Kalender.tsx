@@ -37,7 +37,8 @@ const WEEK: { day: string; events: CalEvent[] }[] = [
   {
     day: "Mittwoch",
     events: [
-      { label: "FK + Teleparty", start: "17:30", end: "18:30", kind: "fuehrung" },
+      { label: "GST Meeting", start: "10:00", end: "11:30", kind: "fuehrung" },
+      { label: "Teleparty", start: "17:30", end: "18:30", kind: "fuehrung" },
       { label: "Seminar", start: "18:30", end: "21:00", kind: "seminar" },
     ],
   },
@@ -219,7 +220,7 @@ export function Kalender({
           <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
             <span><span className="mr-1.5 inline-block size-2 rounded-full bg-teal-500" />Termine / Arbeit</span>
             <span><span className="mr-1.5 inline-block size-2 rounded-full bg-amber-500" />Training</span>
-            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-purple-500" />Führungskreis</span>
+            <span><span className="mr-1.5 inline-block size-2 rounded-full bg-purple-500" />Meeting</span>
             <span><span className="mr-1.5 inline-block size-2 rounded-full bg-blue-500" />Seminar</span>
             <span><span className="mr-1.5 inline-block size-2 rounded-full bg-rose-500" />Monatsauftakt</span>
           </div>
