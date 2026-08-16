@@ -27,14 +27,15 @@ import { cn } from "@/lib/utils"
 const KARRIEREPLAN_COLUMNS: {
   key: string
   title: string
-  color: string
+  /** SB_COLORS-Key — dieselbe Farbe wie im Strukturbaum/der Legende. */
+  sbColorKey: string
   rows: { label: string; value: string }[]
   gegenleistung: { label: string; value: string }[]
 }[] = [
   {
     key: "A",
     title: "A werdende Führungskraft",
-    color: "#65A30D",
+    sbColorKey: "green",
     rows: [
       { label: "EH", value: "500 EH / Monat" },
       { label: "ET", value: "3 / Monat" },
@@ -50,7 +51,7 @@ const KARRIEREPLAN_COLUMNS: {
   {
     key: "B",
     title: "B Mitarbeiter",
-    color: "#3730A3",
+    sbColorKey: "blue",
     rows: [
       { label: "EH", value: "350 EH / Monat" },
       { label: "ET", value: "1 / Monat" },
@@ -66,7 +67,7 @@ const KARRIEREPLAN_COLUMNS: {
   {
     key: "C",
     title: "C Nebenverdiener",
-    color: "#DB2777",
+    sbColorKey: "purple",
     rows: [
       { label: "EH", value: "500 EH / Quartal" },
       { label: "ET", value: "Eigeninitiative" },
@@ -83,9 +84,9 @@ const KARRIEREPLAN_COLUMNS: {
 
 /** Bedeutung ausgewählter Knotenfarben, als Legende neben der Überschrift angezeigt. */
 const SB_COLOR_LEGEND: { key: string; text: string }[] = [
-  { key: "purple", text: "Hält sich nicht an Abmachungen" },
-  { key: "blue", text: "Mitarbeiter" },
-  { key: "green", text: "Zukünftige Führungskraft" },
+  { key: "green", text: "A werdende Führungskraft" },
+  { key: "blue", text: "B Mitarbeiter" },
+  { key: "purple", text: "C Nebenverdiener" },
 ]
 
 const CRITERION_UNIT: Record<string, string> = {
@@ -995,9 +996,14 @@ export function StrukturBaum({
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {KARRIEREPLAN_COLUMNS.map((col) => (
+            {KARRIEREPLAN_COLUMNS.map((col) => {
+              const c = SB_COLORS.find((sc) => sc.key === col.sbColorKey)
+              return (
               <div key={col.key} className="overflow-hidden rounded-md border">
-                <div className="px-3 py-2 text-center text-sm font-bold text-white" style={{ background: col.color }}>
+                <div
+                  className="px-3 py-2 text-center text-sm font-bold"
+                  style={{ background: c?.hex, color: c?.text }}
+                >
                   {col.title}
                 </div>
                 <table className="w-full text-xs">
@@ -1024,7 +1030,8 @@ export function StrukturBaum({
                   </tbody>
                 </table>
               </div>
-            ))}
+              )
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setKarriereplanOpen(false)}>Schließen</Button>
