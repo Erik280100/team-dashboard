@@ -96,6 +96,16 @@ const CRITERION_UNIT: Record<string, string> = {
   gruppenproduktion: "EH/Monat",
 }
 
+/** Pill-Button wie die Tabs in Rechner.tsx — größer als die sonst üblichen sm-Buttons. */
+function toolbarPillClass(active: boolean): string {
+  return cn(
+    "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+    active
+      ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+  )
+}
+
 /** Kompakter Tooltip-Text für den Fortschrittsstreifen am Knoten (title-Attribut). */
 function promotionTooltip(p: PromotionProgress | undefined): string | undefined {
   if (!p || !p.nextRole) return undefined
@@ -535,15 +545,21 @@ export function StrukturBaum({
           <span>{totalPeople} Mitarbeiter erfasst</span>
           {totalNotes > 0 && <span>{totalNotes} Notiz{totalNotes === 1 ? "" : "en"}</span>}
           {isEditor && (
-            <Button size="sm" variant={linkMode ? "default" : "ghost"} onClick={toggleLinkMode}>
+            <button type="button" onClick={toggleLinkMode} className={toolbarPillClass(linkMode)}>
               🔗 Linie hinzufügen
-            </Button>
+            </button>
           )}
-          {isEditor && <Button size="sm" variant="ghost" onClick={openRates}>💶 Stufensätze</Button>}
-          <Button size="sm" variant="ghost" onClick={() => setKarriereplanOpen(true)}>📋 Karriereplan</Button>
-          <Button size="sm" variant="ghost" onClick={toggleFullscreen}>
+          {isEditor && (
+            <button type="button" onClick={openRates} className={toolbarPillClass(false)}>
+              💶 Stufensätze
+            </button>
+          )}
+          <button type="button" onClick={() => setKarriereplanOpen(true)} className={toolbarPillClass(false)}>
+            📋 Karriereplan
+          </button>
+          <button type="button" onClick={toggleFullscreen} className={toolbarPillClass(fullscreen)}>
             {fullscreen ? "⤢ Vollbild beenden" : "⛶ Vollbild"}
-          </Button>
+          </button>
         </div>
       </div>
 
