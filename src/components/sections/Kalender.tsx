@@ -46,7 +46,7 @@ const WEEK: { day: string; events: CalEvent[] }[] = [
     day: "Freitag",
     events: [
       { label: "Training", start: "10:00", end: "12:00", kind: "training" },
-      { label: "Monatsauftakt", start: "17:00", end: "20:00", kind: "event" },
+      { label: "Monatsauftakt - erster Freitag im Umsatzmonat", start: "17:00", end: "20:00", kind: "event" },
     ],
   },
   { day: "Samstag", events: [] },
@@ -61,11 +61,13 @@ const KIND_COLOR: Record<CalEvent["kind"], string> = {
   event: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
 }
 
-// Stundenraster: von 9:00 bis 21:00, kompakt gehalten, damit alles ohne Scrollen sichtbar ist.
+// Stundenraster: von 9:00 bis 21:00.
 const GRID_START_HOUR = 9
 const GRID_END_HOUR = 21
-const HOUR_HEIGHT = 34
+const HOUR_HEIGHT = 46
+// Zeilenlinien/-labels inkl. der abschließenden 21:00-Marke am unteren Rand.
 const GRID_HOURS = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR }, (_, i) => GRID_START_HOUR + i)
+const GRID_LABEL_HOURS = [...GRID_HOURS, GRID_END_HOUR]
 const GRID_HEIGHT = GRID_HOURS.length * HOUR_HEIGHT
 
 function timeToY(time: string) {
@@ -161,14 +163,14 @@ export function Kalender({
       {tab === "kalender" && (
       <Card>
         <CardContent>
-          <h2 className="mb-3 text-sm font-semibold">Fixtermine — Wochenkalender</h2>
+          <h2 className="mb-3 text-base font-semibold">Fixtermine — Wochenkalender</h2>
           <div className="overflow-x-auto">
             <div className="min-w-[960px]">
               {/* Tagesköpfe */}
               <div className="flex">
                 <div className="w-14 shrink-0" />
                 {WEEK.map((d) => (
-                  <div key={d.day} className="flex-1 border-b pb-2 text-center text-xs font-semibold">
+                  <div key={d.day} className="flex-1 border-b pb-2 text-center text-sm font-semibold">
                     {d.day}
                   </div>
                 ))}
@@ -176,10 +178,10 @@ export function Kalender({
               {/* Raster */}
               <div className="flex">
                 <div className="relative w-14 shrink-0" style={{ height: GRID_HEIGHT }}>
-                  {GRID_HOURS.map((h) => (
+                  {GRID_LABEL_HOURS.map((h) => (
                     <div
                       key={h}
-                      className="absolute right-2 -translate-y-1/2 text-[10px] text-muted-foreground"
+                      className="absolute right-2 -translate-y-1/2 text-xs text-muted-foreground"
                       style={{ top: (h - GRID_START_HOUR) * HOUR_HEIGHT }}
                     >
                       {String(h).padStart(2, "0")}:00
@@ -200,13 +202,13 @@ export function Kalender({
                       <div
                         key={ev.label}
                         className={cn(
-                          "absolute inset-x-1 overflow-hidden rounded-md border px-1.5 py-0.5 text-[10px] font-medium leading-tight",
+                          "absolute inset-x-1 overflow-hidden rounded-md border px-1.5 py-1 text-xs font-medium leading-tight",
                           KIND_COLOR[ev.kind]
                         )}
                         style={{ top: timeToY(ev.start), height: timeToY(ev.end) - timeToY(ev.start) }}
                       >
                         {ev.label}
-                        <div className="text-[9px] font-normal leading-tight opacity-80">{ev.start}–{ev.end}</div>
+                        <div className="text-[10px] font-normal leading-tight opacity-80">{ev.start}–{ev.end}</div>
                       </div>
                     ))}
                   </div>
