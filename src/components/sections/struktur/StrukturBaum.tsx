@@ -23,6 +23,13 @@ import { mergeRosterWithRows } from "@/lib/calc/team"
 import type { OrgChartDoc } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
+/** Bedeutung ausgewählter Knotenfarben, als Legende neben der Überschrift angezeigt. */
+const SB_COLOR_LEGEND: { key: string; text: string }[] = [
+  { key: "purple", text: "Hält sich nicht an Abmachungen" },
+  { key: "blue", text: "Mitarbeiter" },
+  { key: "green", text: "Zukünftige Führungskraft" },
+]
+
 const CRITERION_UNIT: Record<string, string> = {
   eigenproduktion: "EH",
   mitarbeiter: "Mitarbeiter",
@@ -446,7 +453,24 @@ export function StrukturBaum({
   return (
     <div ref={rootRef} className="flex flex-col gap-4 bg-background p-1">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Team Strukturbaum</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-semibold">Team Strukturbaum</h2>
+          <div className="flex flex-wrap gap-1.5">
+            {SB_COLOR_LEGEND.map((l) => {
+              const c = SB_COLORS.find((sc) => sc.key === l.key)
+              if (!c) return null
+              return (
+                <div
+                  key={l.key}
+                  className="flex max-w-[120px] items-center justify-center rounded-lg px-2 py-1.5 text-center text-[10px] font-medium leading-tight shadow-sm"
+                  style={{ background: c.hex, color: c.text }}
+                >
+                  {l.text}
+                </div>
+              )
+            })}
+          </div>
+        </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{totalPeople} Mitarbeiter erfasst</span>
           {totalNotes > 0 && <span>{totalNotes} Notiz{totalNotes === 1 ? "" : "en"}</span>}
@@ -511,7 +535,7 @@ export function StrukturBaum({
                   onPointerDown={(e) => onNodePointerDown(e, n)}
                   onClick={() => onNodeClick(n)}
                   className={cn(
-                    "absolute flex cursor-pointer select-none flex-col items-center justify-center overflow-hidden rounded-lg border px-2 text-center shadow-sm transition-shadow hover:shadow-md",
+                    "absolute flex cursor-pointer select-none flex-col items-center justify-center rounded-lg border px-2 text-center shadow-sm transition-shadow hover:shadow-md",
                     isDragging && "opacity-40",
                     isDropTarget && "ring-2 ring-primary",
                     linkMode && linkSrc === n.id && "ring-2 ring-amber-500"
