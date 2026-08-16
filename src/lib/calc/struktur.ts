@@ -10,6 +10,8 @@ export interface SbNode {
   role?: string
   children?: SbNode[]
   color?: string | null
+  /** Zweite Farbe für einen zweigeteilten Knoten (linke Hälfte `color`, rechte Hälfte `color2`). */
+  color2?: string | null
   status?: string | null
   notes?: { text: string }[]
   // Layout-Ausgabe von sbLayout (wird auf dem Knoten mutiert, wie im Original):

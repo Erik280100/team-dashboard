@@ -179,11 +179,7 @@ export function KreditRechner() {
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-        <strong>Finanzierungsrechner:</strong> Ermittelt aus Kaufpreis, Eigenmitteln und der
-        Frage "Makler ja/nein" automatisch die Kauf- und Kreditnebenkosten (Grunderwerbsteuer,
-        Grundbuch, Vertragserrichtung, ggf. Maklerprovision, Kreditvertragserstellung,
-        Pfandrechtseintragung) sowie den benötigten Kreditbetrag und den
-        Annuitätentilgungsplan.
+        <strong>Finanzierungsrechner:</strong> Ermittelt Kauf- und Kreditnebenkosten sowie den Annuitätentilgungsplan.
       </div>
 
       <Card>

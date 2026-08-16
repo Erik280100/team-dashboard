@@ -61,18 +61,7 @@ export function MsciVvRechner() {
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-        <strong>MSCI World vs. Vermögensverwaltung:</strong> Vergleicht die Wertentwicklung eines
-        MSCI-World-ETFs mit der hauseigenen Vermögensverwaltung über den gewählten
-        Anlagehorizont — ohne Kosten/KESt, zur reinen Veranschaulichung von Schwankung
-        (Volatilität) und Max. Drawdown. Datenbasis beider Kurven: 2021–2026. Die VV-Kurve
-        basiert auf den realen Jahresrenditen 2021–2026, die für längere Horizonte
-        wiederholt werden. Die MSCI-Kurve ist eine Modellrechnung, kalibriert auf die
-        "5J"-Kennzahlen des iShares-Factsheets (Volatilität, Max. Verlust, Wertentwicklung
-        p.a. — dieses Zeitfenster deckt ebenfalls ca. 2021–2026 ab) — keine echten
-        historischen Monatswerte. Zusätzlich berücksichtigt: der Dividenden-/Kupon-Bonus der
-        VV — der ETF behält Dividenden/Kupons der enthaltenen Aktien/Anleihen ein, die VV
-        reinvestiert sie aktiv für den Kunden, das kommt on top oben drauf. Modellrechnung
-        ohne Gewähr.
+        <strong>MSCI World vs. Vermögensverwaltung:</strong> Vergleicht die Wertentwicklung eines MSCI-World-ETFs mit der hauseigenen Vermögensverwaltung über den gewählten Anlagehorizont.
       </div>
 
       <Card>

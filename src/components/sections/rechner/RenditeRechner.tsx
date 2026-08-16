@@ -154,9 +154,7 @@ export function RenditeRechner() {
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-        <strong>Renditerechner:</strong> Vergleicht vier österreichische Anlageprodukte (FLV,
-        Fondssparer, Depot, Vermögensverwaltung) über die gewählte Laufzeit inklusive Kosten und
-        KESt. Modellrechnung ohne Gewähr — Eingaben werden nicht gespeichert.
+        <strong>Renditerechner:</strong> Vergleicht vier Anlageprodukte über die gewählte Laufzeit inklusive Kosten und KESt.
       </div>
 
       <Card>

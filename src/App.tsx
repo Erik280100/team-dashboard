@@ -198,6 +198,7 @@ function AppShell() {
         onNavigate={navigateTo}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isEditor={auth.isEditor}
       />
       <main className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
         <Topbar

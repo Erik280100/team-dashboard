@@ -76,6 +76,7 @@ export function StrukturBaum({
   const [nameDraft, setNameDraft] = useState("")
   const [roleDraft, setRoleDraft] = useState("")
   const [colorDraft, setColorDraft] = useState<string | null>(null)
+  const [color2Draft, setColor2Draft] = useState<string | null>(null)
   const [statusDraft, setStatusDraft] = useState("")
   const [noteDraft, setNoteDraft] = useState("")
   const [linkMode, setLinkMode] = useState(false)
@@ -174,6 +175,7 @@ export function StrukturBaum({
     setNameDraft(n.name)
     setRoleDraft(n.role || "")
     setColorDraft(n.color ?? null)
+    setColor2Draft(n.color2 ?? null)
     setStatusDraft(n.status || "")
     setNoteDraft("")
   }
@@ -335,6 +337,7 @@ export function StrukturBaum({
       n.name = name
       n.role = roleDraft.trim()
       n.color = colorDraft
+      n.color2 = color2Draft
       n.status = statusDraft || null
       persist({ tree: next })
     }
@@ -489,6 +492,12 @@ export function StrukturBaum({
             />
             {nodes.map((n) => {
               const colorDef = n.color ? SB_COLORS.find((c) => c.key === n.color) : null
+              const colorDef2 = n.color2 ? SB_COLORS.find((c) => c.key === n.color2) : null
+              const nodeBackground =
+                colorDef && colorDef2
+                  ? `linear-gradient(to right, ${colorDef.hex} 50%, ${colorDef2.hex} 50%)`
+                  : (colorDef ?? colorDef2)?.hex
+              const nodeTextColor = (colorDef ?? colorDef2)?.text
               const statusDef = n.status ? SB_STATUS[n.status] : null
               const isDropTarget = drag?.active && drag.targetId === n.id
               const isDragging = drag?.active && drag.nodeId === n.id
@@ -509,8 +518,8 @@ export function StrukturBaum({
                   )}
                   style={{
                     left: n.x, top: n.y, width: SB_NW, height: SB_NH,
-                    background: colorDef?.hex, color: colorDef?.text,
-                    borderColor: colorDef ? "transparent" : undefined,
+                    background: nodeBackground, color: nodeTextColor,
+                    borderColor: nodeBackground ? "transparent" : undefined,
                   }}
                 >
                   <span className="truncate text-[12px] font-semibold leading-tight">{n.name}</span>
@@ -594,7 +603,7 @@ export function StrukturBaum({
               </select>
             </label>
             <div className="mb-4">
-              <div className="mb-1.5 text-xs text-muted-foreground">Farbe</div>
+              <div className="mb-1.5 text-xs text-muted-foreground">Farbe (linke Hälfte)</div>
               <div className="flex flex-wrap gap-1.5">
                 {SB_COLORS.map((c) => (
                   <button
@@ -607,6 +616,25 @@ export function StrukturBaum({
                 <button
                   type="button" disabled={!isEditor} title="Keine Farbe" onClick={() => setColorDraft(null)}
                   className={cn("flex size-6 items-center justify-center rounded-full border text-xs", !colorDraft && "border-foreground")}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="mb-4">
+              <div className="mb-1.5 text-xs text-muted-foreground">Farbe (rechte Hälfte, optional)</div>
+              <div className="flex flex-wrap gap-1.5">
+                {SB_COLORS.map((c) => (
+                  <button
+                    key={c.key} type="button" disabled={!isEditor} title={c.label}
+                    onClick={() => setColor2Draft(c.key)}
+                    className={cn("size-6 rounded-full border-2", color2Draft === c.key ? "border-foreground" : "border-transparent")}
+                    style={{ background: c.hex }}
+                  />
+                ))}
+                <button
+                  type="button" disabled={!isEditor} title="Keine zweite Farbe" onClick={() => setColor2Draft(null)}
+                  className={cn("flex size-6 items-center justify-center rounded-full border text-xs", !color2Draft && "border-foreground")}
                 >
                   ✕
                 </button>

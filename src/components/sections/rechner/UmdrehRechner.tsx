@@ -61,11 +61,7 @@ export function UmdrehRechner() {
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-        <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags (alte
-        Stufe, Faktor {UM_EH_ALT.toFixed(2)}) mit dem aktuellen Verdienst bei finova (neue Stufe,
-        Faktor {UM_EH_NEU.toFixed(2)}) — für Berater und Führungskraft. Die Führungskraft verdient
-        jeweils die Differenz zwischen ihrer eigenen Stufe und der Berater-Stufe (alt bzw. neu
-        getrennt). Eingaben werden nicht gespeichert.
+        <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags mit dem Verdienst bei finova.
       </div>
 
       <Card>

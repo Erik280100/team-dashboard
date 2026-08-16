@@ -6,14 +6,16 @@ import { EhRechner } from "@/components/sections/rechner/EhRechner"
 import { UmdrehRechner } from "@/components/sections/rechner/UmdrehRechner"
 import { RenditeRechner } from "@/components/sections/rechner/RenditeRechner"
 import { MsciVvRechner } from "@/components/sections/rechner/MsciVvRechner"
+import { InvestVsWohnungRechner } from "@/components/sections/rechner/InvestVsWohnungRechner"
 import type { PlanId } from "@/lib/calc/struktur"
 
-type RechnerTab = "eh" | "umdreh" | "rendite" | "msciVv"
+type RechnerTab = "eh" | "umdreh" | "rendite" | "msciVv" | "investVsWohnung"
 
 const TABS: { id: RechnerTab; label: string; editorOnly?: boolean }[] = [
   { id: "eh", label: "EH-Rechner" },
-  { id: "umdreh", label: "Umdrehrechner" },
-  { id: "rendite", label: "Renditerechner" },
+  { id: "umdreh", label: "Umdrehrechner", editorOnly: true },
+  { id: "rendite", label: "Renditerechner", editorOnly: true },
+  { id: "investVsWohnung", label: "Invest vs. Anlegerwohnung", editorOnly: true },
   { id: "msciVv", label: "MSCI World vs. VV", editorOnly: true },
 ]
 
@@ -56,6 +58,7 @@ export function Rechner({
       )}
       {activeTab === "umdreh" && <UmdrehRechner />}
       {activeTab === "rendite" && <RenditeRechner />}
+      {activeTab === "investVsWohnung" && <InvestVsWohnungRechner />}
       {activeTab === "msciVv" && <MsciVvRechner />}
     </div>
   )

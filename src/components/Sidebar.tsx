@@ -6,11 +6,11 @@ import {
 import { cn } from "@/lib/utils"
 import type { SectionId } from "@/hooks/useHashSection"
 
-const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon }[] = [
+const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; editorOnly?: boolean }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "team", label: "Mitarbeiter", icon: Users },
   { id: "struktur", label: "Strukturbaum", icon: Network },
-  { id: "statistik", label: "Statistik", icon: BarChart3 },
+  { id: "statistik", label: "Statistik", icon: BarChart3, editorOnly: true },
   { id: "rechner", label: "Rechner", icon: Calculator },
   { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
   { id: "guide", label: "Guide", icon: BookOpen },
@@ -24,13 +24,17 @@ export function Sidebar({
   onNavigate,
   open,
   onClose,
+  isEditor,
 }: {
   section: SectionId
   onNavigate: (section: SectionId) => void
   /** Mobil: Menü eingeblendet (off-canvas). Ab md ist die Sidebar immer sichtbar. */
   open: boolean
   onClose: () => void
+  /** Nur eingeloggte Editoren sehen den Statistik-Tab. */
+  isEditor: boolean
 }) {
+  const navItems = NAV_ITEMS.filter((item) => !item.editorOnly || isEditor)
   return (
     <>
       {open && (
@@ -66,7 +70,7 @@ export function Sidebar({
           Direktion KKB · Team Dashboard
         </div>
 
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon
           const active = section === item.id
           return (

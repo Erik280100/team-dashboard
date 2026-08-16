@@ -5,15 +5,17 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { OffeneAbwicklungen } from "@/components/sections/finanzierungen/OffeneAbwicklungen"
 import { KreditRechner } from "@/components/sections/rechner/KreditRechner"
+import { ImmoPortfolioRechner } from "@/components/sections/rechner/ImmoPortfolioRechner"
 import type { Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
 import type { RosterEntry } from "@/lib/calc/struktur"
 
-type FinanzierungenTab = "offen" | "rechner"
+type FinanzierungenTab = "offen" | "rechner" | "immo"
 
-const TABS: { id: FinanzierungenTab; label: string }[] = [
+const TABS: { id: FinanzierungenTab; label: string; editorOnly?: boolean }[] = [
   { id: "offen", label: "Offene Abwicklungen" },
-  { id: "rechner", label: "Finanzierungsrechner" },
+  { id: "rechner", label: "Finanzierungsrechner", editorOnly: true },
+  { id: "immo", label: "Anlegerwohnungen", editorOnly: true },
 ]
 
 export function Finanzierungen({
@@ -34,18 +36,20 @@ export function Finanzierungen({
   employeeRoster: RosterEntry[]
 }) {
   const [tab, setTab] = useState<FinanzierungenTab>("offen")
+  const visibleTabs = TABS.filter((t) => !t.editorOnly || isEditor)
+  const activeTab = visibleTabs.some((t) => t.id === tab) ? tab : visibleTabs[0].id
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
               "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-              tab === t.id
+              activeTab === t.id
                 ? "border-transparent bg-primary text-primary-foreground shadow-sm"
                 : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
             )}
@@ -55,7 +59,7 @@ export function Finanzierungen({
         ))}
       </div>
 
-      {tab === "offen" && (
+      {activeTab === "offen" && (
         <OffeneAbwicklungen
           cases={cases}
           addCase={addCase}
@@ -67,7 +71,8 @@ export function Finanzierungen({
           employeeRoster={employeeRoster}
         />
       )}
-      {tab === "rechner" && <KreditRechner />}
+      {activeTab === "rechner" && <KreditRechner />}
+      {activeTab === "immo" && <ImmoPortfolioRechner />}
     </div>
   )
 }
