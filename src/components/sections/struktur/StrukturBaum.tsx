@@ -96,8 +96,13 @@ const CRITERION_UNIT: Record<string, string> = {
   gruppenproduktion: "EH/Monat",
 }
 
-/** Pill-Button wie die Tabs in Rechner.tsx — größer als die sonst üblichen sm-Buttons. */
-function toolbarPillClass(active: boolean): string {
+const PAGE_TABS: { id: "baum" | "karriereplan"; label: string }[] = [
+  { id: "baum", label: "Team Strukturbaum" },
+  { id: "karriereplan", label: "Karriereplan" },
+]
+
+/** Pill-Tab wie die Rechner-Tabs in Rechner.tsx. */
+function pageTabClass(active: boolean): string {
   return cn(
     "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
     active
@@ -148,6 +153,7 @@ export function StrukturBaum({
   const scrollRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<HTMLDivElement>(null)
 
+  const [page, setPage] = useState<"baum" | "karriereplan">("baum")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [nameDraft, setNameDraft] = useState("")
   const [roleDraft, setRoleDraft] = useState("")
@@ -158,7 +164,6 @@ export function StrukturBaum({
   const [linkMode, setLinkMode] = useState(false)
   const [linkSrc, setLinkSrc] = useState<string | null>(null)
   const [ratesOpen, setRatesOpen] = useState(false)
-  const [karriereplanOpen, setKarriereplanOpen] = useState(false)
   const [ratesDraft, setRatesDraft] = useState<Record<PlanId, Record<string, string>>>(
     {} as Record<PlanId, Record<string, string>>
   )
@@ -522,6 +527,16 @@ export function StrukturBaum({
 
   return (
     <div ref={rootRef} className="flex flex-col gap-4 bg-background p-1">
+      <div className="flex flex-wrap gap-2">
+        {PAGE_TABS.map((t) => (
+          <button key={t.id} type="button" onClick={() => setPage(t.id)} className={pageTabClass(page === t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {page === "baum" && (
+      <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-semibold">Team Strukturbaum</h2>
@@ -545,21 +560,14 @@ export function StrukturBaum({
           <span>{totalPeople} Mitarbeiter erfasst</span>
           {totalNotes > 0 && <span>{totalNotes} Notiz{totalNotes === 1 ? "" : "en"}</span>}
           {isEditor && (
-            <button type="button" onClick={toggleLinkMode} className={toolbarPillClass(linkMode)}>
+            <Button size="sm" variant={linkMode ? "default" : "ghost"} onClick={toggleLinkMode}>
               🔗 Linie hinzufügen
-            </button>
+            </Button>
           )}
-          {isEditor && (
-            <button type="button" onClick={openRates} className={toolbarPillClass(false)}>
-              💶 Stufensätze
-            </button>
-          )}
-          <button type="button" onClick={() => setKarriereplanOpen(true)} className={toolbarPillClass(false)}>
-            📋 Karriereplan
-          </button>
-          <button type="button" onClick={toggleFullscreen} className={toolbarPillClass(fullscreen)}>
+          {isEditor && <Button size="sm" variant="ghost" onClick={openRates}>💶 Stufensätze</Button>}
+          <Button size="sm" variant="ghost" onClick={toggleFullscreen}>
             {fullscreen ? "⤢ Vollbild beenden" : "⛶ Vollbild"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1002,58 +1010,55 @@ export function StrukturBaum({
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Karriereplan */}
-      <Dialog open={karriereplanOpen} onOpenChange={setKarriereplanOpen}>
-        <DialogContent className="sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>📋 Karriereplan</DialogTitle>
-            <DialogDescription>
-              Kategorien A, B und C — Erwartungen und Gegenleistung der Führungskraft im Überblick.
-            </DialogDescription>
-          </DialogHeader>
+      </>
+      )}
+
+      {page === "karriereplan" && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold">Karriereplan</h2>
+          <p className="text-xs text-muted-foreground">
+            Kategorien A, B und C — Erwartungen und Gegenleistung der Führungskraft im Überblick.
+          </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {KARRIEREPLAN_COLUMNS.map((col) => {
               const c = SB_COLORS.find((sc) => sc.key === col.sbColorKey)
               return (
-              <div key={col.key} className="overflow-hidden rounded-md border">
-                <div
-                  className="px-3 py-2 text-center text-sm font-bold"
-                  style={{ background: c?.hex, color: c?.text }}
-                >
-                  {col.title}
+                <div key={col.key} className="overflow-hidden rounded-md border">
+                  <div
+                    className="px-3 py-2 text-center text-sm font-bold"
+                    style={{ background: c?.hex, color: c?.text }}
+                  >
+                    {col.title}
+                  </div>
+                  <table className="w-full text-xs">
+                    <tbody>
+                      {col.rows.map((r) => (
+                        <tr key={r.label} className="border-t">
+                          <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
+                          <td className="px-2 py-1.5 align-top">{r.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="px-3 py-1.5 text-center text-xs font-bold text-white" style={{ background: "#F59E0B" }}>
+                    Gegenleistung FK
+                  </div>
+                  <table className="w-full text-xs">
+                    <tbody>
+                      {col.gegenleistung.map((r) => (
+                        <tr key={r.label} className="border-t">
+                          <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
+                          <td className="px-2 py-1.5 align-top">{r.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <table className="w-full text-xs">
-                  <tbody>
-                    {col.rows.map((r) => (
-                      <tr key={r.label} className="border-t">
-                        <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
-                        <td className="px-2 py-1.5 align-top">{r.value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="px-3 py-1.5 text-center text-xs font-bold text-white" style={{ background: "#F59E0B" }}>
-                  Gegenleistung FK
-                </div>
-                <table className="w-full text-xs">
-                  <tbody>
-                    {col.gegenleistung.map((r) => (
-                      <tr key={r.label} className="border-t">
-                        <td className="w-2/5 px-2 py-1.5 align-top font-semibold">{r.label}</td>
-                        <td className="px-2 py-1.5 align-top">{r.value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
               )
             })}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setKarriereplanOpen(false)}>Schließen</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   )
 }
