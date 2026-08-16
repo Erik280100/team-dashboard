@@ -33,7 +33,7 @@ interface CalEvent {
 
 const WEEK: { day: string; events: CalEvent[] }[] = [
   { day: "Montag", events: [{ label: "PGs + Wochenplan", start: "10:00", end: "20:00", kind: "buero" }] },
-  { day: "Dienstag", events: [{ label: "Termine + Kontakte", start: "10:00", end: "20:00", kind: "buero" }] },
+  { day: "Dienstag", events: [{ label: "Termine + Kontakten", start: "10:00", end: "20:00", kind: "buero" }] },
   {
     day: "Mittwoch",
     events: [
@@ -42,11 +42,12 @@ const WEEK: { day: string; events: CalEvent[] }[] = [
       { label: "Seminar", start: "18:30", end: "21:00", kind: "seminar" },
     ],
   },
-  { day: "Donnerstag", events: [{ label: "Termine + Kontakte", start: "10:00", end: "20:00", kind: "buero" }] },
+  { day: "Donnerstag", events: [{ label: "Termine + Kontakten", start: "10:00", end: "20:00", kind: "buero" }] },
   {
     day: "Freitag",
     events: [
       { label: "Training", start: "10:00", end: "12:00", kind: "training" },
+      { label: "Termine + Kontakten", start: "13:00", end: "17:00", kind: "buero" },
       { label: "Monatsauftakt - erster Freitag im Umsatzmonat", start: "17:00", end: "20:00", kind: "event" },
     ],
   },
