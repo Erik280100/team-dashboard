@@ -14,6 +14,7 @@ import type { ArchiveIndexEntry, MonthKey, MonthSnapshot, MonthTotals } from "@/
 export const PLAN_COLORS: Record<PlanId, string> = {
   insurance: PIE_COLORS[0],
   investment: PIE_COLORS[1],
+  investmentVb: PIE_COLORS[8],
   credit: PIE_COLORS[2],
   realestate: PIE_COLORS[3],
 }

@@ -16,7 +16,7 @@ import { fmt, type EmployeeRow } from "@/lib/calc/format"
 import {
   DEFAULT_PLAN_RATES, PLAN_IDS, PLAN_LABELS,
   SB_COLORS, SB_NH, SB_NW, SB_ROLES, SB_STATUS, SB_VG,
-  sbAll, sbEsc, sbFind, sbLayout, sbLine, sbRoster,
+  sbAll, sbEsc, sbFind, sbLayout, sbLine, sbRoster, withDefaultPlanRates,
   type PlanId, type SbNode,
 } from "@/lib/calc/struktur"
 import { mergeRosterWithRows } from "@/lib/calc/team"
@@ -454,7 +454,7 @@ export function StrukturBaum({
   }
   function openRates() {
     if (!isEditor) return
-    setRatesDraft(draftFromPlanRates(doc.planRates ?? DEFAULT_PLAN_RATES))
+    setRatesDraft(draftFromPlanRates(withDefaultPlanRates(doc.planRates)))
     setRatesOpen(true)
   }
   function resetRatesToDefaults() {
@@ -956,29 +956,32 @@ export function StrukturBaum({
 
       {/* Dialog: Stufensätze */}
       <Dialog open={ratesOpen} onOpenChange={setRatesOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>💶 Stufensätze</DialogTitle>
             <DialogDescription>
               Euro pro Einheit (EH) je Karrierestufe und Karriereplan — wird auf der Mitarbeiterseite verwendet.
+              „Investment (mit VB)" ist zunächst leer — bitte die echten Sätze eintragen, bevor Einheiten darauf gebucht werden.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[55vh] overflow-auto rounded-md border">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full min-w-[34rem] border-collapse text-sm">
               <thead>
                 <tr className="sticky top-0 bg-muted/95 text-left text-xs font-semibold text-muted-foreground backdrop-blur">
-                  <th className="px-3 py-1.5">Stufe</th>
+                  <th className="px-2 py-1.5">Stufe</th>
                   {PLAN_IDS.map((planId) => (
-                    <th key={planId} className="px-2 py-1.5 text-right">{PLAN_LABELS[planId]}</th>
+                    <th key={planId} className="whitespace-normal px-1.5 py-1.5 text-right text-[11px] leading-tight">
+                      {PLAN_LABELS[planId]}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {SB_ROLES.map((r) => (
                   <tr key={r} className="border-t">
-                    <td className="px-3 py-1.5 font-medium">{r}</td>
+                    <td className="px-2 py-1.5 font-medium">{r}</td>
                     {PLAN_IDS.map((planId) => (
-                      <td key={planId} className="px-2 py-1.5 text-right">
+                      <td key={planId} className="px-1.5 py-1.5 text-right">
                         <input
                           type="number" step={0.01} min={0} placeholder="0,00"
                           aria-label={`${PLAN_LABELS[planId]} – ${r}`}
@@ -989,7 +992,7 @@ export function StrukturBaum({
                               [planId]: { ...s[planId], [r]: e.target.value },
                             }))
                           }
-                          className="h-8 w-20 rounded-md border border-input bg-background px-2 text-right text-sm"
+                          className="h-8 w-[4.5rem] rounded-md border border-input bg-background px-2 text-right text-sm"
                         />
                       </td>
                     ))}

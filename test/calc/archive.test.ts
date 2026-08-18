@@ -20,11 +20,11 @@ const TREE: SbNode = {
 const ROWS: EmployeeRow[] = [
   {
     name: "Chef", soll: 100, ist: 50, atPlan: 10, atIst: 5, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
-    ehByPlan: { insurance: 50, investment: 0, credit: 0, realestate: 0 }, isNew: false, bonus: 200,
+    ehByPlan: { insurance: 50, investment: 0, investmentVb: 0, credit: 0, realestate: 0 }, isNew: false, bonus: 200,
   },
   {
     name: "Anna Berger", soll: 50, ist: 20, atPlan: 5, atIst: 3, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
-    ehByPlan: { insurance: 20, investment: 0, credit: 0, realestate: 0 }, isNew: true, joinDate: "2026-07-05",
+    ehByPlan: { insurance: 20, investment: 0, investmentVb: 0, credit: 0, realestate: 0 }, isNew: true, joinDate: "2026-07-05",
   },
 ]
 
@@ -42,7 +42,7 @@ describe("resetRowsForNewMonth", () => {
     expect(next[0]).toMatchObject({
       name: "Chef", soll: 100, atPlan: 10, ist: 0, atIst: 0, btIst: 0, etIst: 0, bonus: 0,
     })
-    expect(next[0].ehByPlan).toEqual({ insurance: 0, investment: 0, credit: 0, realestate: 0 })
+    expect(next[0].ehByPlan).toEqual({ insurance: 0, investment: 0, investmentVb: 0, credit: 0, realestate: 0 })
     expect(next[1]).toMatchObject({ name: "Anna Berger", soll: 50, isNew: true, joinDate: "2026-07-05", ist: 0 })
   })
 

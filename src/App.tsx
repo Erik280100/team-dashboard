@@ -10,7 +10,7 @@
 // useConfirm() bereits als Kind-Komponente nutzt).
 import { useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
-import { DEFAULT_PLAN_RATES, PLAN_IDS, sbRoster, type PlanId } from "@/lib/calc/struktur"
+import { PLAN_IDS, sbRoster, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { mergeRosterWithRows, newRowFor } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
@@ -121,7 +121,12 @@ function AppShell() {
       history: snapshot?.history ?? dashboard.history,
       orgTree: orgDoc.tree,
       orgDoc,
-      planRates: snapshot?.orgChart.planRates ?? (orgChart.planRates ?? DEFAULT_PLAN_RATES),
+      // Archiv-Snapshots aus der Zeit vor "Investment (mit VB)" haben den Plan
+      // noch nicht in planRates — withDefaultPlanRates füllt ihn mit den
+      // aktuellen Defaults auf. Harmlos, da historische Zeilen dort 0
+      // Einheiten haben (Satz × 0 = 0), sorgt aber dafür, dass der Key
+      // existiert (SnapshotOrgChart.planRates ist nicht optional).
+      planRates: withDefaultPlanRates(snapshot?.orgChart.planRates ?? orgChart.planRates),
       now: snapshot ? archiveNow(snapshot.teamGoal) : undefined,
     }
   }, [snapshot, dashboard.rows, dashboard.teamGoal, dashboard.history, orgChart.tree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])

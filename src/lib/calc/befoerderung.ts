@@ -134,7 +134,7 @@ export function eigenproduktion(row: Pick<MergedRow, "ist" | "ehByPlan">): numbe
   return readPlanUnits(row).insurance
 }
 
-/** Gesamtproduktion = Summe aller vier Sparten. */
+/** Gesamtproduktion = Summe aller Karriereplan-Sparten. */
 export function gesamtproduktion(row: Pick<MergedRow, "ist" | "ehByPlan">): number {
   return sumPlanUnits(readPlanUnits(row))
 }

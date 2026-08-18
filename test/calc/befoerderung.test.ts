@@ -35,8 +35,10 @@ describe("eigenproduktion / gesamtproduktion", () => {
   it("eigenproduktion zählt nur Insurance", () => {
     expect(eigenproduktion({ ist: 999, ehByPlan: { insurance: 5, credit: 100 } })).toBe(5)
   })
-  it("gesamtproduktion summiert alle vier Sparten", () => {
-    expect(gesamtproduktion({ ist: 0, ehByPlan: { insurance: 5, credit: 3, investment: 1, realestate: 2 } })).toBe(11)
+  it("gesamtproduktion summiert alle Sparten (auch investmentVb)", () => {
+    expect(gesamtproduktion({
+      ist: 0, ehByPlan: { insurance: 5, credit: 3, investment: 1, investmentVb: 4, realestate: 2 },
+    })).toBe(15)
   })
   it("Altbestand ohne ehByPlan: ist gilt als Insurance", () => {
     expect(eigenproduktion({ ist: 42 })).toBe(42)

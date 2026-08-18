@@ -75,12 +75,13 @@ export function isLeadRole(role: string): boolean {
 // Die vier Sparten aus den Karriereplänen (siehe src/lib/data/career.ts /
 // src/lib/calc/eh.ts EH_GROUPS — dieselben ids, hier eigenständig deklariert,
 // damit struktur.ts nicht von eh.ts abhängen muss).
-export const PLAN_IDS = ["insurance", "investment", "credit", "realestate"] as const
+export const PLAN_IDS = ["insurance", "investment", "investmentVb", "credit", "realestate"] as const
 export type PlanId = (typeof PLAN_IDS)[number]
 
 export const PLAN_LABELS: Record<PlanId, string> = {
   insurance: "Insurance",
   investment: "Investment",
+  investmentVb: "Investment (mit VB)",
   credit: "Credit",
   realestate: "Real Estate",
 }
@@ -112,6 +113,12 @@ export const DEFAULT_PLAN_RATES: Record<PlanId, Record<string, number>> = {
     FT2: 2,
     FT1: 1,
   },
+  // Bewusst leer: froots-Abschlüsse über der EH-Rechner-Schwelle (froots VV
+  // monatlich > 500 €, einmalig > 10.000 €) laufen automatisch über einen
+  // Abwickler (VB) und werden auf diesen eigenen Plan gebucht. Die echten
+  // Stufensätze müssen im Stufensätze-Dialog (StrukturBaum.tsx) eingetragen
+  // werden — bis dahin verdient hier niemand etwas.
+  investmentVb: {},
   credit: {
     Direktor: 4,
     Regionalleiter: 4,
@@ -140,6 +147,26 @@ export function sbGetPlanRate(
   planId: PlanId
 ): number {
   return Number(planRates?.[planId]?.[role]) || 0
+}
+
+/**
+ * Gespeicherte Stufensätze auf alle PLAN_IDS auffüllen. Pläne, die im
+ * gespeicherten Dokument fehlen (z. B. weil sie nach dem letzten Speichern neu
+ * hinzugekommen sind, wie investmentVb), werden aus DEFAULT_PLAN_RATES
+ * vorbelegt. Ein bereits gespeicherter Plan wird NIE mit Defaults angereichert
+ * — auch ein bewusst leeres Objekt bleibt leer, sonst ließe sich ein Satz nie
+ * auf 0 zurücksetzen (saveRates persistiert ohnehin nur Werte > 0). Liefert
+ * immer frische Objekte, nie eine Referenz auf DEFAULT_PLAN_RATES.
+ */
+export function withDefaultPlanRates(
+  stored?: Partial<Record<PlanId, Record<string, number>>> | null
+): Record<PlanId, Record<string, number>> {
+  const out = {} as Record<PlanId, Record<string, number>>
+  PLAN_IDS.forEach((p) => {
+    const s = stored?.[p]
+    out[p] = s && typeof s === "object" ? { ...s } : { ...DEFAULT_PLAN_RATES[p] }
+  })
+  return out
 }
 
 /** Alle Knoten des Teilbaums (inkl. n selbst) als flache Liste. */

@@ -1,11 +1,16 @@
 // EH-Rechner — 1:1 portiert aus legacy/index.html:3292–3354.
 // Reine Datentabelle + Formatter, keine DOM-Zugriffe. Golden-Master-Test:
 // test/calc/eh.golden.test.ts.
+import { PLAN_IDS, type PlanId } from "@/lib/calc/struktur"
 
 export interface EhGroup {
   id: "insurance" | "investment" | "credit" | "realestate"
   title: string
   multDefault: number
+  /** Karriereplan(e), auf die Items dieser Gruppe buchen können — normalerweise
+   * nur `[id]`. "investment" bucht zusätzlich auf "investmentVb" (siehe
+   * EhItem.planFor), deshalb hier explizit gelistet statt implizit aus `id`. */
+  plans: PlanId[]
 }
 
 export interface EhItem {
@@ -22,13 +27,29 @@ export interface EhItem {
   disabled?: boolean
   disabledNote?: string
   calc: (g: number, j: number) => number
+  /** Dynamischer Ziel-Karriereplan für die konkrete Eingabe (g, j). Fehlt das
+   * Feld, gilt `sparte` als Plan — siehe ehPlanIdFor(). */
+  planFor?: (g: number, j: number) => PlanId
+}
+
+// Schwellen, ab denen froots-Geschäft automatisch über einen Abwickler (VB)
+// läuft und auf den Plan "investmentVb" statt "investment" gebucht wird.
+// Bewusst dieselben Konstanten wie die bestehende 15%-Kürzung in den beiden
+// froots-calc()-Funktionen unten — Kürzung und Plan-Zuordnung dürfen nie
+// auseinanderlaufen.
+export const FROOTS_MTL_VB_THRESHOLD = 500
+export const FROOTS_EINMALIG_VB_THRESHOLD = 10000
+
+/** Ziel-Karriereplan der Einheiten eines Items für die konkrete Eingabe. */
+export function ehPlanIdFor(item: EhItem, g: number, j: number): PlanId {
+  return item.planFor ? item.planFor(g, j) : item.sparte
 }
 
 export const EH_GROUPS: EhGroup[] = [
-  { id: "insurance", title: "Insurance", multDefault: 2 },
-  { id: "investment", title: "Investment", multDefault: 2 },
-  { id: "credit", title: "Credit", multDefault: 2 },
-  { id: "realestate", title: "Real Estate", multDefault: 2 },
+  { id: "insurance", title: "Insurance", multDefault: 2, plans: ["insurance"] },
+  { id: "investment", title: "Investment", multDefault: 2, plans: ["investment", "investmentVb"] },
+  { id: "credit", title: "Credit", multDefault: 2, plans: ["credit"] },
+  { id: "realestate", title: "Real Estate", multDefault: 2, plans: ["realestate"] },
 ]
 
 export const EH_ITEMS: EhItem[] = [
@@ -140,11 +161,13 @@ export const EH_ITEMS: EhItem[] = [
     jLabel: "Mtl. Prämie (€)",
     // Ab einer mtl. Prämie über 500 € (also ab 501 €) bleibt die Einheiten-
     // berechnung unverändert. Bei 500 € oder darunter werden die Einheiten
-    // um 15 % gekürzt.
+    // um 15 % gekürzt. Ab derselben Schwelle läuft der Abschluss automatisch
+    // über einen Abwickler (VB) und bucht auf den Plan "investmentVb".
     calc: (_g, j) => {
       const base = ((j * 3) / 10.5) * 0.9
-      return j > 500 ? base : base * 0.85
+      return j > FROOTS_MTL_VB_THRESHOLD ? base : base * 0.85
     },
+    planFor: (_g, j) => (j > FROOTS_MTL_VB_THRESHOLD ? "investmentVb" : "investment"),
   },
   {
     id: "froots-vv-einmalig",
@@ -158,11 +181,13 @@ export const EH_ITEMS: EhItem[] = [
     jLabel: "Anlagebetrag gesamt (€)",
     // Ab einem Anlagebetrag über 10.000 € (also ab 10.000,01 €) bleibt die
     // Einheitenberechnung unverändert. Bei 10.000 € oder darunter werden die
-    // Einheiten um 15 % gekürzt.
+    // Einheiten um 15 % gekürzt. Ab derselben Schwelle läuft der Abschluss
+    // automatisch über einen Abwickler (VB) und bucht auf "investmentVb".
     calc: (g, j) => {
       const base = (j * (g / 100) * 0.9) / 10.5
-      return j > 10000 ? base : base * 0.85
+      return j > FROOTS_EINMALIG_VB_THRESHOLD ? base : base * 0.85
     },
+    planFor: (_g, j) => (j > FROOTS_EINMALIG_VB_THRESHOLD ? "investmentVb" : "investment"),
   },
   {
     id: "kredit",
@@ -212,7 +237,13 @@ export interface EhInputs {
 
 export interface EhResult {
   perItem: Record<string, number>
+  /** Aufgelöster Ziel-Karriereplan je Item, siehe ehPlanIdFor(). */
+  perItemPlan: Record<string, PlanId>
   groupSums: Record<string, number>
+  /** Einheiten je Karriereplan — Buchungsgrundlage für "Auf Mitarbeiter buchen",
+   * immer über alle PLAN_IDS befüllt. Weicht bei "investment"/"investmentVb"
+   * bewusst von groupSums["investment"] ab (siehe EH_GROUPS.plans). */
+  planSums: Record<PlanId, number>
   groupEur: Record<string, number>
   grandTotal: number
   grandTotalEur: number
@@ -223,13 +254,20 @@ export function calcEh(inputs: EhInputs): EhResult {
   const groupSums: Record<string, number> = {}
   EH_GROUPS.forEach((g) => (groupSums[g.id] = 0))
 
+  const planSums = {} as Record<PlanId, number>
+  PLAN_IDS.forEach((p) => (planSums[p] = 0))
+
   const perItem: Record<string, number> = {}
+  const perItemPlan: Record<string, PlanId> = {}
   EH_ITEMS.forEach((it) => {
     const g = it.hasG ? Number(inputs.g[it.id]) || 0 : 0
     const j = it.disabled ? 0 : Number(inputs.j[it.id]) || 0
     const result = it.calc(g, j)
     perItem[it.id] = result
     groupSums[it.sparte] += result
+    const planId = ehPlanIdFor(it, g, j)
+    perItemPlan[it.id] = planId
+    planSums[planId] += result
   })
 
   let grandTotal = 0
@@ -243,5 +281,5 @@ export function calcEh(inputs: EhInputs): EhResult {
     grandTotalEur += eur
   })
 
-  return { perItem, groupSums, groupEur, grandTotal, grandTotalEur }
+  return { perItem, perItemPlan, groupSums, planSums, groupEur, grandTotal, grandTotalEur }
 }

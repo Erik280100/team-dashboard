@@ -8,7 +8,7 @@ import type { ArchiveIndexEntry, MonthSnapshot, MonthTotals } from "../../src/ty
 
 const EMPTY_TOTALS: MonthTotals = {
   soll: 0, ist: 0, pct: 0, atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
-  ehByPlan: { insurance: 0, investment: 0, credit: 0, realestate: 0 },
+  ehByPlan: { insurance: 0, investment: 0, investmentVb: 0, credit: 0, realestate: 0 },
   totalEur: 0, employeeCount: 0, newHireCount: 0, recruitGoal: 0, recruitActual: 0,
 }
 
@@ -114,7 +114,7 @@ describe("employeeMatrix", () => {
 
 describe("planSplit", () => {
   it("share summiert auf 100", () => {
-    const index = [entry("2026-01", { ehByPlan: { insurance: 30, investment: 10, credit: 0, realestate: 0 } })]
+    const index = [entry("2026-01", { ehByPlan: { insurance: 30, investment: 10, investmentVb: 0, credit: 0, realestate: 0 } })]
     const [point] = planSplit(index)
     expect(point.total).toBe(40)
     const sum = Object.values(point.share).reduce((s, v) => s + v, 0)

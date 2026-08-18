@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhInputs } from "../../src/lib/calc/eh"
+import {
+  calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, ehPlanIdFor, type EhInputs,
+} from "../../src/lib/calc/eh"
+import { PLAN_IDS } from "../../src/lib/calc/struktur"
 // @ts-expect-error – plain JS fixture, keine Typen nötig
 import * as legacy from "../legacy-fixtures/eh.legacy.js"
 
@@ -96,5 +99,62 @@ describe("eh: golden master vs. legacy", () => {
       expect(ehFormatEH(n)).toBe(legacy.ehFormatEH(n))
       expect(ehFormatEUR(n)).toBe(legacy.ehFormatEUR(n))
     }
+  })
+})
+
+describe("eh: Investment (mit VB) — automatische Plan-Zuordnung", () => {
+  const frootsMtl = EH_ITEMS.find((i) => i.id === "froots-vv-mtl")!
+  const frootsEinmalig = EH_ITEMS.find((i) => i.id === "froots-vv-einmalig")!
+
+  it("froots-vv-mtl bucht an der 500€-Schwelle um", () => {
+    expect(ehPlanIdFor(frootsMtl, 0, 500)).toBe("investment")
+    expect(ehPlanIdFor(frootsMtl, 0, 500.01)).toBe("investmentVb")
+    expect(ehPlanIdFor(frootsMtl, 0, 501)).toBe("investmentVb")
+  })
+
+  it("froots-vv-einmalig bucht an der 10.000€-Schwelle um", () => {
+    expect(ehPlanIdFor(frootsEinmalig, 5, 10000)).toBe("investment")
+    expect(ehPlanIdFor(frootsEinmalig, 5, 10000.01)).toBe("investmentVb")
+  })
+
+  it("Items ohne planFor lösen auf ihre sparte auf", () => {
+    const fsp = EH_ITEMS.find((i) => i.id === "fsp")!
+    expect(ehPlanIdFor(fsp, 35, 100)).toBe("insurance")
+    const kredit = EH_ITEMS.find((i) => i.id === "kredit")!
+    expect(ehPlanIdFor(kredit, 3, 200000)).toBe("credit")
+  })
+
+  function emptyInputs(): EhInputs {
+    const g: Record<string, number | string> = {}
+    const j: Record<string, number | string> = {}
+    EH_ITEMS.forEach((it) => { j[it.id] = 0 })
+    return { g, j, mult: { insurance: 0, investment: 0, credit: 0, realestate: 0 } }
+  }
+
+  it("calcEh.planSums trennt gleichzeitig befüllte froots-Positionen auf beide Investment-Pläne", () => {
+    const inputs = emptyInputs()
+    inputs.j["froots-vv-mtl"] = 200 // <= 500 → investment
+    inputs.j["froots-vv-einmalig"] = 50000 // > 10.000 → investmentVb
+    inputs.g["froots-vv-einmalig"] = 5
+    const result = calcEh(inputs)
+
+    expect(result.perItemPlan["froots-vv-mtl"]).toBe("investment")
+    expect(result.perItemPlan["froots-vv-einmalig"]).toBe("investmentVb")
+    expect(result.planSums.investment).toBeCloseTo(result.perItem["froots-vv-mtl"])
+    expect(result.planSums.investmentVb).toBeCloseTo(result.perItem["froots-vv-einmalig"])
+    expect(result.planSums.investment + result.planSums.investmentVb)
+      .toBeCloseTo(result.groupSums.investment)
+  })
+
+  it("calcEh.planSums summiert über alle PLAN_IDS zu grandTotal", () => {
+    const inputs = emptyInputs()
+    inputs.j.fsp = 100
+    inputs.j["froots-vv-mtl"] = 800 // > 500 → investmentVb
+    inputs.j.kredit = 200000
+    inputs.g.kredit = 3
+    const result = calcEh(inputs)
+
+    const sum = PLAN_IDS.reduce((s, p) => s + (result.planSums[p] || 0), 0)
+    expect(sum).toBeCloseTo(result.grandTotal)
   })
 })

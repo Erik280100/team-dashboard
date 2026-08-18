@@ -8,7 +8,7 @@ import {
   type EmployeeRow, type HistoryEntry, type TeamGoal,
 } from "@/lib/calc/format"
 import {
-  DEFAULT_PLAN_RATES, PLAN_IDS, sbRoster, type PlanId, type SbNode,
+  PLAN_IDS, sbRoster, withDefaultPlanRates, type PlanId, type SbNode,
 } from "@/lib/calc/struktur"
 import { mergeRosterWithRows, teamTotals } from "@/lib/calc/team"
 import { computeEarnings, readPlanUnits } from "@/lib/calc/verguetung"
@@ -171,7 +171,7 @@ export function buildSnapshot(input: BuildSnapshotInput): MonthSnapshot {
       notes: JSON.parse(JSON.stringify(input.orgChart.notes || {})),
       conns: JSON.parse(JSON.stringify(input.orgChart.conns || [])),
       rates: { ...(input.orgChart.rates || {}) },
-      planRates: JSON.parse(JSON.stringify(input.orgChart.planRates || DEFAULT_PLAN_RATES)),
+      planRates: withDefaultPlanRates(input.orgChart.planRates),
     },
   }
 }

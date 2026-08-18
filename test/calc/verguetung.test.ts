@@ -37,24 +37,26 @@ function insuranceOf(map: ReturnType<typeof computeEarnings>, name: string) {
 describe("readPlanUnits / sumPlanUnits / withPlanUnits", () => {
   it("falls back to { insurance: ist } when ehByPlan is missing (Altbestand)", () => {
     const units = readPlanUnits({ ist: 12 })
-    expect(units).toEqual({ insurance: 12, investment: 0, credit: 0, realestate: 0 })
+    expect(units).toEqual({ insurance: 12, investment: 0, investmentVb: 0, credit: 0, realestate: 0 })
   })
 
   it("reads ehByPlan when present, ignoring ist", () => {
     const units = readPlanUnits({ ist: 999, ehByPlan: { insurance: 2, credit: 3 } })
-    expect(units).toEqual({ insurance: 2, investment: 0, credit: 3, realestate: 0 })
+    expect(units).toEqual({ insurance: 2, investment: 0, investmentVb: 0, credit: 3, realestate: 0 })
   })
 
-  it("sumPlanUnits sums all four plans", () => {
-    expect(sumPlanUnits({ insurance: 2, investment: 1.5, credit: 0, realestate: 0.5 })).toBe(4)
+  it("sumPlanUnits sums all plans", () => {
+    expect(sumPlanUnits({
+      insurance: 2, investment: 1.5, investmentVb: 0.25, credit: 0, realestate: 0.5,
+    })).toBe(4.25)
   })
 
   it("withPlanUnits keeps ist synchronized with the plan sum", () => {
     const next = withPlanUnits({ name: "X", soll: 0, ist: 0 }, {
-      insurance: 2, investment: 0, credit: 1, realestate: 0,
+      insurance: 2, investment: 0, investmentVb: 0, credit: 1, realestate: 0,
     })
     expect(next.ist).toBe(3)
-    expect(next.ehByPlan).toEqual({ insurance: 2, investment: 0, credit: 1, realestate: 0 })
+    expect(next.ehByPlan).toEqual({ insurance: 2, investment: 0, investmentVb: 0, credit: 1, realestate: 0 })
   })
 })
 

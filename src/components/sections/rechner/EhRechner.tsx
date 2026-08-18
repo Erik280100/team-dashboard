@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
 import { calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
-import { PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
+import { PLAN_IDS, PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
 
 // legacy/index.html:821-824 — Gruppen-Akzentfarbe (oberer Rand der Karte)
 const GROUP_ACCENT: Record<EhGroup["id"], string> = {
@@ -60,8 +60,8 @@ export function EhRechner({
   const confirm = useConfirm()
 
   const result = calcEh({ g, j, mult })
-  const bookedUnits = EH_GROUPS.reduce((acc, group) => {
-    acc[group.id] = round2(result.groupSums[group.id] || 0)
+  const bookedUnits = PLAN_IDS.reduce((acc, planId) => {
+    acc[planId] = round2(result.planSums[planId] || 0)
     return acc
   }, {} as Record<PlanId, number>)
   const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
@@ -92,6 +92,11 @@ export function EhRechner({
               <div className="col-span-2 min-w-0 @lg:col-span-1">
                 <div className="text-sm font-medium">{it.label}</div>
                 <div className="text-xs text-muted-foreground">Auszahlung: {it.payout}</div>
+                {it.planFor && (
+                  <div className="text-[11px] font-medium" style={{ color: GROUP_ACCENT[group.id] }}>
+                    → {PLAN_LABELS[result.perItemPlan[it.id]]}
+                  </div>
+                )}
               </div>
               {it.hasG ? (
                 <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -131,6 +136,16 @@ export function EhRechner({
             <span className="font-semibold text-muted-foreground">Zwischensumme</span>
             <span className="text-lg font-extrabold tabular-nums">{ehFormatEH(result.groupSums[group.id])} EH</span>
           </div>
+          {group.plans.length > 1 && group.plans.filter((p) => result.planSums[p] > 0).length > 1 && (
+            <div className="-mt-2 flex flex-col gap-0.5">
+              {group.plans.map((p) => (
+                <div key={p} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>davon {PLAN_LABELS[p]}</span>
+                  <span className="tabular-nums">{ehFormatEH(result.planSums[p])} EH</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="mt-2 flex items-center gap-1.5">
             <label className="shrink-0 text-[11px] font-semibold text-muted-foreground">
               Multiplikator (€ / EH)
@@ -158,6 +173,8 @@ export function EhRechner({
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
         <strong>Einheiten (EH) berechnen:</strong> Prämien eintragen, Einheiten werden automatisch berechnet und summiert.
+        froots-Geschäft über 500 € mtl. bzw. 10.000 € einmalig läuft automatisch über einen Abwickler (VB) und wird
+        auf „Investment (mit VB)" statt „Investment" gebucht.
       </div>
 
       <Card className="border-none bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
@@ -240,12 +257,12 @@ export function EhRechner({
                   </tr>
                 </thead>
                 <tbody>
-                  {EH_GROUPS.map((group) => {
-                    const before = Number(selectedEmployee.units[group.id]) || 0
-                    const added = bookedUnits[group.id] || 0
+                  {PLAN_IDS.map((planId) => {
+                    const before = Number(selectedEmployee.units[planId]) || 0
+                    const added = bookedUnits[planId] || 0
                     return (
-                      <tr key={group.id} className="border-t">
-                        <td className="px-3 py-1.5">{PLAN_LABELS[group.id]}</td>
+                      <tr key={planId} className="border-t">
+                        <td className="px-3 py-1.5">{PLAN_LABELS[planId]}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
                           {ehFormatEH(before)}
                         </td>
