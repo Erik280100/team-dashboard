@@ -17,6 +17,23 @@ describe("eh: golden master vs. legacy", () => {
     expect(item.calc(0, 1000)).toBeCloseTo((1000 * 0.055) / 10.5)
   })
 
+  it("froots-vv-mtl: -15% bei mtl. Prämie <= 500 €, unverändert ab 501 €", () => {
+    const item = EH_ITEMS.find((i) => i.id === "froots-vv-mtl")!
+    const base = (j: number) => ((j * 3) / 10.5) * 0.9
+    expect(item.calc(0, 500)).toBeCloseTo(base(500) * 0.85)
+    expect(item.calc(0, 200)).toBeCloseTo(base(200) * 0.85)
+    expect(item.calc(0, 501)).toBeCloseTo(base(501))
+    expect(item.calc(0, 1000)).toBeCloseTo(base(1000))
+  })
+
+  it("froots-vv-einmalig: -15% bei Anlagebetrag <= 10.000 €, unverändert ab 10.000,01 €", () => {
+    const item = EH_ITEMS.find((i) => i.id === "froots-vv-einmalig")!
+    const base = (g: number, j: number) => (j * (g / 100) * 0.9) / 10.5
+    expect(item.calc(5, 10000)).toBeCloseTo(base(5, 10000) * 0.85)
+    expect(item.calc(5, 10000.01)).toBeCloseTo(base(5, 10000.01))
+    expect(item.calc(5, 50000)).toBeCloseTo(base(5, 50000))
+  })
+
   const inputScenarios: EhInputs[] = [
     {
       g: { flv: 35, ableben: 40, bu: 15, "froots-vv-einmalig": 5, kredit: 3, immobilie: 3, fsp: 35 },
@@ -40,24 +57,35 @@ describe("eh: golden master vs. legacy", () => {
       const b = legacy.calcEhLegacy(inputs)
       // "flv-ee" hat kein Legacy-Pendant (siehe oben) und wird beim Vergleich ausgenommen.
       // "flv" nutzt bewusst 2,11 statt des Legacy-Faktors 2,14 und wird separat verglichen.
-      const { "flv-ee": _flvEe, flv: aFlv, ...aPerItem } = a.perItem
-      const { flv: bFlv, ...bPerItem } = b.perItem
+      // "froots-vv-mtl" bekommt bewusst -15% bei mtl. Prämie <= 500 € (siehe eigener Test
+      // oben) und wird deshalb ebenfalls separat verglichen statt 1:1 mit Legacy.
+      const { "flv-ee": _flvEe, flv: aFlv, "froots-vv-mtl": aFrootsMtl, ...aPerItem } = a.perItem
+      const { flv: bFlv, "froots-vv-mtl": bFrootsMtl, ...bPerItem } = b.perItem
       expect(aPerItem).toEqual(bPerItem)
       expect(aFlv).toBeCloseTo((bFlv / 2.14) * 2.11)
+      const mtlJ = Number(inputs.j["froots-vv-mtl"]) || 0
+      expect(aFrootsMtl).toBeCloseTo(mtlJ > 500 ? bFrootsMtl : bFrootsMtl * 0.85)
 
-      const groupDiff = aFlv - bFlv
-      const { insurance: aInsurance, ...aGroupSums } = a.groupSums
-      const { insurance: bInsurance, ...bGroupSums } = b.groupSums
+      const insuranceDiff = aFlv - bFlv
+      const investmentDiff = aFrootsMtl - bFrootsMtl
+      const { insurance: aInsurance, investment: aInvestment, ...aGroupSums } = a.groupSums
+      const { insurance: bInsurance, investment: bInvestment, ...bGroupSums } = b.groupSums
       expect(aGroupSums).toEqual(bGroupSums)
-      expect(aInsurance).toBeCloseTo(bInsurance + groupDiff)
+      expect(aInsurance).toBeCloseTo(bInsurance + insuranceDiff)
+      expect(aInvestment).toBeCloseTo(bInvestment + investmentDiff)
 
       const insuranceMult = Number(inputs.mult.insurance) || 0
-      const eurDiff = groupDiff * insuranceMult
-      const { insurance: aInsuranceEur, ...aGroupEur } = a.groupEur
-      const { insurance: bInsuranceEur, ...bGroupEur } = b.groupEur
+      const investmentMult = Number(inputs.mult.investment) || 0
+      const insuranceEurDiff = insuranceDiff * insuranceMult
+      const investmentEurDiff = investmentDiff * investmentMult
+      const { insurance: aInsuranceEur, investment: aInvestmentEur, ...aGroupEur } = a.groupEur
+      const { insurance: bInsuranceEur, investment: bInvestmentEur, ...bGroupEur } = b.groupEur
       expect(aGroupEur).toEqual(bGroupEur)
-      expect(aInsuranceEur).toBeCloseTo(bInsuranceEur + eurDiff)
+      expect(aInsuranceEur).toBeCloseTo(bInsuranceEur + insuranceEurDiff)
+      expect(aInvestmentEur).toBeCloseTo(bInvestmentEur + investmentEurDiff)
 
+      const groupDiff = insuranceDiff + investmentDiff
+      const eurDiff = insuranceEurDiff + investmentEurDiff
       expect(a.grandTotal).toBeCloseTo(b.grandTotal + groupDiff)
       expect(a.grandTotalEur).toBeCloseTo(b.grandTotalEur + eurDiff)
     }

@@ -138,7 +138,13 @@ export const EH_ITEMS: EhItem[] = [
     sparte: "investment",
     payout: "monatlich",
     jLabel: "Mtl. Prämie (€)",
-    calc: (_g, j) => ((j * 3) / 10.5) * 0.9,
+    // Ab einer mtl. Prämie über 500 € (also ab 501 €) bleibt die Einheiten-
+    // berechnung unverändert. Bei 500 € oder darunter werden die Einheiten
+    // um 15 % gekürzt.
+    calc: (_g, j) => {
+      const base = ((j * 3) / 10.5) * 0.9
+      return j > 500 ? base : base * 0.85
+    },
   },
   {
     id: "froots-vv-einmalig",
@@ -150,7 +156,13 @@ export const EH_ITEMS: EhItem[] = [
     gUnit: "Prozent",
     gDefault: 5,
     jLabel: "Anlagebetrag gesamt (€)",
-    calc: (g, j) => (j * (g / 100) * 0.9) / 10.5,
+    // Ab einem Anlagebetrag über 10.000 € (also ab 10.000,01 €) bleibt die
+    // Einheitenberechnung unverändert. Bei 10.000 € oder darunter werden die
+    // Einheiten um 15 % gekürzt.
+    calc: (g, j) => {
+      const base = (j * (g / 100) * 0.9) / 10.5
+      return j > 10000 ? base : base * 0.85
+    },
   },
   {
     id: "kredit",
