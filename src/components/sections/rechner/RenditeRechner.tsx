@@ -161,25 +161,25 @@ export function RenditeRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
           <div className="grid gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Monatliche Einzahlung (€)
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label htmlFor="rrMonat">Monatliche Einzahlung (€)</label>
               <Stepper id="rrMonat" value={monat} onChange={setMonat} step={25} />
-            </label>
+            </div>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Laufzeit (Jahre)
               <input type="number" min={1} max={65} step={1} value={jahre}
                 onChange={(e) => setJahre(e.target.value)}
                 className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className="flex items-center gap-1.5">
                 <input type="checkbox" checked={waEnabled} onChange={(e) => setWaEnabled(e.target.checked)} className="size-4" />
                 Wertanpassung p.a. (%)
-              </span>
+              </label>
               <input type="number" min={0} step={0.5} value={waPct} disabled={!waEnabled}
                 onChange={(e) => setWaPct(e.target.value)}
                 className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm disabled:opacity-50" />
-            </label>
+            </div>
           </div>
           <div className="flex flex-wrap items-end gap-4">
             <ToggleGroup
