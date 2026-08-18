@@ -33,7 +33,7 @@ function draftFromEarnings(earnings: EmployeeEarnings): Record<PlanId, string> {
 }
 
 export function EmployeeEarningsDialog({
-  open, onOpenChange, name, role, earnings, isEditor, onSaveUnits, onSaveBonus,
+  open, onOpenChange, name, role, earnings, isEditor, onSave,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -41,8 +41,7 @@ export function EmployeeEarningsDialog({
   role: string
   earnings: EmployeeEarnings
   isEditor: boolean
-  onSaveUnits: (units: Record<PlanId, number>) => void
-  onSaveBonus: (bonus: number) => void
+  onSave: (units: Record<PlanId, number>, bonus: number) => void
 }) {
   const [draft, setDraft] = useState<Record<PlanId, string>>(() => draftFromEarnings(earnings))
   const [bonusDraft, setBonusDraft] = useState<string>(() => String(earnings.bonus || 0))
@@ -61,8 +60,7 @@ export function EmployeeEarningsDialog({
   function handleSave() {
     const units = {} as Record<PlanId, number>
     PLAN_IDS.forEach((planId) => { units[planId] = Number(draft[planId]) || 0 })
-    onSaveUnits(units)
-    onSaveBonus(Number(bonusDraft) || 0)
+    onSave(units, Number(bonusDraft) || 0)
     onOpenChange(false)
   }
 

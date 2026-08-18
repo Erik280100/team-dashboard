@@ -93,21 +93,12 @@ export function Team({
     }
   }
 
-  function saveUnits(entry: MergedRow, units: Record<PlanId, number>) {
+  function saveEarnings(entry: MergedRow, units: Record<PlanId, number>, bonus: number) {
     if (entry.rowIndex !== null) {
-      const next = rows.map((r, i) => (i === entry.rowIndex ? withPlanUnits(r, units) : r))
+      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...withPlanUnits(r, units), bonus } : r))
       saveRows(next)
     } else {
-      saveRows([...rows, withPlanUnits(newRowFor(entry.name), units)])
-    }
-  }
-
-  function saveBonus(entry: MergedRow, bonus: number) {
-    if (entry.rowIndex !== null) {
-      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...r, bonus } : r))
-      saveRows(next)
-    } else {
-      saveRows([...rows, { ...newRowFor(entry.name), bonus }])
+      saveRows([...rows, { ...withPlanUnits(newRowFor(entry.name), units), bonus }])
     }
   }
 
@@ -318,8 +309,7 @@ export function Team({
           role={detailEntry.role}
           earnings={detailEarnings}
           isEditor={isEditor}
-          onSaveUnits={(units) => saveUnits(detailEntry, units)}
-          onSaveBonus={(bonus) => saveBonus(detailEntry, bonus)}
+          onSave={(units, bonus) => saveEarnings(detailEntry, units, bonus)}
         />
       )}
     </div>
