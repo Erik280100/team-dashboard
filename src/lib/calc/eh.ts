@@ -87,7 +87,7 @@ export const EH_ITEMS: EhItem[] = [
     hasG: true,
     gLabel: "Laufzeit",
     gUnit: "Jahre",
-    gDefault: 15,
+    gDefault: 40,
     gMax: 40,
     jLabel: "Mtl. Prämie (€)",
     calc: (g, j) => (((j * 12 * Math.min(g, 40)) / 1000) * 48) / 10.5,
