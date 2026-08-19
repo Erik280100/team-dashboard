@@ -194,6 +194,12 @@ export interface ImmoPortfolioErgebnis {
   warnungen: string[]
 }
 
+/** Unterhalb dieses Referenzkaufpreises finden keine Käufe statt (siehe Kaufprüfung weiter
+ *  unten) — sowohl weil das kein realistischer Wohnungskaufpreis mehr ist, als auch weil ein
+ *  sehr niedriger Kaufpreis bei fixen (kaufpreisunabhängigen) Nebenkosten sonst eine unbegrenzte
+ *  Kaufschleife auslösen kann. */
+export const KAUFPREIS_MINDESTGRENZE = 10000
+
 /** Ermittelt Pfandrechts-/Vertragserrichtungskosten von einer Kreditsumme — dieselbe Formel wie
  *  in kredit.ts für die Kreditnebenkosten, hier zusätzlich für Umschuldungen wiederverwendet. */
 function berechneKreditNebenkostenSumme(kreditbetrag: number, saetze: KreditSaetze): number {
@@ -493,7 +499,19 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
     //    Eigenmittel angerührt wird, bliebe laufend Ersparnis liegen, sobald der Umschuldungs-Topf
     //    dauerhaft für sich allein reicht — genau das monatliche Sparen soll aber zusätzliche,
     //    nicht mehr "gratis" finanzierte Wohnungen ermöglichen.
-    if (monat >= naechsterKaufAbMonat) {
+    // Sanity-Untergrenze für den Referenzkaufpreis: Unter KAUFPREIS_MINDESTGRENZE ist kein
+    // realistischer Wohnungskauf mehr abgebildet, UND es drohen numerische Ausreißer — bei nicht
+    // mitfinanzierten Kreditnebenkosten (fixer €-Betrag, unabhängig vom Kaufpreis) kann bei einem
+    // sehr niedrigen (nicht nur exakt 0) Kaufpreis ein positiver, aber nahezu konstanter
+    // Eigenmittelbedarf entstehen: Die Kaufschleifen würden dann faktisch unbegrenzt viele
+    // Wohnungen zu diesem Minimalpreis kaufen, die trotzdem volle (kaufpreisunabhängige) Miete
+    // abwerfen — ein Rückkopplungseffekt, der die Simulation zum Einfrieren bringt. Ohne
+    // Umschuldung/Käufe unterhalb der Grenze läuft die Simulation weiter (Sparen, Guthabenzinsen,
+    // Bestand), nur eben ohne neue Käufe.
+    if (
+      monat >= naechsterKaufAbMonat
+      && berechneKaufbedarf(eingabe, saetze, monat).referenzKaufpreis > KAUFPREIS_MINDESTGRENZE
+    ) {
       let gekauftDiesenMonat = false
 
       // Harte Kaufsperre: Ein cashflow-negatives Portfolio ist für sich genommen kein Problem
