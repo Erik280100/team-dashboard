@@ -9,7 +9,7 @@ import { Line } from "react-chartjs-2"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
-import { simuliereImmoPortfolio, type ImmoPortfolioEingabe } from "@/lib/calc/immoPortfolio"
+import { KAUFPREIS_MINDESTGRENZE, simuliereImmoPortfolio, type ImmoPortfolioEingabe } from "@/lib/calc/immoPortfolio"
 
 const WERTZUWACHS_PRESETS = [2, 3, 4]
 const UMSCHULDUNG_PRESETS = [3, 5, 7]
@@ -173,7 +173,19 @@ export function ImmoPortfolioRechner() {
     nettoeinkommenMonat, lebenshaltungMonat, mindestResteinkommenMonat, horizontClamped,
   ])
 
-  const ergebnis = useMemo(() => simuliereImmoPortfolio(eingabe), [eingabe])
+  // Hält den zuletzt gültigen Eingabestand fest, solange der Kaufpreis unter der
+  // Mindestgrenze liegt (siehe KAUFPREIS_MINDESTGRENZE in immoPortfolio.ts) — dann findet gar
+  // keine neue Simulation (inkl. Chart-Neuzeichnung) statt, während man z. B. eine neue Zahl in
+  // das Kaufpreisfeld tippt und das Feld dabei kurzzeitig leer oder sehr niedrig ist. Offizielles
+  // React-Muster für "abgeleiteten Zustand, der nur unter einer Bedingung aktualisiert wird" (State
+  // während des Renderns anpassen), siehe react.dev/learn/you-might-not-need-an-effect.
+  const [eingabeEffektiv, setEingabeEffektiv] = useState<ImmoPortfolioEingabe>(eingabe)
+  if (eingabe.kaufpreisReferenz > KAUFPREIS_MINDESTGRENZE && eingabe !== eingabeEffektiv) {
+    setEingabeEffektiv(eingabe)
+  }
+  const kaufpreisZuNiedrig = eingabe.kaufpreisReferenz <= KAUFPREIS_MINDESTGRENZE
+
+  const ergebnis = useMemo(() => simuliereImmoPortfolio(eingabeEffektiv), [eingabeEffektiv])
   const { jahre, kaeufe, meilensteine, kennzahlen, warnungen } = ergebnis
   const letztesJahr = jahre[jahre.length - 1]
 
@@ -231,6 +243,12 @@ export function ImmoPortfolioRechner() {
               </div>
             </label>
           </div>
+          {kaufpreisZuNiedrig && (
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              Kaufpreis unter {kreditFormatEUR(KAUFPREIS_MINDESTGRENZE)} — die Simulation bleibt beim zuletzt
+              gültigen Stand stehen, bis ein realistischer Kaufpreis eingegeben ist.
+            </div>
+          )}
           <div className="flex flex-wrap gap-6">
             <label className="flex items-center gap-1.5 text-sm">
               <input type="checkbox" checked={mitMakler} onChange={(e) => setMitMakler(e.target.checked)} className="size-4" />
