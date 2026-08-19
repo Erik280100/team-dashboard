@@ -8,7 +8,7 @@
 import { useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
-import { fmt, initials, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
+import { fmt, fmtEur, initials, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import {
   getMergedFilteredSorted, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
@@ -158,20 +158,19 @@ export function Team({
         <table className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
             <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
+              <th className="sticky top-0 z-10 min-w-[300px] bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Status</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={3}>Plan (AT / BT / ET)</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={3}>Ist (AT / BT / ET)</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Soll</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Ist</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Fortschritt</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">€</th>
             </tr>
           </thead>
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={11} className="px-3 py-8 text-center text-sm text-muted-foreground">
                   {merged.length === 0 ? "Noch keine Personen im Strukturbaum erfasst." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
                 </td>
               </tr>
@@ -191,11 +190,11 @@ export function Team({
                     )}
                   >
                     <td className="px-3 py-2" style={{ paddingLeft: 12 + indent }}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
                           {initials(r.name as string)}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium">{r.name}</div>
                           {(r.role || r.managerName) && (
                             <div className="truncate text-xs text-muted-foreground">
@@ -204,6 +203,18 @@ export function Team({
                             </div>
                           )}
                         </div>
+                        {rowEarnings && rowEarnings.total > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setDetailName(r.name)}
+                            aria-label={`Verdienst-Details – ${r.name}`}
+                            className="shrink-0 whitespace-nowrap text-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 hover:text-foreground"
+                          >
+                            {fmtEur(rowEarnings.total)} €
+                          </button>
+                        ) : (
+                          <span className="shrink-0 text-muted-foreground">—</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-3 py-2">
@@ -252,20 +263,6 @@ export function Team({
                         <span className="text-xs font-medium tabular-nums">{pct}%</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-right">
-                      {rowEarnings && rowEarnings.total > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => setDetailName(r.name)}
-                          aria-label={`Verdienst-Details – ${r.name}`}
-                          className="text-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 hover:text-foreground"
-                        >
-                          {rowEarnings.total.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                        </button>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
                   </tr>
                 )
               })
@@ -278,7 +275,12 @@ export function Team({
                   const cell = "sticky bottom-0 z-10 border-t-2 border-t-foreground/70 bg-[#DFF7EC] px-2 py-2.5 font-bold tabular-nums"
                   return (
                     <>
-                      <td className={cn(cell, "px-3")}>Summe</td>
+                      <td className={cn(cell, "px-3")}>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Summe</span>
+                          <span className="whitespace-nowrap">{fmtEur(grandTotalEur)} €</span>
+                        </div>
+                      </td>
                       <td className={cell} />
                       <td className={cn(cell, "text-center")}>{fmt(totals.atPlan)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.btPlan)}</td>
@@ -289,9 +291,6 @@ export function Team({
                       <td className={cell}>{fmt(totals.soll)}</td>
                       <td className={cell}>{fmt(totals.ist)}</td>
                       <td className={cell} />
-                      <td className={cn(cell, "whitespace-nowrap text-right")}>
-                        {grandTotalEur.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                      </td>
                     </>
                   )
                 })()}
