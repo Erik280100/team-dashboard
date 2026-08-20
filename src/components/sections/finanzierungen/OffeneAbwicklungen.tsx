@@ -23,9 +23,10 @@ const ART_LABEL: Record<FinanzierungArt, string> = {
   umbau: "Umbau",
   sanierung: "Sanierung",
   umschuldung: "Umschuldung",
+  anlegerwohnung: "Anlegerwohnung",
 }
 
-const ART_OPTIONS: FinanzierungArt[] = ["hauskauf", "wohnungskauf", "hausbau", "umbau", "sanierung", "umschuldung"]
+const ART_OPTIONS: FinanzierungArt[] = ["hauskauf", "wohnungskauf", "hausbau", "umbau", "sanierung", "umschuldung", "anlegerwohnung"]
 
 type SortKey = "standard" | "betreuer-asc" | "offen-asc" | "offen-desc"
 

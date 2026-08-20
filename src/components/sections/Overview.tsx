@@ -6,7 +6,7 @@
 import "@/lib/chartSetup"
 import { useState, type ChangeEvent } from "react"
 import { Bar, Doughnut, Line, Pie } from "react-chartjs-2"
-import { Users, Landmark, UserPlus } from "lucide-react"
+import { Users, Landmark, Building2, UserPlus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
@@ -39,6 +39,7 @@ export function Overview({
   isEditor,
   now,
   offenesFinanzierungsvolumen,
+  offeneAnlegerwohnungen,
 }: {
   rows: EmployeeRow[]
   teamGoal: TeamGoal
@@ -53,6 +54,8 @@ export function Overview({
   /** Summe der Kreditsummen aller offenen (nicht archivierten) Finanzierungsfälle,
    * siehe totalBetrag in OffeneAbwicklungen.tsx. */
   offenesFinanzierungsvolumen: number
+  /** Anzahl offener (nicht archivierter) Finanzierungsfälle mit Art "anlegerwohnung". */
+  offeneAnlegerwohnungen: number
 }) {
   const kpis = summaryKpis(rows)
   const goal = goalProgress(rows)
@@ -207,7 +210,7 @@ export function Overview({
         </Card>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className={DARK_CARD}>
           <CardContent className="flex items-center gap-4">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
@@ -229,6 +232,18 @@ export function Overview({
               <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Offenes Finanzierungsvolumen</div>
               <div className="text-2xl font-extrabold">{fmtEur(offenesFinanzierungsvolumen)}</div>
               <div className="text-xs text-white/50">Kreditsumme offener Fälle</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={DARK_CARD}>
+          <CardContent className="flex items-center gap-4">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
+              <Building2 className="size-4 text-[#64DDA3]" aria-hidden="true" />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Anlegerwohnungen ausstehend</div>
+              <div className="text-2xl font-extrabold">{offeneAnlegerwohnungen}</div>
+              <div className="text-xs text-white/50">offene Finanzierungsfälle</div>
             </div>
           </CardContent>
         </Card>

@@ -86,9 +86,9 @@ function AppShell() {
   const orgChart = useOrgChartDoc()
   const finanzierungen = useFinanzierungenDoc()
   const archive = useMonthArchive(auth.isEditor)
-  const offenesFinanzierungsvolumen = finanzierungen.cases
-    .filter((c) => !c.archived)
-    .reduce((s, c) => s + Number(c.betrag || 0), 0)
+  const offeneFinanzierungsfaelle = finanzierungen.cases.filter((c) => !c.archived)
+  const offenesFinanzierungsvolumen = offeneFinanzierungsfaelle.reduce((s, c) => s + Number(c.betrag || 0), 0)
+  const offeneAnlegerwohnungen = offeneFinanzierungsfaelle.filter((c) => c.art === "anlegerwohnung").length
 
   const [archiveMonth, setArchiveMonth] = useState<MonthKey | null>(null)
   const isArchive = archiveMonth !== null
@@ -295,6 +295,7 @@ function AppShell() {
                     isEditor={auth.isEditor && !isArchive}
                     now={view.now}
                     offenesFinanzierungsvolumen={offenesFinanzierungsvolumen}
+                    offeneAnlegerwohnungen={offeneAnlegerwohnungen}
                   />
                 )
               )}

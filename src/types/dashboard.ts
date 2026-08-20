@@ -55,7 +55,7 @@ export interface OrgChartDoc {
   planRates?: Record<PlanId, Record<string, number>>
 }
 
-export type FinanzierungArt = "hauskauf" | "wohnungskauf" | "hausbau" | "umbau" | "sanierung" | "umschuldung"
+export type FinanzierungArt = "hauskauf" | "wohnungskauf" | "hausbau" | "umbau" | "sanierung" | "umschuldung" | "anlegerwohnung"
 
 export interface FinanzierungCase {
   id: string
