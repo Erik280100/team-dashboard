@@ -86,6 +86,9 @@ function AppShell() {
   const orgChart = useOrgChartDoc()
   const finanzierungen = useFinanzierungenDoc()
   const archive = useMonthArchive(auth.isEditor)
+  const offenesFinanzierungsvolumen = finanzierungen.cases
+    .filter((c) => !c.archived)
+    .reduce((s, c) => s + Number(c.betrag || 0), 0)
 
   const [archiveMonth, setArchiveMonth] = useState<MonthKey | null>(null)
   const isArchive = archiveMonth !== null
@@ -291,6 +294,7 @@ function AppShell() {
                     saveGoal={isArchive ? blocked : dashboard.saveGoal}
                     isEditor={auth.isEditor && !isArchive}
                     now={view.now}
+                    offenesFinanzierungsvolumen={offenesFinanzierungsvolumen}
                   />
                 )
               )}
