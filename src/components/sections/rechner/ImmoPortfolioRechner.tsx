@@ -173,19 +173,19 @@ export function ImmoPortfolioRechner() {
     nettoeinkommenMonat, lebenshaltungMonat, mindestResteinkommenMonat, horizontClamped,
   ])
 
-  // Hält den zuletzt gültigen Eingabestand fest, solange der Kaufpreis unter der
-  // Mindestgrenze liegt (siehe KAUFPREIS_MINDESTGRENZE in immoPortfolio.ts) — dann findet gar
-  // keine neue Simulation (inkl. Chart-Neuzeichnung) statt, während man z. B. eine neue Zahl in
-  // das Kaufpreisfeld tippt und das Feld dabei kurzzeitig leer oder sehr niedrig ist. Offizielles
-  // React-Muster für "abgeleiteten Zustand, der nur unter einer Bedingung aktualisiert wird" (State
-  // während des Renderns anpassen), siehe react.dev/learn/you-might-not-need-an-effect.
-  const [eingabeEffektiv, setEingabeEffektiv] = useState<ImmoPortfolioEingabe>(eingabe)
-  if (eingabe.kaufpreisReferenz > KAUFPREIS_MINDESTGRENZE && eingabe !== eingabeEffektiv) {
-    setEingabeEffektiv(eingabe)
-  }
+  // Keine automatische Neuberechnung mehr bei jeder Eingabe — die Simulation (420 Monate,
+  // Chart-Neuzeichnung, Tabellen) läuft nur noch, wenn "Berechnen" geklickt wird. eingabeStand
+  // hält fest, mit welchem Eingabestand das aktuell angezeigte ergebnis berechnet wurde; solange
+  // sich seither etwas geändert hat (eingabe !== eingabeStand), gilt das Ergebnis als veraltet.
+  const [eingabeStand, setEingabeStand] = useState<ImmoPortfolioEingabe>(eingabe)
+  const [ergebnis, setErgebnis] = useState(() => simuliereImmoPortfolio(eingabe))
+  const veraltet = eingabe !== eingabeStand
   const kaufpreisZuNiedrig = eingabe.kaufpreisReferenz <= KAUFPREIS_MINDESTGRENZE
 
-  const ergebnis = useMemo(() => simuliereImmoPortfolio(eingabeEffektiv), [eingabeEffektiv])
+  function berechnen() {
+    setEingabeStand(eingabe)
+    setErgebnis(simuliereImmoPortfolio(eingabe))
+  }
   const { jahre, kaeufe, meilensteine, kennzahlen, warnungen } = ergebnis
   const letztesJahr = jahre[jahre.length - 1]
 
@@ -195,11 +195,9 @@ export function ImmoPortfolioRechner() {
     return map
   }, [kaeufe])
 
-  // Als Prop-Objekte memoisiert (statt inline in der JSX), damit react-chartjs-2 bei jedem
-  // Tastendruck, der wegen kaufpreisZuNiedrig gar keine neue Simulation auslöst, exakt dieselben
-  // Objektreferenzen bekommt und den Chart entsprechend gar nicht neu zeichnet/aktualisiert —
-  // sonst würde jede Eingabe (auch eine, die am Ergebnis nichts ändert) eine volle
-  // Chart.js-Aktualisierung mit 420 Datenpunkten pro Datensatz anstoßen.
+  // Als Prop-Objekte memoisiert (statt inline in der JSX), damit react-chartjs-2 zwischen zwei
+  // Klicks auf "Berechnen" (wenn sich jahre/kaeufe also gar nicht ändern) exakt dieselben
+  // Objektreferenzen bekommt und den Chart entsprechend gar nicht neu zeichnet.
   const chartData = useMemo(() => ({
     labels: jahre.map((j) => j.jahr),
     datasets: [
@@ -257,6 +255,21 @@ export function ImmoPortfolioRechner() {
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
         <strong>Anlegerwohnungs-Portfolio-Rechner:</strong> Simuliert, wie ein Wohnungsportfolio über die Zeit wächst und sich weitere Wohnungen von selbst finanzieren.
+      </div>
+
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-lg border bg-card/95 px-4 py-3 shadow-sm backdrop-blur">
+        <button type="button" onClick={berechnen}
+          className={cn(
+            "rounded-md px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors",
+            veraltet ? "bg-primary hover:bg-primary/90" : "bg-primary/60"
+          )}>
+          Berechnen
+        </button>
+        <span className="text-xs text-muted-foreground">
+          {veraltet
+            ? "Eingaben geändert — Ergebnis unten ist noch der alte Stand, bis du auf \"Berechnen\" klickst."
+            : "Ergebnis aktuell."}
+        </span>
       </div>
 
       <Card>
