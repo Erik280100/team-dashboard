@@ -195,6 +195,56 @@ export function ImmoPortfolioRechner() {
     return map
   }, [kaeufe])
 
+  // Als Prop-Objekte memoisiert (statt inline in der JSX), damit react-chartjs-2 bei jedem
+  // Tastendruck, der wegen kaufpreisZuNiedrig gar keine neue Simulation auslöst, exakt dieselben
+  // Objektreferenzen bekommt und den Chart entsprechend gar nicht neu zeichnet/aktualisiert —
+  // sonst würde jede Eingabe (auch eine, die am Ergebnis nichts ändert) eine volle
+  // Chart.js-Aktualisierung mit 420 Datenpunkten pro Datensatz anstoßen.
+  const chartData = useMemo(() => ({
+    labels: jahre.map((j) => j.jahr),
+    datasets: [
+      {
+        label: "Portfolio-Verkehrswert", data: jahre.map((j) => j.portfolioWert), borderColor: "#155767",
+        backgroundColor: "rgba(21,87,103,.08)", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: true,
+      },
+      {
+        label: "Restschuld", data: jahre.map((j) => j.restschuldGesamt), borderColor: "#8FA1A6",
+        backgroundColor: "rgba(143,161,166,.08)", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false,
+      },
+      {
+        label: "Nettovermögen (inkl. Liquidität)", data: jahre.map((j) => j.nettovermoegen), borderColor: "#B5624A",
+        backgroundColor: "rgba(181,98,74,.08)", borderWidth: 2, tension: 0.1, fill: false,
+        pointRadius: (ctx: { dataIndex?: number }) => (kaufJahrInfo.has((ctx.dataIndex ?? 0) + 1) ? 5 : 0),
+        pointBackgroundColor: (ctx: { dataIndex?: number }) => (kaufJahrInfo.get((ctx.dataIndex ?? 0) + 1) ? "#16a34a" : "#B5624A"),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [jahre, kaufJahrInfo])
+
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index" as const, intersect: false },
+    plugins: {
+      legend: { position: "top" as const, labels: { boxWidth: 12, font: { size: 11 } } },
+      tooltip: {
+        callbacks: {
+          title: (items: { label: string }[]) => `Jahr ${items[0].label}`,
+          label: (ctx: { dataset: { label?: string }; parsed: { y: unknown } }) => `${ctx.dataset.label}: ${kreditFormatEUR(ctx.parsed.y as number)}`,
+          afterBody: (items: { label: string }[]) => {
+            const jahr = Number(items[0].label)
+            return kaufJahrInfo.has(jahr) ? [kaufJahrInfo.get(jahr) ? "→ Kauf dieses Jahr (gratis)" : "→ Kauf dieses Jahr"] : []
+          },
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, title: { display: true, text: "Jahre" } },
+      y: { beginAtZero: true, ticks: { callback: (val: unknown) => kreditFormatEUR(Number(val)) } },
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [kaufJahrInfo])
+
   const freieLiquiditaetMonat = letztesJahr
     ? n(nettoeinkommenMonat) + 0.8 * (letztesJahr.mieteinnahmen / 12) - n(lebenshaltungMonat) - letztesJahr.kreditratenGesamt / 12
     : 0
@@ -438,47 +488,8 @@ export function ImmoPortfolioRechner() {
           <h3 className="mb-3 text-sm font-semibold">Portfolioentwicklung</h3>
           <div className="h-[420px]">
             <Line
-              data={{
-                labels: jahre.map((j) => j.jahr),
-                datasets: [
-                  {
-                    label: "Portfolio-Verkehrswert", data: jahre.map((j) => j.portfolioWert), borderColor: "#155767",
-                    backgroundColor: "rgba(21,87,103,.08)", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: true,
-                  },
-                  {
-                    label: "Restschuld", data: jahre.map((j) => j.restschuldGesamt), borderColor: "#8FA1A6",
-                    backgroundColor: "rgba(143,161,166,.08)", borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false,
-                  },
-                  {
-                    label: "Nettovermögen (inkl. Liquidität)", data: jahre.map((j) => j.nettovermoegen), borderColor: "#B5624A",
-                    backgroundColor: "rgba(181,98,74,.08)", borderWidth: 2, tension: 0.1, fill: false,
-                    pointRadius: (ctx) => (kaufJahrInfo.has((ctx.dataIndex ?? 0) + 1) ? 5 : 0),
-                    pointBackgroundColor: (ctx) => (kaufJahrInfo.get((ctx.dataIndex ?? 0) + 1) ? "#16a34a" : "#B5624A"),
-                  },
-                ],
-              }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: "index", intersect: false },
-                plugins: {
-                  legend: { position: "top", labels: { boxWidth: 12, font: { size: 11 } } },
-                  tooltip: {
-                    callbacks: {
-                      title: (items) => `Jahr ${items[0].label}`,
-                      label: (ctx) => `${ctx.dataset.label}: ${kreditFormatEUR(ctx.parsed.y as number)}`,
-                      afterBody: (items) => {
-                        const jahr = Number(items[0].label)
-                        return kaufJahrInfo.has(jahr) ? [kaufJahrInfo.get(jahr) ? "→ Kauf dieses Jahr (gratis)" : "→ Kauf dieses Jahr"] : []
-                      },
-                    },
-                  },
-                },
-                scales: {
-                  x: { grid: { display: false }, title: { display: true, text: "Jahre" } },
-                  y: { beginAtZero: true, ticks: { callback: (val) => kreditFormatEUR(Number(val)) } },
-                },
-              }}
+              data={chartData}
+              options={chartOptions}
               aria-label="Entwicklung von Portfolio-Verkehrswert, Restschuld und Nettovermögen über die Jahre, mit Kaufzeitpunkten markiert"
               role="img"
             />

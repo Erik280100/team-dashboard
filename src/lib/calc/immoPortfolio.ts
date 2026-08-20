@@ -198,7 +198,7 @@ export interface ImmoPortfolioErgebnis {
  *  unten) — sowohl weil das kein realistischer Wohnungskaufpreis mehr ist, als auch weil ein
  *  sehr niedriger Kaufpreis bei fixen (kaufpreisunabhängigen) Nebenkosten sonst eine unbegrenzte
  *  Kaufschleife auslösen kann. */
-export const KAUFPREIS_MINDESTGRENZE = 10000
+export const KAUFPREIS_MINDESTGRENZE = 80000
 
 /** Ermittelt Pfandrechts-/Vertragserrichtungskosten von einer Kreditsumme — dieselbe Formel wie
  *  in kredit.ts für die Kreditnebenkosten, hier zusätzlich für Umschuldungen wiederverwendet. */
