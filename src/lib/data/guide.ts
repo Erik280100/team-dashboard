@@ -85,6 +85,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
 
     <h3>Download</h3>
     <p><a class="btn btn-primary btn-small" href="docs/Finanzierungscheckliste_finovacredit.pdf" download>Finanzierungscheckliste herunterladen</a></p>
+    <p><a class="btn btn-primary btn-small" href="docs/Checkliste_finovacredit_konsumkredit.pdf" download>Checkliste Konsumkredite</a></p>
   ` },
   { id: 'realestate', title: 'Finova Real Estate', html: '' },
   { id: 'anlegerwohnungen', title: 'Anlegerwohnung', html: `
