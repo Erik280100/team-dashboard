@@ -83,7 +83,9 @@ export function KreditRechner() {
 
   const kaufpreisNum = Math.max(0, Number(kaufpreis) || 0)
   const eigenmittelNum = Math.max(0, Number(eigenmittel) || 0)
-  const laufzeitClamped = Math.min(40, Math.max(1, Math.round(Number(laufzeit) || 0) || 20))
+  // Kein "|| 20"-Fallback mehr: ein leeres/0-Feld soll sichtbar auf die untere Klammer (1 Jahr)
+  // fallen, statt still mit 20 Jahren zu rechnen, während die Anzeige leer bleibt.
+  const laufzeitClamped = Math.min(40, Math.max(1, Math.round(Number(laufzeit) || 0)))
   const zinssatzClamped = Math.min(20, Math.max(0, Number(zinssatz) || 0))
   const sparrateNum = Math.max(0, Number(sparrate) || 0)
   const perfPct = customPerf !== "" && !isNaN(parseFloat(customPerf)) ? parseFloat(customPerf) : perfPreset ?? 6
@@ -102,15 +104,21 @@ export function KreditRechner() {
     if (v !== "" && !isNaN(parseFloat(v))) setPerfPreset(null)
   }
 
-  const { kredit, plan, effektivzins, afaBemessungsgrundlage, afaJahre } = useMemo(() => {
+  const { kredit, plan, effektivzins, afaBemessungsgrundlage, afaJahre, warnungen } = useMemo(() => {
     const kredit = berechneKreditbetrag({
       kaufpreis: kaufpreisNum, eigenmittel: eigenmittelNum, mitMakler, nkMitfinanziert, saetze,
     })
     const plan = berechneTilgungsplan(kredit.kreditbetrag, zinssatzClamped, laufzeitClamped)
     const effektivzins = effektivzinsPct(kredit.nettoAuszahlung, plan.rate, plan.monate.length)
-    const afaBemessungsgrundlage = berechneAfaBemessungsgrundlage(kaufpreisNum, saetze.gebaeudeanteilPct)
+    // AfA-Bemessungsgrundlage: Kaufpreis PLUS Kaufnebenkosten (§ 6 Z 1 EStG), Kreditnebenkosten
+    // bleiben außen vor (Geldbeschaffungskosten, keine Anschaffungsnebenkosten).
+    const afaBemessungsgrundlage = berechneAfaBemessungsgrundlage(kaufpreisNum, saetze.gebaeudeanteilPct, kredit.kaufNK.summe)
     const afaJahre = berechneAfaJahre(afaBemessungsgrundlage, saetze.afaSatzPct, laufzeitClamped)
-    return { kredit, plan, effektivzins, afaBemessungsgrundlage, afaJahre }
+    const warnungen = [...kredit.warnungen]
+    if (laufzeitClamped > 35) {
+      warnungen.push("Laufzeit über 35 Jahre — über der FMA-Empfehlung für nachhaltige Immobilienfinanzierung.")
+    }
+    return { kredit, plan, effektivzins, afaBemessungsgrundlage, afaJahre, warnungen }
   }, [kaufpreisNum, eigenmittelNum, mitMakler, nkMitfinanziert, saetze, zinssatzClamped, laufzeitClamped])
 
   // Kumulierte Zinsen je Monat, fürs Tooltip auf der Restschuld-Kurve.
@@ -326,6 +334,11 @@ export function KreditRechner() {
                   <SatzFeld label="Gebäudeanteil am Kaufpreis" value={String(saetze.gebaeudeanteilPct)} onChange={satzSetter("gebaeudeanteilPct")} />
                   <SatzFeld label="AfA-Satz (linear, ab 3. Jahr)" value={String(saetze.afaSatzPct)} onChange={satzSetter("afaSatzPct")} />
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Grundanteilverordnung 2016: 20 % Grundanteil (= 80 % Gebäudeanteil) nur bei
+                  Gemeinden unter 100.000 Einwohnern und einem Baulandpreis unter 400 €/m². Sonst
+                  gelten 30 % Grundanteil (Gebäude mit mehr als 10 Einheiten) bzw. 40 % Grundanteil.
+                </p>
               </div>
               <button type="button" onClick={() => setSaetze(KREDIT_DEFAULTS)}
                 className="w-fit rounded-md border border-input px-3 py-1.5 text-xs font-medium hover:bg-muted">
@@ -339,9 +352,13 @@ export function KreditRechner() {
       <Card>
         <CardContent className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold">Kostenaufstellung</h3>
-          {kredit.warnung && (
-            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-              {kredit.warnung}
+          {warnungen.length > 0 && (
+            <div className="flex flex-col gap-1">
+              {warnungen.map((w) => (
+                <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {w}
+                </div>
+              ))}
             </div>
           )}
           <div className="grid gap-6 lg:grid-cols-2">
@@ -461,7 +478,7 @@ export function KreditRechner() {
               role="img"
             />
           </div>
-          {ttAktiv && tt.jahreFrueher != null && (
+          {ttAktiv && tt.jahreFrueher != null && tt.jahreFrueher >= 0.5 && (
             <div className="mt-4 rounded-lg border border-[#B5624A]/30 bg-[#B5624A]/5 px-4 py-3">
               <div className="flex flex-wrap gap-6">
                 <div className="flex flex-col gap-0.5">
@@ -471,8 +488,12 @@ export function KreditRechner() {
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs text-muted-foreground">Zinsersparnis</span>
-                  <span className="text-xl font-bold tabular-nums text-[#B5624A]">{kreditFormatEUR(tt.zinsersparnis)}</span>
+                  <span className="text-xs text-muted-foreground">Einbezahlte FLV-Prämien</span>
+                  <span className="text-xl font-bold tabular-nums text-[#B5624A]">{kreditFormatEUR(tt.einbezahltImSchnittpunkt ?? 0)}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Vorteil im Gesamtaufwand</span>
+                  <span className="text-xl font-bold tabular-nums text-[#B5624A]">{kreditFormatEUR(tt.vorteil)}</span>
                 </div>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
@@ -488,10 +509,26 @@ export function KreditRechner() {
                 </strong>{" "}
                 vor Laufzeitende abgelöst werden.
               </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Gesamtaufwand ohne Tilgungsträger (volle Laufzeit):{" "}
+                <strong className="tabular-nums text-foreground">{kreditFormatEUR(tt.gesamtaufwandVollaufzeit)}</strong>. Gesamtaufwand
+                mit Tilgungsträger (Kreditraten bis zur Ablöse + einbezahlte Prämien + Vorfälligkeitsentschädigung):{" "}
+                <strong className="tabular-nums text-foreground">{kreditFormatEUR(tt.gesamtaufwandMitTraeger)}</strong>. Zinsersparnis
+                allein (Teilgröße, ohne die einbezahlten Prämien gegenzurechnen):{" "}
+                <strong className="tabular-nums text-foreground">{kreditFormatEUR(tt.zinsersparnis)}</strong>.
+              </p>
               <p className="mt-2 text-xs text-muted-foreground">
                 Modellrechnung mit {perfPct.toLocaleString("de-AT")} % p.a. angenommener Performance, Werte nicht garantiert — bei
                 vorzeitiger Auflösung kann der Rückkaufswert unter dem dargestellten Fondswert liegen. Die Kreditrate läuft bis zur
-                Ablöse unverändert weiter, die Sparrate kommt zusätzlich zur Monatsrate hinzu.
+                Ablöse unverändert weiter, die Sparrate kommt zusätzlich zur Monatsrate hinzu. Enthält eine pauschale
+                Vorfälligkeitsentschädigung von 1 % der bei Ablöse offenen Restschuld ({kreditFormatEUR(tt.vorfaelligkeitsentschaedigung)},
+                § 20 Abs 3 HIKrG bei Fixzinsvereinbarung).
+                {tt.rueckkaufVorJahr15 && (
+                  <>
+                    {" "}Die Ablöse läge vor Ablauf von 15 Vertragsjahren der FLV — das löst nach § 6 Abs 1 Z 1 VersStG eine
+                    Nachversteuerung der laufenden Prämien auf 11 % Versicherungssteuer aus, die hier nicht berücksichtigt ist.
+                  </>
+                )}
               </p>
             </div>
           )}
@@ -536,13 +573,19 @@ export function KreditRechner() {
           </CardContent>
         </Card>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Effektivzinssatz nach § 2 Z 8 HIKrG, inkl. Kreditvertragserstellung und
+        Pfandrechtseintragung, ohne Kaufnebenkosten und ohne verpflichtende Nebenprodukte (z. B.
+        Ableben-/Gebäudeversicherung). Beleihungsquote bezogen auf den Kaufpreis — Banken rechnen
+        üblicherweise gegen den (meist niedrigeren) Belehnwert, der reale LTV liegt daher meist höher.
+      </p>
 
       <Card>
         <CardContent>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-sm font-semibold">Tilgungsplan (jährlich)</h3>
             <span className="text-xs text-muted-foreground">
-              AfA-Bemessungsgrundlage ({saetze.gebaeudeanteilPct.toLocaleString("de-AT")} % vom Kaufpreis):{" "}
+              AfA-Bemessungsgrundlage ({saetze.gebaeudeanteilPct.toLocaleString("de-AT")} % von Kaufpreis + Kaufnebenkosten):{" "}
               <strong className="tabular-nums text-foreground">{kreditFormatEUR(afaBemessungsgrundlage)}</strong>
             </span>
           </div>

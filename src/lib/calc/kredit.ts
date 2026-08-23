@@ -94,7 +94,7 @@ export interface KreditbetragErgebnis {
   gesamtinvestition: number
   barbedarf: number
   beleihungsquotePct: number
-  warnung?: string
+  warnungen: string[]
 }
 
 /**
@@ -119,7 +119,7 @@ export function berechneKreditbetrag(eingabe: KreditbetragEingabe): Kreditbetrag
   const bedarf = Math.max(0, gesamtinvestitionOhneKreditNK - eigenmittel + fixeKreditNK)
 
   let kreditbetrag: number
-  let warnung: string | undefined
+  const warnungen: string[] = []
 
   if (eingabe.nkMitfinanziert) {
     const r = saetze.kreditvertragserstellungPct / 100
@@ -128,7 +128,7 @@ export function berechneKreditbetrag(eingabe: KreditbetragEingabe): Kreditbetrag
       // Theoretisch möglich bei absurd hohen Sätzen — dann lässt sich die Zirkularität
       // nicht mehr auflösen (die %-Kosten würden den Kredit selbst übersteigen).
       kreditbetrag = 0
-      warnung = "Kreditnebenkosten-Sätze zu hoch, um den Kredit mitzufinanzieren."
+      warnungen.push("Kreditnebenkosten-Sätze zu hoch, um den Kredit mitzufinanzieren.")
     } else {
       kreditbetrag = bedarf / (1 - r)
     }
@@ -152,15 +152,18 @@ export function berechneKreditbetrag(eingabe: KreditbetragEingabe): Kreditbetrag
   const barbedarf = eingabe.nkMitfinanziert ? 0 : Math.max(0, kreditNKSumme - Math.max(0, eigenmittel - gesamtinvestitionOhneKreditNK))
   const beleihungsquotePct = kaufpreis > 0 ? (kreditbetrag / kaufpreis) * 100 : 0
 
-  if (!warnung && eigenmittel < kaufNK.summe) {
-    warnung = "Die Eigenmittel decken nicht einmal die Kaufnebenkosten."
-  } else if (!warnung && beleihungsquotePct > 80) {
-    warnung = "Beleihungsquote über 80 % — höhere Zinsen/strengere Bankvorgaben möglich."
+  if (eigenmittel < kaufNK.summe) {
+    warnungen.push("Die Eigenmittel decken nicht einmal die Kaufnebenkosten.")
+  }
+  if (beleihungsquotePct > 80) {
+    // Bezogen auf den Kaufpreis — Banken rechnen üblicherweise gegen den (meist niedrigeren)
+    // Belehnwert, der reale LTV liegt daher tendenziell noch höher als hier ausgewiesen.
+    warnungen.push("Beleihungsquote über 80 % — höhere Zinsen/strengere Bankvorgaben möglich.")
   }
 
   return {
     kaufNK, kreditNKPositionen, kreditNKSumme, kreditbetrag, nettoAuszahlung,
-    gesamtinvestition, barbedarf, beleihungsquotePct, warnung,
+    gesamtinvestition, barbedarf, beleihungsquotePct, warnungen,
   }
 }
 
@@ -247,10 +250,17 @@ export interface AfaJahr {
   afaKumuliert: number
 }
 
-/** AfA-Bemessungsgrundlage (Gebäudewert): Grund und Boden ist nicht abschreibbar, daher nur
- *  ein pauschaler Anteil des Kaufpreises (Default 80 % Gebäude / 20 % Grund). */
-export function berechneAfaBemessungsgrundlage(kaufpreis: number, gebaeudeanteilPct: number): number {
-  return Math.max(0, kaufpreis) * (Math.max(0, gebaeudeanteilPct) / 100)
+/**
+ * AfA-Bemessungsgrundlage (Gebäudewert): Grund und Boden ist nicht abschreibbar, daher nur
+ * ein pauschaler Anteil (Default 80 % Gebäude / 20 % Grund) — angewendet auf Kaufpreis PLUS
+ * Anschaffungsnebenkosten (GrESt, Grundbuch, Vertragserrichtung, Makler). Diese zählen nach
+ * § 6 Z 1 EStG / EStR Rz 6422 ff. zu den Anschaffungskosten und sind im selben Verhältnis auf
+ * Grund und Gebäude aufzuteilen. Kreditnebenkosten (Geldbeschaffungskosten) gehören NICHT dazu.
+ */
+export function berechneAfaBemessungsgrundlage(
+  kaufpreis: number, gebaeudeanteilPct: number, anschaffungsnebenkosten = 0
+): number {
+  return (Math.max(0, kaufpreis) + Math.max(0, anschaffungsnebenkosten)) * (Math.max(0, gebaeudeanteilPct) / 100)
 }
 
 /**

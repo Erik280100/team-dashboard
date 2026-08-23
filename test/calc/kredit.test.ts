@@ -110,7 +110,15 @@ describe("berechneKreditbetrag", () => {
 
   it("flags a warning when Eigenmittel don't even cover the Kaufnebenkosten", () => {
     const kredit = berechneKreditbetrag({ kaufpreis: 400000, eigenmittel: 1000, mitMakler: true, nkMitfinanziert: true })
-    expect(kredit.warnung).toBeTruthy()
+    expect(kredit.warnungen.length).toBeGreaterThan(0)
+  })
+
+  it("flags both warnings at once when Eigenmittel are low AND the LTV is over 80%", () => {
+    // Both conditions are true simultaneously here: Eigenmittel (1.000) < Kaufnebenkosten
+    // (~42.400), and the resulting LTV is also above 80% — both must be reported, not just one.
+    const kredit = berechneKreditbetrag({ kaufpreis: 400000, eigenmittel: 1000, mitMakler: true, nkMitfinanziert: true })
+    expect(kredit.warnungen.length).toBe(2)
+    expect(kredit.beleihungsquotePct).toBeGreaterThan(80)
   })
 })
 
@@ -142,8 +150,15 @@ describe("effektivzinsPct", () => {
 })
 
 describe("berechneAfaBemessungsgrundlage", () => {
-  it("takes the flat 80% Gebäudeanteil default off the purchase price", () => {
+  it("takes the flat 80% Gebäudeanteil default off the purchase price when no Anschaffungsnebenkosten are given", () => {
     expect(berechneAfaBemessungsgrundlage(400000, KREDIT_DEFAULTS.gebaeudeanteilPct)).toBeCloseTo(320000, 6)
+  })
+
+  it("includes Anschaffungsnebenkosten (Kaufnebenkosten) in the basis, per § 6 Z 1 EStG", () => {
+    // Kaufnebenkosten belong to the Anschaffungskosten and must be split Grund/Gebäude in the
+    // same ratio as the purchase price — Kreditnebenkosten (financing costs) are excluded.
+    const basis = berechneAfaBemessungsgrundlage(400000, 80, 42400)
+    expect(basis).toBeCloseTo((400000 + 42400) * 0.8, 6)
   })
 })
 

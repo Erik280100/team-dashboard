@@ -102,11 +102,12 @@ export function InvestVsWohnungRechner() {
   // Steuer & Verkauf
   const [grenzsteuersatzPct, setGrenzsteuersatzPct] = useState("40")
   const [immoEstPct, setImmoEstPct] = useState("30")
-  const [verkaufskostenPct, setVerkaufskostenPct] = useState("0")
+  const [verkaufskostenPct, setVerkaufskostenPct] = useState("3")
 
   // Kostensätze (Kaufnebenkosten/Kreditnebenkosten/AfA) — geteiltes Modell mit dem
   // Finanzierungsrechner und dem Anlegerwohnungs-Portfolio-Rechner.
   const [saetzeOffen, setSaetzeOffen] = useState(false)
+  const [detailOffen, setDetailOffen] = useState(false)
   const [saetze, setSaetze] = useState<KreditSaetze>(KREDIT_DEFAULTS)
   const satzSetter = (key: keyof KreditSaetze) => (v: string) => setSaetze((s) => ({ ...s, [key]: Number(v) || 0 }))
 
@@ -134,7 +135,7 @@ export function InvestVsWohnungRechner() {
   ])
 
   const ergebnis = useMemo(() => berechneInvestVsWohnung(eingabe), [eingabe])
-  const { depot, wohnung, differenz, entnahme, warnungen } = ergebnis
+  const { depot, wohnung, differenz, entnahme, jahre, warnungen } = ergebnis
 
   const wohnungBesser = differenz >= 0
 
@@ -177,7 +178,9 @@ export function InvestVsWohnungRechner() {
           <p className="text-xs text-muted-foreground">
             Ohne Kosten gerechnet: nur die angegebene Rendite, abzüglich 27,5&nbsp;% KESt auf den Gewinn.
             Gilt auch für das Nebenkonto in Szenario B (Mietüberschuss-Reinvestition), damit beide Seiten
-            fair mit derselben Opportunitätskosten-Annahme verglichen werden.
+            fair mit derselben Opportunitätskosten-Annahme verglichen werden. Anders als im Renditerechner
+            fehlt hier die jährliche agE-Teilbesteuerung (Fondsdepot/VV) — der Depot-Endwert ist dadurch
+            leicht optimistisch.
           </p>
         </CardContent>
       </Card>
@@ -190,7 +193,7 @@ export function InvestVsWohnungRechner() {
             <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} />
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
             <Feld label="Leerstand/Mietausfall (%)" value={leerstandPct} onChange={setLeerstandPct} step={0.5} suffix="%" min={0} />
-            <Feld label="Bewirtschaftung (€/Monat)" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />
+            <Feld label="Bewirtschaftung (€/Monat, heute)" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />
             <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
               Wertsteigerung Immobilie (% p.a.)
               <div className="flex flex-wrap items-center gap-2">
@@ -259,16 +262,15 @@ export function InvestVsWohnungRechner() {
             <Feld label="Verkaufskosten (%)" value={verkaufskostenPct} onChange={setVerkaufskostenPct} step={0.5} suffix="%" min={0} />
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               ImmoESt-Satz (%)
-              <input type="number" min={0} step={1} value={immoEstPct} disabled={!wohnung.immoEstAnwendbar}
-                onChange={(e) => setImmoEstPct(e.target.value)} className={cn(INPUT_CLASS, "w-20 disabled:opacity-50")} />
+              <input type="number" min={0} step={1} value={immoEstPct}
+                onChange={(e) => setImmoEstPct(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
             </label>
           </div>
           <p className="text-xs text-muted-foreground">
-            ImmoESt wird automatisch anhand der Haltedauer angesetzt: unter 10 Jahren mit dem
-            angegebenen Satz, ab 10 Jahren steuerfrei. Aktueller Anlagehorizont ({horizontClamped}{" "}
-            Jahre): <strong className={wohnung.immoEstAnwendbar ? "text-foreground" : "text-[#155767]"}>
-              {wohnung.immoEstAnwendbar ? "steuerpflichtig" : "steuerfrei"}
-            </strong>.
+            Die Spekulationsfrist wurde 2012 abgeschafft: Der Verkauf einer vermieteten Anlegerwohnung ist
+            unabhängig von der Haltedauer immer mit ImmoESt steuerpflichtig (Basis: Verkaufserlös −
+            Anschaffungskosten inkl. Kaufnebenkosten + kumulierte AfA). Die Pauschalbesteuerung für
+            "Altvermögen" (Anschaffung vor 31.3.2002) wird hier nicht abgebildet.
           </p>
         </CardContent>
       </Card>
@@ -317,6 +319,97 @@ export function InvestVsWohnungRechner() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardContent className="flex flex-col gap-3">
+          <button type="button" onClick={() => setDetailOffen((v) => !v)}
+            className="flex items-center gap-1.5 text-left text-sm font-semibold text-muted-foreground hover:text-foreground">
+            <span className={cn("inline-block transition-transform", detailOffen && "rotate-90")}>▶</span>
+            Rechenschritte im Detail
+          </button>
+          {detailOffen && (
+            <div className="flex flex-col gap-4">
+              <div>
+                <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Kaufnebenkosten</h4>
+                <div className="flex flex-col gap-1">
+                  {wohnung.kaufNK.positionen.map((p) => (
+                    <ZeilePos key={p.label} label={`${p.label} (${p.hinweis})`} value={kreditFormatEUR(p.betrag)} muted />
+                  ))}
+                  <ZeilePos label="Summe Kaufnebenkosten" value={kreditFormatEUR(wohnung.kaufNK.summe)} bold />
+                </div>
+              </div>
+              <div>
+                <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Kreditnebenkosten</h4>
+                <div className="flex flex-col gap-1">
+                  {wohnung.kreditNKPositionen.map((p) => (
+                    <ZeilePos key={p.label} label={`${p.label} (${p.hinweis})`} value={kreditFormatEUR(p.betrag)} muted />
+                  ))}
+                  <ZeilePos label="Summe Kreditnebenkosten" value={kreditFormatEUR(wohnung.kreditNKSumme)} bold />
+                  <ZeilePos label="Barbedarf (zusätzlich bar aufzubringen)" value={kreditFormatEUR(wohnung.barbedarf)} muted />
+                </div>
+              </div>
+              <div>
+                <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Investition &amp; AfA</h4>
+                <div className="flex flex-col gap-1">
+                  <ZeilePos label="Gesamtinvestition (Kaufpreis + alle Nebenkosten)" value={kreditFormatEUR(wohnung.gesamtinvestition)} muted />
+                  {wohnung.ueberschussEigenmittel > 0 && (
+                    <ZeilePos label="Nicht benötigte Eigenmittel → Einmalerlag Nebenkonto" value={kreditFormatEUR(wohnung.ueberschussEigenmittel)} muted />
+                  )}
+                  <ZeilePos label="AfA-Bemessungsgrundlage (Gebäudeanteil von Kaufpreis + Kauf-NK)" value={kreditFormatEUR(wohnung.afaBasis)} muted />
+                  <ZeilePos label={`Kumulierte AfA nach ${horizontClamped} Jahren`} value={kreditFormatEUR(wohnung.afaKumuliert)} muted />
+                </div>
+              </div>
+              <div>
+                <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Laufende Vermietung, kumuliert über {horizontClamped} Jahre</h4>
+                <div className="flex flex-col gap-1">
+                  <ZeilePos label="Mieteinnahmen (nach Leerstand, indexiert)" value={kreditFormatEUR(wohnung.mieteKumuliert)} muted />
+                  <ZeilePos label="Gezahlte Kreditzinsen" value={kreditFormatEUR(wohnung.gesamtzinsen)} muted />
+                  <ZeilePos label="Steuereffekt (Grenzsteuersatz auf Miete − Bewirtschaftung − Zinsen − AfA)" value={kreditFormatEUR(wohnung.steuerEffektKumuliert)} muted />
+                </div>
+              </div>
+              {jahre.length > 0 && (
+                <div>
+                  <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Jahresverlauf</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[720px] text-xs">
+                      <thead>
+                        <tr className="border-b text-left text-muted-foreground">
+                          <th className="py-1 pr-3 font-medium">Jahr</th>
+                          <th className="py-1 pr-3 text-right font-medium">Miete</th>
+                          <th className="py-1 pr-3 text-right font-medium">Bewirtsch.</th>
+                          <th className="py-1 pr-3 text-right font-medium">Zinsen</th>
+                          <th className="py-1 pr-3 text-right font-medium">Tilgung</th>
+                          <th className="py-1 pr-3 text-right font-medium">AfA</th>
+                          <th className="py-1 pr-3 text-right font-medium">Cashflow</th>
+                          <th className="py-1 pr-3 text-right font-medium">Restschuld</th>
+                          <th className="py-1 pr-3 text-right font-medium">Verkehrswert</th>
+                          <th className="py-1 pr-3 text-right font-medium">Nebenkonto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jahre.map((j) => (
+                          <tr key={j.jahr} className="border-b border-border/50">
+                            <td className="py-1 pr-3 tabular-nums">{j.jahr}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.miete)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.bewirtschaftung)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.zinsen)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.tilgung)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.afa)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.cashflow)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.restschuld)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.verkehrswert)}</td>
+                            <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.nebenkontoEnde)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {warnungen.length > 0 && (
         <div className="flex flex-col gap-2">
           {warnungen.map((w) => (
@@ -348,7 +441,12 @@ export function InvestVsWohnungRechner() {
               <ZeilePos label="Verkehrswert" value={kreditFormatEUR(wohnung.immobilienwertEnde)} muted />
               <ZeilePos label="− Restschuld" value={"−" + kreditFormatEUR(wohnung.restschuldEnde)} muted />
               {wohnung.verkaufskosten > 0 && <ZeilePos label="− Verkaufskosten" value={"−" + kreditFormatEUR(wohnung.verkaufskosten)} muted />}
-              {wohnung.immoEst > 0 && <ZeilePos label="− ImmoESt" value={"−" + kreditFormatEUR(wohnung.immoEst)} muted />}
+              {wohnung.immoEst > 0 && (
+                <ZeilePos
+                  label={`− ImmoESt (${kreditFormatPct(n(immoEstPct), 0)} auf ${kreditFormatEUR(wohnung.immoEstBasis)})`}
+                  value={"−" + kreditFormatEUR(wohnung.immoEst)} muted
+                />
+              )}
               <ZeilePos
                 label={wohnung.nebenkontoEndwert >= 0 ? "+ Nebenkonto (Mietüberschuss reinvestiert)" : "− Nebenkonto (Zuzahlungen überwiegen)"}
                 value={(wohnung.nebenkontoEndwert >= 0 ? "+" : "−") + kreditFormatEUR(Math.abs(wohnung.nebenkontoEndwert))}
@@ -397,6 +495,9 @@ export function InvestVsWohnungRechner() {
           <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             Alternative — Wohnung behalten statt verkaufen: laufender Mietüberschuss plus Entnahme aus
             dem Nebenkonto ≈ <strong className="text-foreground">{kreditFormatEUR(entnahme.immoOhneVerkaufMonat)}/Monat</strong>.
+            Grobe Näherung auf Basis des letzten Jahres-Mietüberschusses — läuft der Kredit während der
+            Entnahmezeit aus oder verändert sich die Miete weiter, steigt der tatsächliche Überschuss
+            entsprechend an.
           </div>
         </CardContent>
       </Card>

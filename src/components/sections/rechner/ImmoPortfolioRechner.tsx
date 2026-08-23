@@ -87,29 +87,35 @@ export function ImmoPortfolioRechner() {
   // Kauf & Finanzierung
   const [kaufpreisReferenz, setKaufpreisReferenz] = useState("150000")
   const [wohnflaecheM2, setWohnflaecheM2] = useState("45")
-  const [mindestabstandMonate, setMindestabstandMonate] = useState("18")
-  const [ltvKaufPct, setLtvKaufPct] = useState("90")
+  // 80 % statt vormals 90 % — Aufsichtserwartung der FMA (seit Auslaufen der KIM-V zum 30.6.2025
+  // als Rahmen fortgeführt: ≥ 20 % Eigenmittel inkl. Nebenkosten), frei überschreibbar (E6).
+  const [ltvKaufPct, setLtvKaufPct] = useState("80")
   const [laufzeitJahre, setLaufzeitJahre] = useState("35")
   const [zinssatzPct, setZinssatzPct] = useState("2.85")
   const [mitMakler, setMitMakler] = useState(true)
   const [nkMitfinanziert, setNkMitfinanziert] = useState(true)
 
-  // Miete
+  // Miete — als Nettomiete (ohne Betriebskosten, exkl. 10 % USt auf Wohnraumvermietung) zu
+  // verstehen (E4); beide Eingabemodi sind so aufeinander abgestimmt, dass sie bei den
+  // Default-Werten (45 m²) dieselbe Miete ergeben.
   const [mietModus, setMietModus] = useState<"direkt" | "proM2">("direkt")
-  const [mieteMonat, setMieteMonat] = useState("750")
-  const [mietpreisProM2, setMietpreisProM2] = useState("13.5")
+  const [mieteMonat, setMieteMonat] = useState("495")
+  const [mietpreisProM2, setMietpreisProM2] = useState("11")
   const [indexierungPct, setIndexierungPct] = useState("2")
-  const [leerstandPct, setLeerstandPct] = useState("3")
+  const [leerstandPct, setLeerstandPct] = useState("0")
+  const [befristet, setBefristet] = useState(false)
 
   // Kosten
-  const [hausverwaltungMonat, setHausverwaltungMonat] = useState("25")
+  const [hausverwaltungMonat, setHausverwaltungMonat] = useState("0")
   const [instandhaltungProM2Monat, setInstandhaltungProM2Monat] = useState("1")
-  const [sonstigeKostenMonat, setSonstigeKostenMonat] = useState("15")
+  const [sonstigeKostenMonat, setSonstigeKostenMonat] = useState("0")
 
   // Wertentwicklung & Umschuldung
-  const [wertzuwachsPct, setWertzuwachsPct] = useState("3")
+  const [wertzuwachsPct, setWertzuwachsPct] = useState("2")
   const [umschuldungAlleJahre, setUmschuldungAlleJahre] = useState("5")
-  const [beleihungUmschuldungPct, setBeleihungUmschuldungPct] = useState("100")
+  // 80 % statt vormals 100 % — oberes Ende des banküblichen Rahmens von 70–80 % des Verkehrswerts,
+  // frei überschreibbar.
+  const [beleihungUmschuldungPct, setBeleihungUmschuldungPct] = useState("80")
 
   // Steuer
   const [grenzsteuersatzPct, setGrenzsteuersatzPct] = useState("40")
@@ -122,14 +128,15 @@ export function ImmoPortfolioRechner() {
   const [bestandRateMonat, setBestandRateMonat] = useState("0")
   const [bestandMieteMonat, setBestandMieteMonat] = useState("0")
   const [bestandRestlaufzeitJahre, setBestandRestlaufzeitJahre] = useState("25")
+  const [bestandAnschaffungskosten, setBestandAnschaffungskosten] = useState("0")
+  const [bestandAfaJahreVerbraucht, setBestandAfaJahreVerbraucht] = useState("0")
 
-  // Leistbarkeit
+  // Leistbarkeit — lebenshaltungMonat dient auch als harte Kaufsperre (mindestResteinkommenMonat):
+  // Deckt ein cashflow-negatives Portfolio den Fehlbetrag nicht aus dem laufenden Sparen, wird er
+  // vom Nettoeinkommen abgezogen. Bleiben davon weniger als die Fixkosten/Lebenshaltung übrig, wird
+  // kein weiterer Kauf mehr getätigt. Kein eigenes Feld dafür, da es inhaltlich dasselbe ist.
   const [nettoeinkommenMonat, setNettoeinkommenMonat] = useState("3500")
   const [lebenshaltungMonat, setLebenshaltungMonat] = useState("1800")
-  // Harte Kaufsperre: Deckt ein cashflow-negatives Portfolio den Fehlbetrag nicht aus dem
-  // laufenden Sparen, wird er vom Nettoeinkommen abgezogen. Bleibt weniger als dieser Betrag vom
-  // Nettoeinkommen übrig, wird kein weiterer Kauf mehr getätigt.
-  const [mindestResteinkommenMonat, setMindestResteinkommenMonat] = useState("2000")
 
   const [horizontJahre, setHorizontJahre] = useState("35")
 
@@ -143,14 +150,22 @@ export function ImmoPortfolioRechner() {
   const horizontClamped = Math.min(40, Math.max(1, Math.round(n(horizontJahre)) || 20))
   const ltvClamped = Math.min(100, Math.max(0, n(ltvKaufPct)))
   const beleihungClamped = Math.min(150, Math.max(0, n(beleihungUmschuldungPct)))
+  // Eingabe-Klemmung gegen offensichtlich unsinnige Werte (C8): Leerstand > 100 % würde negative
+  // Miete erzeugen, negative Indexierung/Sparbetrag/Zinssatz sind zwar theoretisch denkbar, aber
+  // ein Tippfehler ist hier wahrscheinlicher als eine bewusste Eingabe.
+  const leerstandClamped = Math.min(100, Math.max(0, n(leerstandPct)))
+  const indexierungClamped = Math.max(-5, Math.min(20, n(indexierungPct)))
+  const sparbetragClamped = Math.max(0, n(sparbetragMonat))
+  const zinssatzClamped = Math.max(0, n(zinssatzPct))
 
   const eingabe: ImmoPortfolioEingabe = useMemo(() => ({
-    eigenmittel: n(eigenmittel), sparbetragMonat: n(sparbetragMonat), guthabenzinsPct: n(guthabenzinsPct),
+    eigenmittel: n(eigenmittel), sparbetragMonat: sparbetragClamped, guthabenzinsPct: n(guthabenzinsPct),
     kaufpreisReferenz: n(kaufpreisReferenz), wohnflaecheM2: n(wohnflaecheM2),
-    mindestabstandMonate: n(mindestabstandMonate), ltvKaufPct: ltvClamped, laufzeitJahre: laufzeitClamped,
-    zinssatzPct: n(zinssatzPct), mitMakler, nkMitfinanziert,
+    ltvKaufPct: ltvClamped, laufzeitJahre: laufzeitClamped,
+    zinssatzPct: zinssatzClamped, mitMakler, nkMitfinanziert,
     mietModus, mieteMonat: n(mieteMonat), mietpreisProM2: n(mietpreisProM2),
-    indexierungPct: n(indexierungPct), leerstandPct: n(leerstandPct),
+    indexierungPct: indexierungClamped, leerstandPct: leerstandClamped,
+    befristet,
     hausverwaltungMonat: n(hausverwaltungMonat), instandhaltungProM2Monat: n(instandhaltungProM2Monat),
     sonstigeKostenMonat: n(sonstigeKostenMonat),
     wertzuwachsPct: n(wertzuwachsPct), umschuldungAlleJahre: Math.max(1, n(umschuldungAlleJahre) || 5),
@@ -160,17 +175,21 @@ export function ImmoPortfolioRechner() {
     bestandAnzahl: Math.max(0, Math.round(n(bestandAnzahl))), bestandWert: n(bestandWert),
     bestandRestschuld: n(bestandRestschuld), bestandRateMonat: n(bestandRateMonat),
     bestandMieteMonat: n(bestandMieteMonat), bestandRestlaufzeitJahre: Math.max(1, n(bestandRestlaufzeitJahre) || 25),
+    bestandAnschaffungskosten: n(bestandAnschaffungskosten),
+    bestandAfaJahreVerbraucht: Math.max(0, n(bestandAfaJahreVerbraucht)),
     nettoeinkommenMonat: n(nettoeinkommenMonat), lebenshaltungMonat: n(lebenshaltungMonat),
-    mindestResteinkommenMonat: n(mindestResteinkommenMonat),
+    mindestResteinkommenMonat: n(lebenshaltungMonat),
     horizontJahre: horizontClamped, saetze,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
-    eigenmittel, sparbetragMonat, guthabenzinsPct, kaufpreisReferenz, wohnflaecheM2, mindestabstandMonate,
-    ltvClamped, laufzeitClamped, zinssatzPct, mitMakler, nkMitfinanziert, mietModus, mieteMonat, mietpreisProM2,
-    indexierungPct, leerstandPct, hausverwaltungMonat, instandhaltungProM2Monat, sonstigeKostenMonat,
+    eigenmittel, sparbetragClamped, guthabenzinsPct, kaufpreisReferenz, wohnflaecheM2,
+    ltvClamped, laufzeitClamped, zinssatzClamped, mitMakler, nkMitfinanziert, mietModus, mieteMonat, mietpreisProM2,
+    indexierungClamped, leerstandClamped, befristet,
+    hausverwaltungMonat, instandhaltungProM2Monat, sonstigeKostenMonat,
     wertzuwachsPct, umschuldungAlleJahre, beleihungClamped, grenzsteuersatzPct, saetze,
     bestandAnzahl, bestandWert, bestandRestschuld, bestandRateMonat, bestandMieteMonat, bestandRestlaufzeitJahre,
-    nettoeinkommenMonat, lebenshaltungMonat, mindestResteinkommenMonat, horizontClamped,
+    bestandAnschaffungskosten, bestandAfaJahreVerbraucht,
+    nettoeinkommenMonat, lebenshaltungMonat, horizontClamped,
   ])
 
   // Keine automatische Neuberechnung mehr bei jeder Eingabe — die Simulation (420 Monate,
@@ -215,6 +234,11 @@ export function ImmoPortfolioRechner() {
         pointRadius: (ctx: { dataIndex?: number }) => (kaufJahrInfo.has((ctx.dataIndex ?? 0) + 1) ? 5 : 0),
         pointBackgroundColor: (ctx: { dataIndex?: number }) => (kaufJahrInfo.get((ctx.dataIndex ?? 0) + 1) ? "#16a34a" : "#B5624A"),
       },
+      {
+        label: "Nettovermögen nach Verkaufssteuern", data: jahre.map((j) => j.nettovermoegenNachSteuer),
+        borderColor: "#B5624A", borderDash: [5, 4], backgroundColor: "transparent", borderWidth: 2,
+        tension: 0.1, fill: false, pointRadius: 0,
+      },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [jahre, kaufJahrInfo])
@@ -243,8 +267,11 @@ export function ImmoPortfolioRechner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [kaufJahrInfo])
 
+  // C4: letztesJahr.mieteinnahmen ist bereits leerstandsbereinigt (kein zusätzlicher 0,8-Abschlag
+  // nötig, der war ein Doppelabzug) und die Bewirtschaftungskosten fehlten bisher ganz.
   const freieLiquiditaetMonat = letztesJahr
-    ? n(nettoeinkommenMonat) + 0.8 * (letztesJahr.mieteinnahmen / 12) - n(lebenshaltungMonat) - letztesJahr.kreditratenGesamt / 12
+    ? n(nettoeinkommenMonat) + (letztesJahr.mieteinnahmen - letztesJahr.bewirtschaftungskosten) / 12
+      - n(lebenshaltungMonat) - letztesJahr.kreditratenGesamt / 12
     : 0
   const dstiAmpel = letztesJahr
     ? letztesJahr.dstiPct < 40 ? "grün" : letztesJahr.dstiPct <= 50 ? "gelb" : "rot"
@@ -278,7 +305,7 @@ export function ImmoPortfolioRechner() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feld label="Aktuelle Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} />
             <Feld label="Sparbetrag (€/Monat)" value={sparbetragMonat} onChange={setSparbetragMonat} step={50} />
-            <Feld label="Guthabenzinsen (% p.a.)" value={guthabenzinsPct} onChange={setGuthabenzinsPct} step={0.1} suffix="%" />
+            <Feld label="Guthabenzinsen, brutto (% p.a. — 25 % KESt wird automatisch abgezogen)" value={guthabenzinsPct} onChange={setGuthabenzinsPct} step={0.1} suffix="%" />
             <Feld label="Horizont (Jahre)" value={horizontJahre} onChange={setHorizontJahre} step={1} suffix="J" />
             <Feld label="Netto-Haushaltseinkommen (€/Monat)" value={nettoeinkommenMonat} onChange={setNettoeinkommenMonat} step={100} />
             <Feld label="Fixkosten / Lebenshaltung (€/Monat)" value={lebenshaltungMonat} onChange={setLebenshaltungMonat} step={100} />
@@ -292,7 +319,6 @@ export function ImmoPortfolioRechner() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feld label="Kaufpreis heute (€)" value={kaufpreisReferenz} onChange={setKaufpreisReferenz} step={5000} />
             <Feld label="Wohnfläche (m²)" value={wohnflaecheM2} onChange={setWohnflaecheM2} step={1} suffix="m²" />
-            <Feld label="Mindestabstand zwischen Käufen (Monate)" value={mindestabstandMonate} onChange={setMindestabstandMonate} step={1} />
             <Feld label="Beleihung beim Kauf (% vom Kaufpreis)" value={ltvKaufPct} onChange={setLtvKaufPct} step={1} suffix="%" />
             <Feld label="Sollzinssatz (% p.a.)" value={zinssatzPct} onChange={setZinssatzPct} step={0.05} suffix="%" />
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -308,8 +334,20 @@ export function ImmoPortfolioRechner() {
           </div>
           {kaufpreisZuNiedrig && (
             <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-              Kaufpreis unter {kreditFormatEUR(KAUFPREIS_MINDESTGRENZE)} — die Simulation bleibt beim zuletzt
-              gültigen Stand stehen, bis ein realistischer Kaufpreis eingegeben ist.
+              Kaufpreis unter {kreditFormatEUR(KAUFPREIS_MINDESTGRENZE)} — es finden keine neuen Käufe mehr statt
+              (Sparen, Guthabenzinsen und ein etwaiger Bestand laufen normal weiter), bis ein realistischer
+              Kaufpreis eingegeben ist.
+            </div>
+          )}
+          {ltvClamped > 80 && (
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              Beleihung beim Kauf über 80 % ist die von dir gewählte Modellannahme — seit Auslaufen der KIM-V zum
+              30.6.2025 erwartet die FMA als Aufsichtsrahmen weiterhin ≥ 20 % Eigenmittel inkl. Nebenkosten.
+            </div>
+          )}
+          {laufzeitClamped > 35 && (
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              Eine Laufzeit über 35 Jahre liegt über dem von der FMA erwarteten Rahmen.
             </div>
           )}
           <div className="flex flex-wrap gap-6">
@@ -329,8 +367,8 @@ export function ImmoPortfolioRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Miete &amp; Kosten (pro Wohnung, außer wo anders angegeben)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
-              Miete
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
+              Nettomiete (ohne Betriebskosten, exkl. 10 % USt auf Wohnraumvermietung)
               <div className="flex flex-wrap items-center gap-2">
                 <PillGroup value={mietModus} onChange={setMietModus}
                   options={[{ value: "direkt", label: "Betrag/Monat" }, { value: "proM2", label: "€/m²" }]} />
@@ -338,12 +376,16 @@ export function ImmoPortfolioRechner() {
                   ? <input type="number" step={25} value={mieteMonat} onChange={(e) => setMieteMonat(e.target.value)} className={cn(INPUT_CLASS, "w-28")} />
                   : <input type="number" step={0.1} value={mietpreisProM2} onChange={(e) => setMietpreisProM2(e.target.value)} className={cn(INPUT_CLASS, "w-24")} />}
               </div>
-            </label>
+            </div>
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
             <Feld label="Leerstand/Mietausfall (%)" value={leerstandPct} onChange={setLeerstandPct} step={0.5} suffix="%" />
             <Feld label="Hausverwaltung (€/Monat)" value={hausverwaltungMonat} onChange={setHausverwaltungMonat} step={5} />
             <Feld label="Instandhaltung (€/m²/Monat)" value={instandhaltungProM2Monat} onChange={setInstandhaltungProM2Monat} step={0.1} />
             <Feld label="Sonstige Kosten (€/Monat)" value={sonstigeKostenMonat} onChange={setSonstigeKostenMonat} step={5} />
+            <label className="flex items-center gap-1.5 text-sm sm:col-span-2">
+              <input type="checkbox" checked={befristet} onChange={(e) => setBefristet(e.target.checked)} className="size-4" />
+              Befristet vermietet (−25 % Befristungsabschlag auf die Anfangsmiete künftiger Käufe)
+            </label>
           </div>
         </CardContent>
       </Card>
@@ -405,6 +447,14 @@ export function ImmoPortfolioRechner() {
               <Feld label="Gesamte Rate (€/Monat)" value={bestandRateMonat} onChange={setBestandRateMonat} step={50} />
               <Feld label="Gesamte Miete (€/Monat)" value={bestandMieteMonat} onChange={setBestandMieteMonat} step={50} />
               <Feld label="Restlaufzeit der Kredite (Jahre)" value={bestandRestlaufzeitJahre} onChange={setBestandRestlaufzeitJahre} step={1} suffix="J" />
+              <Feld label="Historische Anschaffungskosten gesamt (€) — Basis für AfA & ImmoESt" value={bestandAnschaffungskosten} onChange={setBestandAnschaffungskosten} step={5000} />
+              <Feld label="Davon bereits abgeschriebene Jahre" value={bestandAfaJahreVerbraucht} onChange={setBestandAfaJahreVerbraucht} step={1} suffix="J" />
+            </div>
+          )}
+          {bestandOffen && n(bestandAnschaffungskosten) === 0 && n(bestandWert) > 0 && (
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              Ohne historische Anschaffungskosten wird für den Bestand keine AfA angesetzt und die ImmoESt-Basis
+              überschätzt. Falls unbekannt, ersatzweise den Verkehrswert eintragen.
             </div>
           )}
         </CardContent>
@@ -441,9 +491,28 @@ export function ImmoPortfolioRechner() {
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">AfA (steuerliche Abschreibung)</h4>
                 <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  <Feld label="Gebäudeanteil am Kaufpreis" value={String(saetze.gebaeudeanteilPct)} onChange={satzSetter("gebaeudeanteilPct")} suffix="%" step={1} />
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
+                    Gebäudeanteil am Kaufpreis
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input type="number" step={1} value={String(saetze.gebaeudeanteilPct)}
+                        onChange={(e) => satzSetter("gebaeudeanteilPct")(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
+                      <span>%</span>
+                      <PillGroup value={String(saetze.gebaeudeanteilPct) as never}
+                        options={[
+                          { value: "80" as never, label: "80 % (Kleingemeinde, Baulandpreis < 400 €/m²)" },
+                          { value: "70" as never, label: "70 % (Gebäude > 10 Einheiten)" },
+                          { value: "60" as never, label: "60 % (Gebäude ≤ 10 Einheiten, sonst)" },
+                        ]}
+                        onChange={(v) => satzSetter("gebaeudeanteilPct")(v)} />
+                    </div>
+                  </label>
                   <Feld label="AfA-Satz (linear, ab 3. Jahr)" value={String(saetze.afaSatzPct)} onChange={satzSetter("afaSatzPct")} suffix="%" step={0.1} />
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Nach der Grundanteilverordnung 2016 sind 80 % Gebäudeanteil nur zulässig, wenn die Gemeinde unter
+                  100.000 Einwohner hat UND der durchschnittliche Baulandpreis unter 400 €/m² liegt — für eine
+                  Vorsorgewohnung in einer Landeshauptstadt sind meist 70 % oder 60 % korrekt.
+                </p>
               </div>
               <button type="button" onClick={() => setSaetze(KREDIT_DEFAULTS)}
                 className="w-fit rounded-md border border-input px-3 py-1.5 text-xs font-medium hover:bg-muted">
@@ -456,9 +525,19 @@ export function ImmoPortfolioRechner() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPI label={`Wohnungen nach ${horizontClamped} Jahren`} value={String(letztesJahr?.anzahlObjekte ?? 0)} accent />
-        <KPI label="davon gratis (aus Umschuldung finanziert)" value={String(kennzahlen.anzahlGratis)} accent />
+        <KPI label="davon 100 % gratis (voll aus Umschuldung finanziert)" value={String(kennzahlen.anzahlGratis)} accent />
+        <KPI
+          label="Gratis-Äquivalent (alle Umschuldungsanteile zusammengezählt)"
+          value={kennzahlen.gratisAequivalentAnzahl.toLocaleString("de-AT", { maximumFractionDigits: 1 })}
+          accent
+        />
+        <KPI
+          label="Kapitalbedarf gesamt aus Umschuldung gedeckt"
+          value={`${kreditFormatPct(kennzahlen.umschuldungsAnteilGesamtPct, 0)} (${kreditFormatEUR(kennzahlen.ausUmschuldungGesamt)})`}
+        />
         <KPI label="Portfolio-Verkehrswert" value={kreditFormatEUR(letztesJahr?.portfolioWert ?? 0)} />
-        <KPI label="Nettovermögen" value={kreditFormatEUR(letztesJahr?.nettovermoegen ?? 0)} />
+        <KPI label="Nettovermögen (vor Verkauf)" value={kreditFormatEUR(letztesJahr?.nettovermoegen ?? 0)} />
+        <KPI label="Nettovermögen nach Verkaufssteuern (30 % ImmoESt, gedachter Verkauf)" value={kreditFormatEUR(letztesJahr?.nettovermoegenNachSteuer ?? 0)} />
       </div>
 
       {meilensteine.length > 0 && (
@@ -479,7 +558,8 @@ export function ImmoPortfolioRechner() {
                     ["davon gratis", (m: typeof meilensteine[number]) => String(m.davonGratis)],
                     ["Portfolio-Verkehrswert", (m: typeof meilensteine[number]) => kreditFormatEUR(m.portfolioWert)],
                     ["Restschuld gesamt", (m: typeof meilensteine[number]) => kreditFormatEUR(m.restschuldGesamt)],
-                    ["Nettovermögen", (m: typeof meilensteine[number]) => kreditFormatEUR(m.nettovermoegen)],
+                    ["Nettovermögen (vor Verkauf)", (m: typeof meilensteine[number]) => kreditFormatEUR(m.nettovermoegen)],
+                    ["Nettovermögen (nach Verkaufssteuern)", (m: typeof meilensteine[number]) => kreditFormatEUR(m.nettovermoegenNachSteuer)],
                     ["Jahresmiete", (m: typeof meilensteine[number]) => kreditFormatEUR(m.jahresmiete)],
                     ["Jahres-AfA", (m: typeof meilensteine[number]) => kreditFormatEUR(m.jahresAfa)],
                     ["Jahres-Cashflow (netto)", (m: typeof meilensteine[number]) => kreditFormatEUR(m.jahresCashflow)],
@@ -555,7 +635,7 @@ export function ImmoPortfolioRechner() {
                       <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(k.afaJahr1)}</td>
                       <td className="py-1 text-right">
                         {k.istGratis
-                          ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">gratis</span>
+                          ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">100 % gratis</span>
                           : k.gratisAnteilPct < 0.1
                             ? <span className="text-xs text-muted-foreground">eigene Mittel</span>
                             : <span className="text-xs text-muted-foreground">{kreditFormatPct(k.gratisAnteilPct, 0)} Umschuldung</span>}
@@ -591,7 +671,8 @@ export function ImmoPortfolioRechner() {
                   <th className="py-1 pr-3 text-right font-medium">Cashflow netto</th>
                   <th className="py-1 pr-3 text-right font-medium">Eigenmitteleinsatz (Kauf)</th>
                   <th className="py-1 pr-3 text-right font-medium">davon kumuliert</th>
-                  <th className="py-1 text-right font-medium">Nettovermögen</th>
+                  <th className="py-1 pr-3 text-right font-medium">Nettovermögen</th>
+                  <th className="py-1 text-right font-medium">Nettovermögen (n. St.)</th>
                 </tr>
               </thead>
               <tbody>
@@ -609,7 +690,8 @@ export function ImmoPortfolioRechner() {
                     <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.cashflowNetto)}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{j.eigenmitteleinsatzKauf > 0 ? kreditFormatEUR(j.eigenmitteleinsatzKauf) : "–"}</td>
                     <td className="py-1 pr-3 text-right tabular-nums font-medium">{kreditFormatEUR(j.eigenmitteleinsatzKumuliert)}</td>
-                    <td className="py-1 text-right tabular-nums">{kreditFormatEUR(j.nettovermoegen)}</td>
+                    <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.nettovermoegen)}</td>
+                    <td className="py-1 text-right tabular-nums text-muted-foreground">{kreditFormatEUR(j.nettovermoegenNachSteuer)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -627,7 +709,8 @@ export function ImmoPortfolioRechner() {
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(jahre.reduce((s, j) => s + j.cashflowNetto, 0))}</td>
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(jahre.reduce((s, j) => s + j.eigenmitteleinsatzKauf, 0))}</td>
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(letztesJahr?.eigenmitteleinsatzKumuliert ?? 0)}</td>
-                  <td className="pt-2 text-right tabular-nums">{kreditFormatEUR(letztesJahr?.nettovermoegen ?? 0)}</td>
+                  <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(letztesJahr?.nettovermoegen ?? 0)}</td>
+                  <td className="pt-2 text-right tabular-nums text-muted-foreground">{kreditFormatEUR(letztesJahr?.nettovermoegenNachSteuer ?? 0)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -646,22 +729,36 @@ export function ImmoPortfolioRechner() {
           <h3 className="text-sm font-semibold">Renditen &amp; Leistbarkeit</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Bruttomietrendite (Ø, letztes Jahr)</span>
+              <span className="text-xs text-muted-foreground">Bruttomietrendite (aktuell, bezogen auf Portfolio-Verkehrswert)</span>
               <span className="text-lg font-bold tabular-nums">{kreditFormatPct(kennzahlen.bruttomietrenditeSchnittPct, 1)}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Nettomietrendite (Ø, letztes Jahr)</span>
+              <span className="text-xs text-muted-foreground">Nettomietrendite (aktuell, bezogen auf Portfolio-Verkehrswert)</span>
               <span className="text-lg font-bold tabular-nums">{kreditFormatPct(kennzahlen.nettomietrenditeSchnittPct, 1)}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Eigenkapitalrendite (gesamter Zeitraum)</span>
-              <span className="text-lg font-bold tabular-nums">{kreditFormatPct(kennzahlen.eigenkapitalrenditePct, 1)}</span>
+              <span className="text-xs text-muted-foreground">Eigenkapitalrendite, vor / nach Verkaufssteuern</span>
+              <span className="text-lg font-bold tabular-nums">
+                {kreditFormatPct(kennzahlen.eigenkapitalrenditePct, 1)}
+                <span className="ml-1.5 text-sm font-normal text-muted-foreground">/ {kreditFormatPct(kennzahlen.eigenkapitalrenditeNachSteuerPct, 1)}</span>
+              </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">IRR der Eigenmittel (p.a.)</span>
-              <span className="text-lg font-bold tabular-nums">{kennzahlen.irrPct != null ? kreditFormatPct(kennzahlen.irrPct, 1) : "n. v."}</span>
+              <span className="text-xs text-muted-foreground">IRR der Eigenmittel (p.a.), vor / nach Verkaufssteuern</span>
+              <span className="text-lg font-bold tabular-nums">
+                {kennzahlen.irrPct != null ? kreditFormatPct(kennzahlen.irrPct, 1) : "n. v."}
+                <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                  / {kennzahlen.irrNachSteuerPct != null ? kreditFormatPct(kennzahlen.irrNachSteuerPct, 1) : "n. v."}
+                </span>
+              </span>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            "Nach Verkaufssteuern" unterstellt einen gedachten Verkauf des GESAMTEN Portfolios zum jeweiligen
+            Zeitpunkt, mit 30&nbsp;% ImmoESt auf Verkehrswert − Anschaffungskosten + kumulierte AfA je Objekt
+            (§ 30a EStG). Vereinfachung: keine 4,2&nbsp;%-Pauschale für Altvermögen, kein gewerblicher
+            Grundstückshandel berücksichtigt.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border-t pt-4">
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Operativer Cashflow-Breakeven</span>
@@ -679,17 +776,14 @@ export function ImmoPortfolioRechner() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            DSTI ist reine Anzeige und blockiert keinen Kauf. "Mindest-Resteinkommen" dagegen ist eine harte
-            Kaufsperre: Ein cashflow-negatives Portfolio (Miete unter der Kreditrate) ist für sich kein Problem — der
-            Fehlbetrag wird von der Sparquote aufgefangen. Kritisch wird es erst, wenn dieser Fehlbetrag vom
-            Nettoeinkommen (oben bei "Start & Sparen") abgezogen weniger als das Mindest-Resteinkommen übrig lässt —
-            dann kauft die Simulation nicht mehr weiter. DSTI = monatliche Kreditraten aller Objekte, geteilt durch
-            Nettoeinkommen + 80&nbsp;% der Mieteinnahmen. Ampel: grün &lt; 40&nbsp;%, gelb 40–50&nbsp;%, rot &gt;
-            50&nbsp;%.
+            DSTI ist reine Anzeige und blockiert keinen Kauf. Die Fixkosten/Lebenshaltung (oben bei "Start &amp;
+            Sparen") dagegen wirken als harte Kaufsperre: Ein cashflow-negatives Portfolio (Miete unter der
+            Kreditrate) ist für sich kein Problem — der Fehlbetrag wird von der Sparquote aufgefangen. Kritisch wird
+            es erst, wenn dieser Fehlbetrag vom Nettoeinkommen abgezogen weniger als die Fixkosten/Lebenshaltung
+            übrig lässt — dann kauft die Simulation nicht mehr weiter. DSTI = monatliche Kreditraten aller Objekte,
+            geteilt durch Nettoeinkommen + 80&nbsp;% der Mieteinnahmen. Ampel: grün &lt; 40&nbsp;%, gelb 40–50&nbsp;%,
+            rot &gt; 50&nbsp;%.
           </p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Feld label="Mindest-Resteinkommen (€/Monat)" value={mindestResteinkommenMonat} onChange={setMindestResteinkommenMonat} step={100} />
-          </div>
         </CardContent>
       </Card>
 

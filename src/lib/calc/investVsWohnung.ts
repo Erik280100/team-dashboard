@@ -6,29 +6,36 @@
 //
 // Die Depot-Seite (Szenario A und das Nebenkonto, in das der monatliche Mietüberschuss aus
 // Szenario B reinvestiert wird) rechnet bewusst OHNE jegliche Kosten — keine Ausgabeaufschläge,
-// keine Depotgebühr/TER, keine jährliche agE-Teilbesteuerung wie im Renditerechner. Nur die
-// angegebene Rendite, verzinst, und darauf am Ende 27,5 % KESt auf den Gewinn. Das reicht für
-// die Gegenüberstellung; die UI zeigt das Ergebnis für eine Bandbreite von 5–15 % Rendite p.a.
+// keine Depotgebühr/TER, keine jährliche agE-Teilbesteuerung wie im Renditerechner (der Depot-
+// Endwert ist dadurch leicht optimistisch). Nur die angegebene Rendite, verzinst, und darauf am
+// Ende 27,5 % KESt auf den Gewinn.
 //
 // Weitere bewusste Vereinfachungen:
 //  - Der monatliche Mietüberschuss (Miete − Bewirtschaftung − Kreditrate − Steuer) wird 1:1 in
 //    ein Nebendepot reinvestiert; ist er negativ, sinkt der Saldo des Nebendepots (ggf. unter
 //    null) — das bildet Kapital ab, das aus eigener Tasche zugeschossen werden musste, und
-//    verzinst sich mit derselben Rendite weiter (Opportunitätskosten).
+//    verzinst sich mit derselben Rendite weiter (Opportunitätskosten). Ins Nebenkonto fließen
+//    außerdem: ein einmaliger Barbedarf für nicht mitfinanzierte Kreditnebenkosten (Monat 1,
+//    negativ) sowie Eigenmittel, die über Kaufpreis + Kaufnebenkosten hinausgehen (Einmalerlag).
 //  - Steuerliches Ergebnis der Wohnung = Miete − Bewirtschaftung − Kreditzinsen − AfA, darauf der
-//    Grenzsteuersatz (negatives Ergebnis wirkt als Gutschrift/Verlustausgleich).
+//    Grenzsteuersatz (negatives Ergebnis wirkt als Gutschrift/Verlustausgleich). Die einmaligen
+//    Kreditnebenkosten (Geldbeschaffungskosten) werden im ersten Monat als Werbungskosten
+//    zusätzlich abgesetzt.
 //  - Ist die Kreditlaufzeit länger als der Anlagehorizont, wird beim "Verkauf" am Ende des
 //    Horizonts die verbleibende Restschuld vom Verkaufserlös abgezogen.
 //  - ImmoESt-Basis: Verkaufspreis − (Kaufpreis + Kaufnebenkosten) + kumulierte AfA (AfA erhöht
-//    den steuerpflichtigen Gewinn, weil sie den Buchwert schon gesenkt hat) — eine grobe
-//    Näherung, keine Steuerberatung.
-//  - ImmoESt fällt nur an, wenn die Haltedauer (= Anlagehorizont) unter 10 Jahren liegt; ab
-//    IMMOEST_HALTEDAUER_JAHRE wird automatisch keine ImmoESt mehr angesetzt (kein manueller
-//    Schalter mehr).
+//    den steuerpflichtigen Gewinn, weil sie den Buchwert schon gesenkt hat) — dieselbe
+//    Bemessungsgrundlage (Kaufpreis + Kaufnebenkosten) wird auch für die AfA verwendet, damit
+//    beide konsistent sind. Eine grobe Näherung, keine Steuerberatung.
+//  - ImmoESt fällt — seit Abschaffung der Spekulationsfrist am 1.4.2012 — unabhängig von der
+//    Haltedauer immer an (§ 30 EStG); die Hauptwohnsitz-/Herstellerbefreiung greift bei einer
+//    vermieteten Anlegerwohnung nicht. Die Pauschalbesteuerung für "Altvermögen" (Anschaffung vor
+//    31.3.2002, 4,2 % vom Verkaufserlös) wird hier nicht abgebildet.
 
 import {
   KREDIT_DEFAULTS, berechneAfaBemessungsgrundlage, berechneAfaJahre, berechneKreditbetrag,
-  berechneTilgungsplan, type KaufnebenkostenErgebnis, type KreditSaetze, type TilgungsMonat,
+  berechneTilgungsplan, type KaufnebenkostenErgebnis, type KostenPosition, type KreditSaetze,
+  type TilgungsMonat,
 } from "@/lib/calc/kredit"
 import { RR_KEST, rrRate } from "@/lib/calc/rendite"
 
@@ -49,8 +56,10 @@ export interface DepotVerlauf {
  * Gewinn werden 27,5 % KESt fällig — konsistent bei jedem Monatsstand berechnet (nicht nur am
  * Ende), damit der Verlauf keine künstlichen Sprünge hat.
  *
- * Ein negativer Cashflow ist eine Entnahme (senkt die Kostenbasis cumNetto um denselben Betrag —
- * vereinfachte "Kapital zuerst zurück"-Annahme). Der Saldo darf negativ werden.
+ * Ein negativer Cashflow senkt die Kostenbasis cumNetto um denselben Betrag (Netto-Einzahlungs-
+ * saldo aus eigener Tasche); cumNetto darf dabei negativ werden — bleibt es geklammert, würde eine
+ * Minusphase gefolgt von neuen Einzahlungen die Kostenbasis künstlich aufblähen und den späteren
+ * Gewinn faktisch KESt-frei stellen. Der Saldo (balance) darf ebenfalls negativ werden.
  */
 export function simuliereDepotVariabel(einmal: number, cashflows: number[], perfPa: number): DepotVerlauf {
   const r = rrRate(perfPa / 100)
@@ -74,11 +83,10 @@ export function simuliereDepotVariabel(einmal: number, cashflows: number[], perf
   for (let m = 0; m < cashflows.length; m++) {
     const cf = cashflows[m]
     balance += cf
+    cumNetto += cf
     if (cf >= 0) {
-      cumNetto += cf
       eingezahlt += cf
     } else {
-      cumNetto = Math.max(0, cumNetto + cf)
       entnommen += -cf
     }
     balance *= 1 + r
@@ -105,9 +113,6 @@ export function berechneEntnahmeMonat(kapital: number, renditePaPct: number, ent
   if (Math.abs(i) < 1e-9 || 1 + i <= 0) return K / n
   return (K * i) / (1 - Math.pow(1 + i, -n))
 }
-
-/** Ab dieser Haltedauer (Anlagehorizont) fällt keine ImmoESt mehr an. */
-export const IMMOEST_HALTEDAUER_JAHRE = 10
 
 /** Restschuld nach `monate` Monaten aus einem Tilgungsplan — 0 Monate = noch nichts getilgt. */
 function restschuldNachMonaten(kreditbetrag: number, monate: number, monatePlan: TilgungsMonat[]): number {
@@ -144,6 +149,22 @@ export interface InvestVsWohnungEingabe {
   saetze?: KreditSaetze
 }
 
+/** Ein Jahr der Detail-Aufschlüsselung für Szenario B (Wohnung) — für die Anzeige der
+ *  Rechenschritte im Detail; im bestehenden Monatsloop mitaggregiert (kein zweiter Durchlauf). */
+export interface InvestVsWohnungJahr {
+  jahr: number
+  miete: number
+  bewirtschaftung: number
+  zinsen: number
+  tilgung: number
+  afa: number
+  steuerEffekt: number
+  cashflow: number
+  nebenkontoEnde: number
+  restschuld: number
+  verkehrswert: number
+}
+
 export interface InvestVsWohnungErgebnis {
   depot: {
     /** Endstand vor KESt (Eigenmittel + Wertzuwachs, unversteuert). */
@@ -157,15 +178,20 @@ export interface InvestVsWohnungErgebnis {
     rate: number
     beleihungsquotePct: number
     kaufNK: KaufnebenkostenErgebnis
+    kreditNKPositionen: KostenPosition[]
     kreditNKSumme: number
+    gesamtinvestition: number
     barbedarf: number
+    ueberschussEigenmittel: number
+    afaBasis: number
     immobilienwertEnde: number
     restschuldEnde: number
     verkaufskosten: number
-    immoEstAnwendbar: boolean
+    immoEstBasis: number
     immoEst: number
     afaKumuliert: number
     mieteKumuliert: number
+    gesamtzinsen: number
     steuerEffektKumuliert: number
     nebenkontoEndwert: number
     zuzahlungenKumuliert: number
@@ -177,6 +203,7 @@ export interface InvestVsWohnungErgebnis {
     immoMonat: number
     immoOhneVerkaufMonat: number
   }
+  jahre: InvestVsWohnungJahr[]
   warnungen: string[]
 }
 
@@ -205,39 +232,87 @@ export function berechneInvestVsWohnung(e: InvestVsWohnungEingabe): InvestVsWohn
   })
   const tilgung = berechneTilgungsplan(kreditErg.kreditbetrag, e.kreditZinsPct, e.kreditLaufzeitJahre)
 
-  const afaBasis = berechneAfaBemessungsgrundlage(kaufpreis, saetze.gebaeudeanteilPct)
+  // AfA-Bemessungsgrundlage inkl. Kaufnebenkosten (Grunderwerbsteuer, Grundbuch, Vertragserrichtung,
+  // ggf. Makler zählen zu den Anschaffungskosten) — dieselbe Basis wie bei der ImmoESt weiter unten,
+  // damit beide konsistent sind.
+  const afaBasis = berechneAfaBemessungsgrundlage(kaufpreis + kreditErg.kaufNK.summe, saetze.gebaeudeanteilPct)
   const afaJahre = berechneAfaJahre(afaBasis, saetze.afaSatzPct, h)
 
   const cashflows: number[] = []
   let mieteKumuliert = 0
   let steuerEffektKumuliert = 0
+  let gesamtzinsen = 0
+  const jahreAgg: { miete: number; bewirtschaftung: number; zinsen: number; tilgung: number; steuerEffekt: number; cashflow: number }[] = []
+  let acc = { miete: 0, bewirtschaftung: 0, zinsen: 0, tilgung: 0, steuerEffekt: 0, cashflow: 0 }
   for (let m = 1; m <= monateGesamt; m++) {
     const j = Math.ceil(m / 12)
-    const miete_m = mieteMonat * Math.pow(1 + e.indexierungPct / 100, j - 1) * (1 - leerstandPct / 100)
+    const indexFaktor = Math.pow(1 + e.indexierungPct / 100, j - 1)
+    const miete_m = mieteMonat * indexFaktor * (1 - leerstandPct / 100)
+    // Die Bewirtschaftungskosten wachsen mit derselben Indexierung wie die Miete — bleiben sie
+    // nominal konstant, wird die Wohnung gegenüber der Realität systematisch begünstigt.
+    const bewirtschaftung_m = bewirtschaftungMonat * indexFaktor
     const kreditMonat = m <= tilgung.monate.length ? tilgung.monate[m - 1] : undefined
     const zins_m = kreditMonat?.zins ?? 0
-    const rate_m = kreditMonat ? kreditMonat.zins + kreditMonat.tilgung : 0
+    const tilgung_m = kreditMonat?.tilgung ?? 0
+    const rate_m = zins_m + tilgung_m
     const afaMonat = (afaJahre[j - 1]?.afa ?? 0) / 12
-    const steuerBasis_m = miete_m - bewirtschaftungMonat - zins_m - afaMonat
+    // Geldbeschaffungskosten (Kreditvertragserstellung, Pfandrechtseintragung) sind bei Vermietung
+    // sofort abzugsfähige Werbungskosten — einmalig im ersten Monat angesetzt.
+    const kreditNK_m = m === 1 ? kreditErg.kreditNKSumme : 0
+    const steuerBasis_m = miete_m - bewirtschaftung_m - zins_m - afaMonat - kreditNK_m
     const steuer_m = steuerBasis_m * (e.grenzsteuersatzPct / 100)
-    cashflows.push(miete_m - bewirtschaftungMonat - rate_m - steuer_m)
+    // Barbedarf (nicht mitfinanzierte Kreditnebenkosten) muss bar aufgebracht werden — schlägt
+    // sich im ersten Monat als zusätzlicher Abfluss nieder, damit er auch die
+    // Opportunitätsverzinsung im Nebenkonto trägt.
+    const barbedarf_m = m === 1 ? kreditErg.barbedarf : 0
+    const cashflow_m = miete_m - bewirtschaftung_m - rate_m - steuer_m - barbedarf_m
+    cashflows.push(cashflow_m)
     mieteKumuliert += miete_m
     steuerEffektKumuliert += -steuer_m
+    gesamtzinsen += zins_m
+
+    acc.miete += miete_m; acc.bewirtschaftung += bewirtschaftung_m; acc.zinsen += zins_m
+    acc.tilgung += tilgung_m; acc.steuerEffekt += -steuer_m; acc.cashflow += cashflow_m
+    if (m % 12 === 0 || m === monateGesamt) {
+      jahreAgg.push(acc)
+      acc = { miete: 0, bewirtschaftung: 0, zinsen: 0, tilgung: 0, steuerEffekt: 0, cashflow: 0 }
+    }
   }
 
-  const nebenkonto = simuliereDepotVariabel(0, cashflows, e.depotRenditePa)
+  // Übersteigen die Eigenmittel Kaufpreis + Kaufnebenkosten + Kreditnebenkosten (Gesamtinvestition),
+  // fließt der Überschuss als Einmalerlag ins Nebenkonto, statt ungenutzt zu verfallen.
+  const ueberschussEigenmittel = Math.max(0, eigenmittel - kreditErg.gesamtinvestition)
+  const nebenkonto = simuliereDepotVariabel(ueberschussEigenmittel, cashflows, e.depotRenditePa)
 
   const immobilienwertEnde = kaufpreis * Math.pow(1 + e.wertsteigerungPct / 100, h)
   const restschuldEnde = restschuldNachMonaten(kreditErg.kreditbetrag, monateGesamt, tilgung.monate)
   const verkaufskosten = immobilienwertEnde * (verkaufskostenPct / 100)
   const afaKumuliertEnde = afaJahre[h - 1]?.afaKumuliert ?? 0
-  const gewinnBasis = Math.max(0, immobilienwertEnde - (kaufpreis + kreditErg.kaufNK.summe) + afaKumuliertEnde)
-  // Haltedauer = Anlagehorizont (Kauf in Monat 0, Verkauf am Ende des Horizonts): ab 10 Jahren
-  // wird automatisch keine ImmoESt mehr angesetzt, darunter mit dem angegebenen Satz.
-  const immoEstAnwendbar = h < IMMOEST_HALTEDAUER_JAHRE
-  const immoEst = immoEstAnwendbar ? gewinnBasis * (immoEstPct / 100) : 0
+  const immoEstBasis = Math.max(0, immobilienwertEnde - (kaufpreis + kreditErg.kaufNK.summe) + afaKumuliertEnde)
+  // Die Spekulationsfrist wurde am 1.4.2012 abgeschafft — der Verkauf einer vermieteten
+  // Anlegerwohnung ist unabhängig von der Haltedauer immer mit ImmoESt steuerpflichtig
+  // (Hauptwohnsitz-/Herstellerbefreiung greift hier nicht; Altvermögen vor 31.3.2002 wird nicht
+  // gesondert abgebildet).
+  const immoEst = immoEstBasis * (immoEstPct / 100)
 
   const endwertWohnung = immobilienwertEnde - verkaufskosten - immoEst - restschuldEnde + nebenkonto.endwertNachSteuer
+
+  const jahre: InvestVsWohnungJahr[] = jahreAgg.map((a, idx) => {
+    const j = idx + 1
+    return {
+      jahr: j,
+      miete: a.miete,
+      bewirtschaftung: a.bewirtschaftung,
+      zinsen: a.zinsen,
+      tilgung: a.tilgung,
+      afa: afaJahre[idx]?.afa ?? 0,
+      steuerEffekt: a.steuerEffekt,
+      cashflow: a.cashflow,
+      nebenkontoEnde: nebenkonto.verlauf[Math.min(j * 12, nebenkonto.verlauf.length - 1)],
+      restschuld: restschuldNachMonaten(kreditErg.kreditbetrag, j * 12, tilgung.monate),
+      verkehrswert: kaufpreis * Math.pow(1 + e.wertsteigerungPct / 100, j),
+    }
+  })
 
   // Block B — monatliche Entnahme über den gewählten Zeitraum. Beide Szenarien werden mit
   // derselben Netto-Rendite gerechnet (Rendite abzüglich KESt), damit der Vergleich fair bleibt —
@@ -249,8 +324,7 @@ export function berechneInvestVsWohnung(e: InvestVsWohnungEingabe): InvestVsWohn
   const nebenkontoEntnahmeMonat = berechneEntnahmeMonat(nebenkonto.endwertNachSteuer, rEntnahmePaPct, e.entnahmeJahre)
   const immoOhneVerkaufMonat = letzterCashflow + nebenkontoEntnahmeMonat
 
-  const warnungen: string[] = []
-  if (kreditErg.warnung) warnungen.push(kreditErg.warnung)
+  const warnungen: string[] = [...kreditErg.warnungen]
   if (restschuldEnde > 0) {
     warnungen.push(
       `Beim Verkauf nach ${h} Jahren besteht noch eine Restschuld von ${Math.round(restschuldEnde).toLocaleString("de-AT")} € `
@@ -266,13 +340,16 @@ export function berechneInvestVsWohnung(e: InvestVsWohnungEingabe): InvestVsWohn
     },
     wohnung: {
       kreditbetrag: kreditErg.kreditbetrag, rate: tilgung.rate, beleihungsquotePct: kreditErg.beleihungsquotePct,
-      kaufNK: kreditErg.kaufNK, kreditNKSumme: kreditErg.kreditNKSumme, barbedarf: kreditErg.barbedarf,
-      immobilienwertEnde, restschuldEnde, verkaufskosten, immoEstAnwendbar, immoEst, afaKumuliert: afaKumuliertEnde,
-      mieteKumuliert, steuerEffektKumuliert, nebenkontoEndwert: nebenkonto.endwertNachSteuer,
+      kaufNK: kreditErg.kaufNK, kreditNKPositionen: kreditErg.kreditNKPositionen,
+      kreditNKSumme: kreditErg.kreditNKSumme, gesamtinvestition: kreditErg.gesamtinvestition,
+      barbedarf: kreditErg.barbedarf, ueberschussEigenmittel, afaBasis,
+      immobilienwertEnde, restschuldEnde, verkaufskosten, immoEstBasis, immoEst, afaKumuliert: afaKumuliertEnde,
+      mieteKumuliert, gesamtzinsen, steuerEffektKumuliert, nebenkontoEndwert: nebenkonto.endwertNachSteuer,
       zuzahlungenKumuliert: nebenkonto.entnommen, endwertNachSteuer: endwertWohnung,
     },
     differenz: endwertWohnung - depotVerlauf.endwertNachSteuer,
     entnahme: { depotMonat, immoMonat, immoOhneVerkaufMonat },
+    jahre,
     warnungen,
   }
 }

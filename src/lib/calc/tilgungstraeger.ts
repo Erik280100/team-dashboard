@@ -18,8 +18,23 @@ export interface TilgungstraegerErgebnis {
   sparwertImSchnittpunkt: number | null
   restschuldImSchnittpunkt: number | null
   einbezahltImSchnittpunkt: number | null
-  /** Summe der Zinsen, die ab dem Schnittpunkt-Monat entfallen würden. */
+  /** Summe der Zinsen, die ab dem Schnittpunkt-Monat entfallen würden (Teilgröße — siehe `vorteil`
+   *  für den tatsächlichen Gesamtvorteil inkl. der einbezahlten FLV-Prämien). */
   zinsersparnis: number
+  /** Gesamtaufwand (alle Raten) bei planmäßigem Durchlaufen der vollen Kreditlaufzeit, ohne Tilgungsträger. */
+  gesamtaufwandVollaufzeit: number
+  /** Gesamtaufwand bei Ablöse über den Tilgungsträger: Kreditraten bis zur Ablöse + einbezahlte
+   *  FLV-Prämien + Vorfälligkeitsentschädigung. Die am Schnittpunkt verbleibende Restschuld wird
+   *  aus dem FLV-Guthaben (bereits in den Prämien enthalten) getilgt und daher nicht separat gezählt. */
+  gesamtaufwandMitTraeger: number
+  /** gesamtaufwandVollaufzeit − gesamtaufwandMitTraeger — der tatsächliche Vorteil in Euro. */
+  vorteil: number
+  /** Pauschal 1 % der bei Ablöse noch offenen Restschuld (§ 20 Abs 3 HIKrG, Fixzinsvereinbarung). */
+  vorfaelligkeitsentschaedigung: number
+  /** true, wenn die Ablöse vor Ablauf von 15 Vertragsjahren der FLV läge — löst nach § 6 Abs 1 Z 1
+   *  VersStG die Nachversteuerung der laufenden Prämien auf 11 % Versicherungssteuer aus (im
+   *  Modell nicht abgebildet). */
+  rueckkaufVorJahr15: boolean
 }
 
 const LEER: TilgungstraegerErgebnis = {
@@ -31,6 +46,11 @@ const LEER: TilgungstraegerErgebnis = {
   restschuldImSchnittpunkt: null,
   einbezahltImSchnittpunkt: null,
   zinsersparnis: 0,
+  gesamtaufwandVollaufzeit: 0,
+  gesamtaufwandMitTraeger: 0,
+  vorteil: 0,
+  vorfaelligkeitsentschaedigung: 0,
+  rueckkaufVorJahr15: false,
 }
 
 /**
@@ -101,6 +121,18 @@ export function berechneTilgungstraeger(
   const abIndex = Math.ceil(schnittpunktMonat)
   const zinsersparnis = plan.monate.slice(abIndex).reduce((s, m) => s + m.zins, 0)
 
+  // Vollbild-Vergleich: was kostet der Kredit insgesamt, wenn er planmäßig durchläuft, versus
+  // wenn er über den Tilgungsträger abgelöst wird? Bis zum Ablösemonat werden ganz normal
+  // `abIndex` Kreditraten bezahlt; die dann noch offene Restschuld wird aus dem FLV-Guthaben
+  // getilgt — das ist bereits durch die einbezahlten Prämien abgedeckt und wird daher nicht
+  // nochmals als Kosten gezählt, nur die Prämien selbst und die Vorfälligkeitsentschädigung.
+  const restschuldBeiAbloese = restschuldMonate[Math.min(abIndex, restschuldMonate.length - 1)]
+  const vorfaelligkeitsentschaedigung = restschuldBeiAbloese * 0.01
+  const gesamtaufwandVollaufzeit = plan.gesamtaufwand
+  const gesamtaufwandMitTraeger = plan.rate * abIndex + einbezahltImSchnittpunkt + vorfaelligkeitsentschaedigung
+  const vorteil = gesamtaufwandVollaufzeit - gesamtaufwandMitTraeger
+  const rueckkaufVorJahr15 = schnittpunktMonat < 15 * 12
+
   return {
     sparwertMonate,
     restschuldMonate,
@@ -110,5 +142,10 @@ export function berechneTilgungstraeger(
     restschuldImSchnittpunkt,
     einbezahltImSchnittpunkt,
     zinsersparnis,
+    gesamtaufwandVollaufzeit,
+    gesamtaufwandMitTraeger,
+    vorteil,
+    vorfaelligkeitsentschaedigung,
+    rueckkaufVorJahr15,
   }
 }

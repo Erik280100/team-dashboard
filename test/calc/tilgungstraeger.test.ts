@@ -77,4 +77,33 @@ describe("berechneTilgungstraeger", () => {
     const hoch = berechneTilgungstraeger(plan, kredit.kreditbetrag, 300, 35, 0.09, 0)
     expect(hoch.schnittpunktMonat!).toBeLessThan(niedrig.schnittpunktMonat!)
   })
+
+  it("gesamtaufwandMitTraeger plus vorteil equals gesamtaufwandVollaufzeit (they are complements)", () => {
+    const { kredit, plan } = standardPlan()
+    const tt = berechneTilgungstraeger(plan, kredit.kreditbetrag, 300, 35, 0.06, 0)
+    expect(tt.gesamtaufwandVollaufzeit).toBeCloseTo(plan.gesamtaufwand, 6)
+    expect(tt.gesamtaufwandMitTraeger + tt.vorteil).toBeCloseTo(tt.gesamtaufwandVollaufzeit, 6)
+  })
+
+  it("vorfaelligkeitsentschaedigung is 1% of the Restschuld outstanding at payoff", () => {
+    const { kredit, plan } = standardPlan()
+    const tt = berechneTilgungstraeger(plan, kredit.kreditbetrag, 300, 35, 0.06, 0)
+    const abIndex = Math.ceil(tt.schnittpunktMonat!)
+    const restschuldBeiAbloese = [kredit.kreditbetrag, ...plan.monate.map((m) => m.restschuld)][abIndex]
+    expect(tt.vorfaelligkeitsentschaedigung).toBeCloseTo(restschuldBeiAbloese * 0.01, 6)
+  })
+
+  it("flags rueckkaufVorJahr15 when the intersection lands before 15 contract years, not after", () => {
+    const { kredit, plan } = standardPlan()
+    // A short loan term with a large Sparrate crosses well before year 15.
+    const kurzePlan = berechneTilgungsplan(kredit.kreditbetrag, 2.85, 15)
+    const frueh = berechneTilgungstraeger(kurzePlan, kredit.kreditbetrag, 2000, 15, 0.06, 0)
+    expect(frueh.schnittpunktMonat!).toBeLessThan(15 * 12)
+    expect(frueh.rueckkaufVorJahr15).toBe(true)
+
+    // A tiny Sparrate over the full 35-year term crosses only right at the very end.
+    const spaet = berechneTilgungstraeger(plan, kredit.kreditbetrag, 700, 35, 0.06, 0)
+    expect(spaet.schnittpunktMonat!).toBeGreaterThanOrEqual(15 * 12)
+    expect(spaet.rueckkaufVorJahr15).toBe(false)
+  })
 })
