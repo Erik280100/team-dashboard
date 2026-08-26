@@ -18,6 +18,13 @@
 // Wichtig: Differenzvergütung läuft ausschließlich entlang der eigenen
 // Vorgesetztenkette (MergedRow.managerName) des Produzenten — Führungskräfte in
 // Seitenzweigen der Struktur werden nie erreicht und bekommen nichts.
+//
+// Die "Von"-Zuordnung in den Quellzeilen bündelt auf das nächste FÜHRUNGS-Kind
+// auf dem Weg nach oben (isLeadRole) — Nicht-Führungskräfte (z. B. ein Trainee,
+// der selbst übersprungen wird) werden dabei nicht als "Von" eingesetzt, sonst
+// würde Produktion aus deren Unterbaum fälschlich unter dem Satz des Trainees
+// erscheinen, obwohl sie zum höheren Differenzsatz der nächsten echten
+// Führungskraft gerechnet wird.
 import type { EmployeeRow } from "./format"
 import { PLAN_IDS, isLeadRole, sbGetPlanRate, type PlanId } from "./struktur"
 import type { MergedRow } from "./team"
@@ -136,7 +143,9 @@ export function computeEarnings(
       // Produktion, die tiefer im Unterbaum dieses Kindes entsteht, wird hier
       // dazugerechnet statt als eigene Zeile je Ursprungs-Produzent zu erscheinen.
       const sources = earnings.diff[planId].sources
-      const existing = sources.find((s) => s.fromName === fromName && s.kind === kind)
+      const existing = sources.find(
+        (s) => s.fromName === fromName && s.kind === kind && s.ratePerUnit === ratePerUnit
+      )
       if (existing) {
         existing.units += units
         existing.amount += amount
@@ -196,7 +205,7 @@ export function computeEarnings(
             tieUsedAtLevel = true
           }
         }
-        fromName = manager.name
+        if (isLeadRole(manager.role)) fromName = manager.name
         managerName = manager.managerName
       }
     })

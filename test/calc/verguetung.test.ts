@@ -198,6 +198,36 @@ describe("computeEarnings: Nicht-Führungsstufe bekommt keine Differenz", () => 
     const e = computeEarnings(merged, RATES)
     expect(insuranceOf(e, "FT4-oben").diff).toBe(0)
     expect(insuranceOf(e, "GSL").diff).toBeCloseTo(4.5) // 5,5 - 1, FT4 wird übersprungen
+
+    // Die Quellzeile beim GSL zeigt den Ursprungs-Produzenten ("FT1"), nicht die
+    // übersprungene Nicht-Führungskraft ("FT4-oben") — sonst stünde dort ein Satz,
+    // der nicht zu Einheiten × €/EH passt.
+    const sources = e.get("GSL")!.diff.insurance.sources
+    expect(sources.length).toBe(1)
+    expect(sources[0]).toMatchObject({ fromName: "FT1", units: 1, ratePerUnit: 4.5 })
+  })
+
+  it("Regression: Trainee (FT2) zwischen zwei Führungsebenen bündelt Produktion NICHT unter seinem eigenen Namen (Michael/Kevin/Marco)", () => {
+    const merged: MergedRow[] = [
+      row("Michael", "Teamleiter", null),
+      row("Kevin", "FT2", "Michael", { insurance: 10 }),
+      row("Marco", "FT1", "Kevin", { insurance: 5 }),
+    ]
+    const e = computeEarnings(merged, RATES)
+
+    // Kevin ist selbst kein Führungsrang (Trainee) und bekommt keine Differenz.
+    expect(insuranceOf(e, "Kevin").diff).toBe(0)
+
+    // Michael bekommt zwei getrennte Quellzeilen statt einer vermischten:
+    // Kevins eigene Einheiten zu Kevins Differenzsatz, Marcos Einheiten zu
+    // Marcos (höherem) Differenzsatz.
+    const sources = e.get("Michael")!.diff.insurance.sources
+    expect(sources.length).toBe(2)
+    const kevinSrc = sources.find((s) => s.fromName === "Kevin")!
+    const marcoSrc = sources.find((s) => s.fromName === "Marco")!
+    expect(kevinSrc).toMatchObject({ units: 10, ratePerUnit: 2, amount: 20 })
+    expect(marcoSrc).toMatchObject({ units: 5, ratePerUnit: 3, amount: 15 })
+    expect(insuranceOf(e, "Michael").diff).toBeCloseTo(35) // Summe unverändert: 10*2 + 5*3
   })
 })
 
