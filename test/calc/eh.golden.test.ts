@@ -20,6 +20,11 @@ describe("eh: golden master vs. legacy", () => {
     expect(item.calc(0, 1000)).toBeCloseTo((1000 * 0.055) / 10.5)
   })
 
+  it("ableben: Gesamteinzahlung x 7% / 10,5", () => {
+    const item = EH_ITEMS.find((i) => i.id === "ableben")!
+    expect(item.calc(0, 1000)).toBeCloseTo((1000 * 0.07) / 10.5)
+  })
+
   it("froots-vv-mtl: -15% bei mtl. Prämie <= 500 €, unverändert ab 501 €", () => {
     const item = EH_ITEMS.find((i) => i.id === "froots-vv-mtl")!
     const base = (j: number) => ((j * 3) / 10.5) * 0.9
@@ -60,16 +65,22 @@ describe("eh: golden master vs. legacy", () => {
       const b = legacy.calcEhLegacy(inputs)
       // "flv-ee" hat kein Legacy-Pendant (siehe oben) und wird beim Vergleich ausgenommen.
       // "flv" nutzt bewusst 2,11 statt des Legacy-Faktors 2,14 und wird separat verglichen.
+      // "ableben" rechnet bewusst auf Basis der Gesamteinzahlung (x 7% / 10,5) statt wie
+      // Legacy auf Basis der mtl. Prämie x Laufzeit und wird deshalb ebenfalls separat
+      // verglichen statt 1:1 mit Legacy.
       // "froots-vv-mtl" bekommt bewusst -15% bei mtl. Prämie <= 500 € (siehe eigener Test
       // oben) und wird deshalb ebenfalls separat verglichen statt 1:1 mit Legacy.
-      const { "flv-ee": _flvEe, flv: aFlv, "froots-vv-mtl": aFrootsMtl, ...aPerItem } = a.perItem
-      const { flv: bFlv, "froots-vv-mtl": bFrootsMtl, ...bPerItem } = b.perItem
+      const {
+        "flv-ee": _flvEe, flv: aFlv, ableben: aAbleben, "froots-vv-mtl": aFrootsMtl, ...aPerItem
+      } = a.perItem
+      const { flv: bFlv, ableben: bAbleben, "froots-vv-mtl": bFrootsMtl, ...bPerItem } = b.perItem
       expect(aPerItem).toEqual(bPerItem)
       expect(aFlv).toBeCloseTo((bFlv / 2.14) * 2.11)
+      expect(aAbleben).toBeCloseTo(((Number(inputs.j.ableben) || 0) * 0.07) / 10.5)
       const mtlJ = Number(inputs.j["froots-vv-mtl"]) || 0
       expect(aFrootsMtl).toBeCloseTo(mtlJ > 500 ? bFrootsMtl : bFrootsMtl * 0.85)
 
-      const insuranceDiff = aFlv - bFlv
+      const insuranceDiff = aFlv - bFlv + (aAbleben - bAbleben)
       const investmentDiff = aFrootsMtl - bFrootsMtl
       const { insurance: aInsurance, investment: aInvestment, ...aGroupSums } = a.groupSums
       const { insurance: bInsurance, investment: bInvestment, ...bGroupSums } = b.groupSums
