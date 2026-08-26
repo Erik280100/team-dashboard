@@ -259,7 +259,9 @@ export interface LeaderboardRow {
 }
 
 export function leaderboardData(rows: EmployeeRow[]): LeaderboardRow[] {
-  return [...rows]
+  return rows
+    .filter((r) => Number(r.atIst || 0) > 0)
     .sort((a, b) => Number(b.atIst || 0) - Number(a.atIst || 0))
     .map((r) => ({ name: r.name as string, atIst: Number(r.atIst || 0) }))
+    .slice(0, 15)
 }

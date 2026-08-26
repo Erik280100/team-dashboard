@@ -41,12 +41,31 @@ describe("overview: golden master vs. legacy", () => {
     )
   })
 
-  it("barChartData / doughnutData / revenueShareData / leaderboardData match", () => {
+  it("barChartData / doughnutData / revenueShareData match", () => {
     expect(ts.barChartData(sampleRows())).toEqual(legacy.barChartData(sampleRows()))
     expect(ts.doughnutData(sampleRows())).toEqual(legacy.doughnutData(sampleRows()))
     expect(ts.doughnutData([])).toEqual(legacy.doughnutData([]))
     expect(ts.revenueShareData(sampleRows())).toEqual(legacy.revenueShareData(sampleRows()))
-    expect(ts.leaderboardData(sampleRows())).toEqual(legacy.leaderboardData(sampleRows()))
+  })
+
+  // leaderboardData weicht bewusst vom Legacy-Verhalten ab: nur Mitarbeiter mit
+  // atIst > 0 und maximal die Top 15 (statt aller Mitarbeiter).
+  it("leaderboardData excludes zero atIst and caps at top 15", () => {
+    expect(ts.leaderboardData(sampleRows())).toEqual([
+      { name: "Bernd Beispiel", atIst: 30 },
+      { name: "Anna Muster", atIst: 12 },
+      { name: "David Weber", atIst: 5 },
+    ])
+
+    const manyRows: EmployeeRow[] = Array.from({ length: 20 }, (_, i) => ({
+      name: `Mitarbeiter ${i}`,
+      soll: 0,
+      ist: 0,
+      isNew: false,
+      atIst: i + 1,
+    }))
+    expect(ts.leaderboardData(manyRows)).toHaveLength(15)
+    expect(ts.leaderboardData(manyRows)[0]).toEqual({ name: "Mitarbeiter 19", atIst: 20 })
   })
 
   it("timelineData matches across scenarios (valid range, invalid range, various 'now')", () => {
