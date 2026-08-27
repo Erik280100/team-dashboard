@@ -87,8 +87,8 @@ export type TodoLane = (typeof TODO_LANES)[number]
 
 export const TODO_LANE_LABELS: Record<TodoLane, string> = {
   todo: "Todo",
-  progress: "In Progress",
-  berechnung: "In Berechnung",
+  progress: "In Berechnung",
+  berechnung: "Warten auf BT",
   kunde: "Warte auf Kunden",
   fertig: "Fertig",
 }
