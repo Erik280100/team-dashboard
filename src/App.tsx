@@ -20,6 +20,7 @@ import { useDashboardDoc } from "@/hooks/useDashboardDoc"
 import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
 import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
 import { useFinanzierungenDoc } from "@/hooks/useFinanzierungenDoc"
+import { useErikTodosDoc } from "@/hooks/useErikTodosDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { Sidebar } from "@/components/Sidebar"
@@ -33,6 +34,7 @@ import { Guide } from "@/components/sections/Guide"
 import { Kalender } from "@/components/sections/Kalender"
 import { Finanzierungen } from "@/components/sections/Finanzierungen"
 import { Partner } from "@/components/sections/Partner"
+import { ErikDashboard } from "@/components/sections/ErikDashboard"
 import { StrukturBaum } from "@/components/sections/struktur/StrukturBaum"
 import { Statistik } from "@/components/sections/Statistik"
 import type { MonthKey } from "@/types/archive"
@@ -49,6 +51,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   kalender: "Kalender/Anwesenheitsliste",
   finanzierungen: "Finanzierungen",
   partner: "Partner",
+  erik: "Erik-Dashboard",
 }
 
 // Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus (siehe
@@ -85,6 +88,7 @@ function AppShell() {
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
   const finanzierungen = useFinanzierungenDoc()
+  const erikTodos = useErikTodosDoc()
   const archive = useMonthArchive(auth.isEditor)
   const offeneFinanzierungsfaelle = finanzierungen.cases.filter((c) => !c.archived)
   const offenesFinanzierungsvolumen = offeneFinanzierungsfaelle.reduce((s, c) => s + Number(c.betrag || 0), 0)
@@ -347,6 +351,15 @@ function AppShell() {
                 />
               )}
               {section === id && id === "partner" && <Partner />}
+              {section === id && id === "erik" && (
+                <ErikDashboard
+                  todos={erikTodos.todos}
+                  addTodo={erikTodos.addTodo}
+                  patchTodo={erikTodos.patchTodo}
+                  moveTodo={erikTodos.moveTodo}
+                  removeTodo={erikTodos.removeTodo}
+                />
+              )}
               {section === id && id === "struktur" && (
                 archiveLoading ? (
                   <ArchiveStatusCard month={archiveMonth!} errored={archiveErrored} onBack={() => setArchiveMonth(null)} />

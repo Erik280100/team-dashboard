@@ -35,6 +35,10 @@ export let archiveIndexDocRef: DocumentReference | null = null
 // ein neues Dokument in derselben Collection, das die Legacy-Seite nicht kennt.
 export let financingsDocRef: DocumentReference | null = null
 
+// Erik-Dashboard / persönliches Kanban-Board (siehe src/hooks/useErikTodosDoc.ts) —
+// ebenfalls ein neues Dokument in derselben Collection, das die Legacy-Seite nicht kennt.
+export let erikTodosDocRef: DocumentReference | null = null
+
 if (CLOUD_CONFIGURED) {
   try {
     app = initializeApp(firebaseConfig)
@@ -44,6 +48,7 @@ if (CLOUD_CONFIGURED) {
     orgChartDocRef = doc(firestore, "finova", "orgchart")
     archiveIndexDocRef = doc(firestore, "finova", "archive_index")
     financingsDocRef = doc(firestore, "finova", "financings")
+    erikTodosDocRef = doc(firestore, "finova", "erik_todos")
     auth = getAuth(app)
   } catch (err) {
     console.error("Firebase-Initialisierung fehlgeschlagen", err)

@@ -79,12 +79,66 @@ export interface FinanzierungenDoc {
   cases: FinanzierungCase[]
 }
 
+// Erik-Dashboard — persönliches Kanban-Board (siehe src/components/sections/ErikDashboard.tsx).
+// Keine Legacy-Entsprechung, neues Feature. Fixe Swimlanes/Kategorien/Farben (keine
+// benutzerdefinierten Lanes), analog zum FinanzierungArt-Enum oben.
+export const TODO_LANES = ["todo", "progress", "berechnung", "kunde", "fertig"] as const
+export type TodoLane = (typeof TODO_LANES)[number]
+
+export const TODO_LANE_LABELS: Record<TodoLane, string> = {
+  todo: "Todo",
+  progress: "In Progress",
+  berechnung: "In Berechnung",
+  kunde: "Warte auf Kunden",
+  fertig: "Fertig",
+}
+
+export const TODO_CATEGORIES = ["finanzierung", "kunde", "mitarbeiterkunde"] as const
+export type TodoCategory = (typeof TODO_CATEGORIES)[number]
+
+export const TODO_CATEGORY_LABELS: Record<TodoCategory, string> = {
+  finanzierung: "Finanzierungen",
+  kunde: "Kunden",
+  mitarbeiterkunde: "Mitarbeiter-Kunden",
+}
+
+export const TODO_COLORS = ["grau", "gruen", "gelb", "rot", "blau"] as const
+export type TodoColor = (typeof TODO_COLORS)[number]
+
+export const TODO_COLOR_LABELS: Record<TodoColor, string> = {
+  grau: "Grau",
+  gruen: "Grün",
+  gelb: "Gelb",
+  rot: "Rot",
+  blau: "Blau",
+}
+
+export interface ErikTodo {
+  id: string
+  title: string
+  /** "YYYY-MM-DD", leer = kein Fälligkeitsdatum. */
+  dueDate: string
+  lane: TodoLane
+  category: TodoCategory
+  color: TodoColor
+  flagged: boolean
+  /** Position innerhalb der Lane (aufsteigend). */
+  order: number
+  createdAt: string
+}
+
+/** finova/erik_todos */
+export interface ErikTodosDoc {
+  todos: ErikTodo[]
+}
+
 export const STORAGE_KEY = "finova_dashboard_data_v1"
 export const GOAL_KEY = "finova_dashboard_goal_v1"
 export const HISTORY_KEY = "finova_dashboard_history_v1"
 export const ATTENDANCE_KEY = "finova_dashboard_attendance_v1"
 export const SB_STORAGE_KEY = "finova_orgchart_data_v1"
 export const FINANZIERUNGEN_KEY = "finova_finanzierungen_v1"
+export const ERIK_TODOS_KEY = "finova_erik_todos_v1"
 
 export const STARTER_GOAL: TeamGoal = {
   note: "",

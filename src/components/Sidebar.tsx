@@ -1,6 +1,7 @@
 // Hauptnavigation — Äquivalent zur .sidebar-Nav aus legacy/index.html:1571–1588.
 import {
   LayoutDashboard, Users, Network, BarChart3, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
+  KanbanSquare,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -96,9 +97,29 @@ export function Sidebar({
           )
         })}
 
-        <div className="mt-auto px-2 pt-4 text-xs text-sidebar-foreground/60">
-          <strong className="block text-sidebar-foreground">Grenzgasse 1</strong>
-          8055 Seiersberg, Austria
+        <div className="mt-auto flex flex-col gap-1 border-t border-sidebar-foreground/10 pt-3">
+          <button
+            type="button"
+            data-section="erik"
+            aria-current={section === "erik" ? "page" : undefined}
+            onClick={() => {
+              onNavigate("erik")
+              onClose()
+            }}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
+              section === "erik"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
+                : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            )}
+          >
+            <KanbanSquare aria-hidden="true" className="size-4 shrink-0" />
+            Erik-Dashboard
+          </button>
+          <div className="px-2 pt-1 text-xs text-sidebar-foreground/60">
+            <strong className="block text-sidebar-foreground">Grenzgasse 1</strong>
+            8055 Seiersberg, Austria
+          </div>
         </div>
       </nav>
     </>
