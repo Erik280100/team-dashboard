@@ -67,13 +67,20 @@ export function TodoCard({
     setEditingDescription(false)
   }
 
+  const state = dueState(todo.dueDate, todayStr())
+  // Fällig heute, in den nächsten 3 Tagen oder bereits überfällig — ganze Kachel
+  // leicht rot einfärben, nicht nur das Datum, damit es beim Überfliegen der Lane
+  // sofort auffällt.
+  const isUrgent = state !== "none"
+
   return (
     <div
       data-todo-id={todo.id}
       draggable
       onDragStart={onDragStart}
       className={cn(
-        "flex cursor-grab flex-col gap-2 rounded-md border border-l-4 bg-background p-3 text-sm shadow-sm active:cursor-grabbing",
+        "flex cursor-grab flex-col gap-2 rounded-md border border-l-4 p-3 text-sm shadow-sm active:cursor-grabbing",
+        isUrgent ? "bg-rose-50 dark:bg-rose-950/40" : "bg-background",
         CARD_BORDER_CLASS[todo.color]
       )}
     >
@@ -142,7 +149,7 @@ export function TodoCard({
           // Spalten (viele Swimlanes auf kleinen Bildschirmen) hat das sonst die Karte
           // und damit die ganze Lane horizontal überlaufen lassen.
           "w-full max-w-full rounded border border-transparent bg-transparent text-xs outline-none hover:border-input focus-visible:border-ring",
-          DUE_TEXT_CLASS[dueState(todo.dueDate, todayStr())]
+          DUE_TEXT_CLASS[state]
         )}
       />
 
