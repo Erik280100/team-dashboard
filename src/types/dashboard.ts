@@ -116,6 +116,8 @@ export const TODO_COLOR_LABELS: Record<TodoColor, string> = {
 export interface ErikTodo {
   id: string
   title: string
+  /** Optional, leer = keine Beschreibung. */
+  description: string
   /** "YYYY-MM-DD", leer = kein Fälligkeitsdatum. */
   dueDate: string
   lane: TodoLane

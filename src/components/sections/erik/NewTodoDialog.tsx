@@ -22,9 +22,10 @@ export function NewTodoDialog({
   onOpenChange: (open: boolean) => void
   /** Vorbelegte Kategorie (aktives Board), frei änderbar wenn "alle" aktiv ist. */
   defaultCategory: TodoCategory
-  onCreate: (init: { title: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
+  onCreate: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
 }) {
   const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
   const [dueDate, setDueDate] = useState("")
   const [category, setCategory] = useState<TodoCategory>(defaultCategory)
   const [color, setColor] = useState<TodoColor>("grau")
@@ -34,6 +35,7 @@ export function NewTodoDialog({
   useEffect(() => {
     if (open) {
       setTitle("")
+      setDescription("")
       setDueDate("")
       setCategory(defaultCategory)
       setColor("grau")
@@ -44,7 +46,7 @@ export function NewTodoDialog({
     e.preventDefault()
     const trimmed = title.trim()
     if (!trimmed) return
-    onCreate({ title: trimmed, dueDate, category, color })
+    onCreate({ title: trimmed, description: description.trim(), dueDate, category, color })
     onOpenChange(false)
   }
 
@@ -65,6 +67,18 @@ export function NewTodoDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="z. B. Herr Mustermann – Unterlagen prüfen"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="erik-todo-description" className="text-xs font-semibold text-muted-foreground">Beschreibung</label>
+            <textarea
+              id="erik-todo-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional"
+              rows={3}
+              className="border-input flex w-full min-w-0 resize-none rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             />
           </div>
 

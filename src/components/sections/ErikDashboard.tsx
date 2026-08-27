@@ -79,7 +79,7 @@ export function ErikDashboard({
   todos, addTodo, patchTodo, moveTodo, removeTodo,
 }: {
   todos: ErikTodo[]
-  addTodo: (init: { title: string; dueDate: string; category: TodoCategory; color: ErikTodo["color"] }) => void
+  addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: ErikTodo["color"] }) => void
   patchTodo: (id: string, patch: Partial<ErikTodo>) => void
   moveTodo: (id: string, lane: TodoLane, beforeId: string | null) => void
   removeTodo: (id: string) => void

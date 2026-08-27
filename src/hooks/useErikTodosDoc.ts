@@ -36,7 +36,7 @@ function newTodoId(): string {
 
 export interface UseErikTodosDocResult {
   todos: ErikTodo[]
-  addTodo: (init: { title: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
+  addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
   patchTodo: (id: string, patch: Partial<ErikTodo>) => void
   moveTodo: (id: string, lane: TodoLane, beforeId: string | null) => void
   removeTodo: (id: string) => void
@@ -83,12 +83,13 @@ export function useErikTodosDoc(): UseErikTodosDocResult {
   }, [])
 
   const addTodo = useCallback(
-    (init: { title: string; dueDate: string; category: TodoCategory; color: TodoColor }) => {
+    (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => {
       const inTodoLane = latest.current.filter((t) => t.lane === "todo")
       const minOrder = inTodoLane.reduce((m, t) => Math.min(m, t.order), 0)
       const next: ErikTodo = {
         id: newTodoId(),
         title: init.title,
+        description: init.description,
         dueDate: init.dueDate,
         lane: "todo",
         category: init.category,

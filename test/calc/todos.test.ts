@@ -5,6 +5,7 @@ import type { ErikTodo } from "../../src/types/dashboard"
 function makeTodo(overrides: Partial<ErikTodo> & Pick<ErikTodo, "id">): ErikTodo {
   return {
     title: "Titel",
+    description: "",
     dueDate: "",
     lane: "todo",
     category: "kunde",

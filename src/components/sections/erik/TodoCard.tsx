@@ -41,15 +41,30 @@ export function TodoCard({
   const [titleDraft, setTitleDraft] = useState(todo.title)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const [editingDescription, setEditingDescription] = useState(false)
+  const [descriptionDraft, setDescriptionDraft] = useState(todo.description)
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
+
   useEffect(() => {
     if (editingTitle) inputRef.current?.focus()
   }, [editingTitle])
+
+  useEffect(() => {
+    if (editingDescription) descriptionRef.current?.focus()
+  }, [editingDescription])
 
   function commitTitle() {
     const trimmed = titleDraft.trim()
     if (trimmed && trimmed !== todo.title) onPatch({ title: trimmed })
     else setTitleDraft(todo.title)
     setEditingTitle(false)
+  }
+
+  function commitDescription() {
+    const trimmed = descriptionDraft.trim()
+    if (trimmed !== todo.description) onPatch({ description: trimmed })
+    setDescriptionDraft(trimmed)
+    setEditingDescription(false)
   }
 
   return (
@@ -87,6 +102,32 @@ export function TodoCard({
           className="text-left font-medium leading-snug hover:underline"
         >
           {todo.title}
+        </button>
+      )}
+
+      {editingDescription ? (
+        <textarea
+          ref={descriptionRef}
+          value={descriptionDraft}
+          onChange={(e) => setDescriptionDraft(e.target.value)}
+          onBlur={commitDescription}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") { setDescriptionDraft(todo.description); setEditingDescription(false) }
+          }}
+          placeholder="Beschreibung"
+          rows={2}
+          className="w-full resize-none rounded border border-input bg-transparent px-2 py-1 text-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditingDescription(true)}
+          className={cn(
+            "text-left text-xs leading-snug hover:underline",
+            todo.description ? "text-muted-foreground" : "text-muted-foreground/50 italic"
+          )}
+        >
+          {todo.description || "+ Beschreibung hinzufügen"}
         </button>
       )}
 
