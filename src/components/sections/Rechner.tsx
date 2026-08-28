@@ -14,7 +14,7 @@ const TABS: { id: RechnerTab; label: string; editorOnly?: boolean }[] = [
   { id: "eh", label: "EH-Rechner" },
   { id: "umdreh", label: "Umdrehrechner", editorOnly: true },
   { id: "rendite", label: "Renditerechner", editorOnly: true },
-  { id: "investVsWohnung", label: "Invest vs. Anlegerwohnung", editorOnly: true },
+  { id: "investVsWohnung", label: "Invest vs. Anlegerwohnung" },
 ]
 
 export function Rechner({
