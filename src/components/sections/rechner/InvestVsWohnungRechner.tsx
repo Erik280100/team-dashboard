@@ -456,7 +456,15 @@ export function InvestVsWohnungRechner() {
                 <ZeilePos label="davon aus eigener Tasche zugeschossen" value={kreditFormatEUR(wohnung.zuzahlungenKumuliert)} muted />
               )}
               <ZeilePos label="Kumulierte AfA" value={kreditFormatEUR(wohnung.afaKumuliert)} muted />
+              <ZeilePos label="Eingesetzte Eigenmittel" value={kreditFormatEUR(n(eigenmittel))} muted />
             </div>
+            <p className="text-xs text-muted-foreground">
+              Dieselben Eigenmittel wie beim Depot — hier zuerst für Kaufnebenkosten, dann als Anzahlung
+              eingesetzt. Sie stecken nicht als eigener Posten oben, sondern wirken über eine kleinere
+              Kreditsumme: weniger Zinsen unterwegs (höherer Cashflow ins Nebenkonto) und eine kleinere
+              Restschuld beim Verkauf — dadurch fließen sie vollständig (plus Verzinsung zum Kreditzinssatz)
+              in den Endwert oben ein.
+            </p>
           </CardContent>
         </Card>
       </div>
