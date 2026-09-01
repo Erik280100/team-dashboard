@@ -95,6 +95,11 @@ export function toISODate(d: Date): string {
   )
 }
 
+/** 'YYYY-MM-DD' -> 'DD.MM.YYYY' (de-AT-Anzeigeformat). */
+export function formatISODateDE(str: string): string {
+  return parseISODate(str).toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit", year: "numeric" })
+}
+
 export function addDays(d: Date, n: number): Date {
   const r = new Date(d)
   r.setDate(r.getDate() + n)

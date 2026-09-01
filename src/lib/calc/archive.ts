@@ -46,24 +46,40 @@ export function resetRowsForNewMonth(rows: EmployeeRow[]): EmployeeRow[] {
   })
 }
 
+const WEDNESDAY = 3 // Date#getDay(): 0=So ... 3=Mi
+
+/** Erster Wochentag `weekday` (0=So..6=Sa) im Monat `monthIndex0` (0=Jan). */
+function firstWeekdayOfMonth(year: number, monthIndex0: number, weekday: number): Date {
+  const first = new Date(year, monthIndex0, 1)
+  const diff = (weekday - first.getDay() + 7) % 7
+  return new Date(year, monthIndex0, 1 + diff)
+}
+
 /**
- * Verschiebt den Umsatzmonat auf den Folgemonat von periodEnd (Dezember rollt
- * korrekt ins nächste Jahr, siehe JS-Date-Monatsüberlauf). `note`/`recruitGoal`
- * bleiben erhalten, `recruitActual` wird auf null gesetzt (wieder automatische
- * Zählung der "NEU"-markierten Mitarbeiter im neuen Monat).
+ * Verschiebt den Umsatzmonat auf den Folgemonat. Geschäftsregel: ein
+ * Umsatzmonat beginnt immer am ersten Mittwoch des Kalendermonats und endet am
+ * Tag davor im Folgemonat (z.B. Start 02.09.2026, Ende 06.10.2026, da der
+ * 07.10.2026 der erste Mittwoch im Oktober ist) — unabhängig vom genauen
+ * periodStart/periodEnd-Wert des abzuschließenden Monats. Der Folgemonat wird
+ * relativ zum Monat von periodStart bestimmt (siehe monthKeyOf), nicht relativ
+ * zu periodEnd, das ein paar Tage in den Folgemonat hineinlaufen kann (z.B.
+ * 05.08.–01.09. ist "August"). Dezember rollt korrekt ins nächste Jahr (JS-
+ * Date-Monatsüberlauf). `note`/`recruitGoal` bleiben erhalten, `recruitActual`
+ * wird auf null gesetzt (wieder automatische Zählung der "NEU"-markierten
+ * Mitarbeiter im neuen Monat).
  */
 export function nextMonthGoal(goal: TeamGoal): TeamGoal {
   const def = defaultPeriod()
-  const end = parseISODate(goal.periodEnd || def.periodEnd)
-  const y = end.getFullYear()
-  const m = end.getMonth()
-  const first = new Date(y, m + 1, 1)
-  const last = new Date(y, m + 2, 0)
+  const start = parseISODate(goal.periodStart || def.periodStart)
+  const y = start.getFullYear()
+  const m = start.getMonth()
+  const nextStart = firstWeekdayOfMonth(y, m + 1, WEDNESDAY)
+  const followingStart = firstWeekdayOfMonth(y, m + 2, WEDNESDAY)
   return {
     ...goal,
     recruitActual: null,
-    periodStart: toISODate(first),
-    periodEnd: toISODate(last),
+    periodStart: toISODate(nextStart),
+    periodEnd: toISODate(addDays(followingStart, -1)),
   }
 }
 

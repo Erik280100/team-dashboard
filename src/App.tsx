@@ -14,6 +14,7 @@ import { PLAN_IDS, sbRoster, withDefaultPlanRates, type PlanId } from "@/lib/cal
 import { mergeRosterWithRows, newRowFor } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
+import { formatISODateDE } from "@/lib/calc/format"
 import { useAuth } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
@@ -178,7 +179,7 @@ function AppShell() {
     const month = monthKeyOf(dashboard.teamGoal)
     const nextGoal = nextMonthGoal(dashboard.teamGoal)
     const ok = await confirm(
-      `Monat ${monthLabel(month)} (${dashboard.teamGoal.periodStart} – ${dashboard.teamGoal.periodEnd}) abschließen?\n\n` +
+      `Monat ${monthLabel(month)} (${formatISODateDE(dashboard.teamGoal.periodStart)} – ${formatISODateDE(dashboard.teamGoal.periodEnd)}) abschließen?\n\n` +
       `• Der aktuelle Stand wird als Archiv gespeichert und ist danach über den Monatswähler einsehbar.\n` +
       `• Alle Ist-Werte (Einheiten, AT/BT/ET) werden auf 0 gesetzt — Plan- und Soll-Werte bleiben erhalten.\n` +
       `• "NEU"-Markierungen bleiben bestehen und werden nicht automatisch entfernt.\n` +

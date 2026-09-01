@@ -55,10 +55,14 @@ describe("resetRowsForNewMonth", () => {
 })
 
 describe("nextMonthGoal", () => {
-  it("Juli -> August", () => {
+  // Geschäftsregel: Start = erster Mittwoch des Monats, Ende = Tag davor im
+  // Folgemonat (bestätigtes Praxisbeispiel: 05.08.2026-01.09.2026 (August) ->
+  // 02.09.2026-06.10.2026 (September), da der 2.9. der erste Mittwoch im
+  // September und der 7.10. der erste Mittwoch im Oktober 2026 ist).
+  it("Juli -> August (erster Mittwoch im Monat, Ende = Tag vor erstem Mittwoch im Folgemonat)", () => {
     const next = nextMonthGoal(GOAL)
-    expect(next.periodStart).toBe("2026-08-01")
-    expect(next.periodEnd).toBe("2026-08-31")
+    expect(next.periodStart).toBe("2026-08-05")
+    expect(next.periodEnd).toBe("2026-09-01")
     expect(next.recruitActual).toBeNull()
     expect(next.note).toBe("Fokus Juli")
     expect(next.recruitGoal).toBe(2)
@@ -67,8 +71,17 @@ describe("nextMonthGoal", () => {
   it("Dezember rollt korrekt ins Folgejahr", () => {
     const dec: TeamGoal = { ...GOAL, periodStart: "2026-12-01", periodEnd: "2026-12-31" }
     const next = nextMonthGoal(dec)
-    expect(next.periodStart).toBe("2027-01-01")
-    expect(next.periodEnd).toBe("2027-01-31")
+    expect(next.periodStart).toBe("2027-01-06")
+    expect(next.periodEnd).toBe("2027-02-02")
+  })
+
+  it("überspringt keinen Monat, wenn periodEnd in den Folgemonat hineinläuft", () => {
+    // Praxisfall (siehe monthKeyOf): 05.08.-01.09. ist der Monat "August" —
+    // der nächste Monat muss "September" (02.09.-06.10.) sein, nicht Oktober.
+    const spanning: TeamGoal = { ...GOAL, periodStart: "2026-08-05", periodEnd: "2026-09-01" }
+    const next = nextMonthGoal(spanning)
+    expect(next.periodStart).toBe("2026-09-02")
+    expect(next.periodEnd).toBe("2026-10-06")
   })
 })
 
