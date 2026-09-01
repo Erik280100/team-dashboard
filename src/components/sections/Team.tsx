@@ -87,8 +87,8 @@ export function Team({
   const totals = teamTotals(list)
   const earnings = useMemo(() => computeEarnings(merged, orgPlanRates), [merged, orgPlanRates])
   const grandTotalEur = useMemo(
-    () => [...earnings.values()].reduce((s, e) => s + e.total, 0),
-    [earnings]
+    () => list.reduce((s, r) => s + (earnings.get(r.name)?.total ?? 0), 0),
+    [list, earnings]
   )
   const detailEntry = detailName ? merged.find((r) => r.name === detailName) ?? null : null
   const detailEarnings = detailName ? earnings.get(detailName) ?? null : null
