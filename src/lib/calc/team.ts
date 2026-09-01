@@ -2,7 +2,7 @@
 // legacy/index.html:2636–2772 (getFilteredSorted, renderTable: Zeilen-Highlight
 // und Summenzeile). Golden-Master-Test: test/calc/team.golden.test.ts.
 import { pctOf, type EmployeeRow, type MonthWeekProgress } from "@/lib/calc/format"
-import type { RosterEntry } from "@/lib/calc/struktur"
+import { isLeadRole, SB_LEAD_ROLES, type RosterEntry } from "@/lib/calc/struktur"
 
 export type TeamFilter = "all" | "new" | "existing"
 export type TeamSort = "name" | "progress-desc" | "progress-asc" | "einheiten-desc" | "manager"
@@ -135,6 +135,30 @@ export function getMergedFilteredSorted(
   if (sort === "einheiten-desc") list = [...list].sort((a, b) => Number(b.ist) - Number(a.ist))
   // sort === "manager": Roster-Vorordnung unverändert lassen
   return list
+}
+
+export interface ManagerOption {
+  name: string
+  role: string
+}
+
+const LEAD_ROLE_RANK: Record<string, number> = Object.fromEntries(
+  SB_LEAD_ROLES.map((role, i) => [role, i])
+)
+
+/**
+ * Führungskräfte (ab Teamleiter aufwärts) für die Schnellfilter-Chips auf der
+ * Mitarbeiterseite, gruppiert nach Führungsstufe (Geschäftsstellenleiter vor
+ * Teamleiter, siehe SB_LEAD_ROLES) und innerhalb der Stufe alphabetisch.
+ */
+export function leadRosterOptions(roster: RosterEntry[]): ManagerOption[] {
+  return roster
+    .filter((r) => isLeadRole(r.role))
+    .map((r) => ({ name: r.name, role: r.role }))
+    .sort((a, b) => {
+      const rank = (LEAD_ROLE_RANK[a.role] ?? 999) - (LEAD_ROLE_RANK[b.role] ?? 999)
+      return rank !== 0 ? rank : a.name.localeCompare(b.name, "de")
+    })
 }
 
 export type RowHighlight = "at-above" | "at-below" | ""

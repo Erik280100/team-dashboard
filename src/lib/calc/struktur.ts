@@ -71,6 +71,28 @@ export function isLeadRole(role: string): boolean {
   return SB_LEAD_ROLES.includes(role)
 }
 
+// Kurzform je Führungsstufe für die Schnellfilter-Chips auf der
+// Mitarbeiterseite (Team.tsx).
+export const SB_LEAD_ROLE_ABBR: Record<string, string> = {
+  Direktor: "DIR",
+  Regionalleiter: "RL",
+  Geschäftsstellenleiter: "GST",
+  Teamleiter: "TL",
+}
+
+/**
+ * Namen aller Personen im Teilbaum unter der Führungskraft `managerName`
+ * (inkl. der Führungskraft selbst), für den Schnellfilter auf der
+ * Mitarbeiterseite. Sucht wie sbGetRoleForName erst exakt, dann per Nachname.
+ */
+export function sbSubtreeNames(tree: SbNode | null, managerName: string): Set<string> {
+  if (!tree) return new Set()
+  let node = sbFindByName(tree, managerName)
+  if (!node) node = sbFindByLastName(tree, sbLastWord(managerName))
+  if (!node) return new Set()
+  return new Set(sbAll(node).map((n) => n.name))
+}
+
 // ---- Karrierepläne (Einheiten-Vergütung) ----
 // Die vier Sparten aus den Karriereplänen (siehe src/lib/data/career.ts /
 // src/lib/calc/eh.ts EH_GROUPS — dieselben ids, hier eigenständig deklariert,

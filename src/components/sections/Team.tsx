@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { fmt, fmtEur, initials, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import {
-  getMergedFilteredSorted, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
+  getMergedFilteredSorted, leadRosterOptions, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
 } from "@/lib/calc/team"
-import { sbRoster, type PlanId, type SbNode } from "@/lib/calc/struktur"
+import { SB_LEAD_ROLE_ABBR, sbRoster, sbSubtreeNames, type PlanId, type SbNode } from "@/lib/calc/struktur"
 import { computeEarnings, withPlanUnits } from "@/lib/calc/verguetung"
 import { EmployeeEarningsDialog } from "@/components/sections/team/EmployeeEarningsDialog"
 import { cn } from "@/lib/utils"
@@ -70,10 +70,19 @@ export function Team({
   const [filter, setFilter] = useState<TeamFilter>("all")
   const [sort, setSort] = useState<TeamSort>("name")
   const [detailName, setDetailName] = useState<string | null>(null)
+  const [managerFilter, setManagerFilter] = useState<string | null>(null)
 
   const roster = useMemo(() => sbRoster(orgTree), [orgTree])
   const merged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
-  const list = getMergedFilteredSorted(merged, search, filter, sort)
+  const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
+  const managerNames = useMemo(
+    () => (managerFilter ? sbSubtreeNames(orgTree, managerFilter) : null),
+    [managerFilter, orgTree]
+  )
+  const list = useMemo(() => {
+    const base = getMergedFilteredSorted(merged, search, filter, sort)
+    return managerNames ? base.filter((r) => managerNames.has(r.name)) : base
+  }, [merged, search, filter, sort, managerNames])
   const wp = monthWeekProgress(teamGoal, now ?? new Date())
   const totals = teamTotals(list)
   const earnings = useMemo(() => computeEarnings(merged, orgPlanRates), [merged, orgPlanRates])
@@ -153,6 +162,38 @@ export function Team({
           <option value="einheiten-desc">Einheiten Ist (absteigend)</option>
         </Select>
       </div>
+
+      {managerOptions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Schnellfilter Führungskraft:</span>
+          <button
+            type="button"
+            onClick={() => setManagerFilter(null)}
+            aria-pressed={managerFilter === null}
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+              managerFilter === null ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+            )}
+          >
+            Alle
+          </button>
+          {managerOptions.map((m) => (
+            <button
+              key={m.name}
+              type="button"
+              onClick={() => setManagerFilter((cur) => (cur === m.name ? null : m.name))}
+              aria-pressed={managerFilter === m.name}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+                managerFilter === m.name ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+              )}
+            >
+              {m.name}
+              <span className="ml-1 opacity-70">({SB_LEAD_ROLE_ABBR[m.role] ?? m.role})</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="max-h-[65vh] overflow-auto rounded-lg border">
         <table className="w-full min-w-[900px] border-collapse text-sm">
