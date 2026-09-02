@@ -5,9 +5,9 @@ import { Line } from "react-chartjs-2"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
-  RR_DEPOT_PRESETS, RR_FLV_COSTS, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR,
+  RR_FLV_COSTS, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR,
   simulateFLV, simulateFondsdepot, simulateFondssparer, simulateVV,
-  type DepotProvider, type Provider, type RRProductKey,
+  type Provider, type RRProductKey,
 } from "@/lib/calc/rendite"
 import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
 import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
@@ -86,7 +86,6 @@ export function RenditeRechner() {
   const [perfPreset, setPerfPreset] = useState<number | null>(6)
   const [customPerf, setCustomPerf] = useState("")
   const [provider, setProvider] = useState<Provider>("merkur")
-  const [depotProvider, setDepotProvider] = useState<DepotProvider | "sonstiges">("flatex")
   const [ausgabeaufschlag, setAusgabeaufschlag] = useState("5")
   const [depotgebuehr, setDepotgebuehr] = useState("1.45")
   const [ageRendite, setAgeRendite] = useState("2")
@@ -100,10 +99,6 @@ export function RenditeRechner() {
   const jahreClamped = Math.min(65, Math.max(1, Math.round(Number(jahre) || 0) || 20))
   const waPctEff = waEnabled ? Math.max(0, Number(waPct) || 0) / 100 : 0
 
-  function selectDepotProvider(p: DepotProvider | "sonstiges") {
-    setDepotProvider(p)
-    if (p !== "sonstiges") setDepotgebuehr(String(RR_DEPOT_PRESETS[p].depotgebuehr))
-  }
   function selectPerfPreset(p: number) {
     setPerfPreset(p)
     setCustomPerf("")
@@ -148,8 +143,6 @@ export function RenditeRechner() {
     { name: "Depot", colorKey: "fondsdepot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt },
     { name: "Vermögensverwaltung", colorKey: "vv", end: vvY[vvY.length - 1], einbezahlt: finalEinbezahlt },
   ]
-
-  const depotHint = depotProvider !== "sonstiges" ? "Sparplan gebührenfrei" : ""
 
   return (
     <div className="flex flex-col gap-4">
@@ -201,11 +194,6 @@ export function RenditeRechner() {
         <Card style={productCardStyle("fondsdepot")}>
           <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondsdepot" />Depot</h3>
-            <ToggleGroup
-              value={depotProvider}
-              options={[{ value: "flatex", label: "flatex" }, { value: "traderepublic", label: "Trade Republic" }, { value: "sonstiges", label: "Sonstiges" }]}
-              onChange={selectDepotProvider}
-            />
             <div className="grid grid-cols-3 gap-3">
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Ausgabeaufschlag (%)
@@ -226,7 +214,6 @@ export function RenditeRechner() {
                   className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
               </label>
             </div>
-            {depotHint && <div className="text-xs text-muted-foreground">{depotHint}</div>}
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
           </CardContent>
         </Card>

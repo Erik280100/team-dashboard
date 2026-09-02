@@ -20,14 +20,6 @@ export const RR_PRODUCT_COLORS: Record<RRProductKey, { line: string; fill: strin
 }
 
 export type Provider = "merkur" | "helvetia"
-export type DepotProvider = "flatex" | "traderepublic"
-
-// Depot-Presets: Kosten laut Online-Angaben der Broker (Stand 2026). Sparplanausführung
-// ist bei beiden gebührenfrei (Ausgabeaufschlag = 0). (legacy/index.html:3534–3544)
-export const RR_DEPOT_PRESETS: Record<DepotProvider, { ausgabeaufschlag: number; depotgebuehr: number }> = {
-  flatex: { ausgabeaufschlag: 0, depotgebuehr: 1.45 },
-  traderepublic: { ausgabeaufschlag: 0, depotgebuehr: 1.45 },
-}
 
 // legacy/index.html:3546–3569. Merkur ist hier bewusst NICHT mehr enthalten — die
 // Kostenzeilen hängen bei Merkur von Prämie & Laufzeit ab und kommen daher aus
