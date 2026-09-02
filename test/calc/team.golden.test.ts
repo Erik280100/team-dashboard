@@ -41,6 +41,12 @@ describe("team: golden master vs. legacy", () => {
     }
   })
 
+  it("rowHighlight is green when Einheiten-Soll reached, even with weak AT progress", () => {
+    const wpActive = { active: true, fraction: 0.5 }
+    const row = { soll: 100, ist: 100, atPlan: 20, atIst: 0 }
+    expect(rowHighlight(row, wpActive)).toBe("at-above")
+  })
+
   it("teamTotals matches", () => {
     expect(teamTotals(sampleRows())).toEqual(legacy.teamTotals(sampleRows()))
     expect(teamTotals([])).toEqual(legacy.teamTotals([]))

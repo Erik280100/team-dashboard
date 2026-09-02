@@ -163,8 +163,15 @@ export function leadRosterOptions(roster: RosterEntry[]): ManagerOption[] {
 
 export type RowHighlight = "at-above" | "at-below" | ""
 
-/** Rot/Grün-Einfärbung nach AT-Fortschritt relativ zum wochenanteiligen Plan. */
-export function rowHighlight(row: Pick<EmployeeRow, "atPlan" | "atIst">, wp: MonthWeekProgress): RowHighlight {
+/**
+ * Rot/Grün-Einfärbung nach AT-Fortschritt relativ zum wochenanteiligen Plan.
+ * Sind die Umsatz-Einheiten (Soll/Ist) bereits erreicht, ist die Zeile auch
+ * dann grün, wenn der AT-Fortschritt für sich genommen noch unter der
+ * Wochen-Schwelle liegt.
+ */
+export function rowHighlight(row: Pick<EmployeeRow, "atPlan" | "atIst" | "soll" | "ist">, wp: MonthWeekProgress): RowHighlight {
+  const soll = Number(row.soll || 0)
+  if (soll > 0 && Number(row.ist || 0) >= soll) return "at-above"
   const atPlan = Number(row.atPlan || 0)
   if (!wp.active || atPlan <= 0) return ""
   const schwelle = 0.8 * atPlan * wp.fraction
