@@ -124,7 +124,11 @@ export function simulateFondssparer(
   return simulateFondssparerKalibriert(monat, jahre, perf, waPct)
 }
 
-/** Fondsdepot: KESt via jährliche ausschüttungsgleiche Erträge (agE) + Rest-KESt beim Verkauf. */
+/**
+ * Fondsdepot: KESt via jährliche ausschüttungsgleiche Erträge (agE) + Rest-KESt beim Verkauf.
+ * waPct: jährliche Wertanpassung (Dynamik) auf die mtl. Sparrate, kontinuierlich verzinst
+ * — analog zur Prämiendynamik in simulateFLV.
+ */
 export function simulateFondsdepot(
   monat: number,
   einmal: number,
@@ -133,11 +137,13 @@ export function simulateFondsdepot(
   ausgabeaufschlagPct: number,
   depotgebuehrPa: number,
   ageRenditePa: number,
-  einmalFixFee = 0
+  einmalFixFee = 0,
+  waPct = 0
 ): number[] {
   const months = jahre * 12
   const r = rrRate(perf)
   const aa = ausgabeaufschlagPct / 100
+  const waRateMonthly = waPct > 0 ? Math.pow(1 + waPct, 1 / 12) - 1 : 0
   let depot = 0
   let cumNetto = 0
   let cumAge = 0
@@ -149,7 +155,8 @@ export function simulateFondsdepot(
   const values = [depot]
   let yearStart = depot
   for (let m = 1; m <= months; m++) {
-    const net = monat * (1 - aa)
+    const monatAngepasst = waRateMonthly > 0 ? monat * Math.pow(1 + waRateMonthly, m - 1) : monat
+    const net = monatAngepasst * (1 - aa)
     depot += net
     cumNetto += net
     depot *= 1 + r

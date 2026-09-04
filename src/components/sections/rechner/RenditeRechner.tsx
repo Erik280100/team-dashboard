@@ -111,7 +111,7 @@ export function RenditeRechner() {
   const { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY } = useMemo(() => {
     const flvMonthly = simulateFLV(provider, monatNum, 0, jahreClamped, perf, waPctEff)
     const fondssparerMonthly = simulateFondssparer(monatNum, jahreClamped, perf, waPctEff)
-    const fondsdepotMonthly = simulateFondsdepot(monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum)
+    const fondsdepotMonthly = simulateFondsdepot(monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff)
     const vvMonthly = simulateVV(monatNum, 0, jahreClamped, perf, ageRenditeNum)
 
     const years: number[] = []
