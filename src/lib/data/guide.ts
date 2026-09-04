@@ -61,6 +61,9 @@ export const GUIDE_SECTIONS: GuideSection[] = [
 
     <h3>Statistik</h3>
     <p>Bei 5 angesprochenen Personen fängt im Schnitt einer an – das entspricht 300 € pro Mitarbeiter.</p>
+
+    <h3>Download</h3>
+    <p><a class="btn btn-primary btn-small" href="docs/Checkliste_Konzepterstellung.pdf" download>Checkliste für Konzepterstellung herunterladen</a></p>
   ` },
   { id: 'credit', title: 'Finova Credit', html: `
     <h2>Nach dem AT – Nächste Schritte</h2>
