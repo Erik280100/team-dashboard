@@ -1,14 +1,17 @@
 // Holding & Immobilien-GmbH-Rechner — siehe src/lib/calc/holdingImmobilien.ts für die
-// Rechenlogik und die dort dokumentierten Vereinfachungen. Bewusst als eigener, schlanker
-// Rechner getrennt vom Rechtsform-Vergleich (EU/GmbH/Zypern) gehalten, statt alles in ein
-// Mega-Tool zu packen.
+// Rechenlogik und die dort dokumentierten Vereinfachungen. Vergleicht drei Wege gleichzeitig:
+// Einzelunternehmer (privat investiert), GmbH-Gewinn ausgeschüttet und privat investiert, und
+// eine Kapitalgesellschaft (Direktkauf oder über eine Holding), die direkt investiert. Bewusst
+// als eigener, schlanker Rechner getrennt vom Rechtsform-Vergleich (EU/GmbH/Zypern) gehalten,
+// statt alles in ein Mega-Tool zu packen.
 import { useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
+import { KREDIT_DEFAULTS, kreditFormatEUR, type KreditSaetze } from "@/lib/calc/kredit"
 import {
-  DEFAULTS_HOLDING_IMMO, berechneHoldingImmobilien, type HoldingImmoEingabe,
+  DEFAULTS_HOLDING_IMMO, GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ, berechneHoldingImmobilien, type HoldingImmoEingabe,
 } from "@/lib/calc/holdingImmobilien"
+import { KOEST_SATZ } from "@/lib/calc/gmbhVsEu"
 
 const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
 
@@ -49,7 +52,6 @@ function n(v: string): number {
 
 export function HoldingImmobilienRechner() {
   const [verfuegbarerGewinnVorSteuer, setVerfuegbarerGewinnVorSteuer] = useState(String(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer))
-  const [kapitalherkunft, setKapitalherkunft] = useState<"gmbh" | "eu">(DEFAULTS_HOLDING_IMMO.kapitalherkunft)
   const [euGrenzsteuersatzPct, setEuGrenzsteuersatzPct] = useState(String(DEFAULTS_HOLDING_IMMO.euGrenzsteuersatzPct))
   const [grenzsteuersatzVermietungPct, setGrenzsteuersatzVermietungPct] = useState(String(DEFAULTS_HOLDING_IMMO.grenzsteuersatzVermietungPct))
 
@@ -79,7 +81,7 @@ export function HoldingImmobilienRechner() {
   const kreditLaufzeitClamped = Math.min(40, Math.max(5, Math.round(n(kreditLaufzeitJahre)) || 25))
 
   const eingabe: HoldingImmoEingabe = useMemo(() => ({
-    verfuegbarerGewinnVorSteuer: n(verfuegbarerGewinnVorSteuer), kapitalherkunft,
+    verfuegbarerGewinnVorSteuer: n(verfuegbarerGewinnVorSteuer),
     euGrenzsteuersatzPct: n(euGrenzsteuersatzPct), grenzsteuersatzVermietungPct: n(grenzsteuersatzVermietungPct),
     kaufpreis: n(kaufpreis), mitMakler, nkMitfinanziert,
     horizontJahre: horizontClamped, kreditLaufzeitJahre: kreditLaufzeitClamped, kreditZinsPct: n(kreditZinsPct),
@@ -89,7 +91,7 @@ export function HoldingImmobilienRechner() {
     ueberHolding, holdingFixkostenJahr: n(holdingFixkostenJahr), holdingGruendungskostenEinmalig: n(holdingGruendungskostenEinmalig),
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
-    verfuegbarerGewinnVorSteuer, kapitalherkunft, euGrenzsteuersatzPct, grenzsteuersatzVermietungPct,
+    verfuegbarerGewinnVorSteuer, euGrenzsteuersatzPct, grenzsteuersatzVermietungPct,
     kaufpreis, mitMakler, nkMitfinanziert, horizontClamped, kreditLaufzeitClamped, kreditZinsPct,
     mieteMonat, indexierungPct, leerstandPct, bewirtschaftungMonat, wertsteigerungPct, verkaufskostenPct, saetze,
     ueberHolding, holdingFixkostenJahr, holdingGruendungskostenEinmalig,
@@ -97,10 +99,11 @@ export function HoldingImmobilienRechner() {
 
   const erg = useMemo(() => berechneHoldingImmobilien(eingabe), [eingabe])
 
+  const holdingLabel = ueberHolding ? "Holding + Immobilien-GmbH" : "GmbH (Direktkauf)"
   const kandidaten = [
-    { label: "Privat", wert: erg.endwertPrivat },
-    { label: `GmbH${ueberHolding ? " über Holding" : " (Direktkauf)"}, bleibt drin`, wert: erg.endwertGmbhThesauriert },
-    { label: `GmbH${ueberHolding ? " über Holding" : " (Direktkauf)"}, danach ausgeschüttet`, wert: erg.endwertGmbhAusgeschuettet },
+    { label: "Einzelunternehmer", wert: erg.endwertEu },
+    { label: "GmbH, ausgeschüttet & privat investiert", wert: erg.endwertGmbhPrivat },
+    { label: holdingLabel, wert: erg.endwertHolding },
   ]
   const bester = kandidaten.reduce((a, b) => (b.wert > a.wert ? b : a))
 
@@ -108,44 +111,29 @@ export function HoldingImmobilienRechner() {
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
         <strong>Holding &amp; Immobilien-GmbH:</strong> Vergleicht den Kauf einer vermieteten
-        Anlegerwohnung privat gegen den Kauf über eine Kapitalgesellschaft (direkt durch die
-        operative GmbH oder über eine Holding mit eigener Immobilien-GmbH zur Haftungstrennung).
-        Kaufnebenkosten, Tilgung und AfA rechnen wie im Finanzierungsrechner — hier kommt nur die
-        Steuerfrage obendrauf: was die Rechtsform beim Kapitaltransfer und bei der laufenden
-        Besteuerung ausmacht.
+        Anlegerwohnung über drei Wege — als Einzelunternehmer, über eine GmbH deren Gewinn erst
+        ausgeschüttet wird, und über eine Kapitalgesellschaft, die direkt investiert (Direktkauf
+        durch die operative GmbH oder über eine Holding mit eigener Immobilien-GmbH zur
+        Haftungstrennung). Kaufnebenkosten, Tilgung und AfA rechnen wie im Finanzierungsrechner —
+        hier kommt nur die Steuerfrage obendrauf: was die Rechtsform beim Kapitaltransfer und bei
+        der laufenden Besteuerung ausmacht.
       </div>
 
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Kapitalherkunft</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Feld label="Verfügbarer Gewinn vor Steuer (€)" value={verfuegbarerGewinnVorSteuer} onChange={setVerfuegbarerGewinnVorSteuer} step={5000} min={0} />
+            <Feld label="Grenzsteuersatz Einzelunternehmer (%)" value={euGrenzsteuersatzPct} onChange={setEuGrenzsteuersatzPct} step={1} suffix="%" min={0} />
             <Feld label="Grenzsteuersatz auf laufende Vermietungseinkünfte, privat (%)" value={grenzsteuersatzVermietungPct} onChange={setGrenzsteuersatzVermietungPct} step={1} suffix="%" min={0} />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setKapitalherkunft("gmbh")}
-              className={cn(
-                "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-                kapitalherkunft === "gmbh" ? "border-transparent bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-              )}>
-              Aus GmbH-Gewinn ausgeschüttet ({kreditFormatPct(erg.transferSatzPrivatPct, 1)})
-            </button>
-            <button type="button" onClick={() => setKapitalherkunft("eu")}
-              className={cn(
-                "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-                kapitalherkunft === "eu" ? "border-transparent bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-              )}>
-              Aus Einzelunternehmer-Gewinn
-            </button>
-          </div>
-          {kapitalherkunft === "eu" && (
-            <Feld label="Grenzsteuersatz Einzelunternehmer beim Kapitaltransfer (%)" value={euGrenzsteuersatzPct} onChange={setEuGrenzsteuersatzPct} step={1} suffix="%" min={0} className="max-w-xs" />
-          )}
           <p className="text-xs text-muted-foreground">
-            Nur diese eine Transferbelastung entscheidet, wie viel vom Gewinn überhaupt als
-            Eigenmittel ankommt — bei GmbH-Ausschüttung 23 % KöSt + 27,5 % KESt kombiniert
-            (≈ {kreditFormatPct(erg.transferSatzPrivatPct, 1)}), bei direktem Kauf durch die
-            Kapitalgesellschaft entfällt diese Ebene komplett (nur 23 % KöSt).
+            Der Einzelunternehmer versteuert seinen Gewinn direkt mit dem Grenzsteuersatz (kein
+            separater Ausschüttungsschritt). Bei der GmbH kommt vor der Privatinvestition die
+            kombinierte Belastung aus 23&nbsp;% KöSt + 27,5&nbsp;% KESt dazu (≈{" "}
+            {(GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ * 100).toFixed(1)}&nbsp;%) — bei einem Direktkauf
+            durch die Kapitalgesellschaft entfällt diese Ebene komplett (nur{" "}
+            {(KOEST_SATZ * 100).toFixed(0)}&nbsp;% KöSt).
           </p>
         </CardContent>
       </Card>
@@ -197,7 +185,7 @@ export function HoldingImmobilienRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Direktkauf vs. Holding-Struktur</h3>
+          <h3 className="text-sm font-semibold">Kapitalgesellschaft: Direktkauf vs. Holding-Struktur</h3>
           <label className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
             <input type="checkbox" checked={ueberHolding} onChange={(e) => setUeberHolding(e.target.checked)} className="mt-0.5 size-4" />
             <span>
@@ -233,46 +221,49 @@ export function HoldingImmobilienRechner() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">Privat gekauft</h3>
-            <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertPrivat)}</div>
+            <h3 className="text-sm font-semibold">Einzelunternehmer mit Immobilie</h3>
+            <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertEu)}</div>
             <div className="flex flex-col gap-1.5 border-t pt-3 text-sm">
-              <ZeilePos label="Eigenmittel nach Steuer" value={kreditFormatEUR(erg.eigenmittelPrivat)} muted />
-              <ZeilePos label="Kreditbetrag" value={kreditFormatEUR(erg.wohnungPrivat.kreditbetrag)} muted />
-              <ZeilePos label="Steuer auf Vermietung, kumuliert" value={"−" + kreditFormatEUR(-erg.wohnungPrivat.steuerEffektKumuliert)} muted />
-              <ZeilePos label={`ImmoESt bei Verkauf (${kreditFormatPct(30, 0)})`} value={"−" + kreditFormatEUR(erg.wohnungPrivat.immoEst)} muted />
-              <ZeilePos label="Endwert nach Verkauf" value={kreditFormatEUR(erg.endwertPrivat)} bold />
+              <ZeilePos label="Eigenmittel nach Grenzsteuersatz" value={kreditFormatEUR(erg.eigenmittelEu)} muted />
+              <ZeilePos label="Kreditbetrag" value={kreditFormatEUR(erg.wohnungEu.kreditbetrag)} muted />
+              <ZeilePos label="Steuer auf Vermietung, kumuliert" value={"−" + kreditFormatEUR(-erg.wohnungEu.steuerEffektKumuliert)} muted />
+              <ZeilePos label="ImmoESt bei Verkauf (30 %)" value={"−" + kreditFormatEUR(erg.wohnungEu.immoEst)} muted />
+              <ZeilePos label="Endwert nach Verkauf" value={kreditFormatEUR(erg.endwertEu)} bold />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">GmbH — bleibt drin</h3>
-            <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertGmbhThesauriert)}</div>
+            <h3 className="text-sm font-semibold">GmbH, ausgeschüttet &amp; privat investiert</h3>
+            <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertGmbhPrivat)}</div>
             <div className="flex flex-col gap-1.5 border-t pt-3 text-sm">
-              <ZeilePos label="Eigenmittel nach KöSt" value={kreditFormatEUR(erg.eigenmittelGmbh)} muted />
-              <ZeilePos label="Kreditbetrag" value={kreditFormatEUR(erg.wohnungGmbh.kreditbetrag)} muted />
-              <ZeilePos label="KöSt auf Vermietung, kumuliert" value={"−" + kreditFormatEUR(-erg.wohnungGmbh.steuerEffektKumuliert)} muted />
-              <ZeilePos label={`KöSt bei Verkauf (${kreditFormatPct(23, 0)})`} value={"−" + kreditFormatEUR(erg.wohnungGmbh.immoEst)} muted />
+              <ZeilePos label="Eigenmittel nach KöSt + KESt" value={kreditFormatEUR(erg.eigenmittelGmbhPrivat)} muted />
+              <ZeilePos label="Kreditbetrag" value={kreditFormatEUR(erg.wohnungGmbhPrivat.kreditbetrag)} muted />
+              <ZeilePos label="Steuer auf Vermietung, kumuliert" value={"−" + kreditFormatEUR(-erg.wohnungGmbhPrivat.steuerEffektKumuliert)} muted />
+              <ZeilePos label="ImmoESt bei Verkauf (30 %)" value={"−" + kreditFormatEUR(erg.wohnungGmbhPrivat.immoEst)} muted />
+              <ZeilePos label="Endwert nach Verkauf" value={kreditFormatEUR(erg.endwertGmbhPrivat)} bold />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex flex-col gap-3">
+            <h3 className="text-sm font-semibold">{holdingLabel}</h3>
+            <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertHolding)}</div>
+            <div className="flex flex-col gap-1.5 border-t pt-3 text-sm">
+              <ZeilePos label="Eigenmittel nach KöSt" value={kreditFormatEUR(erg.eigenmittelHolding)} muted />
+              <ZeilePos label="Kreditbetrag" value={kreditFormatEUR(erg.wohnungHolding.kreditbetrag)} muted />
+              <ZeilePos label="KöSt auf Vermietung, kumuliert" value={"−" + kreditFormatEUR(-erg.wohnungHolding.steuerEffektKumuliert)} muted />
+              <ZeilePos label="KöSt bei Verkauf (23 %)" value={"−" + kreditFormatEUR(erg.wohnungHolding.immoEst)} muted />
               {erg.holdingFixkostenGesamt > 0 && <ZeilePos label="− Holding-Fixkosten gesamt" value={"−" + kreditFormatEUR(erg.holdingFixkostenGesamt)} muted />}
-              <ZeilePos label="Endwert, bleibt im Unternehmen" value={kreditFormatEUR(erg.endwertGmbhThesauriert)} bold />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">GmbH — danach ausgeschüttet</h3>
-            <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertGmbhAusgeschuettet)}</div>
-            <div className="flex flex-col gap-1.5 border-t pt-3 text-sm">
-              <ZeilePos label="Endwert vor Ausschüttung" value={kreditFormatEUR(erg.endwertGmbhThesauriert)} muted />
-              <ZeilePos label="− KESt bei Ausschüttung (27,5 %)" value={"−" + kreditFormatEUR(erg.endwertGmbhThesauriert - erg.endwertGmbhAusgeschuettet)} muted />
-              <ZeilePos label="Netto privat verfügbar" value={kreditFormatEUR(erg.endwertGmbhAusgeschuettet)} bold />
+              <ZeilePos label="Endwert, bleibt im Unternehmen" value={kreditFormatEUR(erg.endwertHolding)} bold />
             </div>
             <p className="text-xs text-muted-foreground">
-              Vereinfachend mit KESt auf den vollen Betrag gerechnet — eine Kapitalrückzahlung bis
-              zur Höhe der eingelegten Eigenmittel wäre real teilweise KESt-frei möglich
-              (Einlagenrückgewähr), das braucht aber echte Beratung im Einzelfall.
+              Bleibt in der Gesellschaft. Wird der Betrag später privat entnommen, kommt nochmal
+              27,5&nbsp;% KESt obendrauf — ökonomisch landest du dann in der Nähe der mittleren
+              Spalte, nur zeitlich verzögert (die laufenden Jahre profitierten trotzdem von der
+              niedrigeren 23&nbsp;% KöSt statt dem persönlichen Grenzsteuersatz).
             </p>
           </CardContent>
         </Card>
@@ -283,8 +274,9 @@ export function HoldingImmobilienRechner() {
           <span className="text-xs text-white/70">Beste Option nach {horizontClamped} Jahren</span>
           <span className="text-2xl font-bold tabular-nums">{bester.label}: {kreditFormatEUR(bester.wert)}</span>
           <span className="mt-1 text-xs text-white/70">
-            Differenz Privat vs. GmbH (bleibt drin): {erg.endwertGmbhThesauriert - erg.endwertPrivat >= 0 ? "+" : ""}
-            {kreditFormatEUR(erg.endwertGmbhThesauriert - erg.endwertPrivat)}
+            Differenz {holdingLabel} vs. Einzelunternehmer: {erg.endwertHolding - erg.endwertEu >= 0 ? "+" : ""}
+            {kreditFormatEUR(erg.endwertHolding - erg.endwertEu)} · vs. GmbH ausgeschüttet: {erg.endwertHolding - erg.endwertGmbhPrivat >= 0 ? "+" : ""}
+            {kreditFormatEUR(erg.endwertHolding - erg.endwertGmbhPrivat)}
           </span>
         </CardContent>
       </Card>
@@ -299,19 +291,19 @@ export function HoldingImmobilienRechner() {
           {detailOffen && (
             <div className="flex flex-col gap-4 text-xs text-muted-foreground">
               <div>
-                <h4 className="mb-2 font-semibold text-foreground">Kaufnebenkosten (beide Wege identisch, Grunderwerbsteuer kennt keine Rechtsform)</h4>
+                <h4 className="mb-2 font-semibold text-foreground">Kaufnebenkosten (bei allen drei Wegen identisch, Grunderwerbsteuer kennt keine Rechtsform)</h4>
                 <div className="flex flex-col gap-1">
-                  {erg.wohnungPrivat.kaufNK.positionen.map((p) => (
+                  {erg.wohnungEu.kaufNK.positionen.map((p) => (
                     <ZeilePos key={p.label} label={`${p.label} (${p.hinweis})`} value={kreditFormatEUR(p.betrag)} />
                   ))}
-                  <ZeilePos label="Summe Kaufnebenkosten" value={kreditFormatEUR(erg.wohnungPrivat.kaufNK.summe)} bold />
+                  <ZeilePos label="Summe Kaufnebenkosten" value={kreditFormatEUR(erg.wohnungEu.kaufNK.summe)} bold />
                 </div>
               </div>
               <div>
                 <h4 className="mb-2 font-semibold text-foreground">AfA</h4>
                 <div className="flex flex-col gap-1">
-                  <ZeilePos label="AfA-Bemessungsgrundlage" value={kreditFormatEUR(erg.wohnungPrivat.afaBasis)} />
-                  <ZeilePos label={`Kumulierte AfA nach ${horizontClamped} Jahren`} value={kreditFormatEUR(erg.wohnungPrivat.afaKumuliert)} />
+                  <ZeilePos label="AfA-Bemessungsgrundlage" value={kreditFormatEUR(erg.wohnungEu.afaBasis)} />
+                  <ZeilePos label={`Kumulierte AfA nach ${horizontClamped} Jahren`} value={kreditFormatEUR(erg.wohnungEu.afaKumuliert)} />
                 </div>
               </div>
               <p>

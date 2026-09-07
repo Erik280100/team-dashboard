@@ -16,8 +16,9 @@ import {
 } from "@/types/dashboard"
 import { NewTodoDialog } from "@/components/sections/erik/NewTodoDialog"
 import { TodoCard } from "@/components/sections/erik/TodoCard"
-import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
+import { EuVsGmbhRechner } from "@/components/sections/rechner/EuVsGmbhRechner"
 import { HoldingImmobilienRechner } from "@/components/sections/rechner/HoldingImmobilienRechner"
+import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
 
 // Kein Verschlüsselungs-Passwort wie bei Karriere.tsx — nur ein Sichtschutz, damit
 // Kolleg:innen am selben Rechner nicht versehentlich hineinsehen. Die Todos selbst
@@ -77,12 +78,13 @@ const BOARD_TABS: { id: BoardFilter; label: string }[] = [
   ...TODO_CATEGORIES.map((c) => ({ id: c as BoardFilter, label: TODO_CATEGORY_LABELS[c] })),
 ]
 
-type ErikView = "todos" | "gmbhRechner" | "holdingImmoRechner"
+type ErikView = "todos" | "euVsGmbh" | "holdingImmoRechner" | "gmbhVsZypern"
 
 const VIEW_TABS: { id: ErikView; label: string }[] = [
   { id: "todos", label: "Todos" },
-  { id: "gmbhRechner", label: "EU vs. GmbH vs. Zypern" },
+  { id: "euVsGmbh", label: "EU vs. GmbH" },
   { id: "holdingImmoRechner", label: "Holding & Immobilien" },
+  { id: "gmbhVsZypern", label: "EU vs. GmbH vs. Zypern" },
 ]
 
 export function ErikDashboard({
@@ -185,8 +187,9 @@ export function ErikDashboard({
         <Button variant="ghost" size="sm" onClick={lock}>Sperren</Button>
       </div>
 
-      {view === "gmbhRechner" && <RechtsformVergleichRechner />}
+      {view === "euVsGmbh" && <EuVsGmbhRechner />}
       {view === "holdingImmoRechner" && <HoldingImmobilienRechner />}
+      {view === "gmbhVsZypern" && <RechtsformVergleichRechner />}
 
       {view === "todos" && (
         <>

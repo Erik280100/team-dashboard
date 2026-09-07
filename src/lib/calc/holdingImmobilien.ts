@@ -1,28 +1,29 @@
 // Holding & Immobilien-GmbH — vergleicht den Kauf einer vermieteten Anlegerwohnung über drei
-// Wege: A) privat (Kapital muss vorher aus einer GmbH ausgeschüttet oder als EU-Gewinn versteuert
-// werden), B) über eine Kapitalgesellschaft, die den Gewinn direkt investiert (keine KESt-
-// Leckage beim Kapitaltransfer). Baut bewusst auf berechneInvestVsWohnung() auf (dieselbe
-// Kaufnebenkosten-/Tilgungs-/AfA-Logik wie im Finanzierungsrechner) statt die Immobilien-
-// Mechanik zu duplizieren — nur die Steuersätze und die Herkunft der Eigenmittel unterscheiden
-// die Wege.
+// gleichzeitig sichtbare Wege: A) Einzelunternehmer, der seinen EU-Gewinn privat investiert,
+// B) eine bestehende GmbH, deren Gewinn erst ausgeschüttet und dann privat investiert wird,
+// C) eine Kapitalgesellschaft (direkt die operative GmbH oder eine Holding mit eigener
+// Immobilien-GmbH), die den Gewinn ohne Umweg über das Privatvermögen direkt investiert. Baut
+// bewusst auf berechneInvestVsWohnung() auf (dieselbe Kaufnebenkosten-/Tilgungs-/AfA-Logik wie
+// im Finanzierungsrechner) statt die Immobilien-Mechanik zu duplizieren — nur die Steuersätze
+// und die Herkunft der Eigenmittel unterscheiden die drei Wege.
 //
 // Kernaussage, die dieses Modul vorführt: eine Holding + eigene Immobilien-GmbH ist steuerlich
-// IDENTISCH zu einem Direktkauf durch die bestehende operative GmbH — beide vermeiden die
-// KESt-Leckage beim Kapitaltransfer. Der Unterschied ist reine Haftungstrennung, erkauft mit den
+// IDENTISCH zu einem Direktkauf durch die bestehende operative GmbH (Weg C) — beide vermeiden
+// die KESt-Leckage beim Kapitaltransfer, die Weg A und B jeweils auf ihre Art treffen. Der
+// Unterschied zwischen Direktkauf und Holding ist reine Haftungstrennung, erkauft mit den
 // zusätzlichen Fixkosten einer weiteren Gesellschaft (eigene Bilanz, eigener Jahresabschluss).
 // Siehe gmbhVsEu.ts für die KöSt/KESt-Sätze und zypernLtd.ts für ein analoges Muster.
 //
 // Steuerliche Behandlung des Vermietungsergebnisses:
-//  - Privat: Einkünfte aus Vermietung und Verpachtung, persönlicher (Grenz-)Steuersatz, beim
-//    Verkauf 30 % ImmoESt (Immobilienertragsteuer, § 30 EStG — seit Abschaffung der
-//    Spekulationsfrist 2012 immer fällig, keine Hauptwohnsitzbefreiung bei Vermietung).
-//  - GmbH: 23 % KöSt auf das laufende Vermietungsergebnis wie auf jedes andere betriebliche
-//    Einkommen, beim Verkauf ebenfalls 23 % KöSt auf den Veräußerungsgewinn (kein Sondersatz wie
-//    privat). Bleibt der Verkaufserlös in der Gesellschaft, ist das die gesamte Steuerlast; wird
-//    er an dich privat ausgeschüttet, kommt vereinfachend nochmal 27,5 % KESt auf den vollen
-//    Betrag obendrauf (Näherung — technisch wäre nur der Bilanzgewinnanteil KESt-pflichtig, eine
-//    Kapitalrückzahlung bis zur Höhe der eingelegten Eigenmittel wäre als Einlagenrückgewähr
-//    KESt-frei möglich; hier bewusst konservativ/einfach gerechnet).
+//  - Privat (Weg A und B): Einkünfte aus Vermietung und Verpachtung, persönlicher
+//    (Grenz-)Steuersatz, beim Verkauf 30 % ImmoESt (Immobilienertragsteuer, § 30 EStG — seit
+//    Abschaffung der Spekulationsfrist 2012 immer fällig, keine Hauptwohnsitzbefreiung bei
+//    Vermietung).
+//  - Kapitalgesellschaft (Weg C): 23 % KöSt auf das laufende Vermietungsergebnis wie auf jedes
+//    andere betriebliche Einkommen, beim Verkauf ebenfalls 23 % KöSt auf den
+//    Veräußerungsgewinn (kein Sondersatz wie privat). Das ist der Endwert, solange das Geld in
+//    der Gesellschaft bleibt — wird es später doch privat entnommen, kommt nochmal 27,5 % KESt
+//    obendrauf (siehe Weg B: ökonomisch fast derselbe Endzustand, nur zeitlich verzögert).
 import {
   KREDIT_DEFAULTS, type KreditSaetze,
 } from "@/lib/calc/kredit"
@@ -36,7 +37,6 @@ export const GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ = 1 - (1 - KOEST_SATZ) * (1 - KEST
 
 export const DEFAULTS_HOLDING_IMMO = {
   verfuegbarerGewinnVorSteuer: 150000,
-  kapitalherkunft: "gmbh" as "gmbh" | "eu",
   euGrenzsteuersatzPct: 48,
   grenzsteuersatzVermietungPct: 48,
 
@@ -60,7 +60,6 @@ export const DEFAULTS_HOLDING_IMMO = {
 
 export interface HoldingImmoEingabe {
   verfuegbarerGewinnVorSteuer: number
-  kapitalherkunft: "gmbh" | "eu"
   euGrenzsteuersatzPct: number
   grenzsteuersatzVermietungPct: number
 
@@ -78,23 +77,25 @@ export interface HoldingImmoEingabe {
   verkaufskostenPct: number
   saetze?: KreditSaetze
 
+  /** true = Kauf über eine Holding mit eigener Immobilien-GmbH (Haftungstrennung, zusätzliche
+   * Fixkosten); false = Direktkauf durch die bestehende operative GmbH (steuerlich identisch,
+   * keine zusätzlichen Fixkosten). */
   ueberHolding: boolean
   holdingFixkostenJahr: number
   holdingGruendungskostenEinmalig: number
 }
 
 export interface HoldingImmoErgebnis {
-  transferSatzPrivatPct: number
-  eigenmittelPrivat: number
-  eigenmittelGmbh: number
-  wohnungPrivat: InvestVsWohnungErgebnis["wohnung"]
-  wohnungGmbh: InvestVsWohnungErgebnis["wohnung"]
-  jahrePrivat: InvestVsWohnungErgebnis["jahre"]
-  jahreGmbh: InvestVsWohnungErgebnis["jahre"]
+  eigenmittelEu: number
+  eigenmittelGmbhPrivat: number
+  eigenmittelHolding: number
+  wohnungEu: InvestVsWohnungErgebnis["wohnung"]
+  wohnungGmbhPrivat: InvestVsWohnungErgebnis["wohnung"]
+  wohnungHolding: InvestVsWohnungErgebnis["wohnung"]
   holdingFixkostenGesamt: number
-  endwertPrivat: number
-  endwertGmbhThesauriert: number
-  endwertGmbhAusgeschuettet: number
+  endwertEu: number
+  endwertGmbhPrivat: number
+  endwertHolding: number
   warnungen: string[]
 }
 
@@ -102,12 +103,16 @@ export function berechneHoldingImmobilien(e: HoldingImmoEingabe): HoldingImmoErg
   const saetze = e.saetze ?? KREDIT_DEFAULTS
   const gewinn = Math.max(0, e.verfuegbarerGewinnVorSteuer)
   const horizontJahre = Math.max(1, Math.round(e.horizontJahre))
+  const grenzsteuersatzVermietungPct = Math.min(100, Math.max(0, e.grenzsteuersatzVermietungPct))
 
-  const transferSatzPrivatPct = e.kapitalherkunft === "gmbh"
-    ? GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ * 100
-    : Math.min(100, Math.max(0, e.euGrenzsteuersatzPct))
-  const eigenmittelPrivat = gewinn * (1 - transferSatzPrivatPct / 100)
-  const eigenmittelGmbh = gewinn * (1 - KOEST_SATZ)
+  // Weg A — Einzelunternehmer: der Gewinn ist schon beim Entstehen sein persönliches
+  // Einkommen (keine separate "Ausschüttung" nötig), einmalig mit dem Grenzsteuersatz belastet.
+  const eigenmittelEu = gewinn * (1 - Math.min(100, Math.max(0, e.euGrenzsteuersatzPct)) / 100)
+  // Weg B — GmbH-Gewinn wird ausgeschüttet, bevor privat investiert wird: kombinierte
+  // KöSt+KESt-Leckage.
+  const eigenmittelGmbhPrivat = gewinn * (1 - GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ)
+  // Weg C — Kapitalgesellschaft investiert direkt, keine Leckage außer der KöSt selbst.
+  const eigenmittelHolding = gewinn * (1 - KOEST_SATZ)
 
   const basisEingabe = {
     entnahmeJahre: 0, depotRenditePa: 0,
@@ -118,12 +123,16 @@ export function berechneHoldingImmobilien(e: HoldingImmoEingabe): HoldingImmoErg
     verkaufskostenPct: e.verkaufskostenPct, saetze,
   }
 
-  const ergPrivat = berechneInvestVsWohnung({
-    ...basisEingabe, eigenmittel: eigenmittelPrivat,
-    grenzsteuersatzPct: Math.min(100, Math.max(0, e.grenzsteuersatzVermietungPct)), immoEstPct: IMMO_EST_PRIVAT_SATZ * 100,
+  const ergEu = berechneInvestVsWohnung({
+    ...basisEingabe, eigenmittel: eigenmittelEu,
+    grenzsteuersatzPct: grenzsteuersatzVermietungPct, immoEstPct: IMMO_EST_PRIVAT_SATZ * 100,
   })
-  const ergGmbh = berechneInvestVsWohnung({
-    ...basisEingabe, eigenmittel: eigenmittelGmbh,
+  const ergGmbhPrivat = berechneInvestVsWohnung({
+    ...basisEingabe, eigenmittel: eigenmittelGmbhPrivat,
+    grenzsteuersatzPct: grenzsteuersatzVermietungPct, immoEstPct: IMMO_EST_PRIVAT_SATZ * 100,
+  })
+  const ergHolding = berechneInvestVsWohnung({
+    ...basisEingabe, eigenmittel: eigenmittelHolding,
     grenzsteuersatzPct: KOEST_SATZ * 100, immoEstPct: KOEST_SATZ * 100,
   })
 
@@ -131,18 +140,16 @@ export function berechneHoldingImmobilien(e: HoldingImmoEingabe): HoldingImmoErg
     ? Math.max(0, e.holdingFixkostenJahr) * horizontJahre + Math.max(0, e.holdingGruendungskostenEinmalig)
     : 0
 
-  const endwertPrivat = ergPrivat.wohnung.endwertNachSteuer
-  const endwertGmbhVorFixkosten = ergGmbh.wohnung.endwertNachSteuer
-  const endwertGmbhThesauriert = endwertGmbhVorFixkosten - holdingFixkostenGesamt
-  const endwertGmbhAusgeschuettet = endwertGmbhThesauriert * (1 - KEST_SATZ)
+  const endwertEu = ergEu.wohnung.endwertNachSteuer
+  const endwertGmbhPrivat = ergGmbhPrivat.wohnung.endwertNachSteuer
+  const endwertHolding = ergHolding.wohnung.endwertNachSteuer - holdingFixkostenGesamt
 
-  const warnungen: string[] = [...ergPrivat.warnungen]
+  const warnungen = Array.from(new Set([...ergEu.warnungen, ...ergGmbhPrivat.warnungen, ...ergHolding.warnungen]))
 
   return {
-    transferSatzPrivatPct, eigenmittelPrivat, eigenmittelGmbh,
-    wohnungPrivat: ergPrivat.wohnung, wohnungGmbh: ergGmbh.wohnung,
-    jahrePrivat: ergPrivat.jahre, jahreGmbh: ergGmbh.jahre,
-    holdingFixkostenGesamt, endwertPrivat, endwertGmbhThesauriert, endwertGmbhAusgeschuettet,
+    eigenmittelEu, eigenmittelGmbhPrivat, eigenmittelHolding,
+    wohnungEu: ergEu.wohnung, wohnungGmbhPrivat: ergGmbhPrivat.wohnung, wohnungHolding: ergHolding.wohnung,
+    holdingFixkostenGesamt, endwertEu, endwertGmbhPrivat, endwertHolding,
     warnungen,
   }
 }

@@ -10,43 +10,38 @@ describe("GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ", () => {
 })
 
 describe("berechneHoldingImmobilien", () => {
-  it("gives the GmbH path more starting equity than the private path when capital comes from a GmbH (no KESt leakage vs. combined KöSt+KESt leakage)", () => {
-    const r = berechneHoldingImmobilien({ ...DEFAULTS_HOLDING_IMMO, kapitalherkunft: "gmbh" })
-    expect(r.eigenmittelGmbh).toBeGreaterThan(r.eigenmittelPrivat)
-    expect(r.eigenmittelGmbh).toBeCloseTo(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer * 0.77, 2)
-    expect(r.eigenmittelPrivat).toBeCloseTo(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer * (1 - GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ), 2)
-  })
-
-  it("uses the EU marginal rate instead of the combined GmbH rate when capital comes from an EU", () => {
-    const r = berechneHoldingImmobilien({ ...DEFAULTS_HOLDING_IMMO, kapitalherkunft: "eu", euGrenzsteuersatzPct: 40 })
-    expect(r.transferSatzPrivatPct).toBeCloseTo(40, 5)
-    expect(r.eigenmittelPrivat).toBeCloseTo(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer * 0.6, 2)
-  })
-
-  it("taxing the eventual GmbH payout again (KESt) makes it worse than keeping the money in the company", () => {
+  it("gives the company path (Weg C) more starting equity than either private path", () => {
     const r = berechneHoldingImmobilien(DEFAULTS_HOLDING_IMMO)
-    expect(r.endwertGmbhAusgeschuettet).toBeLessThan(r.endwertGmbhThesauriert)
-    expect(r.endwertGmbhAusgeschuettet).toBeCloseTo(r.endwertGmbhThesauriert * 0.725, 2)
+    expect(r.eigenmittelHolding).toBeGreaterThan(r.eigenmittelEu)
+    expect(r.eigenmittelHolding).toBeGreaterThan(r.eigenmittelGmbhPrivat)
+    expect(r.eigenmittelHolding).toBeCloseTo(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer * 0.77, 2)
   })
 
-  it("holding overhead costs reduce the GmbH end value but do not touch the private path", () => {
+  it("uses the EU marginal rate for the EU path and the combined GmbH+KESt rate for the GmbH-private path", () => {
+    const r = berechneHoldingImmobilien({ ...DEFAULTS_HOLDING_IMMO, euGrenzsteuersatzPct: 40 })
+    expect(r.eigenmittelEu).toBeCloseTo(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer * 0.6, 2)
+    expect(r.eigenmittelGmbhPrivat).toBeCloseTo(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer * (1 - GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ), 2)
+  })
+
+  it("holding overhead costs reduce the company end value but do not touch either private path", () => {
     const ohneHolding = berechneHoldingImmobilien({ ...DEFAULTS_HOLDING_IMMO, ueberHolding: false })
     const mitHolding = berechneHoldingImmobilien({ ...DEFAULTS_HOLDING_IMMO, ueberHolding: true, holdingFixkostenJahr: 2500, holdingGruendungskostenEinmalig: 3000 })
-    expect(mitHolding.endwertGmbhThesauriert).toBeLessThan(ohneHolding.endwertGmbhThesauriert)
-    expect(mitHolding.endwertPrivat).toBeCloseTo(ohneHolding.endwertPrivat, 2)
+    expect(mitHolding.endwertHolding).toBeLessThan(ohneHolding.endwertHolding)
+    expect(mitHolding.endwertEu).toBeCloseTo(ohneHolding.endwertEu, 2)
+    expect(mitHolding.endwertGmbhPrivat).toBeCloseTo(ohneHolding.endwertGmbhPrivat, 2)
     expect(ohneHolding.holdingFixkostenGesamt).toBe(0)
   })
 
   it("a direct purchase by the operating GmbH and a purchase via holding+subsidiary are tax-identical (holding only adds overhead)", () => {
     const direkt = berechneHoldingImmobilien({ ...DEFAULTS_HOLDING_IMMO, ueberHolding: false })
     const holding = berechneHoldingImmobilien({ ...DEFAULTS_HOLDING_IMMO, ueberHolding: true, holdingFixkostenJahr: 0, holdingGruendungskostenEinmalig: 0 })
-    expect(holding.endwertGmbhThesauriert).toBeCloseTo(direkt.endwertGmbhThesauriert, 6)
+    expect(holding.endwertHolding).toBeCloseTo(direkt.endwertHolding, 6)
   })
 
   it("produces finite, non-NaN results at default values", () => {
     const r = berechneHoldingImmobilien(DEFAULTS_HOLDING_IMMO)
-    expect(Number.isFinite(r.endwertPrivat)).toBe(true)
-    expect(Number.isFinite(r.endwertGmbhThesauriert)).toBe(true)
-    expect(Number.isFinite(r.endwertGmbhAusgeschuettet)).toBe(true)
+    expect(Number.isFinite(r.endwertEu)).toBe(true)
+    expect(Number.isFinite(r.endwertGmbhPrivat)).toBe(true)
+    expect(Number.isFinite(r.endwertHolding)).toBe(true)
   })
 })
