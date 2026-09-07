@@ -16,7 +16,7 @@ import {
 } from "@/types/dashboard"
 import { NewTodoDialog } from "@/components/sections/erik/NewTodoDialog"
 import { TodoCard } from "@/components/sections/erik/TodoCard"
-import { GmbhVsEuRechner } from "@/components/sections/rechner/GmbhVsEuRechner"
+import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
 
 // Kein Verschlüsselungs-Passwort wie bei Karriere.tsx — nur ein Sichtschutz, damit
 // Kolleg:innen am selben Rechner nicht versehentlich hineinsehen. Die Todos selbst
@@ -80,7 +80,7 @@ type ErikView = "todos" | "gmbhRechner"
 
 const VIEW_TABS: { id: ErikView; label: string }[] = [
   { id: "todos", label: "Todos" },
-  { id: "gmbhRechner", label: "GmbH vs. Einzelunternehmer" },
+  { id: "gmbhRechner", label: "EU vs. GmbH vs. Zypern" },
 ]
 
 export function ErikDashboard({
@@ -183,7 +183,7 @@ export function ErikDashboard({
         <Button variant="ghost" size="sm" onClick={lock}>Sperren</Button>
       </div>
 
-      {view === "gmbhRechner" && <GmbhVsEuRechner />}
+      {view === "gmbhRechner" && <RechtsformVergleichRechner />}
 
       {view === "todos" && (
         <>
