@@ -20,6 +20,7 @@ import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSect
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
 import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
 import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
+import { usePlanungDoc } from "@/hooks/usePlanungDoc"
 import { useFinanzierungenDoc } from "@/hooks/useFinanzierungenDoc"
 import { useErikTodosDoc } from "@/hooks/useErikTodosDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
@@ -38,6 +39,7 @@ import { Partner } from "@/components/sections/Partner"
 import { ErikDashboard } from "@/components/sections/ErikDashboard"
 import { StrukturBaum } from "@/components/sections/struktur/StrukturBaum"
 import { Statistik } from "@/components/sections/Statistik"
+import { Planung } from "@/components/sections/Planung"
 import type { MonthKey } from "@/types/archive"
 import type { OrgChartDoc } from "@/types/dashboard"
 
@@ -46,6 +48,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   team: "Mitarbeiter",
   struktur: "Strukturbaum",
   statistik: "Statistik",
+  planung: "Planung",
   rechner: "Rechner",
   karriere: "Karrierepläne",
   guide: "Guide",
@@ -88,6 +91,7 @@ function AppShell() {
   const dashboard = useDashboardDoc()
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
+  const planung = usePlanungDoc()
   const finanzierungen = useFinanzierungenDoc()
   const erikTodos = useErikTodosDoc()
   const archive = useMonthArchive(auth.isEditor)
@@ -319,6 +323,14 @@ function AppShell() {
                     now={view.now}
                   />
                 )
+              )}
+              {section === id && id === "planung" && (
+                <Planung
+                  roster={roster}
+                  orgTree={orgChart.tree}
+                  planung={planung}
+                  isEditor={auth.isEditor}
+                />
               )}
               {section === id && id === "rechner" && (
                 <Rechner

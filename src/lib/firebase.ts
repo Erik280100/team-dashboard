@@ -39,6 +39,12 @@ export let financingsDocRef: DocumentReference | null = null
 // ebenfalls ein neues Dokument in derselben Collection, das die Legacy-Seite nicht kennt.
 export let erikTodosDocRef: DocumentReference | null = null
 
+// Planung (siehe src/hooks/usePlanungDoc.ts) — ebenfalls neue Dokumente in
+// derselben Collection, von der Legacy-Seite unbenutzt. Ein Dokument je
+// ISO-Woche (planWeekDocRef) statt eines Sammeldokuments, damit es bei ~25
+// Personen × 52 Wochen nicht Richtung Firestore-Dokumentlimit (1 MiB) läuft —
+// analog zu snapshotDocRef unten.
+
 if (CLOUD_CONFIGURED) {
   try {
     app = initializeApp(firebaseConfig)
@@ -58,4 +64,14 @@ if (CLOUD_CONFIGURED) {
 /** Dokument-Referenz für einen archivierten Monat (finova/snapshot_<YYYY-MM>). */
 export function snapshotDocRef(month: string): DocumentReference | null {
   return firestore ? doc(firestore, "finova", `snapshot_${month}`) : null
+}
+
+/** Dokument-Referenz für eine Planungswoche (finova/plan_week_<YYYY-Www>). */
+export function planWeekDocRef(week: string): DocumentReference | null {
+  return firestore ? doc(firestore, "finova", `plan_week_${week}`) : null
+}
+
+/** Dokument-Referenz für die Jahresplanung einer Führungskraft (finova/plan_annual_<YYYY>_<managerKey>). */
+export function planAnnualDocRef(year: number, managerKey: string): DocumentReference | null {
+  return firestore ? doc(firestore, "finova", `plan_annual_${year}_${managerKey}`) : null
 }
