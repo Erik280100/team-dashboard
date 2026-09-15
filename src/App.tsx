@@ -330,6 +330,7 @@ function AppShell() {
                   orgTree={orgChart.tree}
                   planung={planung}
                   isEditor={auth.isEditor}
+                  teamGoal={dashboard.teamGoal}
                 />
               )}
               {section === id && id === "rechner" && (

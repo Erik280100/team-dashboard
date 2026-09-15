@@ -3,6 +3,7 @@
 // Finova_Controlling.html (Wochenplan/Monatsplan/Jahresplanung-Panels), dabei
 // "Umsatz €" durch Einheiten ersetzt (siehe types/dashboard.ts PlanTargetKey).
 // Keine React-/Firebase-Abhängigkeit — analog zu lib/calc/statistik.ts.
+import { addDays, defaultPeriod, parseISODate } from "@/lib/calc/format"
 import {
   PLAN_QUARTERS,
   type PlanAnnualDoc,
@@ -90,6 +91,25 @@ export function monthWeekKeys(monthKey: string): string[] {
   const weeks = new Set<string>()
   for (let day = 1; day <= daysInMonth; day++) {
     weeks.add(isoWeekKey(new Date(yr, mo - 1, day)))
+  }
+  return [...weeks].sort()
+}
+
+/**
+ * Alle ISO-Wochenschlüssel, die mindestens einen Tag des eingestellten
+ * Umsatzmonats (periodStart..periodEnd, siehe TeamGoal/archive.ts
+ * monthKeyOf) enthalten — Grundlage für die Wochenfreischaltung in der
+ * Wochenplanung (nur Wochen des laufenden Umsatzmonats sind editierbar,
+ * nicht des Kalendermonats).
+ */
+export function periodWeekKeys(periodStart: string, periodEnd: string): string[] {
+  const def = defaultPeriod()
+  const start = parseISODate(periodStart || def.periodStart)
+  const end = parseISODate(periodEnd || def.periodEnd)
+  if (!(end >= start)) return []
+  const weeks = new Set<string>()
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    weeks.add(isoWeekKey(d))
   }
   return [...weeks].sort()
 }

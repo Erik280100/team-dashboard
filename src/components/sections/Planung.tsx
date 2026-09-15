@@ -5,6 +5,7 @@
 // (sbSubtreeNames) — kein eigener Hierarchie-Code, siehe Team.tsx.
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
+import type { TeamGoal } from "@/lib/calc/format"
 import { SB_LEAD_ROLE_ABBR, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
@@ -25,12 +26,13 @@ const PILL_INACTIVE = "border-border bg-card text-muted-foreground hover:border-
 const PILL_BASE = "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
 
 export function Planung({
-  roster, orgTree, planung, isEditor,
+  roster, orgTree, planung, isEditor, teamGoal,
 }: {
   roster: RosterEntry[]
   orgTree: SbNode
   planung: UsePlanungDocResult
   isEditor: boolean
+  teamGoal: Pick<TeamGoal, "periodStart" | "periodEnd">
 }) {
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
   const [managerFilter, setManagerFilter] = useState<string | null>(null)
@@ -94,6 +96,7 @@ export function Planung({
           managerName={selectedManager}
           planung={planung}
           isEditor={isEditor}
+          teamGoal={teamGoal}
         />
       )}
       {ebene === "monat" && (
