@@ -116,6 +116,7 @@ export function RechtsformVergleichRechner() {
   const [autoAnschaffungswert, setAutoAnschaffungswert] = useState(String(DEFAULTS.autoAnschaffungswert))
   const [autoNutzungsdauerJahre, setAutoNutzungsdauerJahre] = useState(String(DEFAULTS.autoNutzungsdauerJahre))
   const [autoPrivatanteilPct, setAutoPrivatanteilPct] = useState(String(DEFAULTS.autoPrivatanteilPct))
+  const [kfzLaufendeKostenJahr, setKfzLaufendeKostenJahr] = useState(String(DEFAULTS.kfzLaufendeKostenJahr))
   const [sonstigeAfaJahr, setSonstigeAfaJahr] = useState(String(DEFAULTS.sonstigeAfaJahr))
   const [investitionsbedingtenGfbNutzen, setInvestitionsbedingtenGfbNutzen] = useState(DEFAULTS.investitionsbedingtenGfbNutzen)
 
@@ -144,9 +145,9 @@ export function RechtsformVergleichRechner() {
   const gemeinsam: GemeinsameEingabe = useMemo(() => ({
     umsatz: n(umsatz), betriebsausgaben: n(betriebsausgaben),
     autoAnschaffungswert: n(autoAnschaffungswert), autoNutzungsdauerJahre: Math.max(1, n(autoNutzungsdauerJahre)),
-    autoPrivatanteilPct: n(autoPrivatanteilPct), sonstigeAfaJahr: n(sonstigeAfaJahr),
-    investitionsbedingtenGfbNutzen,
-  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, sonstigeAfaJahr, investitionsbedingtenGfbNutzen])
+    autoPrivatanteilPct: n(autoPrivatanteilPct), kfzLaufendeKostenJahr: n(kfzLaufendeKostenJahr),
+    sonstigeAfaJahr: n(sonstigeAfaJahr), investitionsbedingtenGfbNutzen,
+  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, kfzLaufendeKostenJahr, sonstigeAfaJahr, investitionsbedingtenGfbNutzen])
 
   const spezifisch: GmbhSpezifischeEingabe = useMemo(() => ({
     gfGehaltBrutto: n(gfGehaltBrutto), ausschuettungsquotePct: n(ausschuettungsquotePct),
@@ -157,7 +158,10 @@ export function RechtsformVergleichRechner() {
     direktorGehaltBrutto: n(direktorGehaltBrutto), ausschuettungsquotePct: n(zypernAusschuettungsquotePct),
     buchhaltungJahr: n(buchhaltungJahr), auditJahr: n(auditJahr), registeredOfficeJahr: n(registeredOfficeJahr),
     wohnsitzVollstaendigVerlegt, mieteZypernMonat: n(mieteZypernMonat), mieteOesterreichVergleichMonat: n(mieteOesterreichVergleichMonat),
-  }), [direktorGehaltBrutto, zypernAusschuettungsquotePct, buchhaltungJahr, auditJahr, registeredOfficeJahr, wohnsitzVollstaendigVerlegt, mieteZypernMonat, mieteOesterreichVergleichMonat])
+    // Nur relevant, falls der Wohnsitz NICHT verlegt wird (Fallback rechnet wie die GmbH oben)
+    // — derselbe DZ-Satz wie bei der GmbH, es ist dieselbe Landeskammer-Zugehörigkeit.
+    dzSatzPct: n(dzSatzPct),
+  }), [direktorGehaltBrutto, zypernAusschuettungsquotePct, buchhaltungJahr, auditJahr, registeredOfficeJahr, wohnsitzVollstaendigVerlegt, mieteZypernMonat, mieteOesterreichVergleichMonat, dzSatzPct])
 
   const eu = useMemo(() => berechneEu(gemeinsam), [gemeinsam])
   const gmbh = useMemo(() => berechneGmbh(gemeinsam, spezifisch), [gemeinsam, spezifisch])
@@ -179,10 +183,14 @@ export function RechtsformVergleichRechner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gemeinsam, spezifisch, zypernSpezifisch])
 
+  // Vergleicht gesamtNachLatenterSteuer statt gesamtInklThesaurierung: Ein voll versteuertes
+  // Einzelunternehmer-Netto gegen einen thesaurierten GmbH-/Zypern-Betrag zu stellen, auf den
+  // bei Entnahme noch KESt/GESY anfällt, bevorzugt sonst systematisch niedrige Ausschüttungs-
+  // quoten, ohne dass real ein Vorteil besteht (siehe gesamtNachLatenterSteuer in gmbhVsEu.ts).
   const kandidaten = [
     { id: "eu", label: "Einzelunternehmer", wert: eu.nettoEinkommen },
-    { id: "gmbh", label: "GmbH", wert: gmbh.gesamtInklThesaurierung },
-    { id: "zypern", label: "Zypern Ltd", wert: zypern.gesamtInklThesaurierung },
+    { id: "gmbh", label: "GmbH", wert: gmbh.gesamtNachLatenterSteuer },
+    { id: "zypern", label: "Zypern Ltd", wert: zypern.gesamtNachLatenterSteuer },
   ]
   const bester = kandidaten.reduce((a, b) => (b.wert > a.wert ? b : a))
 
@@ -224,12 +232,13 @@ export function RechtsformVergleichRechner() {
                 Jährliche AfA (gedeckelt bei 40.000 € Anschaffungswert)
                 <div className="text-sm text-foreground">{kreditFormatEUR(autoAfaJaehrlich(n(autoAnschaffungswert), n(autoNutzungsdauerJahre)))}/Jahr</div>
               </div>
+              <Feld label="Laufende Kfz-Kosten — Treibstoff, Versicherung, Service (€/Jahr)" value={kfzLaufendeKostenJahr} onChange={setKfzLaufendeKostenJahr} step={100} min={0} className="sm:col-span-2" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Beim Einzelunternehmer wird die AfA um den Privatanteil gekürzt. Bei GmbH und Zypern-Ltd bleibt
-              die AfA voll Betriebsausgabe, dafür erhöht ein privat genutzter Firmenwagen den steuer- und
-              SV-pflichtigen Sachbezug (2&nbsp;% vom Anschaffungswert/Monat, gedeckelt bei 960&nbsp;€/Monat) —
-              vereinfachend mit dem österreichischen Sachbezugswert auch für Zypern gerechnet.
+              Beim Einzelunternehmer werden AfA und laufende Kfz-Kosten um den Privatanteil gekürzt. Bei GmbH
+              und Zypern-Ltd bleiben beide voll Betriebsausgabe, dafür erhöht ein privat genutzter Firmenwagen
+              den steuer- und SV-pflichtigen Sachbezug (2&nbsp;% vom Anschaffungswert/Monat, gedeckelt bei
+              960&nbsp;€/Monat) — vereinfachend mit dem österreichischen Sachbezugswert auch für Zypern gerechnet.
             </p>
           </div>
           <label className="flex items-center gap-1.5 text-sm">
@@ -383,7 +392,9 @@ export function RechtsformVergleichRechner() {
               <ZeilePos label="+ GF-Gehalt netto (nach GSVG, ESt, Sachbezug)" value={kreditFormatEUR(gmbh.gfNettoBar)} muted />
               <ZeilePos label="Bar verfügbar (Gehalt + Ausschüttung)" value={kreditFormatEUR(gmbh.verfuegbaresEinkommen)} bold />
               <ZeilePos label="+ thesauriert im Unternehmen (nach KöSt)" value={kreditFormatEUR(gmbh.thesaurierterGewinn)} muted />
-              <ZeilePos label="Gesamtvermögenszuwachs" value={kreditFormatEUR(gmbh.gesamtInklThesaurierung)} bold />
+              <ZeilePos label="Gesamtvermögenszuwachs (vor latenter KESt)" value={kreditFormatEUR(gmbh.gesamtInklThesaurierung)} muted />
+              <ZeilePos label="− latente KESt auf Thesaurierung (27,5 % bei Entnahme)" value={"−" + kreditFormatEUR(Math.max(0, gmbh.gesamtInklThesaurierung - gmbh.gesamtNachLatenterSteuer))} muted />
+              <ZeilePos label="Vergleichswert ggü. Einzelunternehmer" value={kreditFormatEUR(gmbh.gesamtNachLatenterSteuer)} bold />
             </div>
           </CardContent>
         </Card>
@@ -407,7 +418,13 @@ export function RechtsformVergleichRechner() {
               )}
               <ZeilePos label="Bar verfügbar" value={kreditFormatEUR(zypern.verfuegbaresEinkommen)} bold />
               <ZeilePos label="+ thesauriert im Unternehmen (nach KöSt)" value={kreditFormatEUR(zypern.thesaurierterGewinn)} muted />
-              <ZeilePos label="Gesamtvermögenszuwachs" value={kreditFormatEUR(zypern.gesamtInklThesaurierung)} bold />
+              <ZeilePos label="Gesamtvermögenszuwachs (vor latenter Steuer)" value={kreditFormatEUR(zypern.gesamtInklThesaurierung)} muted />
+              <ZeilePos
+                label={zypern.wohnsitzGueltig ? "− latente GESY auf Thesaurierung (2,65 % bei Entnahme)" : "− latente österr. KESt auf Thesaurierung (27,5 % bei Entnahme)"}
+                value={"−" + kreditFormatEUR(Math.max(0, zypern.gesamtInklThesaurierung - zypern.gesamtNachLatenterSteuer))}
+                muted
+              />
+              <ZeilePos label="Vergleichswert ggü. Einzelunternehmer" value={kreditFormatEUR(zypern.gesamtNachLatenterSteuer)} bold />
             </div>
           </CardContent>
         </Card>
@@ -415,19 +432,19 @@ export function RechtsformVergleichRechner() {
 
       <Card style={{ background: "linear-gradient(135deg,#0B1F2A 0%,#155767 130%)" }} className="text-white">
         <CardContent className="flex flex-col gap-2">
-          <span className="text-xs text-white/70">Beste Option — inkl. thesauriertem Gewinn</span>
+          <span className="text-xs text-white/70">Beste Option — inkl. thesauriertem Gewinn nach latenter Steuer</span>
           <span className="text-2xl font-bold tabular-nums">{bester.label}: {kreditFormatEUR(bester.wert)}</span>
           <div className="mt-1 flex flex-col gap-1 border-t border-white/10 pt-2 text-xs text-white/80">
             <span>
-              GmbH ggü. Einzelunternehmer: {gmbh.gesamtInklThesaurierung - eu.nettoEinkommen >= 0 ? "+" : ""}
-              {kreditFormatEUR(gmbh.gesamtInklThesaurierung - eu.nettoEinkommen)}/Jahr —{" "}
+              GmbH ggü. Einzelunternehmer: {gmbh.gesamtNachLatenterSteuer - eu.nettoEinkommen >= 0 ? "+" : ""}
+              {kreditFormatEUR(gmbh.gesamtNachLatenterSteuer - eu.nettoEinkommen)}/Jahr —{" "}
               {gruendungGmbh.breakEvenJahre !== null
                 ? `Gründung rentiert sich nach rund ${gruendungGmbh.breakEvenJahre.toFixed(1)} Jahren.`
                 : "kein laufender Vorteil, Gründungskosten amortisieren sich nicht."}
             </span>
             <span>
-              Zypern Ltd ggü. Einzelunternehmer: {zypern.gesamtInklThesaurierung - eu.nettoEinkommen >= 0 ? "+" : ""}
-              {kreditFormatEUR(zypern.gesamtInklThesaurierung - eu.nettoEinkommen)}/Jahr —{" "}
+              Zypern Ltd ggü. Einzelunternehmer: {zypern.gesamtNachLatenterSteuer - eu.nettoEinkommen >= 0 ? "+" : ""}
+              {kreditFormatEUR(zypern.gesamtNachLatenterSteuer - eu.nettoEinkommen)}/Jahr —{" "}
               {!zypern.wohnsitzGueltig
                 ? "Wohnsitz nicht verlegt: kein Steuervorteil, siehe Warnung oben."
                 : gruendungZypern.breakEvenJahre !== null
@@ -452,9 +469,9 @@ export function RechtsformVergleichRechner() {
                 datasets: [
                   { label: "Einzelunternehmer, netto", data: schwellenreihe.map((p) => p.nettoEu), borderColor: "#155767", backgroundColor: "rgba(21,87,103,.12)", borderWidth: 2.5, pointRadius: 0, tension: 0.15 },
                   { label: "GmbH, bar verfügbar", data: schwellenreihe.map((p) => p.verfuegbarGmbh), borderColor: "#C97A2B", backgroundColor: "rgba(201,122,43,.12)", borderWidth: 2.5, pointRadius: 0, tension: 0.15 },
-                  { label: "GmbH, inkl. thesauriert", data: schwellenreihe.map((p) => p.gesamtGmbh), borderColor: "#C97A2B", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0.15 },
+                  { label: "GmbH, inkl. thesauriert (nach latenter KESt)", data: schwellenreihe.map((p) => p.gesamtGmbhNachLatenterSteuer), borderColor: "#C97A2B", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0.15 },
                   { label: "Zypern Ltd, bar verfügbar", data: schwellenreihe.map((p) => p.verfuegbarZypern), borderColor: "#7C5CBF", backgroundColor: "rgba(124,92,191,.12)", borderWidth: 2.5, pointRadius: 0, tension: 0.15 },
-                  { label: "Zypern Ltd, inkl. thesauriert", data: schwellenreihe.map((p) => p.gesamtZypern), borderColor: "#7C5CBF", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0.15 },
+                  { label: "Zypern Ltd, inkl. thesauriert (nach latenter Steuer)", data: schwellenreihe.map((p) => p.gesamtZypernNachLatenterSteuer), borderColor: "#7C5CBF", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0.15 },
                 ],
               }}
               options={{
@@ -492,6 +509,7 @@ export function RechtsformVergleichRechner() {
                   <ZeilePos label="Sachbezug Firmenwagen" value={kreditFormatEUR(gmbh.sachbezugAuto)} />
                   <ZeilePos label="SV-/ESt-Bemessungsgrundlage GF (Gehalt + Sachbezug)" value={kreditFormatEUR(gmbh.gfBemessungGesamt)} />
                   <ZeilePos label="GSVG-Beiträge des GF" value={kreditFormatEUR(gmbh.gfGsvgBeitrag)} />
+                  <ZeilePos label="Betriebsausgabenpauschale des GF (6 %, max. 13.200 €)" value={kreditFormatEUR(gmbh.gfBetriebsausgabenpauschale)} />
                   <ZeilePos label="Gewinnfreibetrag des GF" value={kreditFormatEUR(gmbh.gfGewinnfreibetrag)} />
                   <ZeilePos label="Einkommensteuer des GF" value={kreditFormatEUR(gmbh.gfEinkommensteuer)} />
                   <ZeilePos label="DB + DZ + Kommunalsteuer der GmbH auf den GF-Bezug" value={kreditFormatEUR(gmbh.lohnnebenkostenGmbh)} />
@@ -514,13 +532,23 @@ export function RechtsformVergleichRechner() {
                 </div>
               </div>
               <p>
+                <strong className="text-foreground">Warum "Gesamtvermögenszuwachs" und "Vergleichswert" auseinanderfallen:</strong>{" "}
+                Der thesaurierte Teil des GmbH-/Zypern-Gewinns ist noch nicht endbesteuert — bei einer künftigen
+                Entnahme fällt noch KESt (GmbH, 27,5 %) bzw. GESY (Zypern-Ltd, 2,65 %) an. Der "Vergleichswert
+                ggü. Einzelunternehmer" zieht diese latente Steuer vom thesaurierten Anteil ab und ist deshalb die
+                faire Vergleichsgrundlage gegen das voll versteuerte Einzelunternehmer-Netto — unabhängig von der
+                gewählten Ausschüttungsquote. Ohne diese Korrektur würde eine niedrige Ausschüttungsquote einen
+                GmbH-Vorteil vortäuschen, der beim tatsächlichen Verbrauch des Geldes nicht existiert.
+              </p>
+              <p>
                 <strong className="text-foreground">Vereinfachungen GmbH/EU:</strong> Die GSVG-Bemessung
                 verwendet den laufenden Gewinn/Bezug direkt (statt der tatsächlichen 3-jährigen
                 Vorläufigkeits-/Nachbemessungslogik der SVS). Die Mindestkörperschaftsteuer ist eigentlich mit
                 künftigen KöSt-Zahllasten verrechenbar (Vortrag), wird hier aber als sofortige Zahllast
-                gerechnet. Familienbonus, Alleinverdiener-Absetzbetrag und sonstige persönliche Absetzbeträge
-                fehlen. Kammerumlage/WKO-Grundumlage fällt in allen Rechtsformen gleichermaßen an und ist daher
-                nicht differenzierend eingerechnet.
+                gerechnet. Ein Verlust nach Mindest-KöSt wird als negative Thesaurierung durchgereicht, ohne
+                Verlustvortrag ins Folgejahr. Familienbonus, Alleinverdiener-Absetzbetrag und sonstige
+                persönliche Absetzbeträge fehlen. Kammerumlage/WKO-Grundumlage fällt in allen Rechtsformen
+                gleichermaßen an und ist daher nicht differenzierend eingerechnet.
               </p>
               <p>
                 <strong className="text-foreground">Vereinfachungen Zypern:</strong> PKW-Abschreibung und

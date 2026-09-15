@@ -76,6 +76,7 @@ export function EuVsGmbhRechner() {
   const [autoAnschaffungswert, setAutoAnschaffungswert] = useState(String(DEFAULTS.autoAnschaffungswert))
   const [autoNutzungsdauerJahre, setAutoNutzungsdauerJahre] = useState(String(DEFAULTS.autoNutzungsdauerJahre))
   const [autoPrivatanteilPct, setAutoPrivatanteilPct] = useState(String(DEFAULTS.autoPrivatanteilPct))
+  const [kfzLaufendeKostenJahr, setKfzLaufendeKostenJahr] = useState(String(DEFAULTS.kfzLaufendeKostenJahr))
   const [sonstigeAfaJahr, setSonstigeAfaJahr] = useState(String(DEFAULTS.sonstigeAfaJahr))
   const [investitionsbedingtenGfbNutzen, setInvestitionsbedingtenGfbNutzen] = useState(DEFAULTS.investitionsbedingtenGfbNutzen)
 
@@ -92,9 +93,9 @@ export function EuVsGmbhRechner() {
   const gemeinsam: GemeinsameEingabe = useMemo(() => ({
     umsatz: n(umsatz), betriebsausgaben: n(betriebsausgaben),
     autoAnschaffungswert: n(autoAnschaffungswert), autoNutzungsdauerJahre: Math.max(1, n(autoNutzungsdauerJahre)),
-    autoPrivatanteilPct: n(autoPrivatanteilPct), sonstigeAfaJahr: n(sonstigeAfaJahr),
-    investitionsbedingtenGfbNutzen,
-  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, sonstigeAfaJahr, investitionsbedingtenGfbNutzen])
+    autoPrivatanteilPct: n(autoPrivatanteilPct), kfzLaufendeKostenJahr: n(kfzLaufendeKostenJahr),
+    sonstigeAfaJahr: n(sonstigeAfaJahr), investitionsbedingtenGfbNutzen,
+  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, kfzLaufendeKostenJahr, sonstigeAfaJahr, investitionsbedingtenGfbNutzen])
 
   const spezifisch: GmbhSpezifischeEingabe = useMemo(() => ({
     gfGehaltBrutto: n(gfGehaltBrutto), ausschuettungsquotePct: n(ausschuettungsquotePct),
@@ -115,8 +116,11 @@ export function EuVsGmbhRechner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gemeinsam, spezifisch])
 
-  const gmbhBesser = gmbh.gesamtInklThesaurierung >= eu.nettoEinkommen
-  const differenz = gmbh.gesamtInklThesaurierung - eu.nettoEinkommen
+  // gesamtNachLatenterSteuer statt gesamtInklThesaurierung: sonst bevorzugt der Vergleich
+  // systematisch eine niedrige Ausschüttungsquote, ohne dass real ein Vorteil ggü. dem voll
+  // versteuerten Einzelunternehmer-Netto besteht (latente KESt bei Entnahme fehlt sonst).
+  const gmbhBesser = gmbh.gesamtNachLatenterSteuer >= eu.nettoEinkommen
+  const differenz = gmbh.gesamtNachLatenterSteuer - eu.nettoEinkommen
 
   const warnungen: string[] = []
   if (gemeinsam.umsatz > EU_BILANZIERUNGSPFLICHT_UMSATZ) {
@@ -156,11 +160,13 @@ export function EuVsGmbhRechner() {
                 Jährliche AfA (gedeckelt bei 40.000 € Anschaffungswert)
                 <div className="text-sm text-foreground">{kreditFormatEUR(autoAfaJaehrlich(n(autoAnschaffungswert), n(autoNutzungsdauerJahre)))}/Jahr</div>
               </div>
+              <Feld label="Laufende Kfz-Kosten — Treibstoff, Versicherung, Service (€/Jahr)" value={kfzLaufendeKostenJahr} onChange={setKfzLaufendeKostenJahr} step={100} min={0} className="sm:col-span-2" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Beim Einzelunternehmer wird die AfA um den Privatanteil gekürzt. Bei der GmbH bleibt die AfA voll
-              Betriebsausgabe, dafür erhöht ein privat genutzter Firmenwagen den steuer- und SV-pflichtigen
-              Sachbezug des Geschäftsführers (2&nbsp;% vom Anschaffungswert/Monat, gedeckelt bei 960&nbsp;€/Monat).
+              Beim Einzelunternehmer werden AfA und laufende Kfz-Kosten um den Privatanteil gekürzt. Bei der
+              GmbH bleiben beide voll Betriebsausgabe, dafür erhöht ein privat genutzter Firmenwagen den
+              steuer- und SV-pflichtigen Sachbezug des Geschäftsführers (2&nbsp;% vom Anschaffungswert/Monat,
+              gedeckelt bei 960&nbsp;€/Monat).
             </p>
           </div>
           <label className="flex items-center gap-1.5 text-sm">
@@ -238,7 +244,9 @@ export function EuVsGmbhRechner() {
               <ZeilePos label="+ GF-Gehalt netto (nach GSVG, ESt, Sachbezug)" value={kreditFormatEUR(gmbh.gfNettoBar)} muted />
               <ZeilePos label="Bar verfügbar (Gehalt + Ausschüttung)" value={kreditFormatEUR(gmbh.verfuegbaresEinkommen)} bold />
               <ZeilePos label="+ thesauriert im Unternehmen (nach KöSt)" value={kreditFormatEUR(gmbh.thesaurierterGewinn)} muted />
-              <ZeilePos label="Gesamtvermögenszuwachs" value={kreditFormatEUR(gmbh.gesamtInklThesaurierung)} bold />
+              <ZeilePos label="Gesamtvermögenszuwachs (vor latenter KESt)" value={kreditFormatEUR(gmbh.gesamtInklThesaurierung)} muted />
+              <ZeilePos label="− latente KESt auf Thesaurierung (27,5 % bei Entnahme)" value={"−" + kreditFormatEUR(Math.max(0, gmbh.gesamtInklThesaurierung - gmbh.gesamtNachLatenterSteuer))} muted />
+              <ZeilePos label="Vergleichswert ggü. Einzelunternehmer" value={kreditFormatEUR(gmbh.gesamtNachLatenterSteuer)} bold />
             </div>
           </CardContent>
         </Card>
@@ -274,7 +282,7 @@ export function EuVsGmbhRechner() {
                 datasets: [
                   { label: "Einzelunternehmer, netto", data: schwellenreihe.map((p) => p.nettoEu), borderColor: "#155767", backgroundColor: "rgba(21,87,103,.12)", borderWidth: 2.5, pointRadius: 0, tension: 0.15 },
                   { label: "GmbH, bar verfügbar", data: schwellenreihe.map((p) => p.verfuegbarGmbh), borderColor: "#C97A2B", backgroundColor: "rgba(201,122,43,.12)", borderWidth: 2.5, pointRadius: 0, tension: 0.15 },
-                  { label: "GmbH, inkl. thesauriert", data: schwellenreihe.map((p) => p.gesamtGmbh), borderColor: "#C97A2B", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0.15 },
+                  { label: "GmbH, inkl. thesauriert (nach latenter KESt)", data: schwellenreihe.map((p) => p.gesamtGmbhNachLatenterSteuer), borderColor: "#C97A2B", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0.15 },
                 ],
               }}
               options={{
@@ -312,20 +320,30 @@ export function EuVsGmbhRechner() {
                   <ZeilePos label="Sachbezug Firmenwagen" value={kreditFormatEUR(gmbh.sachbezugAuto)} />
                   <ZeilePos label="SV-/ESt-Bemessungsgrundlage GF (Gehalt + Sachbezug)" value={kreditFormatEUR(gmbh.gfBemessungGesamt)} />
                   <ZeilePos label="GSVG-Beiträge des GF" value={kreditFormatEUR(gmbh.gfGsvgBeitrag)} />
+                  <ZeilePos label="Betriebsausgabenpauschale des GF (6 %, max. 13.200 €)" value={kreditFormatEUR(gmbh.gfBetriebsausgabenpauschale)} />
                   <ZeilePos label="Gewinnfreibetrag des GF" value={kreditFormatEUR(gmbh.gfGewinnfreibetrag)} />
                   <ZeilePos label="Einkommensteuer des GF" value={kreditFormatEUR(gmbh.gfEinkommensteuer)} />
                   <ZeilePos label="DB + DZ + Kommunalsteuer der GmbH auf den GF-Bezug" value={kreditFormatEUR(gmbh.lohnnebenkostenGmbh)} />
                 </div>
               </div>
               <p>
+                <strong className="text-foreground">Warum "Gesamtvermögenszuwachs" und "Vergleichswert" auseinanderfallen:</strong>{" "}
+                Der thesaurierte Teil des GmbH-Gewinns ist noch nicht endbesteuert — bei einer künftigen Entnahme
+                fällt noch 27,5&nbsp;% KESt an. Der "Vergleichswert ggü. Einzelunternehmer" zieht diese latente
+                Steuer vom thesaurierten Anteil ab und ist deshalb die faire Vergleichsgrundlage, unabhängig von
+                der gewählten Ausschüttungsquote — ohne diese Korrektur würde eine niedrige Ausschüttungsquote
+                einen GmbH-Vorteil vortäuschen, der beim tatsächlichen Verbrauch des Geldes nicht existiert.
+              </p>
+              <p>
                 Vereinfachungen: Die GSVG-Bemessung verwendet den laufenden Gewinn/Bezug direkt (statt der
                 tatsächlichen 3-jährigen Vorläufigkeits-/Nachbemessungslogik der SVS) — für die Dauerbetrachtung
                 führt das zum selben Ergebnis. Die Mindestkörperschaftsteuer ist eigentlich mit künftigen
-                KöSt-Zahllasten verrechenbar (Vortrag), wird hier aber als sofortige Zahllast gerechnet. Der
-                investitionsbedingte Gewinnfreibetrag wird nur bei aktivierter Checkbox angenommen. Familienbonus,
-                Alleinverdiener-Absetzbetrag und sonstige persönliche Absetzbeträge sind nicht enthalten.
-                Kammerumlage/WKO-Grundumlage fällt in beiden Rechtsformen gleichermaßen an und ist daher nicht
-                differenzierend eingerechnet.
+                KöSt-Zahllasten verrechenbar (Vortrag), wird hier aber als sofortige Zahllast gerechnet, ein
+                Verlust nach Mindest-KöSt wird als negative Thesaurierung durchgereicht, ohne Verlustvortrag ins
+                Folgejahr. Der investitionsbedingte Gewinnfreibetrag wird nur bei aktivierter Checkbox angenommen.
+                Familienbonus, Alleinverdiener-Absetzbetrag und sonstige persönliche Absetzbeträge sind nicht
+                enthalten. Kammerumlage/WKO-Grundumlage fällt in beiden Rechtsformen gleichermaßen an und ist
+                daher nicht differenzierend eingerechnet.
               </p>
             </div>
           )}

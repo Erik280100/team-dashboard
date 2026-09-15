@@ -48,6 +48,33 @@ describe("berechneZypernLtd — mit echter Wohnsitzverlegung", () => {
     expect(teuer.verfuegbaresEinkommen).toBeLessThan(guenstig.verfuegbaresEinkommen)
     expect(teuer.verfuegbaresEinkommen + teuer.wohnkostenDeltaJahr).toBeCloseTo(guenstig.verfuegbaresEinkommen + guenstig.wohnkostenDeltaJahr, 2)
   })
+
+  it("does not let a loss after KöSt vanish — it flows through as negative thesaurierter Gewinn", () => {
+    const r = berechneZypernLtd(
+      { ...DEFAULTS, umsatz: 20000, betriebsausgaben: 5000, sonstigeAfaJahr: 0, autoAnschaffungswert: 0 },
+      { ...spezifisch, direktorGehaltBrutto: 60000, buchhaltungJahr: 0, auditJahr: 0, registeredOfficeJahr: 0 }
+    )
+    expect(r.betrieblichesErgebnisVorKoest).toBeLessThan(0)
+    expect(r.koeSt).toBe(0)
+    expect(r.gewinnNachKoest).toBeLessThan(0)
+    expect(r.thesaurierterGewinn).toBeLessThan(0)
+  })
+
+  it("caps GESY as one combined 180.000-€ annual base across salary and dividend, not separately per type", () => {
+    // Gehalt allein schon über dem Deckel — für die Dividende darf dann keine GESY mehr anfallen.
+    const r = berechneZypernLtd(
+      { ...DEFAULTS, umsatz: 400000, betriebsausgaben: 0, sonstigeAfaJahr: 0, autoAnschaffungswert: 0 },
+      { ...spezifisch, direktorGehaltBrutto: 200000, ausschuettungsquotePct: 100, buchhaltungJahr: 0, auditJahr: 0, registeredOfficeJahr: 0 }
+    )
+    expect(r.ausschuettungBrutto).toBeGreaterThan(0)
+    expect(r.gesyAufDividende).toBe(0)
+  })
+
+  it("gesamtNachLatenterSteuer is independent of the Ausschüttungsquote", () => {
+    const voll = berechneZypernLtd(DEFAULTS, { ...spezifisch, ausschuettungsquotePct: 100 })
+    const keine = berechneZypernLtd(DEFAULTS, { ...spezifisch, ausschuettungsquotePct: 0 })
+    expect(keine.gesamtNachLatenterSteuer).toBeCloseTo(voll.gesamtNachLatenterSteuer, 0)
+  })
 })
 
 describe("berechneZypernLtd — ohne Wohnsitzverlegung (Ort der Geschäftsleitung Österreich)", () => {
@@ -92,6 +119,8 @@ describe("berechneDreiWegeSchwellenreihe", () => {
     for (const p of punkte) {
       expect(Number.isFinite(p.verfuegbarZypern)).toBe(true)
       expect(Number.isFinite(p.gesamtZypern)).toBe(true)
+      expect(Number.isFinite(p.gesamtGmbhNachLatenterSteuer)).toBe(true)
+      expect(Number.isFinite(p.gesamtZypernNachLatenterSteuer)).toBe(true)
     }
   })
 })

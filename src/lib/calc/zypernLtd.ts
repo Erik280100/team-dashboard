@@ -22,8 +22,10 @@
 //    Steuerjahren als zypriotische:r Steuerresident:in — ab der Reform 2026 gegen Pauschale
 //    von 250.000 €/Fünf-Jahres-Zeitraum auf bis zu 27 Jahre verlängerbar)
 //  - GESY/GHS (nationales Gesundheitssystem): 2,65 % Arbeitnehmer, 2,90 % Arbeitgeber, 4,0 %
-//    Selbständige, 2,65 % auf Dividenden/Zinsen/Miete (auch für Non-Doms!) — gedeckelt bei
-//    180.000 € Jahreseinkommen je Einkunftsart
+//    Selbständige, 2,65 % auf Dividenden/Zinsen/Miete (auch für Non-Doms!) — der Deckel von
+//    180.000 € gilt als GESAMTER Jahresbetrag über alle gedeckelten Einkunftsarten derselben
+//    Person, nicht getrennt je Art (ältere Quellen widersprechen sich hier; siehe Fix unten:
+//    Gehalt zieht zuerst vom Deckel ab, für die Dividende bleibt nur der Rest)
 //  - Sozialversicherung: 8,8 % Arbeitnehmer + 8,8 % Arbeitgeber, gedeckelt bei 5.742 €/Monat
 //    (68.904 €/Jahr)
 //  - ESt-Tarif 2026: 0 % bis 22.000 €, 20/25/30/35 % in weiteren Stufen bis 35 % ab 72.000 €
@@ -85,6 +87,10 @@ export const DEFAULTS_ZYPERN = {
   mieteZypernMonat: 1200,
   mieteOesterreichVergleichMonat: 900,
   wohnsitzVollstaendigVerlegt: true,
+  // Nur relevant für den Fallback-Zweig ohne echte Wohnsitzverlegung (rechnet wie eine
+  // österreichische GmbH, siehe berechneZypernOhneWohnsitzverlegung) — vorher hier hartkodiert
+  // auf DZ_SATZ_DEFAULT_PCT statt den vom Nutzer eingestellten GmbH-Wert zu übernehmen.
+  dzSatzPct: DZ_SATZ_DEFAULT_PCT,
 }
 
 function clampPct(pct: number): number {
@@ -103,6 +109,8 @@ export interface ZypernSpezifischeEingabe {
   wohnsitzVollstaendigVerlegt: boolean
   mieteZypernMonat: number
   mieteOesterreichVergleichMonat: number
+  /** Nur für den Fallback-Zweig ohne echte Wohnsitzverlegung relevant (siehe DEFAULTS_ZYPERN). */
+  dzSatzPct: number
 }
 
 export interface ZypernErgebnis {
@@ -129,12 +137,18 @@ export interface ZypernErgebnis {
   wohnkostenDeltaJahr: number
   verfuegbaresEinkommen: number
   gesamtInklThesaurierung: number
+  /** Wie gesamtInklThesaurierung, aber der thesaurierte Gewinn wird um die GESY gekürzt, die
+   * bei einer künftigen Ausschüttung noch anfällt (2,65 % auf den positiven Anteil, SDC bleibt
+   * bei 0 % für Non-Doms) — die richtige, ausschüttungsquoten-unabhängige Vergleichsgrundlage.
+   * Siehe gesamtNachLatenterSteuer in GmbhErgebnis (gmbhVsEu.ts) für dieselbe Korrektur. */
+  gesamtNachLatenterSteuer: number
 }
 
 /** Tatsächliche zypriotische Besteuerung — nur gültig bei echter, vollständiger Wohnsitzverlegung. */
 function berechneZypernMitWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpezifischeEingabe): ZypernErgebnis {
   const afaAutoVoll = autoAfaJaehrlich(e.autoAnschaffungswert, e.autoNutzungsdauerJahre)
   const afaGesamt = afaAutoVoll + Math.max(0, e.sonstigeAfaJahr)
+  const kfzLaufendeKosten = Math.max(0, e.kfzLaufendeKostenJahr)
   const sachbezugAuto = sachbezugAutoJaehrlich(e.autoAnschaffungswert, e.autoPrivatanteilPct)
 
   const direktorGehaltBrutto = Math.max(0, s.direktorGehaltBrutto)
@@ -150,13 +164,20 @@ function berechneZypernMitWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpezi
 
   const zypernFixkosten = Math.max(0, s.buchhaltungJahr) + Math.max(0, s.auditJahr) + Math.max(0, s.registeredOfficeJahr)
   const betrieblichesErgebnisVorKoest =
-    e.umsatz - e.betriebsausgaben - afaGesamt - direktorGehaltBrutto - siArbeitgeber - gesyArbeitgeber - zypernFixkosten
+    e.umsatz - e.betriebsausgaben - afaGesamt - kfzLaufendeKosten - direktorGehaltBrutto - siArbeitgeber - gesyArbeitgeber - zypernFixkosten
   const koeSt = Math.max(0, betrieblichesErgebnisVorKoest) * CY_KOEST_SATZ
-  const gewinnNachKoest = Math.max(0, betrieblichesErgebnisVorKoest - koeSt)
+  // Kein Floor bei 0 — ein Verlust nach KöSt darf nicht verschwinden, siehe dieselbe Korrektur
+  // in berechneGmbh (gmbhVsEu.ts, "Verlustfall").
+  const gewinnNachKoest = betrieblichesErgebnisVorKoest - koeSt
 
-  const ausschuettungBrutto = gewinnNachKoest * clampPct(s.ausschuettungsquotePct)
+  const ausschuettungBrutto = Math.max(0, gewinnNachKoest) * clampPct(s.ausschuettungsquotePct)
   const thesaurierterGewinn = gewinnNachKoest - ausschuettungBrutto
-  const gesyGrundlageDividende = Math.min(ausschuettungBrutto, CY_GESY_DECKEL_JAHR)
+  // Der 180.000-€-GESY-Deckel gilt als GESAMTER Jahresbetrag über Gehalt und Dividende
+  // zusammen, nicht getrennt je Einkunftsart — das Gehalt zieht zuerst vom Deckel ab, für die
+  // Dividende bleibt nur der Rest (bei Eriks üblichen Größenordnungen ohne Auswirkung, wird
+  // aber ab insgesamt >180.000 € relevant).
+  const gesyRestDeckel = Math.max(0, CY_GESY_DECKEL_JAHR - direktorBemessungGesamt)
+  const gesyGrundlageDividende = Math.min(ausschuettungBrutto, gesyRestDeckel)
   // SDC = 0 % für Non-Doms (die ersten 17 Steuerjahre) — GESY fällt aber auch für Non-Doms an.
   const gesyAufDividende = gesyGrundlageDividende * CY_GESY_SATZ_DIVIDENDE
   const ausschuettungNetto = ausschuettungBrutto - gesyAufDividende
@@ -170,12 +191,15 @@ function berechneZypernMitWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpezi
 
   const verfuegbaresEinkommen = direktorNettoBar + ausschuettungNetto - wohnkostenDeltaJahr
   const gesamtInklThesaurierung = verfuegbaresEinkommen + thesaurierterGewinn
+  const thesaurierterGewinnNachLatenterGesy = thesaurierterGewinn > 0 ? thesaurierterGewinn * (1 - CY_GESY_SATZ_DIVIDENDE) : thesaurierterGewinn
+  const gesamtNachLatenterSteuer = verfuegbaresEinkommen + thesaurierterGewinnNachLatenterGesy
 
   return {
     wohnsitzGueltig: true, sachbezugAuto, direktorBemessungGesamt, siArbeitnehmer, siArbeitgeber,
     gesyArbeitnehmer, gesyArbeitgeber, betrieblichesErgebnisVorKoest, koeSt, gewinnNachKoest,
     ausschuettungBrutto, gesyAufDividende, ausschuettungNetto, thesaurierterGewinn,
-    direktorEinkommensteuer, direktorNettoBar, wohnkostenDeltaJahr, verfuegbaresEinkommen, gesamtInklThesaurierung,
+    direktorEinkommensteuer, direktorNettoBar, wohnkostenDeltaJahr, verfuegbaresEinkommen,
+    gesamtInklThesaurierung, gesamtNachLatenterSteuer,
   }
 }
 
@@ -189,7 +213,7 @@ function berechneZypernOhneWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpez
   const zypernFixkosten = Math.max(0, s.buchhaltungJahr) + Math.max(0, s.auditJahr) + Math.max(0, s.registeredOfficeJahr)
   const gmbh = berechneGmbh(e, {
     gfGehaltBrutto: s.direktorGehaltBrutto, ausschuettungsquotePct: s.ausschuettungsquotePct,
-    dzSatzPct: DZ_SATZ_DEFAULT_PCT, stbMehrkostenJahr: zypernFixkosten, offenlegungJahr: 0,
+    dzSatzPct: s.dzSatzPct, stbMehrkostenJahr: zypernFixkosten, offenlegungJahr: 0,
   })
 
   return {
@@ -212,6 +236,7 @@ function berechneZypernOhneWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpez
     wohnkostenDeltaJahr: 0,
     verfuegbaresEinkommen: gmbh.verfuegbaresEinkommen,
     gesamtInklThesaurierung: gmbh.gesamtInklThesaurierung,
+    gesamtNachLatenterSteuer: gmbh.gesamtNachLatenterSteuer,
   }
 }
 
@@ -225,11 +250,13 @@ export interface ZypernGruendungsVergleich {
 }
 
 /** Wie viele Jahre dauert es, bis der laufende Vorteil ggü. dem Einzelunternehmer die
- * einmaligen Kosten (Gründung + Umzug) aufwiegt? */
+ * einmaligen Kosten (Gründung + Umzug) aufwiegt? Verwendet gesamtNachLatenterSteuer statt
+ * gesamtInklThesaurierung — siehe berechneGruendungsVergleich in gmbhVsEu.ts für dieselbe
+ * Begründung (Ausschüttungsquote darf das Ergebnis nicht verzerren). */
 export function berechneZypernGruendungsVergleich(
   euErgebnis: EuErgebnis, zypernErgebnis: ZypernErgebnis, einmalkosten: number
 ): ZypernGruendungsVergleich {
-  const jaehrlicherVorteilVsEu = zypernErgebnis.gesamtInklThesaurierung - euErgebnis.nettoEinkommen
+  const jaehrlicherVorteilVsEu = zypernErgebnis.gesamtNachLatenterSteuer - euErgebnis.nettoEinkommen
   const breakEvenJahre = jaehrlicherVorteilVsEu > 0 ? einmalkosten / jaehrlicherVorteilVsEu : null
   return { jaehrlicherVorteilVsEu, breakEvenJahre }
 }
@@ -239,8 +266,10 @@ export interface DreiWegePunkt {
   nettoEu: number
   verfuegbarGmbh: number
   gesamtGmbh: number
+  gesamtGmbhNachLatenterSteuer: number
   verfuegbarZypern: number
   gesamtZypern: number
+  gesamtZypernNachLatenterSteuer: number
 }
 
 /**
@@ -258,8 +287,10 @@ export function berechneDreiWegeSchwellenreihe(
 ): DreiWegePunkt[] {
   const punkte: DreiWegePunkt[] = []
   const afaAutoVoll = autoAfaJaehrlich(gemeinsam.autoAnschaffungswert, gemeinsam.autoNutzungsdauerJahre)
-  const afaGesamtEu = afaAutoVoll * (1 - clampPct(gemeinsam.autoPrivatanteilPct)) + Math.max(0, gemeinsam.sonstigeAfaJahr)
-  const afaGesamtVoll = afaAutoVoll + Math.max(0, gemeinsam.sonstigeAfaJahr)
+  const kfzVoll = Math.max(0, gemeinsam.kfzLaufendeKostenJahr)
+  const privatAnteil = clampPct(gemeinsam.autoPrivatanteilPct)
+  const afaGesamtEu = afaAutoVoll * (1 - privatAnteil) + Math.max(0, gemeinsam.sonstigeAfaJahr) + kfzVoll * (1 - privatAnteil)
+  const afaGesamtVoll = afaAutoVoll + Math.max(0, gemeinsam.sonstigeAfaJahr) + kfzVoll
 
   for (let g = vonGewinn; g <= bisGewinn; g += schrittweite) {
     const eEu: GemeinsameEingabe = { ...gemeinsam, umsatz: g + gemeinsam.betriebsausgaben + afaGesamtEu }
@@ -270,7 +301,9 @@ export function berechneDreiWegeSchwellenreihe(
     punkte.push({
       operativerGewinn: g, nettoEu: eu.nettoEinkommen,
       verfuegbarGmbh: gmbh.verfuegbaresEinkommen, gesamtGmbh: gmbh.gesamtInklThesaurierung,
+      gesamtGmbhNachLatenterSteuer: gmbh.gesamtNachLatenterSteuer,
       verfuegbarZypern: zypern.verfuegbaresEinkommen, gesamtZypern: zypern.gesamtInklThesaurierung,
+      gesamtZypernNachLatenterSteuer: zypern.gesamtNachLatenterSteuer,
     })
   }
   return punkte

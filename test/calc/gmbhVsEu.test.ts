@@ -94,6 +94,46 @@ describe("berechneGmbh", () => {
     expect(mit.sachbezugAuto).toBeGreaterThan(0)
     expect(mit.gfBemessungGesamt).toBeGreaterThan(ohne.gfBemessungGesamt)
   })
+
+  it("does not let a loss after minimum KöSt vanish — it flows through as negative thesaurierter Gewinn", () => {
+    const r = berechneGmbh(
+      { ...DEFAULTS, umsatz: 20000, betriebsausgaben: 5000, sonstigeAfaJahr: 0, autoAnschaffungswert: 0 },
+      { ...DEFAULTS, gfGehaltBrutto: 60000, stbMehrkostenJahr: 0, offenlegungJahr: 0 }
+    )
+    expect(r.betrieblichesErgebnisVorKoest).toBeLessThan(0)
+    expect(r.koeSt).toBe(MINDEST_KOEST_JAHR)
+    expect(r.gewinnNachKoest).toBeLessThan(0)
+    expect(r.thesaurierterGewinn).toBeLessThan(0)
+    expect(r.gesamtInklThesaurierung).toBeCloseTo(r.verfuegbaresEinkommen + r.gewinnNachKoest, 2)
+  })
+
+  it("grants the GF a 6% Basispauschale (§17 EStG), capped at 13.200 €", () => {
+    const ohneAuto = { ...DEFAULTS, autoAnschaffungswert: 0 } // kein Sachbezug, der die Bemessung verzerrt
+    const klein = berechneGmbh(ohneAuto, { ...DEFAULTS, gfGehaltBrutto: 20000 })
+    expect(klein.gfBetriebsausgabenpauschale).toBeCloseTo(20000 * 0.06, 2)
+    const gross = berechneGmbh(ohneAuto, { ...DEFAULTS, gfGehaltBrutto: 500000 })
+    expect(gross.gfBetriebsausgabenpauschale).toBeCloseTo(13200, 2)
+  })
+
+  it("subtracts the full running Kfz cost as a business expense (no private-use reduction, unlike EU)", () => {
+    const ohne = berechneGmbh({ ...DEFAULTS, kfzLaufendeKostenJahr: 0 }, DEFAULTS)
+    const mit = berechneGmbh({ ...DEFAULTS, kfzLaufendeKostenJahr: 3000 }, DEFAULTS)
+    expect(ohne.betrieblichesErgebnisVorKoest - mit.betrieblichesErgebnisVorKoest).toBeCloseTo(3000, 2)
+  })
+
+  it("does not apply a hard DB+DZ cliff at the Kommunalsteuer-Freigrenze (only Kommunalsteuer itself has one)", () => {
+    // Kein Auto (sonst verzerrt der Sachbezug die Bemessungsgrundlage), Gehalt knapp unter und
+    // knapp über der 1.460-€/Monat-Freigrenze (17.520 €/Jahr).
+    const ohneAuto = { ...DEFAULTS, autoAnschaffungswert: 0 }
+    const knappDrunter = berechneGmbh(ohneAuto, { ...DEFAULTS, gfGehaltBrutto: 17000 })
+    const knappDrueber = berechneGmbh(ohneAuto, { ...DEFAULTS, gfGehaltBrutto: 18000 })
+    const dbDzSatz = 0.037 + DEFAULTS.dzSatzPct / 100
+    const erwarteteDbDzDifferenz = (18000 - 17000) * dbDzSatz
+    // Lohnnebenkosten-Differenz = DB+DZ-Anteil (immer da) + Kommunalsteuer-Sprung (Freigrenze).
+    expect(knappDrueber.lohnnebenkostenGmbh - knappDrunter.lohnnebenkostenGmbh).toBeGreaterThan(erwarteteDbDzDifferenz)
+    // Aber unterhalb der Freigrenze fällt trotzdem schon DB+DZ an (kein Alles-oder-nichts).
+    expect(knappDrunter.lohnnebenkostenGmbh).toBeCloseTo(17000 * dbDzSatz, 0)
+  })
 })
 
 describe("berechneSchwellenreihe", () => {
@@ -104,6 +144,7 @@ describe("berechneSchwellenreihe", () => {
       expect(Number.isFinite(p.nettoEu)).toBe(true)
       expect(Number.isFinite(p.verfuegbarGmbh)).toBe(true)
       expect(Number.isFinite(p.gesamtGmbh)).toBe(true)
+      expect(Number.isFinite(p.gesamtGmbhNachLatenterSteuer)).toBe(true)
     }
   })
 
@@ -112,6 +153,36 @@ describe("berechneSchwellenreihe", () => {
     for (let i = 1; i < punkte.length; i++) {
       expect(punkte[i].nettoEu).toBeGreaterThanOrEqual(punkte[i - 1].nettoEu)
     }
+  })
+})
+
+describe("Umsatz 150.000 / GF-Gehalt 60.000 — die Zahlen, die den Vergleichs-Bug ausgelöst haben", () => {
+  // Erik: "bei 150.000 Umsatz und Geschäftsführergehalt 60.000 kommt zwischen EU und GmbH
+  // fast kein Unterschied raus, kann das sein?" — Antwort: die Vergleichsgrösse war falsch
+  // (gesamtInklThesaurierung statt gesamtNachLatenterSteuer, siehe PR). Diese Tests fixieren
+  // das korrigierte Verhalten als Golden Case.
+  const eingabe = { ...DEFAULTS, umsatz: 150000 }
+  const spezifisch = { ...DEFAULTS, gfGehaltBrutto: 60000 }
+
+  it("gesamtNachLatenterSteuer is independent of the Ausschüttungsquote (the bug this fixes)", () => {
+    const voll = berechneGmbh(eingabe, { ...spezifisch, ausschuettungsquotePct: 100 })
+    const halb = berechneGmbh(eingabe, { ...spezifisch, ausschuettungsquotePct: 50 })
+    const keine = berechneGmbh(eingabe, { ...spezifisch, ausschuettungsquotePct: 0 })
+    expect(halb.gesamtNachLatenterSteuer).toBeCloseTo(voll.gesamtNachLatenterSteuer, 0)
+    expect(keine.gesamtNachLatenterSteuer).toBeCloseTo(voll.gesamtNachLatenterSteuer, 0)
+    // gesamtInklThesaurierung dagegen bleibt bewusst quoten-abhängig (unkorrigierter Rohwert).
+    expect(keine.gesamtInklThesaurierung).toBeGreaterThan(voll.gesamtInklThesaurierung)
+  })
+
+  it("at full distribution, gesamtNachLatenterSteuer equals gesamtInklThesaurierung (nothing left to defer)", () => {
+    const voll = berechneGmbh(eingabe, { ...spezifisch, ausschuettungsquotePct: 100 })
+    expect(voll.gesamtNachLatenterSteuer).toBeCloseTo(voll.gesamtInklThesaurierung, 2)
+  })
+
+  it("the GmbH ends up behind the Einzelunternehmer at this income level (full KESt at distribution beats EU tax only far higher up)", () => {
+    const eu = berechneEu(eingabe)
+    const gmbh = berechneGmbh(eingabe, spezifisch)
+    expect(gmbh.gesamtNachLatenterSteuer).toBeLessThan(eu.nettoEinkommen)
   })
 })
 

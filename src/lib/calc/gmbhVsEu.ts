@@ -17,10 +17,20 @@
 //    Mindestbeitragsgrundlage 551,10 €/Monat, Höchstbeitragsgrundlage 8.085 €/Monat
 //  - KöSt 23 % linear, Mindest-KöSt 500 €/Jahr (Stammkapital 10.000 € seit der Reform 2024)
 //  - KESt 27,5 % auf Ausschüttungen
-//  - DB 3,7 %, DZ ~0,29 % (Bundesschnitt, editierbar), Kommunalsteuer 3 % auf den
-//    GF-Bezug — Freigrenze 1.460 €/Monat (darunter entfällt die gesamte Abgabe)
+//  - DB 3,7 %, DZ ~0,29 % (Bundesschnitt, editierbar) — unbedingt fällig, das kleine
+//    Befreiungsvolumen für Betriebe mit ≤3 Dienstnehmer:innen und ≤1.460 €/Monat
+//    Gesamt-Lohnsumme greift bei einem real bezahlten GF-Bezug praktisch nie und wird
+//    hier nicht modelliert (fehlt die Mitarbeiterzahl des Betriebs als Eingabe dafür);
+//    Kommunalsteuer 3 % auf den GF-Bezug mit einer echten Freigrenze von 1.460 €/Monat
+//    (Gesamt-Lohnsumme darunter: keine Kommunalsteuer; darüber: die volle Summe ist
+//    steuerpflichtig, nicht nur der übersteigende Teil — das ist bei einer Freigrenze
+//    so beabsichtigt, anders als bei einem Freibetrag)
 //  - Sachbezug Firmen-Pkw: 2 % vom Anschaffungswert/Monat, gedeckelt bei 960 €/Monat
 //  - PKW-Angemessenheitsgrenze (Luxustangente) für die AfA: 40.000 €, Mindestnutzungsdauer 8 Jahre
+//  - Betriebsausgabenpauschale § 17 EStG (Basispauschalierung): 6 % vom Bezug, max.
+//    13.200 €/Jahr — steht auch dem wesentlich beteiligten Gesellschafter-Geschäftsführer
+//    für seine Einkünfte aus sonstiger selbständiger Arbeit (§ 22 Z 2 EStG) zu, wird in der
+//    Praxis regelmäßig übersehen, weil sie wie ein Dienstverhältnis aussieht
 
 export const EST_STUFEN_2026: { bis: number; satz: number }[] = [
   { bis: 13539, satz: 0 },
@@ -114,6 +124,9 @@ export const SACHBEZUG_DECKEL_JAHR = SACHBEZUG_DECKEL_MONAT * 12
 export const PKW_ANGEMESSENHEITSGRENZE = 40000
 export const PKW_MINDESTNUTZUNGSDAUER_JAHRE = 8
 
+export const GF_BASISPAUSCHALE_SATZ = 0.06
+export const GF_BASISPAUSCHALE_MAX_JAHR = 13200
+
 export const EU_BILANZIERUNGSPFLICHT_UMSATZ = 700000
 export const KLEINUNTERNEHMERGRENZE_UST = 55000
 
@@ -126,6 +139,10 @@ export const DEFAULTS = {
   autoAnschaffungswert: 35000,
   autoNutzungsdauerJahre: PKW_MINDESTNUTZUNGSDAUER_JAHRE,
   autoPrivatanteilPct: 20,
+  // Laufende Kfz-Kosten (Treibstoff, Versicherung, Service) — standardmäßig 0, weil ohne
+  // recherchierten Richtwert; wer das Auto-Feld nutzt, sollte den tatsächlichen Jahresbetrag
+  // eintragen, siehe kfzLaufendeKostenJahr in GemeinsameEingabe.
+  kfzLaufendeKostenJahr: 0,
   sonstigeAfaJahr: 1500,
   investitionsbedingtenGfbNutzen: false,
   gfGehaltBrutto: 40000,
@@ -155,11 +172,15 @@ export function sachbezugAutoJaehrlich(anschaffungswert: number, privatanteilPct
 
 export interface GemeinsameEingabe {
   umsatz: number
-  /** Betriebsausgaben ohne SV-Beiträge, ohne AfA, ohne GF-Gehalt. */
+  /** Betriebsausgaben ohne SV-Beiträge, ohne AfA, ohne Kfz-Kosten, ohne GF-Gehalt. */
   betriebsausgaben: number
   autoAnschaffungswert: number
   autoNutzungsdauerJahre: number
   autoPrivatanteilPct: number
+  /** Laufende Kfz-Kosten (Treibstoff, Versicherung, Service) — separat von betriebsausgaben,
+   * weil sie beim Einzelunternehmer (anders als bei GmbH/Zypern) um den Privatanteil gekürzt
+   * werden müssen, siehe berechneEu. */
+  kfzLaufendeKostenJahr: number
   sonstigeAfaJahr: number
   investitionsbedingtenGfbNutzen: boolean
 }
@@ -167,6 +188,7 @@ export interface GemeinsameEingabe {
 export interface EuErgebnis {
   afaAutoBetrieblich: number
   afaGesamt: number
+  kfzLaufendeKostenBetrieblich: number
   gewinnVorSv: number
   svsBeitrag: number
   gewinnNachSv: number
@@ -178,10 +200,15 @@ export interface EuErgebnis {
 
 /** Einzelunternehmer, Gewinnermittlung per Einnahmen-Ausgaben-Rechnung (EÜR). */
 export function berechneEu(e: GemeinsameEingabe): EuErgebnis {
+  const privatAnteil = clampPct(e.autoPrivatanteilPct)
   const afaAutoVoll = autoAfaJaehrlich(e.autoAnschaffungswert, e.autoNutzungsdauerJahre)
-  const afaAutoBetrieblich = afaAutoVoll * (1 - clampPct(e.autoPrivatanteilPct))
+  const afaAutoBetrieblich = afaAutoVoll * (1 - privatAnteil)
   const afaGesamt = afaAutoBetrieblich + Math.max(0, e.sonstigeAfaJahr)
-  const gewinnVorSv = e.umsatz - e.betriebsausgaben - afaGesamt
+  // Wie die AfA muss auch der laufende Kfz-Aufwand (Treibstoff, Versicherung, Service) um
+  // den Privatanteil gekürzt werden — sonst wird der volle Betrag fälschlich als Betriebs-
+  // ausgabe abgesetzt, obwohl ein Teil privat veranlasst ist.
+  const kfzLaufendeKostenBetrieblich = Math.max(0, e.kfzLaufendeKostenJahr) * (1 - privatAnteil)
+  const gewinnVorSv = e.umsatz - e.betriebsausgaben - afaGesamt - kfzLaufendeKostenBetrieblich
   const svsBeitrag = gsvgBeitrag(gewinnVorSv)
   const gewinnNachSv = gewinnVorSv - svsBeitrag
   const gfb = gewinnfreibetrag(gewinnNachSv, e.investitionsbedingtenGfbNutzen)
@@ -189,7 +216,10 @@ export function berechneEu(e: GemeinsameEingabe): EuErgebnis {
   const est = einkommensteuer(estBemessungsgrundlage)
   const nettoEinkommen = gewinnNachSv - est
 
-  return { afaAutoBetrieblich, afaGesamt, gewinnVorSv, svsBeitrag, gewinnNachSv, gewinnfreibetrag: gfb, estBemessungsgrundlage, einkommensteuer: est, nettoEinkommen }
+  return {
+    afaAutoBetrieblich, afaGesamt, kfzLaufendeKostenBetrieblich, gewinnVorSv, svsBeitrag, gewinnNachSv,
+    gewinnfreibetrag: gfb, estBemessungsgrundlage, einkommensteuer: est, nettoEinkommen,
+  }
 }
 
 export interface GmbhSpezifischeEingabe {
@@ -204,6 +234,7 @@ export interface GmbhSpezifischeEingabe {
 
 export interface GmbhErgebnis {
   afaGesamt: number
+  kfzLaufendeKosten: number
   sachbezugAuto: number
   gfBemessungGesamt: number
   gfGsvgBeitrag: number
@@ -215,54 +246,83 @@ export interface GmbhErgebnis {
   kESt: number
   ausschuettungNetto: number
   thesaurierterGewinn: number
+  gfBetriebsausgabenpauschale: number
   gfGewinnfreibetrag: number
   gfEinkommensteuer: number
   gfNettoBar: number
   verfuegbaresEinkommen: number
+  /** Bar verfügbar plus voller thesaurierter Gewinn — Vorsicht: das ist NICHT direkt mit dem
+   * voll versteuerten Einzelunternehmer-Netto vergleichbar, weil auf den thesaurierten Teil
+   * bei einer künftigen Entnahme noch KESt anfällt. Für einen fairen Vergleich siehe
+   * gesamtNachLatenterSteuer. */
   gesamtInklThesaurierung: number
+  /** Wie gesamtInklThesaurierung, aber der thesaurierte Gewinn wird um die KESt gekürzt, die
+   * bei einer künftigen Ausschüttung anfallen würde (27,5 % auf den positiven Anteil — ein
+   * Verlust wird nicht "wegversteuert"). Das ist die richtige Vergleichsgrundlage gegen das
+   * voll versteuerte Einzelunternehmer-Netto, unabhängig von der gewählten Ausschüttungsquote:
+   * ohne diese Korrektur suggeriert eine niedrige Ausschüttungsquote einen GmbH-Vorteil, der
+   * beim tatsächlichen Verbrauch des Geldes gar nicht existiert (siehe PR-Diskussion). */
+  gesamtNachLatenterSteuer: number
 }
 
 /** Wesentlich beteiligter (>25 %) Gesellschafter-Geschäftsführer einer GmbH. */
 export function berechneGmbh(e: GemeinsameEingabe, s: GmbhSpezifischeEingabe): GmbhErgebnis {
   const afaAutoVoll = autoAfaJaehrlich(e.autoAnschaffungswert, e.autoNutzungsdauerJahre)
   const afaGesamt = afaAutoVoll + Math.max(0, e.sonstigeAfaJahr)
+  const kfzLaufendeKosten = Math.max(0, e.kfzLaufendeKostenJahr)
   const sachbezugAuto = sachbezugAutoJaehrlich(e.autoAnschaffungswert, e.autoPrivatanteilPct)
   const gfGehaltBrutto = Math.max(0, s.gfGehaltBrutto)
   const gfBemessungGesamt = gfGehaltBrutto + sachbezugAuto
 
-  const ueberFreigrenze = gfBemessungGesamt / 12 >= LOHNNEBENKOSTEN_FREIGRENZE_MONAT
-  const lohnnebenkostenSatz = DB_SATZ + Math.max(0, s.dzSatzPct) / 100 + KOMMUNALSTEUER_SATZ
-  const lohnnebenkostenGmbh = ueberFreigrenze ? gfBemessungGesamt * lohnnebenkostenSatz : 0
+  // DB+DZ sind praktisch unbedingt fällig (siehe Kommentar oben im Dateikopf) — nur die
+  // Kommunalsteuer kennt eine echte Freigrenze: unter 1.460 €/Monat Lohnsumme entfällt sie
+  // zur Gänze, darüber ist die gesamte Summe (nicht nur der übersteigende Teil) steuerpflichtig.
+  const dbDzSatz = DB_SATZ + Math.max(0, s.dzSatzPct) / 100
+  const dbDz = gfBemessungGesamt * dbDzSatz
+  const kommunalsteuer = gfBemessungGesamt / 12 >= LOHNNEBENKOSTEN_FREIGRENZE_MONAT ? gfBemessungGesamt * KOMMUNALSTEUER_SATZ : 0
+  const lohnnebenkostenGmbh = dbDz + kommunalsteuer
 
   const gfGsvgBeitrag = gsvgBeitrag(gfBemessungGesamt)
 
   const betrieblichesErgebnisVorKoest =
-    e.umsatz - e.betriebsausgaben - afaGesamt - gfGehaltBrutto - lohnnebenkostenGmbh - Math.max(0, s.stbMehrkostenJahr) - Math.max(0, s.offenlegungJahr)
+    e.umsatz - e.betriebsausgaben - afaGesamt - kfzLaufendeKosten - gfGehaltBrutto - lohnnebenkostenGmbh
+    - Math.max(0, s.stbMehrkostenJahr) - Math.max(0, s.offenlegungJahr)
   const koeSt = betrieblichesErgebnisVorKoest > 0 ? Math.max(MINDEST_KOEST_JAHR, betrieblichesErgebnisVorKoest * KOEST_SATZ) : MINDEST_KOEST_JAHR
-  const gewinnNachKoest = Math.max(0, betrieblichesErgebnisVorKoest - koeSt)
+  // Kein Floor bei 0: ein Verlust nach Mindest-KöSt darf nicht verschwinden, sondern muss als
+  // negativer thesaurierter Betrag unten durchschlagen — sonst wirkt eine defizitäre GmbH im
+  // Vergleich fälschlich kostenlos (siehe PR-Diskussion, Punkt "Verlustfall").
+  const gewinnNachKoest = betrieblichesErgebnisVorKoest - koeSt
 
-  const ausschuettungBrutto = gewinnNachKoest * clampPct(s.ausschuettungsquotePct)
+  const ausschuettungBrutto = Math.max(0, gewinnNachKoest) * clampPct(s.ausschuettungsquotePct)
   const thesaurierterGewinn = gewinnNachKoest - ausschuettungBrutto
   const kESt = ausschuettungBrutto * KEST_SATZ
   const ausschuettungNetto = ausschuettungBrutto - kESt
 
-  const gfGfb = gewinnfreibetrag(Math.max(0, gfBemessungGesamt - gfGsvgBeitrag), e.investitionsbedingtenGfbNutzen)
-  const gfEstBasis = Math.max(0, gfBemessungGesamt - gfGsvgBeitrag - gfGfb)
+  // Betriebsausgabenpauschale § 17 EStG (Basispauschalierung, 6 %, max. 13.200 €) steht auch
+  // dem wesentlich beteiligten Gesellschafter-Geschäftsführer für seine Einkünfte aus
+  // sonstiger selbständiger Arbeit (§ 22 Z 2 EStG) zu.
+  const gfBetriebsausgabenpauschale = Math.min(gfBemessungGesamt * GF_BASISPAUSCHALE_SATZ, GF_BASISPAUSCHALE_MAX_JAHR)
+  const gfGewinnVorGfb = Math.max(0, gfBemessungGesamt - gfGsvgBeitrag - gfBetriebsausgabenpauschale)
+  const gfGfb = gewinnfreibetrag(gfGewinnVorGfb, e.investitionsbedingtenGfbNutzen)
+  const gfEstBasis = Math.max(0, gfGewinnVorGfb - gfGfb)
   const gfEinkommensteuer = einkommensteuer(gfEstBasis)
   // Sachbezug ist kein Bargeld — er erhöht zwar SV-/ESt-Basis (und damit die reale Abgabenlast),
   // wird aber aus dem verfügbaren Bar-Einkommen wieder herausgerechnet (Gegenwert ist die private
-  // Autonutzung selbst, nicht zusätzliches Geld am Konto).
+  // Autonutzung selbst, nicht zusätzliches Geld am Konto). Die Betriebsausgabenpauschale
+  // schmälert dagegen nur die Steuerbemessung, nicht den tatsächlichen Bar-Zufluss.
   const gfNettoGehalt = gfBemessungGesamt - gfGsvgBeitrag - gfEinkommensteuer
   const gfNettoBar = gfNettoGehalt - sachbezugAuto
 
   const verfuegbaresEinkommen = gfNettoBar + ausschuettungNetto
   const gesamtInklThesaurierung = verfuegbaresEinkommen + thesaurierterGewinn
+  const thesaurierterGewinnNachLatenterKest = thesaurierterGewinn > 0 ? thesaurierterGewinn * (1 - KEST_SATZ) : thesaurierterGewinn
+  const gesamtNachLatenterSteuer = verfuegbaresEinkommen + thesaurierterGewinnNachLatenterKest
 
   return {
-    afaGesamt, sachbezugAuto, gfBemessungGesamt, gfGsvgBeitrag, lohnnebenkostenGmbh,
+    afaGesamt, kfzLaufendeKosten, sachbezugAuto, gfBemessungGesamt, gfGsvgBeitrag, lohnnebenkostenGmbh,
     betrieblichesErgebnisVorKoest, koeSt, gewinnNachKoest, ausschuettungBrutto, kESt, ausschuettungNetto,
-    thesaurierterGewinn, gfGewinnfreibetrag: gfGfb, gfEinkommensteuer, gfNettoBar,
-    verfuegbaresEinkommen, gesamtInklThesaurierung,
+    thesaurierterGewinn, gfBetriebsausgabenpauschale, gfGewinnfreibetrag: gfGfb, gfEinkommensteuer, gfNettoBar,
+    verfuegbaresEinkommen, gesamtInklThesaurierung, gesamtNachLatenterSteuer,
   }
 }
 
@@ -271,12 +331,13 @@ export interface SchwellenPunkt {
   nettoEu: number
   verfuegbarGmbh: number
   gesamtGmbh: number
+  gesamtGmbhNachLatenterSteuer: number
 }
 
 /**
- * Vergleichsreihe über eine Bandbreite des operativen Gewinns (Umsatz − Betriebsausgaben − AfA,
- * vor SV/GF-Gehalt), bei sonst gleichbleibenden Einstellungen (GF-Gehalt, Ausschüttungsquote,
- * Kostenannahmen) — zeigt, ab welchem Gewinnniveau sich die GmbH lohnt.
+ * Vergleichsreihe über eine Bandbreite des operativen Gewinns (Umsatz − Betriebsausgaben − AfA
+ * − laufende Kfz-Kosten, vor SV/GF-Gehalt), bei sonst gleichbleibenden Einstellungen (GF-Gehalt,
+ * Ausschüttungsquote, Kostenannahmen) — zeigt, ab welchem Gewinnniveau sich die GmbH lohnt.
  */
 export function berechneSchwellenreihe(
   gemeinsam: GemeinsameEingabe,
@@ -286,15 +347,21 @@ export function berechneSchwellenreihe(
   schrittweite: number
 ): SchwellenPunkt[] {
   const punkte: SchwellenPunkt[] = []
-  const afaGesamtEu = autoAfaJaehrlich(gemeinsam.autoAnschaffungswert, gemeinsam.autoNutzungsdauerJahre) * (1 - clampPct(gemeinsam.autoPrivatanteilPct)) + Math.max(0, gemeinsam.sonstigeAfaJahr)
-  const afaGesamtGmbh = autoAfaJaehrlich(gemeinsam.autoAnschaffungswert, gemeinsam.autoNutzungsdauerJahre) + Math.max(0, gemeinsam.sonstigeAfaJahr)
+  const afaAutoVoll = autoAfaJaehrlich(gemeinsam.autoAnschaffungswert, gemeinsam.autoNutzungsdauerJahre)
+  const kfzVoll = Math.max(0, gemeinsam.kfzLaufendeKostenJahr)
+  const privatAnteil = clampPct(gemeinsam.autoPrivatanteilPct)
+  const afaGesamtEu = afaAutoVoll * (1 - privatAnteil) + Math.max(0, gemeinsam.sonstigeAfaJahr) + kfzVoll * (1 - privatAnteil)
+  const afaGesamtGmbh = afaAutoVoll + Math.max(0, gemeinsam.sonstigeAfaJahr) + kfzVoll
 
   for (let g = vonGewinn; g <= bisGewinn; g += schrittweite) {
     const eEu: GemeinsameEingabe = { ...gemeinsam, umsatz: g + gemeinsam.betriebsausgaben + afaGesamtEu }
     const eGmbh: GemeinsameEingabe = { ...gemeinsam, umsatz: g + gemeinsam.betriebsausgaben + afaGesamtGmbh }
     const eu = berechneEu(eEu)
     const gmbh = berechneGmbh(eGmbh, spezifisch)
-    punkte.push({ operativerGewinn: g, nettoEu: eu.nettoEinkommen, verfuegbarGmbh: gmbh.verfuegbaresEinkommen, gesamtGmbh: gmbh.gesamtInklThesaurierung })
+    punkte.push({
+      operativerGewinn: g, nettoEu: eu.nettoEinkommen, verfuegbarGmbh: gmbh.verfuegbaresEinkommen,
+      gesamtGmbh: gmbh.gesamtInklThesaurierung, gesamtGmbhNachLatenterSteuer: gmbh.gesamtNachLatenterSteuer,
+    })
   }
   return punkte
 }
@@ -304,11 +371,15 @@ export interface GruendungsVergleich {
   breakEvenJahre: number | null
 }
 
-/** Wie viele Jahre dauert es, bis der laufende Vorteil der GmbH die einmaligen Gründungskosten aufwiegt? */
+/** Wie viele Jahre dauert es, bis der laufende Vorteil der GmbH die einmaligen Gründungskosten
+ * aufwiegt? Verwendet gesamtNachLatenterSteuer statt gesamtInklThesaurierung, damit die
+ * Ausschüttungsquote das Ergebnis nicht verzerrt — sonst sähe eine GmbH, die alles thesauriert,
+ * fälschlich immer vorteilhafter aus als eine, die ausschüttet, obwohl beim tatsächlichen
+ * Verbrauch des thesaurierten Teils noch KESt fällig wird. */
 export function berechneGruendungsVergleich(
   euErgebnis: EuErgebnis, gmbhErgebnis: GmbhErgebnis, gruendungskostenEinmalig: number
 ): GruendungsVergleich {
-  const jaehrlicherVorteilGmbh = gmbhErgebnis.gesamtInklThesaurierung - euErgebnis.nettoEinkommen
+  const jaehrlicherVorteilGmbh = gmbhErgebnis.gesamtNachLatenterSteuer - euErgebnis.nettoEinkommen
   const breakEvenJahre = jaehrlicherVorteilGmbh > 0 ? gruendungskostenEinmalig / jaehrlicherVorteilGmbh : null
   return { jaehrlicherVorteilGmbh, breakEvenJahre }
 }
