@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react"
 
 export const SECTION_IDS = [
-  "overview", "team", "struktur", "statistik", "rechner", "karriere", "guide", "kalender", "finanzierungen", "partner", "erik",
+  "overview", "team", "struktur", "statistik", "planung", "rechner", "karriere", "guide", "kalender", "finanzierungen", "partner", "erik",
 ] as const
 
 export type SectionId = (typeof SECTION_IDS)[number]

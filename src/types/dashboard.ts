@@ -134,6 +134,71 @@ export interface ErikTodosDoc {
   todos: ErikTodo[]
 }
 
+// Planung — Wochen-/Monats-/Jahresplanung je Führungskraft (siehe
+// src/components/sections/Planung.tsx). Keine Legacy-Entsprechung; Aufbau/
+// Kennzahlen aus Finova_Controlling.html (Wochenplan/Monatsplan/Jahresplanung-
+// Panels) übernommen, dabei "Umsatz €" durch Einheiten ersetzt, damit es zum
+// Rest des Dashboards passt (Karrierepläne/Soll-Ist rechnen ebenfalls in EH).
+// Bewusst komplett getrennt von finova/dashboard (rows/AT/BT/ET) — kein
+// Rückschreiben, keine Berührung der Monatsabschluss-/Archiv-Logik.
+export interface PlanWeekEntry {
+  atz: number
+  atg: number
+  analysenZ: number
+  analysen: number
+  beratungenZ: number
+  beratungen: number
+  vertraege: number
+  pg: number
+  stz: number
+  stg: number
+  etz: number
+  etg: number
+  ehOffen: number
+  ehGemacht: number
+  notes: string
+  submitted: boolean
+}
+
+/** finova/plan_week_<YYYY-Www> — entries je Mitarbeitername (wie roster/rows per Name verknüpft). */
+export interface PlanWeekDoc {
+  week: string
+  entries: Record<string, PlanWeekEntry>
+}
+
+export const PLAN_TARGET_KEYS = ["vertraege", "einheiten", "atg", "analysen", "beratungen"] as const
+export type PlanTargetKey = (typeof PLAN_TARGET_KEYS)[number]
+
+export const PLAN_TARGET_LABELS: Record<PlanTargetKey, string> = {
+  vertraege: "Verträge",
+  einheiten: "Einheiten",
+  atg: "ATG",
+  analysen: "Analysen",
+  beratungen: "Beratungen",
+}
+
+export const PLAN_QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const
+export type PlanQuarter = (typeof PLAN_QUARTERS)[number]
+
+export type PlanQuarterData = { milestone: string } & Record<PlanTargetKey, number>
+
+/**
+ * finova/plan_annual_<YYYY>_<managerKey> — je Führungskraft ein eigenes
+ * Dokument (planManagerKey in lib/calc/planung.ts), sonst würden sich alle
+ * Führungskräfte ein gemeinsames Jahresziel teilen.
+ */
+export interface PlanAnnualDoc {
+  targets: Record<PlanTargetKey, number>
+  quarters: Record<PlanQuarter, PlanQuarterData>
+}
+
+export function planWeekStorageKey(week: string): string {
+  return `finova_plan_week_${week}_v1`
+}
+export function planAnnualStorageKey(year: number, managerKey: string): string {
+  return `finova_plan_annual_${year}_${managerKey}_v1`
+}
+
 export const STORAGE_KEY = "finova_dashboard_data_v1"
 export const GOAL_KEY = "finova_dashboard_goal_v1"
 export const HISTORY_KEY = "finova_dashboard_history_v1"
