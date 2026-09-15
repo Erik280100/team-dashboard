@@ -16,6 +16,9 @@ import {
 } from "@/types/dashboard"
 import { NewTodoDialog } from "@/components/sections/erik/NewTodoDialog"
 import { TodoCard } from "@/components/sections/erik/TodoCard"
+import { EuVsGmbhRechner } from "@/components/sections/rechner/EuVsGmbhRechner"
+import { HoldingImmobilienRechner } from "@/components/sections/rechner/HoldingImmobilienRechner"
+import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
 
 // Kein Verschlüsselungs-Passwort wie bei Karriere.tsx — nur ein Sichtschutz, damit
 // Kolleg:innen am selben Rechner nicht versehentlich hineinsehen. Die Todos selbst
@@ -75,6 +78,15 @@ const BOARD_TABS: { id: BoardFilter; label: string }[] = [
   ...TODO_CATEGORIES.map((c) => ({ id: c as BoardFilter, label: TODO_CATEGORY_LABELS[c] })),
 ]
 
+type ErikView = "todos" | "euVsGmbh" | "holdingImmoRechner" | "gmbhVsZypern"
+
+const VIEW_TABS: { id: ErikView; label: string }[] = [
+  { id: "todos", label: "Todos" },
+  { id: "euVsGmbh", label: "EU vs. GmbH" },
+  { id: "holdingImmoRechner", label: "Holding & Immobilien" },
+  { id: "gmbhVsZypern", label: "EU vs. GmbH vs. Zypern" },
+]
+
 export function ErikDashboard({
   todos, addTodo, patchTodo, moveTodo, removeTodo,
 }: {
@@ -88,6 +100,7 @@ export function ErikDashboard({
   const [unlocked, setUnlocked] = useState(() => {
     try { return sessionStorage.getItem(UNLOCK_KEY) === "1" } catch { return false }
   })
+  const [view, setView] = useState<ErikView>("todos")
   const [filter, setFilter] = useState<BoardFilter>("alle")
   const [flaggedOnly, setFlaggedOnly] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -155,14 +168,14 @@ export function ErikDashboard({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {BOARD_TABS.map((t) => (
+          {VIEW_TABS.map((t) => (
             <button
               key={t.id}
               type="button"
-              onClick={() => setFilter(t.id)}
+              onClick={() => setView(t.id)}
               className={cn(
                 "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-                filter === t.id
+                view === t.id
                   ? "border-transparent bg-primary text-primary-foreground shadow-sm"
                   : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
               )}
@@ -170,70 +183,96 @@ export function ErikDashboard({
               {t.label}
             </button>
           ))}
-          <button
-            type="button"
-            aria-pressed={flaggedOnly}
-            onClick={() => setFlaggedOnly((v) => !v)}
-            className={cn(
-              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-              flaggedOnly
-                ? "border-transparent bg-destructive text-white shadow-sm"
-                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-            )}
-          >
-            Nur geflaggte
-          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus /> Neues Todo
-          </Button>
-          <Button variant="ghost" size="sm" onClick={lock}>Sperren</Button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={lock}>Sperren</Button>
       </div>
 
-      <div
-        ref={boardRef}
-        className="flex gap-4"
-        style={boardHeight !== null ? { height: boardHeight } : undefined}
-      >
-        {TODO_LANES.map((lane) => {
-          const laneTodos = todosInLane(visibleTodos, lane, filter)
-          return (
-            <div key={lane} className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden rounded-xl border bg-card p-3">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="text-sm font-semibold">{TODO_LANE_LABELS[lane]}</h3>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                  {laneTodos.length}
-                </span>
-              </div>
-              <div
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, lane)}
-                className="flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto"
+      {view === "euVsGmbh" && <EuVsGmbhRechner />}
+      {view === "holdingImmoRechner" && <HoldingImmobilienRechner />}
+      {view === "gmbhVsZypern" && <RechtsformVergleichRechner />}
+
+      {view === "todos" && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {BOARD_TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setFilter(t.id)}
+                  className={cn(
+                    "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                    filter === t.id
+                      ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-pressed={flaggedOnly}
+                onClick={() => setFlaggedOnly((v) => !v)}
+                className={cn(
+                  "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                  flaggedOnly
+                    ? "border-transparent bg-destructive text-white shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                )}
               >
-                {laneTodos.map((todo) => (
-                  <TodoCard
-                    key={todo.id}
-                    todo={todo}
-                    showCategory={filter === "alle"}
-                    onPatch={(patch) => patchTodo(todo.id, patch)}
-                    onDelete={() => handleDelete(todo)}
-                    onDragStart={(e) => handleDragStart(e, todo.id)}
-                  />
-                ))}
-              </div>
+                Nur geflaggte
+              </button>
             </div>
-          )
-        })}
-      </div>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus /> Neues Todo
+            </Button>
+          </div>
 
-      <NewTodoDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        defaultCategory={filter === "alle" ? "kunde" : filter}
-        onCreate={addTodo}
-      />
+          <div
+            ref={boardRef}
+            className="flex gap-4"
+            style={boardHeight !== null ? { height: boardHeight } : undefined}
+          >
+            {TODO_LANES.map((lane) => {
+              const laneTodos = todosInLane(visibleTodos, lane, filter)
+              return (
+                <div key={lane} className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden rounded-xl border bg-card p-3">
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="text-sm font-semibold">{TODO_LANE_LABELS[lane]}</h3>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {laneTodos.length}
+                    </span>
+                  </div>
+                  <div
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, lane)}
+                    className="flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto"
+                  >
+                    {laneTodos.map((todo) => (
+                      <TodoCard
+                        key={todo.id}
+                        todo={todo}
+                        showCategory={filter === "alle"}
+                        onPatch={(patch) => patchTodo(todo.id, patch)}
+                        onDelete={() => handleDelete(todo)}
+                        onDragStart={(e) => handleDragStart(e, todo.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <NewTodoDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            defaultCategory={filter === "alle" ? "kunde" : filter}
+            onCreate={addTodo}
+          />
+        </>
+      )}
     </div>
   )
 }
