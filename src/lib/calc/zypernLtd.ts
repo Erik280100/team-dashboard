@@ -91,6 +91,9 @@ export const DEFAULTS_ZYPERN = {
   // österreichische GmbH, siehe berechneZypernOhneWohnsitzverlegung) — vorher hier hartkodiert
   // auf DZ_SATZ_DEFAULT_PCT statt den vom Nutzer eingestellten GmbH-Wert zu übernehmen.
   dzSatzPct: DZ_SATZ_DEFAULT_PCT,
+  // Zinssatz p.a. auf den thesaurierten Gewinn — siehe verzinsungThesaurierungPct in
+  // GmbhSpezifischeEingabe (gmbhVsEu.ts) für dieselbe Idee.
+  verzinsungThesaurierungPct: 0,
 }
 
 function clampPct(pct: number): number {
@@ -111,6 +114,9 @@ export interface ZypernSpezifischeEingabe {
   mieteOesterreichVergleichMonat: number
   /** Nur für den Fallback-Zweig ohne echte Wohnsitzverlegung relevant (siehe DEFAULTS_ZYPERN). */
   dzSatzPct: number
+  /** Zinssatz p.a. auf den thesaurierten Gewinn über GemeinsameEingabe.anlagehorizontJahre —
+   * siehe verzinsungThesaurierungPct in GmbhSpezifischeEingabe (gmbhVsEu.ts). */
+  verzinsungThesaurierungPct: number
 }
 
 export interface ZypernErgebnis {
@@ -131,6 +137,9 @@ export interface ZypernErgebnis {
   gesyAufDividende: number
   ausschuettungNetto: number
   thesaurierterGewinn: number
+  /** thesaurierterGewinn nach Verzinsung über GemeinsameEingabe.anlagehorizontJahre mit
+   * verzinsungThesaurierungPct — siehe thesaurierterGewinnEndwert in GmbhErgebnis. */
+  thesaurierterGewinnEndwert: number
   direktorEinkommensteuer: number
   direktorNettoBar: number
   /** Mietdifferenz Zypern minus wegfallende Vergleichsmiete Österreich, Jahr (kann negativ sein). */
@@ -191,13 +200,18 @@ function berechneZypernMitWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpezi
 
   const verfuegbaresEinkommen = direktorNettoBar + ausschuettungNetto - wohnkostenDeltaJahr
   const gesamtInklThesaurierung = verfuegbaresEinkommen + thesaurierterGewinn
-  const thesaurierterGewinnNachLatenterGesy = thesaurierterGewinn > 0 ? thesaurierterGewinn * (1 - CY_GESY_SATZ_DIVIDENDE) : thesaurierterGewinn
-  const gesamtNachLatenterSteuer = verfuegbaresEinkommen + thesaurierterGewinnNachLatenterGesy
+
+  // Verzinsung des thesaurierten Gewinns über den Anlagehorizont — siehe dieselbe Logik in
+  // berechneGmbh (gmbhVsEu.ts).
+  const zinsfaktor = Math.pow(1 + Math.max(-100, s.verzinsungThesaurierungPct) / 100, Math.max(0, e.anlagehorizontJahre))
+  const thesaurierterGewinnEndwert = thesaurierterGewinn > 0 ? thesaurierterGewinn * zinsfaktor : thesaurierterGewinn
+  const thesaurierterGewinnEndwertNachLatenterGesy = thesaurierterGewinnEndwert > 0 ? thesaurierterGewinnEndwert * (1 - CY_GESY_SATZ_DIVIDENDE) : thesaurierterGewinnEndwert
+  const gesamtNachLatenterSteuer = verfuegbaresEinkommen + thesaurierterGewinnEndwertNachLatenterGesy
 
   return {
     wohnsitzGueltig: true, sachbezugAuto, direktorBemessungGesamt, siArbeitnehmer, siArbeitgeber,
     gesyArbeitnehmer, gesyArbeitgeber, betrieblichesErgebnisVorKoest, koeSt, gewinnNachKoest,
-    ausschuettungBrutto, gesyAufDividende, ausschuettungNetto, thesaurierterGewinn,
+    ausschuettungBrutto, gesyAufDividende, ausschuettungNetto, thesaurierterGewinn, thesaurierterGewinnEndwert,
     direktorEinkommensteuer, direktorNettoBar, wohnkostenDeltaJahr, verfuegbaresEinkommen,
     gesamtInklThesaurierung, gesamtNachLatenterSteuer,
   }
@@ -213,6 +227,7 @@ function berechneZypernOhneWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpez
   const zypernFixkosten = Math.max(0, s.buchhaltungJahr) + Math.max(0, s.auditJahr) + Math.max(0, s.registeredOfficeJahr)
   const gmbh = berechneGmbh(e, {
     gfGehaltBrutto: s.direktorGehaltBrutto, ausschuettungsquotePct: s.ausschuettungsquotePct,
+    verzinsungThesaurierungPct: s.verzinsungThesaurierungPct,
     dzSatzPct: s.dzSatzPct, stbMehrkostenJahr: zypernFixkosten, offenlegungJahr: 0,
   })
 
@@ -231,6 +246,7 @@ function berechneZypernOhneWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpez
     gesyAufDividende: gmbh.kESt,
     ausschuettungNetto: gmbh.ausschuettungNetto,
     thesaurierterGewinn: gmbh.thesaurierterGewinn,
+    thesaurierterGewinnEndwert: gmbh.thesaurierterGewinnEndwert,
     direktorEinkommensteuer: gmbh.gfEinkommensteuer,
     direktorNettoBar: gmbh.gfNettoBar,
     wohnkostenDeltaJahr: 0,

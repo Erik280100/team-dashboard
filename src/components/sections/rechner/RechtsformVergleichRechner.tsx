@@ -119,9 +119,11 @@ export function RechtsformVergleichRechner() {
   const [kfzLaufendeKostenJahr, setKfzLaufendeKostenJahr] = useState(String(DEFAULTS.kfzLaufendeKostenJahr))
   const [sonstigeAfaJahr, setSonstigeAfaJahr] = useState(String(DEFAULTS.sonstigeAfaJahr))
   const [investitionsbedingtenGfbNutzen, setInvestitionsbedingtenGfbNutzen] = useState(DEFAULTS.investitionsbedingtenGfbNutzen)
+  const [anlagehorizontJahre, setAnlagehorizontJahre] = useState(String(DEFAULTS.anlagehorizontJahre))
 
   const [gfGehaltBrutto, setGfGehaltBrutto] = useState(String(DEFAULTS.gfGehaltBrutto))
   const [ausschuettungsquotePct, setAusschuettungsquotePct] = useState(String(DEFAULTS.ausschuettungsquotePct))
+  const [verzinsungThesaurierungPct, setVerzinsungThesaurierungPct] = useState(String(DEFAULTS.verzinsungThesaurierungPct))
 
   const [detailOffen, setDetailOffen] = useState(false)
   const [kostenOffen, setKostenOffen] = useState(false)
@@ -141,27 +143,30 @@ export function RechtsformVergleichRechner() {
   const [registeredOfficeJahr, setRegisteredOfficeJahr] = useState(String(DEFAULTS_ZYPERN.registeredOfficeJahr))
   const [zypernGruendungskostenEinmalig, setZypernGruendungskostenEinmalig] = useState(String(DEFAULTS_ZYPERN.gruendungskostenEinmalig))
   const [umzugskostenEinmalig, setUmzugskostenEinmalig] = useState(String(DEFAULTS_ZYPERN.umzugskostenEinmalig))
+  const [zypernVerzinsungThesaurierungPct, setZypernVerzinsungThesaurierungPct] = useState(String(DEFAULTS_ZYPERN.verzinsungThesaurierungPct))
 
   const gemeinsam: GemeinsameEingabe = useMemo(() => ({
     umsatz: n(umsatz), betriebsausgaben: n(betriebsausgaben),
     autoAnschaffungswert: n(autoAnschaffungswert), autoNutzungsdauerJahre: Math.max(1, n(autoNutzungsdauerJahre)),
     autoPrivatanteilPct: n(autoPrivatanteilPct), kfzLaufendeKostenJahr: n(kfzLaufendeKostenJahr),
-    sonstigeAfaJahr: n(sonstigeAfaJahr), investitionsbedingtenGfbNutzen,
-  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, kfzLaufendeKostenJahr, sonstigeAfaJahr, investitionsbedingtenGfbNutzen])
+    sonstigeAfaJahr: n(sonstigeAfaJahr), investitionsbedingtenGfbNutzen, anlagehorizontJahre: Math.max(0, n(anlagehorizontJahre)),
+  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, kfzLaufendeKostenJahr, sonstigeAfaJahr, investitionsbedingtenGfbNutzen, anlagehorizontJahre])
 
   const spezifisch: GmbhSpezifischeEingabe = useMemo(() => ({
     gfGehaltBrutto: n(gfGehaltBrutto), ausschuettungsquotePct: n(ausschuettungsquotePct),
+    verzinsungThesaurierungPct: n(verzinsungThesaurierungPct),
     dzSatzPct: n(dzSatzPct), stbMehrkostenJahr: n(stbMehrkostenJahr), offenlegungJahr: n(offenlegungJahr),
-  }), [gfGehaltBrutto, ausschuettungsquotePct, dzSatzPct, stbMehrkostenJahr, offenlegungJahr])
+  }), [gfGehaltBrutto, ausschuettungsquotePct, verzinsungThesaurierungPct, dzSatzPct, stbMehrkostenJahr, offenlegungJahr])
 
   const zypernSpezifisch: ZypernSpezifischeEingabe = useMemo(() => ({
     direktorGehaltBrutto: n(direktorGehaltBrutto), ausschuettungsquotePct: n(zypernAusschuettungsquotePct),
+    verzinsungThesaurierungPct: n(zypernVerzinsungThesaurierungPct),
     buchhaltungJahr: n(buchhaltungJahr), auditJahr: n(auditJahr), registeredOfficeJahr: n(registeredOfficeJahr),
     wohnsitzVollstaendigVerlegt, mieteZypernMonat: n(mieteZypernMonat), mieteOesterreichVergleichMonat: n(mieteOesterreichVergleichMonat),
     // Nur relevant, falls der Wohnsitz NICHT verlegt wird (Fallback rechnet wie die GmbH oben)
     // — derselbe DZ-Satz wie bei der GmbH, es ist dieselbe Landeskammer-Zugehörigkeit.
     dzSatzPct: n(dzSatzPct),
-  }), [direktorGehaltBrutto, zypernAusschuettungsquotePct, buchhaltungJahr, auditJahr, registeredOfficeJahr, wohnsitzVollstaendigVerlegt, mieteZypernMonat, mieteOesterreichVergleichMonat, dzSatzPct])
+  }), [direktorGehaltBrutto, zypernAusschuettungsquotePct, zypernVerzinsungThesaurierungPct, buchhaltungJahr, auditJahr, registeredOfficeJahr, wohnsitzVollstaendigVerlegt, mieteZypernMonat, mieteOesterreichVergleichMonat, dzSatzPct])
 
   const eu = useMemo(() => berechneEu(gemeinsam), [gemeinsam])
   const gmbh = useMemo(() => berechneGmbh(gemeinsam, spezifisch), [gemeinsam, spezifisch])
@@ -245,6 +250,15 @@ export function RechtsformVergleichRechner() {
             <input type="checkbox" checked={investitionsbedingtenGfbNutzen} onChange={(e) => setInvestitionsbedingtenGfbNutzen(e.target.checked)} className="size-4" />
             Investitionsbedingten Gewinnfreibetrag zusätzlich nutzen (setzt ausreichend begünstigte Investitionen/Wertpapierdeckung voraus, nur EU/GmbH)
           </label>
+          <div>
+            <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Anlagehorizont für den thesaurierten (nicht entnommenen) Gewinn</h4>
+            <Feld label="Anlagehorizont (Jahre)" value={anlagehorizontJahre} onChange={setAnlagehorizontJahre} step={1} min={0} className="max-w-[10rem]" />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Wie viele Jahre der im Unternehmen verbleibende Gewinn verzinst liegen bleibt, bevor er (bzw. der
+              Einzelunternehmer-Vergleich) betrachtet wird — die Zinssätze dafür stellst du unten bei GmbH bzw.
+              Zypern Ltd separat ein. Bei 0 Jahren ohne Effekt (reiner Jahresvergleich, bisheriges Verhalten).
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -259,6 +273,7 @@ export function RechtsformVergleichRechner() {
               onChange={setAusschuettungsquotePct}
               hint="0 % = alles thesauriert (nur 23 % KöSt), 100 % = alles ausgeschüttet (zusätzlich 27,5 % KESt)"
             />
+            <Feld label="Zinssatz auf thesaurierten Gewinn (%/Jahr)" value={verzinsungThesaurierungPct} onChange={setVerzinsungThesaurierungPct} step={0.5} suffix="%" min={0} />
           </div>
 
           <button type="button" onClick={() => setKostenOffen((v) => !v)}
@@ -306,6 +321,7 @@ export function RechtsformVergleichRechner() {
               onChange={setZypernAusschuettungsquotePct}
               hint="Als Non-Dom 0 % SDC auf Dividenden (die ersten 17 Steuerjahre) — nur 2,65 % GESY fällt an"
             />
+            <Feld label="Zinssatz auf thesaurierten Gewinn (%/Jahr)" value={zypernVerzinsungThesaurierungPct} onChange={setZypernVerzinsungThesaurierungPct} step={0.5} suffix="%" min={0} />
           </div>
 
           <div>
@@ -392,8 +408,19 @@ export function RechtsformVergleichRechner() {
               <ZeilePos label="+ GF-Gehalt netto (nach GSVG, ESt, Sachbezug)" value={kreditFormatEUR(gmbh.gfNettoBar)} muted />
               <ZeilePos label="Bar verfügbar (Gehalt + Ausschüttung)" value={kreditFormatEUR(gmbh.verfuegbaresEinkommen)} bold />
               <ZeilePos label="+ thesauriert im Unternehmen (nach KöSt)" value={kreditFormatEUR(gmbh.thesaurierterGewinn)} muted />
-              <ZeilePos label="Gesamtvermögenszuwachs (vor latenter KESt)" value={kreditFormatEUR(gmbh.gesamtInklThesaurierung)} muted />
-              <ZeilePos label="− latente KESt auf Thesaurierung (27,5 % bei Entnahme)" value={"−" + kreditFormatEUR(Math.max(0, gmbh.gesamtInklThesaurierung - gmbh.gesamtNachLatenterSteuer))} muted />
+              {n(anlagehorizontJahre) > 0 && (
+                <ZeilePos
+                  label={`+ Verzinsung über ${n(anlagehorizontJahre)} Jahre (${kreditFormatPct(n(verzinsungThesaurierungPct), 1)}/Jahr)`}
+                  value={kreditFormatEUR(gmbh.thesaurierterGewinnEndwert - gmbh.thesaurierterGewinn)}
+                  muted
+                />
+              )}
+              <ZeilePos
+                label={n(anlagehorizontJahre) > 0 ? `Endwert nach ${n(anlagehorizontJahre)} Jahren (vor latenter KESt)` : "Gesamtvermögenszuwachs (vor latenter KESt)"}
+                value={kreditFormatEUR(gmbh.verfuegbaresEinkommen + gmbh.thesaurierterGewinnEndwert)}
+                muted
+              />
+              <ZeilePos label="− latente KESt auf Thesaurierung (27,5 % bei Entnahme)" value={"−" + kreditFormatEUR(Math.max(0, gmbh.verfuegbaresEinkommen + gmbh.thesaurierterGewinnEndwert - gmbh.gesamtNachLatenterSteuer))} muted />
               <ZeilePos label="Vergleichswert ggü. Einzelunternehmer" value={kreditFormatEUR(gmbh.gesamtNachLatenterSteuer)} bold />
             </div>
           </CardContent>
@@ -418,10 +445,21 @@ export function RechtsformVergleichRechner() {
               )}
               <ZeilePos label="Bar verfügbar" value={kreditFormatEUR(zypern.verfuegbaresEinkommen)} bold />
               <ZeilePos label="+ thesauriert im Unternehmen (nach KöSt)" value={kreditFormatEUR(zypern.thesaurierterGewinn)} muted />
-              <ZeilePos label="Gesamtvermögenszuwachs (vor latenter Steuer)" value={kreditFormatEUR(zypern.gesamtInklThesaurierung)} muted />
+              {n(anlagehorizontJahre) > 0 && (
+                <ZeilePos
+                  label={`+ Verzinsung über ${n(anlagehorizontJahre)} Jahre (${kreditFormatPct(n(zypernVerzinsungThesaurierungPct), 1)}/Jahr)`}
+                  value={kreditFormatEUR(zypern.thesaurierterGewinnEndwert - zypern.thesaurierterGewinn)}
+                  muted
+                />
+              )}
+              <ZeilePos
+                label={n(anlagehorizontJahre) > 0 ? `Endwert nach ${n(anlagehorizontJahre)} Jahren (vor latenter Steuer)` : "Gesamtvermögenszuwachs (vor latenter Steuer)"}
+                value={kreditFormatEUR(zypern.verfuegbaresEinkommen + zypern.thesaurierterGewinnEndwert)}
+                muted
+              />
               <ZeilePos
                 label={zypern.wohnsitzGueltig ? "− latente GESY auf Thesaurierung (2,65 % bei Entnahme)" : "− latente österr. KESt auf Thesaurierung (27,5 % bei Entnahme)"}
-                value={"−" + kreditFormatEUR(Math.max(0, zypern.gesamtInklThesaurierung - zypern.gesamtNachLatenterSteuer))}
+                value={"−" + kreditFormatEUR(Math.max(0, zypern.verfuegbaresEinkommen + zypern.thesaurierterGewinnEndwert - zypern.gesamtNachLatenterSteuer))}
                 muted
               />
               <ZeilePos label="Vergleichswert ggü. Einzelunternehmer" value={kreditFormatEUR(zypern.gesamtNachLatenterSteuer)} bold />
@@ -432,7 +470,10 @@ export function RechtsformVergleichRechner() {
 
       <Card style={{ background: "linear-gradient(135deg,#0B1F2A 0%,#155767 130%)" }} className="text-white">
         <CardContent className="flex flex-col gap-2">
-          <span className="text-xs text-white/70">Beste Option — inkl. thesauriertem Gewinn nach latenter Steuer</span>
+          <span className="text-xs text-white/70">
+            Beste Option — inkl. thesauriertem Gewinn nach latenter Steuer
+            {n(anlagehorizontJahre) > 0 && ` (Thesaurierung verzinst über ${n(anlagehorizontJahre)} Jahre)`}
+          </span>
           <span className="text-2xl font-bold tabular-nums">{bester.label}: {kreditFormatEUR(bester.wert)}</span>
           <div className="mt-1 flex flex-col gap-1 border-t border-white/10 pt-2 text-xs text-white/80">
             <span>
@@ -539,6 +580,14 @@ export function RechtsformVergleichRechner() {
                 faire Vergleichsgrundlage gegen das voll versteuerte Einzelunternehmer-Netto — unabhängig von der
                 gewählten Ausschüttungsquote. Ohne diese Korrektur würde eine niedrige Ausschüttungsquote einen
                 GmbH-Vorteil vortäuschen, der beim tatsächlichen Verbrauch des Geldes nicht existiert.
+              </p>
+              <p>
+                <strong className="text-foreground">Verzinsung des thesaurierten Gewinns:</strong> Der Anlage-
+                horizont (Betriebsdaten oben) und die Zinssätze bei GmbH/Zypern lassen den thesaurierten Gewinn
+                vereinfacht brutto mit Zinseszins wachsen, bevor die latente Steuer abgezogen wird — die laufende
+                KöSt auf die Kapitalerträge selbst wird nicht gesondert simuliert. Das ist ein Endwert nach N
+                Jahren, kein Jahreswert: er beantwortet "was bringt mir das Liegenlassen", ist aber gegen das
+                Einzelunternehmer-Jahresnetto (das hier nicht mitwächst) nur mit dieser Einschränkung vergleichbar.
               </p>
               <p>
                 <strong className="text-foreground">Vereinfachungen GmbH/EU:</strong> Die GSVG-Bemessung

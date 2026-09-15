@@ -82,6 +82,8 @@ export function EuVsGmbhRechner() {
 
   const [gfGehaltBrutto, setGfGehaltBrutto] = useState(String(DEFAULTS.gfGehaltBrutto))
   const [ausschuettungsquotePct, setAusschuettungsquotePct] = useState(String(DEFAULTS.ausschuettungsquotePct))
+  const [anlagehorizontJahre, setAnlagehorizontJahre] = useState(String(DEFAULTS.anlagehorizontJahre))
+  const [verzinsungThesaurierungPct, setVerzinsungThesaurierungPct] = useState(String(DEFAULTS.verzinsungThesaurierungPct))
 
   const [detailOffen, setDetailOffen] = useState(false)
   const [kostenOffen, setKostenOffen] = useState(false)
@@ -94,13 +96,14 @@ export function EuVsGmbhRechner() {
     umsatz: n(umsatz), betriebsausgaben: n(betriebsausgaben),
     autoAnschaffungswert: n(autoAnschaffungswert), autoNutzungsdauerJahre: Math.max(1, n(autoNutzungsdauerJahre)),
     autoPrivatanteilPct: n(autoPrivatanteilPct), kfzLaufendeKostenJahr: n(kfzLaufendeKostenJahr),
-    sonstigeAfaJahr: n(sonstigeAfaJahr), investitionsbedingtenGfbNutzen,
-  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, kfzLaufendeKostenJahr, sonstigeAfaJahr, investitionsbedingtenGfbNutzen])
+    sonstigeAfaJahr: n(sonstigeAfaJahr), investitionsbedingtenGfbNutzen, anlagehorizontJahre: Math.max(0, n(anlagehorizontJahre)),
+  }), [umsatz, betriebsausgaben, autoAnschaffungswert, autoNutzungsdauerJahre, autoPrivatanteilPct, kfzLaufendeKostenJahr, sonstigeAfaJahr, investitionsbedingtenGfbNutzen, anlagehorizontJahre])
 
   const spezifisch: GmbhSpezifischeEingabe = useMemo(() => ({
     gfGehaltBrutto: n(gfGehaltBrutto), ausschuettungsquotePct: n(ausschuettungsquotePct),
+    verzinsungThesaurierungPct: n(verzinsungThesaurierungPct),
     dzSatzPct: n(dzSatzPct), stbMehrkostenJahr: n(stbMehrkostenJahr), offenlegungJahr: n(offenlegungJahr),
-  }), [gfGehaltBrutto, ausschuettungsquotePct, dzSatzPct, stbMehrkostenJahr, offenlegungJahr])
+  }), [gfGehaltBrutto, ausschuettungsquotePct, verzinsungThesaurierungPct, dzSatzPct, stbMehrkostenJahr, offenlegungJahr])
 
   const eu = useMemo(() => berechneEu(gemeinsam), [gemeinsam])
   const gmbh = useMemo(() => berechneGmbh(gemeinsam, spezifisch), [gemeinsam, spezifisch])
@@ -188,6 +191,19 @@ export function EuVsGmbhRechner() {
               hint="0 % = alles thesauriert (nur 23 % KöSt), 100 % = alles ausgeschüttet (zusätzlich 27,5 % KESt)"
             />
           </div>
+          <div>
+            <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Verzinsung des nicht entnommenen (thesaurierten) Gewinns</h4>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Feld label="Zinssatz auf thesaurierten Gewinn (%/Jahr)" value={verzinsungThesaurierungPct} onChange={setVerzinsungThesaurierungPct} step={0.5} suffix="%" min={0} />
+              <Feld label="Anlagehorizont (Jahre)" value={anlagehorizontJahre} onChange={setAnlagehorizontJahre} step={1} min={0} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Vereinfacht: Der thesaurierte Gewinn wächst über die Jahre brutto mit diesem Zinssatz (Zinseszins,
+              z. B. bei Investition in ein Wertpapierdepot der GmbH), erst bei der (späteren) Entnahme wird auf
+              den vollen Endwert einmalig KESt fällig. Die laufende KöSt auf die Kapitalerträge im Unternehmen
+              selbst wird nicht gesondert abgezogen. Bei 0 Jahren Horizont ohne Effekt (reiner Jahresvergleich).
+            </p>
+          </div>
 
           <button type="button" onClick={() => setKostenOffen((v) => !v)}
             className="flex items-center gap-1.5 text-left text-sm font-semibold text-muted-foreground hover:text-foreground">
@@ -244,8 +260,19 @@ export function EuVsGmbhRechner() {
               <ZeilePos label="+ GF-Gehalt netto (nach GSVG, ESt, Sachbezug)" value={kreditFormatEUR(gmbh.gfNettoBar)} muted />
               <ZeilePos label="Bar verfügbar (Gehalt + Ausschüttung)" value={kreditFormatEUR(gmbh.verfuegbaresEinkommen)} bold />
               <ZeilePos label="+ thesauriert im Unternehmen (nach KöSt)" value={kreditFormatEUR(gmbh.thesaurierterGewinn)} muted />
-              <ZeilePos label="Gesamtvermögenszuwachs (vor latenter KESt)" value={kreditFormatEUR(gmbh.gesamtInklThesaurierung)} muted />
-              <ZeilePos label="− latente KESt auf Thesaurierung (27,5 % bei Entnahme)" value={"−" + kreditFormatEUR(Math.max(0, gmbh.gesamtInklThesaurierung - gmbh.gesamtNachLatenterSteuer))} muted />
+              {n(anlagehorizontJahre) > 0 && (
+                <ZeilePos
+                  label={`+ Verzinsung über ${n(anlagehorizontJahre)} Jahre (${kreditFormatPct(n(verzinsungThesaurierungPct), 1)}/Jahr)`}
+                  value={kreditFormatEUR(gmbh.thesaurierterGewinnEndwert - gmbh.thesaurierterGewinn)}
+                  muted
+                />
+              )}
+              <ZeilePos
+                label={n(anlagehorizontJahre) > 0 ? `Endwert nach ${n(anlagehorizontJahre)} Jahren (vor latenter KESt)` : "Gesamtvermögenszuwachs (vor latenter KESt)"}
+                value={kreditFormatEUR(gmbh.verfuegbaresEinkommen + gmbh.thesaurierterGewinnEndwert)}
+                muted
+              />
+              <ZeilePos label="− latente KESt auf Thesaurierung (27,5 % bei Entnahme)" value={"−" + kreditFormatEUR(Math.max(0, gmbh.verfuegbaresEinkommen + gmbh.thesaurierterGewinnEndwert - gmbh.gesamtNachLatenterSteuer))} muted />
               <ZeilePos label="Vergleichswert ggü. Einzelunternehmer" value={kreditFormatEUR(gmbh.gesamtNachLatenterSteuer)} bold />
             </div>
           </CardContent>
@@ -255,7 +282,9 @@ export function EuVsGmbhRechner() {
       <Card style={{ background: "linear-gradient(135deg,#0B1F2A 0%,#155767 130%)" }} className="text-white">
         <CardContent className="flex flex-col gap-1">
           <span className="text-xs text-white/70">
-            Jährliche Differenz (inkl. thesauriertem Gewinn) — {gmbhBesser ? "GmbH" : "Einzelunternehmer"} liegt vorne
+            {n(anlagehorizontJahre) > 0
+              ? `Differenz — Jahresnetto EU vs. GmbH-Endwert nach ${n(anlagehorizontJahre)} Jahren Verzinsung`
+              : "Jährliche Differenz (inkl. thesauriertem Gewinn)"} — {gmbhBesser ? "GmbH" : "Einzelunternehmer"} liegt vorne
           </span>
           <span className="text-2xl font-bold tabular-nums">
             {differenz >= 0 ? "+" : ""}{kreditFormatEUR(differenz)}

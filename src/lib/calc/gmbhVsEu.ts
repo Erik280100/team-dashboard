@@ -145,8 +145,13 @@ export const DEFAULTS = {
   kfzLaufendeKostenJahr: 0,
   sonstigeAfaJahr: 1500,
   investitionsbedingtenGfbNutzen: false,
+  // 0 Jahre = keine Verzinsung, entspricht dem bisherigen Verhalten (reiner Jahresvergleich).
+  anlagehorizontJahre: 0,
   gfGehaltBrutto: 40000,
   ausschuettungsquotePct: 50,
+  // Zinssatz p.a. auf den im Unternehmen verbleibenden (thesaurierten) Gewinn, z. B. bei
+  // Investition in ein Wertpapierdepot der GmbH — 0 % standardmäßig, kein recherchierter Wert.
+  verzinsungThesaurierungPct: 0,
   dzSatzPct: DZ_SATZ_DEFAULT_PCT,
   stbMehrkostenJahr: 2200,
   offenlegungJahr: 150,
@@ -183,6 +188,11 @@ export interface GemeinsameEingabe {
   kfzLaufendeKostenJahr: number
   sonstigeAfaJahr: number
   investitionsbedingtenGfbNutzen: boolean
+  /** Über wie viele Jahre der thesaurierte Gewinn (GmbH/Zypern) vor einem Vergleich mit dem
+   * Einzelunternehmer-Jahresnetto verzinst wird, siehe verzinsungThesaurierungPct in
+   * GmbhSpezifischeEingabe/ZypernSpezifischeEingabe. 0 = kein Zinseffekt (bisheriges
+   * Verhalten, reiner Jahresvergleich ohne Zeithorizont). Wird von berechneEu ignoriert. */
+  anlagehorizontJahre: number
 }
 
 export interface EuErgebnis {
@@ -227,6 +237,11 @@ export interface GmbhSpezifischeEingabe {
   gfGehaltBrutto: number
   /** Anteil des Gewinns nach KöSt, der ausgeschüttet wird (Rest bleibt thesauriert). */
   ausschuettungsquotePct: number
+  /** Zinssatz p.a., mit dem der thesaurierte Gewinn über GemeinsameEingabe.anlagehorizontJahre
+   * verzinst wird, bevor die latente KESt bei Entnahme abgezogen wird (vereinfacht: die Zinsen
+   * selbst wachsen brutto, es wird nur am Ende einmal die volle KESt auf den Endwert fällig —
+   * die laufende KöSt auf die Kapitalerträge im Unternehmen wird nicht gesondert simuliert). */
+  verzinsungThesaurierungPct: number
   dzSatzPct: number
   stbMehrkostenJahr: number
   offenlegungJahr: number
@@ -246,22 +261,30 @@ export interface GmbhErgebnis {
   kESt: number
   ausschuettungNetto: number
   thesaurierterGewinn: number
+  /** thesaurierterGewinn nach Verzinsung über GemeinsameEingabe.anlagehorizontJahre mit
+   * GmbhSpezifischeEingabe.verzinsungThesaurierungPct (Zinseszins) — bei horizontJahre 0 oder
+   * verzinsungThesaurierungPct 0 identisch mit thesaurierterGewinn. Ein negativer Betrag
+   * (Verlust) wird nicht verzinst. */
+  thesaurierterGewinnEndwert: number
   gfBetriebsausgabenpauschale: number
   gfGewinnfreibetrag: number
   gfEinkommensteuer: number
   gfNettoBar: number
   verfuegbaresEinkommen: number
-  /** Bar verfügbar plus voller thesaurierter Gewinn — Vorsicht: das ist NICHT direkt mit dem
-   * voll versteuerten Einzelunternehmer-Netto vergleichbar, weil auf den thesaurierten Teil
-   * bei einer künftigen Entnahme noch KESt anfällt. Für einen fairen Vergleich siehe
-   * gesamtNachLatenterSteuer. */
+  /** Bar verfügbar plus voller (unverzinster) thesaurierter Gewinn — Vorsicht: das ist NICHT
+   * direkt mit dem voll versteuerten Einzelunternehmer-Netto vergleichbar, weil auf den
+   * thesaurierten Teil bei einer künftigen Entnahme noch KESt anfällt. Für einen fairen
+   * Vergleich siehe gesamtNachLatenterSteuer. */
   gesamtInklThesaurierung: number
-  /** Wie gesamtInklThesaurierung, aber der thesaurierte Gewinn wird um die KESt gekürzt, die
-   * bei einer künftigen Ausschüttung anfallen würde (27,5 % auf den positiven Anteil — ein
-   * Verlust wird nicht "wegversteuert"). Das ist die richtige Vergleichsgrundlage gegen das
-   * voll versteuerte Einzelunternehmer-Netto, unabhängig von der gewählten Ausschüttungsquote:
-   * ohne diese Korrektur suggeriert eine niedrige Ausschüttungsquote einen GmbH-Vorteil, der
-   * beim tatsächlichen Verbrauch des Geldes gar nicht existiert (siehe PR-Diskussion). */
+  /** Bar verfügbar plus verzinster thesaurierter Gewinn (thesaurierterGewinnEndwert), gekürzt
+   * um die KESt, die bei einer künftigen Ausschüttung des Endwerts anfallen würde (27,5 % auf
+   * den positiven Anteil — ein Verlust wird nicht "wegversteuert"). Das ist die richtige
+   * Vergleichsgrundlage gegen das voll versteuerte Einzelunternehmer-Netto, unabhängig von der
+   * gewählten Ausschüttungsquote: ohne diese Korrektur suggeriert eine niedrige Ausschüttungs-
+   * quote einen GmbH-Vorteil, der beim tatsächlichen Verbrauch des Geldes gar nicht existiert
+   * (siehe PR-Diskussion). Bei einem Anlagehorizont > 0 vergleicht dieser Wert einen Endwert
+   * nach N Jahren gegen ein einzelnes Jahr Einzelunternehmer-Einkommen — als Antwort auf "was
+   * bringt mir das Liegenlassen", nicht als exakter Jahresvergleich gedacht. */
   gesamtNachLatenterSteuer: number
 }
 
@@ -315,14 +338,22 @@ export function berechneGmbh(e: GemeinsameEingabe, s: GmbhSpezifischeEingabe): G
 
   const verfuegbaresEinkommen = gfNettoBar + ausschuettungNetto
   const gesamtInklThesaurierung = verfuegbaresEinkommen + thesaurierterGewinn
-  const thesaurierterGewinnNachLatenterKest = thesaurierterGewinn > 0 ? thesaurierterGewinn * (1 - KEST_SATZ) : thesaurierterGewinn
-  const gesamtNachLatenterSteuer = verfuegbaresEinkommen + thesaurierterGewinnNachLatenterKest
+
+  // Verzinsung des thesaurierten (nicht entnommenen) Gewinns über den gewählten Anlagehorizont,
+  // z. B. bei Investition in ein Wertpapierdepot der GmbH — vereinfacht: die Zinsen wachsen
+  // brutto weiter (keine laufende KöSt auf die Kapitalerträge selbst), erst am Ende wird auf
+  // den vollen Endwert einmalig die KESt fällig, wenn entnommen wird. Ein negativer thesau-
+  // rierter Betrag (Verlust) wird nicht verzinst.
+  const zinsfaktor = Math.pow(1 + Math.max(-100, s.verzinsungThesaurierungPct) / 100, Math.max(0, e.anlagehorizontJahre))
+  const thesaurierterGewinnEndwert = thesaurierterGewinn > 0 ? thesaurierterGewinn * zinsfaktor : thesaurierterGewinn
+  const thesaurierterGewinnEndwertNachLatenterKest = thesaurierterGewinnEndwert > 0 ? thesaurierterGewinnEndwert * (1 - KEST_SATZ) : thesaurierterGewinnEndwert
+  const gesamtNachLatenterSteuer = verfuegbaresEinkommen + thesaurierterGewinnEndwertNachLatenterKest
 
   return {
     afaGesamt, kfzLaufendeKosten, sachbezugAuto, gfBemessungGesamt, gfGsvgBeitrag, lohnnebenkostenGmbh,
     betrieblichesErgebnisVorKoest, koeSt, gewinnNachKoest, ausschuettungBrutto, kESt, ausschuettungNetto,
-    thesaurierterGewinn, gfBetriebsausgabenpauschale, gfGewinnfreibetrag: gfGfb, gfEinkommensteuer, gfNettoBar,
-    verfuegbaresEinkommen, gesamtInklThesaurierung, gesamtNachLatenterSteuer,
+    thesaurierterGewinn, thesaurierterGewinnEndwert, gfBetriebsausgabenpauschale, gfGewinnfreibetrag: gfGfb,
+    gfEinkommensteuer, gfNettoBar, verfuegbaresEinkommen, gesamtInklThesaurierung, gesamtNachLatenterSteuer,
   }
 }
 

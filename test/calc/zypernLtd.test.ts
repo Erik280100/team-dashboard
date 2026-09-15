@@ -75,6 +75,18 @@ describe("berechneZypernLtd — mit echter Wohnsitzverlegung", () => {
     const keine = berechneZypernLtd(DEFAULTS, { ...spezifisch, ausschuettungsquotePct: 0 })
     expect(keine.gesamtNachLatenterSteuer).toBeCloseTo(voll.gesamtNachLatenterSteuer, 0)
   })
+
+  it("compounds the retained profit over the horizon before deducting latent GESY at withdrawal", () => {
+    const jahre = 10
+    const zinssatz = 5
+    const r = berechneZypernLtd(
+      { ...DEFAULTS, anlagehorizontJahre: jahre },
+      { ...spezifisch, ausschuettungsquotePct: 0, verzinsungThesaurierungPct: zinssatz }
+    )
+    const erwarteterEndwert = r.thesaurierterGewinn * Math.pow(1.05, jahre)
+    expect(r.thesaurierterGewinnEndwert).toBeCloseTo(erwarteterEndwert, 2)
+    expect(r.gesamtNachLatenterSteuer).toBeCloseTo(r.verfuegbaresEinkommen + erwarteterEndwert * (1 - 0.0265), 2)
+  })
 })
 
 describe("berechneZypernLtd — ohne Wohnsitzverlegung (Ort der Geschäftsleitung Österreich)", () => {
@@ -113,7 +125,11 @@ describe("berechneZypernGruendungsVergleich", () => {
 
 describe("berechneDreiWegeSchwellenreihe", () => {
   it("returns one point per step across the requested range, without NaN/Infinity", () => {
-    const gmbhSpezifisch = { gfGehaltBrutto: DEFAULTS.gfGehaltBrutto, ausschuettungsquotePct: DEFAULTS.ausschuettungsquotePct, dzSatzPct: DEFAULTS.dzSatzPct, stbMehrkostenJahr: DEFAULTS.stbMehrkostenJahr, offenlegungJahr: DEFAULTS.offenlegungJahr }
+    const gmbhSpezifisch = {
+      gfGehaltBrutto: DEFAULTS.gfGehaltBrutto, ausschuettungsquotePct: DEFAULTS.ausschuettungsquotePct,
+      verzinsungThesaurierungPct: DEFAULTS.verzinsungThesaurierungPct, dzSatzPct: DEFAULTS.dzSatzPct,
+      stbMehrkostenJahr: DEFAULTS.stbMehrkostenJahr, offenlegungJahr: DEFAULTS.offenlegungJahr,
+    }
     const punkte = berechneDreiWegeSchwellenreihe(DEFAULTS, gmbhSpezifisch, { ...DEFAULTS_ZYPERN, wohnsitzVollstaendigVerlegt: true }, 20000, 220000, 20000)
     expect(punkte).toHaveLength(11)
     for (const p of punkte) {

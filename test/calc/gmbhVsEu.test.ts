@@ -121,6 +121,36 @@ describe("berechneGmbh", () => {
     expect(ohne.betrieblichesErgebnisVorKoest - mit.betrieblichesErgebnisVorKoest).toBeCloseTo(3000, 2)
   })
 
+  it("compounds the retained profit over the horizon (Zinseszins) and taxes only the final value at withdrawal", () => {
+    const jahre = 10
+    const zinssatz = 5
+    const r = berechneGmbh(
+      { ...DEFAULTS, anlagehorizontJahre: jahre },
+      { ...DEFAULTS, ausschuettungsquotePct: 0, verzinsungThesaurierungPct: zinssatz }
+    )
+    const erwarteterEndwert = r.thesaurierterGewinn * Math.pow(1.05, jahre)
+    expect(r.thesaurierterGewinnEndwert).toBeCloseTo(erwarteterEndwert, 2)
+    expect(r.thesaurierterGewinnEndwert).toBeGreaterThan(r.thesaurierterGewinn)
+    expect(r.gesamtNachLatenterSteuer).toBeCloseTo(r.verfuegbaresEinkommen + erwarteterEndwert * (1 - 0.275), 2)
+  })
+
+  it("has no effect on the result when horizon or interest rate is 0 (default, unchanged behaviour)", () => {
+    const ohneHorizont = berechneGmbh({ ...DEFAULTS, anlagehorizontJahre: 0 }, { ...DEFAULTS, verzinsungThesaurierungPct: 5 })
+    const ohneZins = berechneGmbh({ ...DEFAULTS, anlagehorizontJahre: 10 }, { ...DEFAULTS, verzinsungThesaurierungPct: 0 })
+    const referenz = berechneGmbh(DEFAULTS, DEFAULTS)
+    expect(ohneHorizont.thesaurierterGewinnEndwert).toBeCloseTo(referenz.thesaurierterGewinn, 2)
+    expect(ohneZins.thesaurierterGewinnEndwert).toBeCloseTo(referenz.thesaurierterGewinn, 2)
+    expect(ohneHorizont.gesamtNachLatenterSteuer).toBeCloseTo(referenz.gesamtNachLatenterSteuer, 2)
+  })
+
+  it("does not compound a negative thesaurierter Gewinn (a loss doesn't shrink further via interest)", () => {
+    const eingabe = { ...DEFAULTS, umsatz: 20000, betriebsausgaben: 5000, sonstigeAfaJahr: 0, autoAnschaffungswert: 0, anlagehorizontJahre: 10 }
+    const spezifisch = { ...DEFAULTS, gfGehaltBrutto: 60000, stbMehrkostenJahr: 0, offenlegungJahr: 0, verzinsungThesaurierungPct: 5 }
+    const r = berechneGmbh(eingabe, spezifisch)
+    expect(r.thesaurierterGewinn).toBeLessThan(0)
+    expect(r.thesaurierterGewinnEndwert).toBeCloseTo(r.thesaurierterGewinn, 2)
+  })
+
   it("does not apply a hard DB+DZ cliff at the Kommunalsteuer-Freigrenze (only Kommunalsteuer itself has one)", () => {
     // Kein Auto (sonst verzerrt der Sachbezug die Bemessungsgrundlage), Gehalt knapp unter und
     // knapp über der 1.460-€/Monat-Freigrenze (17.520 €/Jahr).
