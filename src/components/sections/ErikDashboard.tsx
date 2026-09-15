@@ -104,6 +104,7 @@ export function ErikDashboard({
   const [filter, setFilter] = useState<BoardFilter>("alle")
   const [flaggedOnly, setFlaggedOnly] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [search, setSearch] = useState("")
 
   // Swimlanes sollen die restliche Bildschirmhöhe unterhalb von Topbar/Bannern/Tab-
   // leiste ausfüllen, statt mit dem Rest der Seite mitzuscrollen (das Verschieben von
@@ -162,7 +163,13 @@ export function ErikDashboard({
     if (ok) removeTodo(todo.id)
   }
 
-  const visibleTodos = flaggedOnly ? todos.filter((t) => t.flagged) : todos
+  // Suche greift erst ab 2 Zeichen (kürzere Eingaben würden bei kurzen Titeln zu viel
+  // Rauschen erzeugen und sind meist noch Tippbeginn).
+  const searchTerm = search.trim().toLowerCase()
+  const searchActive = searchTerm.length >= 2
+  const visibleTodos = todos
+    .filter((t) => !flaggedOnly || t.flagged)
+    .filter((t) => !searchActive || t.title.toLowerCase().includes(searchTerm) || t.description.toLowerCase().includes(searchTerm))
 
   return (
     <div className="flex flex-col gap-4">
@@ -223,6 +230,14 @@ export function ErikDashboard({
               >
                 Nur geflaggte
               </button>
+              <Input
+                type="search"
+                placeholder="Suchen…"
+                aria-label="Todos durchsuchen"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8 w-40"
+              />
             </div>
             <Button onClick={() => setDialogOpen(true)}>
               <Plus /> Neues Todo
