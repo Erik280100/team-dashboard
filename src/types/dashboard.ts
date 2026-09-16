@@ -156,6 +156,8 @@ export interface PlanWeekEntry {
   etg: number
   ehOffen: number
   ehGemacht: number
+  aktivitaetenSoll: number
+  aktivitaetenIst: number
   notes: string
   submitted: boolean
 }

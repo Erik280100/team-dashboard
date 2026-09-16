@@ -173,6 +173,7 @@ export function emptyWeekEntry(): PlanWeekEntry {
     stz: 0, stg: 0,
     etz: 0, etg: 0,
     ehOffen: 0, ehGemacht: 0,
+    aktivitaetenSoll: 0, aktivitaetenIst: 0,
     notes: "",
     submitted: false,
   }
@@ -181,6 +182,7 @@ export function emptyWeekEntry(): PlanWeekEntry {
 const SUM_FIELDS = [
   "atz", "atg", "analysenZ", "analysen", "beratungenZ", "beratungen",
   "vertraege", "pg", "stz", "stg", "etz", "etg", "ehOffen", "ehGemacht",
+  "aktivitaetenSoll", "aktivitaetenIst",
 ] as const
 
 /** Summiert die Zahlenfelder mehrerer Wocheneinträge (notes/submitted bleiben leer/false). */

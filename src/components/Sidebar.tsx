@@ -12,7 +12,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; editorOnly?: 
   { id: "team", label: "Mitarbeiter", icon: Users },
   { id: "struktur", label: "Strukturbaum", icon: Network },
   { id: "statistik", label: "Statistik", icon: BarChart3, editorOnly: true },
-  { id: "planung", label: "Planung", icon: CalendarRange },
+  { id: "planung", label: "Controlling", icon: CalendarRange },
   { id: "rechner", label: "Rechner", icon: Calculator },
   { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
   { id: "guide", label: "Guide", icon: BookOpen },

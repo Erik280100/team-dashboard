@@ -26,6 +26,7 @@ const FIELD_GROUPS: FieldGroup[] = [
   { label: "Servicetermine", left: { sub: "Ziel", key: "stz" }, right: { sub: "Gemacht", key: "stg" } },
   { label: "Einstellungstermine", left: { sub: "Ziel", key: "etz" }, right: { sub: "Gemacht", key: "etg" } },
   { label: "Einheiten", left: { sub: "Offen", key: "ehOffen" }, right: { sub: "Gemacht", key: "ehGemacht" } },
+  { label: "Aktivitäten", left: { sub: "Soll", key: "aktivitaetenSoll" }, right: { sub: "Ist", key: "aktivitaetenIst" } },
 ]
 
 type CommitFn = (field: keyof PlanWeekEntry, value: number | string) => void
@@ -201,6 +202,7 @@ export function Wochenplanung({
               entry={weekDoc.entries[p.name] ?? {
                 atz: 0, atg: 0, analysenZ: 0, analysen: 0, beratungenZ: 0, beratungen: 0,
                 vertraege: 0, pg: 0, stz: 0, stg: 0, etz: 0, etg: 0, ehOffen: 0, ehGemacht: 0,
+                aktivitaetenSoll: 0, aktivitaetenIst: 0,
                 notes: "", submitted: false,
               }}
               isEditor={isEditor}
