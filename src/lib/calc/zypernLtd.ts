@@ -44,6 +44,10 @@ import {
 export const CY_KOEST_SATZ = 0.15
 export const CY_SDC_NON_DOM_SATZ = 0
 
+/** Wählbare zypriotische KöSt-Sätze: 15 % ab 1.1.2026 (Steuerreform) oder wahlweise 24 % zum
+ * konservativen Durchrechnen (z. B. falls die Non-Dom-/Reform-Vorteile nicht zutreffen sollten). */
+export const CY_KOEST_SATZ_OPTIONEN = [15, 24] as const
+
 export const CY_GESY_SATZ_ARBEITNEHMER = 0.0265
 export const CY_GESY_SATZ_ARBEITGEBER = 0.029
 export const CY_GESY_SATZ_DIVIDENDE = 0.0265
@@ -87,6 +91,7 @@ export const DEFAULTS_ZYPERN = {
   mieteZypernMonat: 1200,
   mieteOesterreichVergleichMonat: 900,
   wohnsitzVollstaendigVerlegt: true,
+  koeStSatzPct: CY_KOEST_SATZ_OPTIONEN[0] as number,
   // Nur relevant für den Fallback-Zweig ohne echte Wohnsitzverlegung (rechnet wie eine
   // österreichische GmbH, siehe berechneZypernOhneWohnsitzverlegung) — vorher hier hartkodiert
   // auf DZ_SATZ_DEFAULT_PCT statt den vom Nutzer eingestellten GmbH-Wert zu übernehmen.
@@ -110,6 +115,9 @@ export interface ZypernSpezifischeEingabe {
    * 60-Tage-Regel erfüllt, kein österreichischer Wohnsitz mehr) — sonst gilt die
    * Gesellschaft steuerlich weiter als österreichisch (Ort der Geschäftsleitung). */
   wohnsitzVollstaendigVerlegt: boolean
+  /** Zypriotischer KöSt-Satz in Prozent — wählbar zwischen 15 % (Reform ab 2026) und 24 %
+   * (konservative Annahme), siehe CY_KOEST_SATZ_OPTIONEN. */
+  koeStSatzPct: number
   mieteZypernMonat: number
   mieteOesterreichVergleichMonat: number
   /** Nur für den Fallback-Zweig ohne echte Wohnsitzverlegung relevant (siehe DEFAULTS_ZYPERN). */
@@ -174,7 +182,7 @@ function berechneZypernMitWohnsitzverlegung(e: GemeinsameEingabe, s: ZypernSpezi
   const zypernFixkosten = Math.max(0, s.buchhaltungJahr) + Math.max(0, s.auditJahr) + Math.max(0, s.registeredOfficeJahr)
   const betrieblichesErgebnisVorKoest =
     e.umsatz - e.betriebsausgaben - afaGesamt - kfzLaufendeKosten - direktorGehaltBrutto - siArbeitgeber - gesyArbeitgeber - zypernFixkosten
-  const koeSt = Math.max(0, betrieblichesErgebnisVorKoest) * CY_KOEST_SATZ
+  const koeSt = Math.max(0, betrieblichesErgebnisVorKoest) * clampPct(s.koeStSatzPct)
   // Kein Floor bei 0 — ein Verlust nach KöSt darf nicht verschwinden, siehe dieselbe Korrektur
   // in berechneGmbh (gmbhVsEu.ts, "Verlustfall").
   const gewinnNachKoest = betrieblichesErgebnisVorKoest - koeSt

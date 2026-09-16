@@ -18,8 +18,8 @@ import {
   type GemeinsameEingabe, type GmbhSpezifischeEingabe,
 } from "@/lib/calc/gmbhVsEu"
 import {
-  DEFAULTS_ZYPERN, berechneDreiWegeSchwellenreihe, berechneZypernGruendungsVergleich, berechneZypernLtd,
-  type ZypernSpezifischeEingabe,
+  CY_KOEST_SATZ_OPTIONEN, DEFAULTS_ZYPERN, berechneDreiWegeSchwellenreihe, berechneZypernGruendungsVergleich,
+  berechneZypernLtd, type ZypernSpezifischeEingabe,
 } from "@/lib/calc/zypernLtd"
 
 const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
@@ -133,6 +133,7 @@ export function RechtsformVergleichRechner() {
   const [gruendungskostenEinmalig, setGruendungskostenEinmalig] = useState(String(DEFAULTS.gruendungskostenEinmalig))
 
   const [wohnsitzVollstaendigVerlegt, setWohnsitzVollstaendigVerlegt] = useState(DEFAULTS_ZYPERN.wohnsitzVollstaendigVerlegt)
+  const [zypernKoeStSatzPct, setZypernKoeStSatzPct] = useState(String(DEFAULTS_ZYPERN.koeStSatzPct))
   const [direktorGehaltBrutto, setDirektorGehaltBrutto] = useState(String(DEFAULTS_ZYPERN.direktorGehaltBrutto))
   const [zypernAusschuettungsquotePct, setZypernAusschuettungsquotePct] = useState(String(DEFAULTS_ZYPERN.ausschuettungsquotePct))
   const [mieteZypernMonat, setMieteZypernMonat] = useState(String(DEFAULTS_ZYPERN.mieteZypernMonat))
@@ -162,11 +163,12 @@ export function RechtsformVergleichRechner() {
     direktorGehaltBrutto: n(direktorGehaltBrutto), ausschuettungsquotePct: n(zypernAusschuettungsquotePct),
     verzinsungThesaurierungPct: n(zypernVerzinsungThesaurierungPct),
     buchhaltungJahr: n(buchhaltungJahr), auditJahr: n(auditJahr), registeredOfficeJahr: n(registeredOfficeJahr),
-    wohnsitzVollstaendigVerlegt, mieteZypernMonat: n(mieteZypernMonat), mieteOesterreichVergleichMonat: n(mieteOesterreichVergleichMonat),
+    wohnsitzVollstaendigVerlegt, koeStSatzPct: n(zypernKoeStSatzPct),
+    mieteZypernMonat: n(mieteZypernMonat), mieteOesterreichVergleichMonat: n(mieteOesterreichVergleichMonat),
     // Nur relevant, falls der Wohnsitz NICHT verlegt wird (Fallback rechnet wie die GmbH oben)
     // — derselbe DZ-Satz wie bei der GmbH, es ist dieselbe Landeskammer-Zugehörigkeit.
     dzSatzPct: n(dzSatzPct),
-  }), [direktorGehaltBrutto, zypernAusschuettungsquotePct, zypernVerzinsungThesaurierungPct, buchhaltungJahr, auditJahr, registeredOfficeJahr, wohnsitzVollstaendigVerlegt, mieteZypernMonat, mieteOesterreichVergleichMonat, dzSatzPct])
+  }), [direktorGehaltBrutto, zypernAusschuettungsquotePct, zypernVerzinsungThesaurierungPct, buchhaltungJahr, auditJahr, registeredOfficeJahr, wohnsitzVollstaendigVerlegt, zypernKoeStSatzPct, mieteZypernMonat, mieteOesterreichVergleichMonat, dzSatzPct])
 
   const eu = useMemo(() => berechneEu(gemeinsam), [gemeinsam])
   const gmbh = useMemo(() => berechneGmbh(gemeinsam, spezifisch), [gemeinsam, spezifisch])
@@ -322,6 +324,14 @@ export function RechtsformVergleichRechner() {
               hint="Als Non-Dom 0 % SDC auf Dividenden (die ersten 17 Steuerjahre) — nur 2,65 % GESY fällt an"
             />
             <Feld label="Zinssatz auf thesaurierten Gewinn (%/Jahr)" value={zypernVerzinsungThesaurierungPct} onChange={setZypernVerzinsungThesaurierungPct} step={0.5} suffix="%" min={0} />
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              Zypriotischer KöSt-Satz
+              <PillGroup
+                value={zypernKoeStSatzPct as never}
+                options={CY_KOEST_SATZ_OPTIONEN.map((satz) => ({ value: String(satz), label: `${satz} %` })) as never}
+                onChange={(v) => setZypernKoeStSatzPct(v)}
+              />
+            </label>
           </div>
 
           <div>
@@ -435,7 +445,7 @@ export function RechtsformVergleichRechner() {
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(zypern.verfuegbaresEinkommen)}<span className="ml-1 text-xs font-normal text-muted-foreground">/Jahr bar verfügbar</span></div>
             <div className="flex flex-col gap-1.5 border-t pt-3">
               <ZeilePos label="Betriebliches Ergebnis vor KöSt" value={kreditFormatEUR(zypern.betrieblichesErgebnisVorKoest)} muted />
-              <ZeilePos label={zypern.wohnsitzGueltig ? "− Körperschaftsteuer (15 %)" : "− österreichische KöSt (23 %, min. 500 €)"} value={"−" + kreditFormatEUR(zypern.koeSt)} muted />
+              <ZeilePos label={zypern.wohnsitzGueltig ? `− Körperschaftsteuer (${kreditFormatPct(n(zypernKoeStSatzPct), 0)})` : "− österreichische KöSt (23 %, min. 500 €)"} value={"−" + kreditFormatEUR(zypern.koeSt)} muted />
               <ZeilePos label="Gewinn nach KöSt" value={kreditFormatEUR(zypern.gewinnNachKoest)} muted />
               <ZeilePos label={`davon Ausschüttung (${kreditFormatPct(n(zypernAusschuettungsquotePct), 0)})`} value={kreditFormatEUR(zypern.ausschuettungBrutto)} muted />
               <ZeilePos label={zypern.wohnsitzGueltig ? "− GESY auf Dividende (2,65 %, 0 % SDC Non-Dom)" : "− österreichische KESt (27,5 %)"} value={"−" + kreditFormatEUR(zypern.gesyAufDividende)} muted />
