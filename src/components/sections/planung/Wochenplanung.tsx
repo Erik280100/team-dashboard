@@ -58,18 +58,17 @@ function NumField({
 }
 
 function PersonCard({
-  person, isFk, entry, isEditor, onCommit, onSubmit,
+  person, isFk, entry, isEditor, onCommit,
 }: {
   person: RosterEntry
   isFk: boolean
   entry: PlanWeekEntry
   isEditor: boolean
   onCommit: CommitFn
-  onSubmit: (submitted: boolean) => void
 }) {
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-2 border-b pb-3">
+      <CardHeader className="border-b pb-3">
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
             {initials(person.name)}
@@ -84,14 +83,6 @@ function PersonCard({
             <div className="truncate text-xs text-muted-foreground">{person.role}</div>
           </div>
         </div>
-        <span
-          className={cn(
-            "shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold",
-            entry.submitted ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
-          )}
-        >
-          {entry.submitted ? "Abgegeben" : "Ausstehend"}
-        </span>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-1">
         <div className="grid grid-cols-2 gap-2">
@@ -123,12 +114,6 @@ function PersonCard({
               className="min-h-16 w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               onBlur={(e) => onCommit("notes", e.target.value)}
             />
-          </div>
-        )}
-        {isEditor && (
-          <div className="flex justify-end gap-2">
-            <Button type="button" size="sm" variant="ghost" onClick={() => onSubmit(false)}>Speichern</Button>
-            <Button type="button" size="sm" onClick={() => onSubmit(true)}>✓ Abgeben</Button>
           </div>
         )}
       </CardContent>
@@ -207,7 +192,6 @@ export function Wochenplanung({
               }}
               isEditor={isEditor}
               onCommit={(field, value) => saveWeekEntry(p.name, { [field]: value } as unknown as Partial<PlanWeekEntry>)}
-              onSubmit={(submitted) => saveWeekEntry(p.name, { submitted })}
             />
           ))}
         </div>
