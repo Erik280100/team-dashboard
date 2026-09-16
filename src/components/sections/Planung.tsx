@@ -100,7 +100,7 @@ export function Planung({
         />
       )}
       {ebene === "monat" && (
-        <Monatsplanung key={selectedManager} people={people} planung={planung} />
+        <Monatsplanung key={selectedManager} people={people} planung={planung} isEditor={isEditor} />
       )}
       {ebene === "jahr" && selectedManager && (
         <Jahresplanung

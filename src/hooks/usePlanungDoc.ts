@@ -11,11 +11,11 @@
 // Normalfall, analog zu useMonthArchive.loadOne).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getDoc, onSnapshot, setDoc } from "firebase/firestore"
-import { CLOUD_CONFIGURED, planAnnualDocRef, planWeekDocRef } from "@/lib/firebase"
-import { defaultAnnual, emptyWeekEntry, isoWeekKey, planManagerKey } from "@/lib/calc/planung"
+import { CLOUD_CONFIGURED, planAnnualDocRef, planMonthNotesDocRef, planWeekDocRef } from "@/lib/firebase"
+import { currentMonthKey, defaultAnnual, emptyMonthNoteEntry, emptyWeekEntry, isoWeekKey, planManagerKey } from "@/lib/calc/planung"
 import {
-  planAnnualStorageKey, planWeekStorageKey,
-  type PlanAnnualDoc, type PlanWeekDoc, type PlanWeekEntry,
+  planAnnualStorageKey, planMonthNotesStorageKey, planWeekStorageKey,
+  type PlanAnnualDoc, type PlanMonthNotesDoc, type PlanMonthNotesEntry, type PlanWeekDoc, type PlanWeekEntry,
 } from "@/types/dashboard"
 
 function emptyWeekDoc(week: string): PlanWeekDoc {
@@ -33,6 +33,23 @@ function loadLocalWeekDoc(week: string): PlanWeekDoc {
     console.warn(`Konnte Planungswoche ${week} nicht laden`, e)
   }
   return emptyWeekDoc(week)
+}
+
+function emptyMonthNotesDoc(month: string): PlanMonthNotesDoc {
+  return { month, entries: {} }
+}
+
+function loadLocalMonthNotesDoc(month: string): PlanMonthNotesDoc {
+  try {
+    const raw = localStorage.getItem(planMonthNotesStorageKey(month))
+    if (raw) {
+      const parsed = JSON.parse(raw) as PlanMonthNotesDoc
+      if (parsed && typeof parsed === "object" && parsed.entries) return parsed
+    }
+  } catch (e) {
+    console.warn(`Konnte Monatsnotizen ${month} nicht laden`, e)
+  }
+  return emptyMonthNotesDoc(month)
 }
 
 function loadLocalAnnualDoc(year: number, managerKey: string): PlanAnnualDoc | null {
@@ -64,6 +81,13 @@ export interface UsePlanungDocResult {
   getWeek: (week: string) => PlanWeekDoc | null
   /** Mehrere Wochen auf einmal anfordern und auf ihr Laden warten. */
   loadWeeks: (weeks: string[]) => Promise<PlanWeekDoc[]>
+  /** Aktuell angezeigter Monat ("YYYY-MM") der Monatsplanung-Notizkacheln. */
+  activeMonth: string
+  setActiveMonth: (month: string) => void
+  /** Live-Dokument der Monats-Notizen (AT/BT/ST-Kacheln) des aktuell angezeigten Monats. */
+  monthNotesDoc: PlanMonthNotesDoc
+  /** Schreibt/merged einen Notiz-Eintrag für `name` im aktuell angezeigten Monat. */
+  saveMonthNoteEntry: (name: string, patch: Partial<PlanMonthNotesEntry>) => void
   /** Jahresplanungs-Dokument einer Führungskraft (Fallback: defaultAnnual()). */
   annual: (year: number, managerName: string) => PlanAnnualDoc
   annualStatus: (year: number, managerName: string) => WeekDocStatus
@@ -185,6 +209,53 @@ export function usePlanungDoc(): UsePlanungDocResult {
     [loadOne]
   )
 
+  // ---- Monats-Notizen (AT/BT/ST-Kacheln der Monatsplanung) — Live-Dokument
+  // analog zu weekDoc oben, nur je Kalendermonat statt je ISO-Woche. ----
+  const [activeMonth, setActiveMonth] = useState<string>(() => currentMonthKey())
+  const [monthNotesDoc, setMonthNotesDoc] = useState<PlanMonthNotesDoc>(() => loadLocalMonthNotesDoc(activeMonth))
+  const monthCloudReady = useRef(false)
+  const latestMonthNotesDoc = useRef(monthNotesDoc)
+  latestMonthNotesDoc.current = monthNotesDoc
+
+  useEffect(() => {
+    setMonthNotesDoc(loadLocalMonthNotesDoc(activeMonth))
+    monthCloudReady.current = false
+    const docRef = planMonthNotesDocRef(activeMonth)
+    if (!CLOUD_CONFIGURED || !docRef) return
+    const unsub = onSnapshot(
+      docRef,
+      (snap) => {
+        if (snap.metadata.hasPendingWrites) return
+        if (snap.exists()) {
+          const data = snap.data() as Partial<PlanMonthNotesDoc>
+          const next: PlanMonthNotesDoc = { month: activeMonth, entries: data.entries ?? {} }
+          setMonthNotesDoc(next)
+          try { localStorage.setItem(planMonthNotesStorageKey(activeMonth), JSON.stringify(next)) } catch { /* noop */ }
+        }
+        monthCloudReady.current = true
+      },
+      (err) => console.warn(`Monatsnotizen ${activeMonth}: Cloud-Verbindung fehlgeschlagen`, err)
+    )
+    return unsub
+  }, [activeMonth])
+
+  const saveMonthNoteEntry = useCallback(
+    (name: string, patch: Partial<PlanMonthNotesEntry>) => {
+      const current = latestMonthNotesDoc.current
+      const nextEntry = { ...(current.entries[name] ?? emptyMonthNoteEntry()), ...patch }
+      const next: PlanMonthNotesDoc = { month: current.month, entries: { ...current.entries, [name]: nextEntry } }
+      setMonthNotesDoc(next)
+      try { localStorage.setItem(planMonthNotesStorageKey(next.month), JSON.stringify(next)) } catch { /* noop */ }
+      const docRef = planMonthNotesDocRef(next.month)
+      if (CLOUD_CONFIGURED && monthCloudReady.current && docRef) {
+        setDoc(docRef, next).catch((err) =>
+          console.warn(`Monatsnotizen ${next.month}: Cloud-Speichern fehlgeschlagen`, err)
+        )
+      }
+    },
+    []
+  )
+
   // ---- Jahresplanung — eigenes kleines Live-Cache-Set, ein Dokument je
   // Jahr + Führungskraft (siehe planManagerKey/annualCacheKey oben). ----
   const [annualDocs, setAnnualDocs] = useState<Map<string, PlanAnnualDoc>>(new Map())
@@ -268,6 +339,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
   return {
     activeWeek, setActiveWeek, weekDoc, saveWeekEntry,
     getWeek, loadWeeks,
+    activeMonth, setActiveMonth, monthNotesDoc, saveMonthNoteEntry,
     annual, annualStatus, saveAnnual,
   }
 }

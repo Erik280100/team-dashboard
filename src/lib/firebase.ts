@@ -75,3 +75,8 @@ export function planWeekDocRef(week: string): DocumentReference | null {
 export function planAnnualDocRef(year: number, managerKey: string): DocumentReference | null {
   return firestore ? doc(firestore, "finova", `plan_annual_${year}_${managerKey}`) : null
 }
+
+/** Dokument-Referenz für die Monats-Notizen (AT/BT/ST-Kacheln, finova/plan_month_notes_<YYYY-MM>). */
+export function planMonthNotesDocRef(month: string): DocumentReference | null {
+  return firestore ? doc(firestore, "finova", `plan_month_notes_${month}`) : null
+}

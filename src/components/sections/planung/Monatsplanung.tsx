@@ -2,15 +2,61 @@
 // Finova_Controlling.html:824-829 (KPI-Kacheln) und 1558-1587 (Tabelle).
 // Lädt die betroffenen Wochendokumente lazy nach (usePlanungDoc.loadWeeks).
 import { useEffect, useMemo, useState } from "react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { fmt } from "@/lib/calc/format"
-import { aggregateByName, monthLabel, monthWeekKeys, quotePct, sumWeekEntries } from "@/lib/calc/planung"
+import { fmt, initials } from "@/lib/calc/format"
+import {
+  aggregateByName, currentMonthKey, emptyMonthNoteEntry, monthLabel, monthWeekKeys, quotePct, sumWeekEntries,
+} from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import type { PlanMonthNotesEntry } from "@/types/dashboard"
 
-function currentMonthKey(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+const NOTE_FIELDS: { key: keyof PlanMonthNotesEntry; label: string }[] = [
+  { key: "at", label: "AT" },
+  { key: "bt", label: "BT" },
+  { key: "st", label: "ST" },
+]
+
+function MonthNoteCard({
+  person, entry, isEditor, onCommit,
+}: {
+  person: RosterEntry
+  entry: PlanMonthNotesEntry
+  isEditor: boolean
+  onCommit: (field: keyof PlanMonthNotesEntry, value: string) => void
+}) {
+  return (
+    <Card>
+      <CardHeader className="border-b pb-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
+            {initials(person.name)}
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium">{person.name}</div>
+            <div className="truncate text-xs text-muted-foreground">{person.role}</div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 pt-3">
+        {NOTE_FIELDS.map((f) => (
+          <div key={f.key}>
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{f.label}</div>
+            <textarea
+              key={`${person.name}-${f.key}-${entry[f.key]}`}
+              disabled={!isEditor}
+              defaultValue={entry[f.key]}
+              placeholder="Namen…"
+              aria-label={`${f.label} – ${person.name}`}
+              className="min-h-24 w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
+              onBlur={(e) => onCommit(f.key, e.target.value)}
+            />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
 }
 
 function shiftMonth(monthKey: string, n: number): string {
@@ -30,10 +76,11 @@ function KpiTile({ label, value, sub }: { label: string; value: string; sub: str
 }
 
 export function Monatsplanung({
-  people, planung,
+  people, planung, isEditor,
 }: {
   people: RosterEntry[]
   planung: UsePlanungDocResult
+  isEditor: boolean
 }) {
   const [monthKey, setMonthKey] = useState<string>(currentMonthKey)
   const weeks = useMemo(() => monthWeekKeys(monthKey), [monthKey])
@@ -45,6 +92,13 @@ export function Monatsplanung({
     // Nachladen soll nur bei einem Monatswechsel neu angestoßen werden.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weeks])
+
+  useEffect(() => {
+    planung.setActiveMonth(monthKey)
+    // planung bewusst nicht als Dependency (neues Objekt je Render) — siehe
+    // Kommentar oben bei loadWeeks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthKey])
 
   const weekDocs = weeks.map((w) => planung.getWeek(w))
   const loaded = weekDocs.filter((d) => d !== null)
@@ -148,6 +202,23 @@ export function Monatsplanung({
             </tfoot>
           </table>
         </div>
+      )}
+
+      {people.length > 0 && (
+        <>
+          <div className="mt-2 text-sm font-medium">Termin-Notizen · {monthLabel(monthKey)}</div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {people.map((p) => (
+              <MonthNoteCard
+                key={p.name}
+                person={p}
+                entry={planung.monthNotesDoc.entries[p.name] ?? emptyMonthNoteEntry()}
+                isEditor={isEditor}
+                onCommit={(field, value) => planung.saveMonthNoteEntry(p.name, { [field]: value })}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

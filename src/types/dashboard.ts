@@ -166,6 +166,23 @@ export interface PlanWeekDoc {
   entries: Record<string, PlanWeekEntry>
 }
 
+/**
+ * Freitext-Notizen je Mitarbeiter für einen Monat (Kachel-Ansicht der
+ * Monatsplanung, analog zu den Wochenplanung-Karten, aber ohne Zahlenfelder —
+ * hier werden Namen für Anruf-/Beratungs-/Servicetermine notiert).
+ */
+export interface PlanMonthNotesEntry {
+  at: string
+  bt: string
+  st: string
+}
+
+/** finova/plan_month_notes_<YYYY-MM> — entries je Mitarbeitername. */
+export interface PlanMonthNotesDoc {
+  month: string
+  entries: Record<string, PlanMonthNotesEntry>
+}
+
 export const PLAN_TARGET_KEYS = ["vertraege", "einheiten", "atg", "analysen", "beratungen"] as const
 export type PlanTargetKey = (typeof PLAN_TARGET_KEYS)[number]
 
@@ -197,6 +214,9 @@ export function planWeekStorageKey(week: string): string {
 }
 export function planAnnualStorageKey(year: number, managerKey: string): string {
   return `finova_plan_annual_${year}_${managerKey}_v1`
+}
+export function planMonthNotesStorageKey(month: string): string {
+  return `finova_plan_month_notes_${month}_v1`
 }
 
 export const STORAGE_KEY = "finova_dashboard_data_v1"

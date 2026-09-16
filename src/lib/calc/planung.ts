@@ -7,6 +7,7 @@ import { addDays, defaultPeriod, parseISODate } from "@/lib/calc/format"
 import {
   PLAN_QUARTERS,
   type PlanAnnualDoc,
+  type PlanMonthNotesEntry,
   type PlanQuarter,
   type PlanWeekDoc,
   type PlanWeekEntry,
@@ -78,6 +79,12 @@ export function weekLabel(week: string): string {
 export function monthLabel(monthKey: string): string {
   const [y, m] = monthKey.split("-").map(Number)
   return new Date(y, m - 1, 1).toLocaleDateString("de-AT", { month: "long", year: "numeric" })
+}
+
+/** "YYYY-MM" des laufenden Kalendermonats. */
+export function currentMonthKey(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 }
 
 /**
@@ -196,6 +203,11 @@ export function aggregateByName(docs: PlanWeekDoc[], names: string[]): Map<strin
     out.set(name, sumWeekEntries(entries))
   }
   return out
+}
+
+/** Leerer Monats-Notizeintrag (AT/BT/ST-Kacheln der Monatsplanung). */
+export function emptyMonthNoteEntry(): PlanMonthNotesEntry {
+  return { at: "", bt: "", st: "" }
 }
 
 /** Abschlussquote in Prozent (Verträge / Beratungen), 0 bei beratungen <= 0. */
