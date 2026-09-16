@@ -111,18 +111,19 @@ function PersonCard({
             </div>
           ))}
         </div>
-        <div className="rounded-md border bg-muted/30 p-2">
-          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Notizen / Feedback</div>
-          <textarea
-            key={`${person.name}-notes-${entry.notes}`}
-            disabled={!isEditor}
-            defaultValue={entry.notes}
-            placeholder="Besonderheiten, offene Punkte…"
-            aria-label={`Notizen – ${person.name}`}
-            className="min-h-16 w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
-            onBlur={(e) => onCommit("notes", e.target.value)}
-          />
-        </div>
+        {isEditor && (
+          <div className="rounded-md border bg-muted/30 p-2">
+            <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Notizen / Feedback</div>
+            <textarea
+              key={`${person.name}-notes-${entry.notes}`}
+              defaultValue={entry.notes}
+              placeholder="Besonderheiten, offene Punkte…"
+              aria-label={`Notizen – ${person.name}`}
+              className="min-h-16 w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              onBlur={(e) => onCommit("notes", e.target.value)}
+            />
+          </div>
+        )}
         {isEditor && (
           <div className="flex justify-end gap-2">
             <Button type="button" size="sm" variant="ghost" onClick={() => onSubmit(false)}>Speichern</Button>
