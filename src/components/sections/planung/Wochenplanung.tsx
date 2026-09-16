@@ -20,10 +20,9 @@ interface FieldGroup {
 }
 
 const FIELD_GROUPS: FieldGroup[] = [
-  { label: "Anruftermine", left: { sub: "Ziel", key: "atz" }, right: { sub: "Gemacht", key: "atg" } },
+  { label: "Wählversuche", left: { sub: "Ziel", key: "atz" }, right: { sub: "Gemacht", key: "atg" } },
   { label: "Analysen", left: { sub: "Ausgemacht", key: "analysenZ" }, right: { sub: "Stattgefunden", key: "analysen" } },
   { label: "Beratungen", left: { sub: "Ausgemacht", key: "beratungenZ" }, right: { sub: "Stattgefunden", key: "beratungen" } },
-  { label: "Verträge / PG", left: { sub: "Verträge", key: "vertraege" }, right: { sub: "PG", key: "pg" } },
   { label: "Servicetermine", left: { sub: "Ziel", key: "stz" }, right: { sub: "Gemacht", key: "stg" } },
   { label: "Einstellungstermine", left: { sub: "Ziel", key: "etz" }, right: { sub: "Gemacht", key: "etg" } },
   { label: "Einheiten", left: { sub: "Offen", key: "ehOffen" }, right: { sub: "Gemacht", key: "ehGemacht" } },
