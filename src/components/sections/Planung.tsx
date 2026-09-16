@@ -3,11 +3,12 @@
 // (Rechner.tsx:36-52), darunter die Ebenen-Pills (Woche/Monat/Jahr) im
 // gleichen Stil. Wer zu wem gehört, kommt komplett aus dem Strukturbaum
 // (sbSubtreeNames) — kein eigener Hierarchie-Code, siehe Team.tsx.
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { TeamGoal } from "@/lib/calc/format"
-import { SB_LEAD_ROLE_ABBR, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
+import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
+import type { PlanTeamGroup } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import { Wochenplanung } from "@/components/sections/planung/Wochenplanung"
 import { Monatsplanung } from "@/components/sections/planung/Monatsplanung"
@@ -47,6 +48,26 @@ export function Planung({
   )
   const people = useMemo(() => roster.filter((r) => names.has(r.name)), [roster, names])
 
+  // "Nach Führungskräften"-Rollup: die direkt unter selectedManager liegenden
+  // Führungskräfte (siehe sbLeadFrontier), je eine Zeile/Kachel mit Team +
+  // Führungskraft selbst zusammengezählt statt jeder Einzelperson.
+  const leadFrontier = useMemo(
+    () => (selectedManager ? sbLeadFrontier(orgTree, selectedManager) : []),
+    [selectedManager, orgTree]
+  )
+  const teamGroups: PlanTeamGroup[] = useMemo(
+    () => leadFrontier.map((lead) => ({
+      name: lead.name,
+      role: lead.role,
+      names: [...sbSubtreeNames(orgTree, lead.name)],
+    })),
+    [leadFrontier, orgTree]
+  )
+  const [groupByLead, setGroupByLead] = useState(false)
+  useEffect(() => {
+    if (leadFrontier.length === 0) setGroupByLead(false)
+  }, [leadFrontier])
+
   if (managerOptions.length === 0) {
     return (
       <div className="flex flex-col gap-4">
@@ -76,7 +97,7 @@ export function Planung({
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {EBENEN.map((e) => (
           <button
             key={e.id}
@@ -87,6 +108,25 @@ export function Planung({
             {e.label}
           </button>
         ))}
+        {leadFrontier.length > 0 && (
+          <>
+            <span className="mx-1 h-5 w-px bg-border" />
+            <button
+              type="button"
+              onClick={() => setGroupByLead(false)}
+              className={cn(PILL_BASE, !groupByLead ? PILL_ACTIVE : PILL_INACTIVE)}
+            >
+              Alle Mitarbeiter
+            </button>
+            <button
+              type="button"
+              onClick={() => setGroupByLead(true)}
+              className={cn(PILL_BASE, groupByLead ? PILL_ACTIVE : PILL_INACTIVE)}
+            >
+              Nach Führungskräften
+            </button>
+          </>
+        )}
       </div>
 
       {ebene === "woche" && (
@@ -97,10 +137,17 @@ export function Planung({
           planung={planung}
           isEditor={isEditor}
           teamGoal={teamGoal}
+          teamGroups={groupByLead ? teamGroups : null}
         />
       )}
       {ebene === "monat" && (
-        <Monatsplanung key={selectedManager} people={people} planung={planung} isEditor={isEditor} />
+        <Monatsplanung
+          key={selectedManager}
+          people={people}
+          planung={planung}
+          isEditor={isEditor}
+          teamGroups={groupByLead ? teamGroups : null}
+        />
       )}
       {ebene === "jahr" && selectedManager && (
         <Jahresplanung
@@ -109,6 +156,7 @@ export function Planung({
           people={people}
           planung={planung}
           isEditor={isEditor}
+          teamGroups={groupByLead ? teamGroups : null}
         />
       )}
     </div>

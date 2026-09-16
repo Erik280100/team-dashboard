@@ -207,6 +207,34 @@ export function aggregateByName(docs: PlanWeekDoc[], names: string[]): Map<strin
   return out
 }
 
+/** Eine Rollup-Gruppe für die "Nach Führungskräften"-Ansicht — eine
+ * Führungskraft mit allen Namen ihres Teilbaums (inkl. ihr selbst). */
+export interface PlanTeamGroup {
+  name: string
+  role: string
+  names: string[]
+}
+
+/**
+ * Wie aggregateByName, aber je Gruppe (mehrere Namen, z. B. eine
+ * Führungskraft + ihr gesamtes Team) statt je Einzelperson — für die
+ * "Nach Führungskräften"-Rollup-Ansicht der Wochen-/Monats-/Jahresplanung.
+ */
+export function aggregateByGroup(docs: PlanWeekDoc[], groups: PlanTeamGroup[]): Map<string, PlanWeekEntry> {
+  const out = new Map<string, PlanWeekEntry>()
+  for (const g of groups) {
+    const entries: PlanWeekEntry[] = []
+    for (const doc of docs) {
+      for (const name of g.names) {
+        const e = doc.entries[name]
+        if (e) entries.push(e)
+      }
+    }
+    out.set(g.name, sumWeekEntries(entries))
+  }
+  return out
+}
+
 /** Leerer Monats-Notizeintrag (AT/BT/ST-Kacheln der Monatsplanung). */
 export function emptyMonthNoteEntry(): PlanMonthNotesEntry {
   return { at: "", bt: "", st: "", et: "" }

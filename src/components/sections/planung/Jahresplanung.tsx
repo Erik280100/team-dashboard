@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { fmt } from "@/lib/calc/format"
 import {
-  QUARTER_LIST, Q_MONTHS, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter,
+  QUARTER_LIST, Q_MONTHS, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
@@ -44,12 +44,13 @@ function barColor(pct: number): string {
 }
 
 export function Jahresplanung({
-  managerName, people, planung, isEditor,
+  managerName, people, planung, isEditor, teamGroups,
 }: {
   managerName: string
   people: RosterEntry[]
   planung: UsePlanungDocResult
   isEditor: boolean
+  teamGroups?: PlanTeamGroup[] | null
 }) {
   const [year, setYear] = useState<number>(() => new Date().getFullYear())
   const stored = planung.annual(year, managerName)
@@ -95,6 +96,28 @@ export function Jahresplanung({
     QUARTER_LIST.forEach((q) => { out[q] = sumWeekEntries(entriesFor.byQuarter[q]) })
     return out
   }, [entriesFor])
+
+  // "Nach Führungskräften"-Rollup: Jahres-Ist je Führungskraft (Team + sie
+  // selbst), ergänzend zur Jahreszielsetzung oben (die bleibt an managerName
+  // als Ganzes gebunden — es gibt keine eigenen Jahresziele je Unterführungskraft).
+  const groupYearActuals = useMemo(() => {
+    if (!teamGroups || teamGroups.length === 0) return null
+    const byGroupEntries = new Map<string, PlanWeekEntry[]>(teamGroups.map((g) => [g.name, []]))
+    const groupByName = new Map<string, string[]>()
+    teamGroups.forEach((g) => { g.names.forEach((n) => groupByName.set(n, [...(groupByName.get(n) ?? []), g.name])) })
+    weekDocs.forEach(({ doc }) => {
+      if (!doc) return
+      Object.entries(doc.entries).forEach(([name, entry]) => {
+        groupByName.get(name)?.forEach((groupKey) => byGroupEntries.get(groupKey)!.push(entry))
+      })
+    })
+    const out = new Map<string, PlanWeekEntry>()
+    teamGroups.forEach((g) => out.set(g.name, sumWeekEntries(byGroupEntries.get(g.name) ?? [])))
+    return out
+    // weekDocs wird aus weeks+loading-Zustand abgeleitet — über beide gated,
+    // analog zu entriesFor oben.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeks, loading, teamGroups])
 
   function commitTarget(key: PlanTargetKey, value: number) {
     setDraft((d) => ({ ...d, targets: { ...d.targets, [key]: value } }))
@@ -232,6 +255,40 @@ export function Jahresplanung({
           })}
         </div>
       </section>
+
+      {groupYearActuals && (
+        <section>
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">👥 Jahres-Ist nach Führungskraft — {year}</h3>
+          <div className="overflow-auto rounded-lg border">
+            <table className="w-full min-w-[700px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
+                  <th className="px-3 py-2">Führungskraft</th>
+                  {PLAN_TARGET_KEYS.map((k) => (
+                    <th key={k} className="px-3 py-2 text-right">{PLAN_TARGET_LABELS[k]}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {teamGroups!.map((g) => {
+                  const a = groupYearActuals.get(g.name) ?? sumWeekEntries([])
+                  return (
+                    <tr key={g.name} className="border-b border-foreground/20 last:border-0">
+                      <td className="px-3 py-2">
+                        <div className="truncate text-sm font-medium">{g.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{g.role} · Team gesamt ({g.names.length})</div>
+                      </td>
+                      {PLAN_TARGET_KEYS.map((k) => (
+                        <td key={k} className="px-3 py-2 text-right tabular-nums">{fmt(actualFor(k, a))}</td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

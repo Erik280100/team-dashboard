@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { fmt, initials } from "@/lib/calc/format"
 import {
-  aggregateByName, currentMonthKey, emptyMonthNoteEntry, monthLabel, monthWeekKeys, quotePct, sumWeekEntries,
+  aggregateByGroup, aggregateByName, currentMonthKey, emptyMonthNoteEntry, monthLabel, monthWeekKeys, quotePct,
+  sumWeekEntries, type PlanTeamGroup,
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
@@ -77,11 +78,12 @@ function KpiTile({ label, value, sub }: { label: string; value: string; sub: str
 }
 
 export function Monatsplanung({
-  people, planung, isEditor,
+  people, planung, isEditor, teamGroups,
 }: {
   people: RosterEntry[]
   planung: UsePlanungDocResult
   isEditor: boolean
+  teamGroups?: PlanTeamGroup[] | null
 }) {
   const [monthKey, setMonthKey] = useState<string>(currentMonthKey)
   const weeks = useMemo(() => monthWeekKeys(monthKey), [monthKey])
@@ -115,6 +117,15 @@ export function Monatsplanung({
   )
   const total = useMemo(() => sumWeekEntries([...byName.values()]), [byName])
 
+  const byGroup = useMemo(
+    () => (teamGroups && teamGroups.length > 0 ? aggregateByGroup(loaded, teamGroups) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weeks, loading, teamGroups]
+  )
+  const rows: { key: string; label: string; sub: string; data: ReturnType<typeof sumWeekEntries> }[] = byGroup
+    ? teamGroups!.map((g) => ({ key: g.name, label: g.name, sub: `${g.role} · Team gesamt (${g.names.length})`, data: byGroup.get(g.name) ?? sumWeekEntries([]) }))
+    : people.map((p) => ({ key: p.name, label: p.name, sub: p.role, data: byName.get(p.name) ?? sumWeekEntries([]) }))
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -136,7 +147,7 @@ export function Monatsplanung({
         <KpiTile label="Einheiten gemacht" value={fmt(total.ehGemacht)} sub={`${fmt(total.ehOffen)} EH offen`} />
       </div>
 
-      {people.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
           Keine Personen für diese Führungskraft im Strukturbaum.
         </div>
@@ -145,7 +156,7 @@ export function Monatsplanung({
           <table className="w-full min-w-[900px] border-collapse text-sm">
             <thead>
               <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
-                <th className="sticky top-0 z-10 min-w-[220px] bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
+                <th className="sticky top-0 z-10 min-w-[220px] bg-muted/95 px-3 py-2 backdrop-blur">{byGroup ? "Führungskraft" : "Name"}</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ATG/ATZ</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">An. stat/ausm</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">Ber. stat/ausm</th>
@@ -158,14 +169,13 @@ export function Monatsplanung({
               </tr>
             </thead>
             <tbody>
-              {people.map((p) => {
-                const d = byName.get(p.name)
-                if (!d) return null
+              {rows.map((r) => {
+                const d = r.data
                 return (
-                  <tr key={p.name} className="border-b border-foreground/20 last:border-0">
+                  <tr key={r.key} className="border-b border-foreground/20 last:border-0">
                     <td className="px-3 py-2">
-                      <div className="truncate text-sm font-medium">{p.name}</div>
-                      <div className="truncate text-xs text-muted-foreground">{p.role}</div>
+                      <div className="truncate text-sm font-medium">{r.label}</div>
+                      <div className="truncate text-xs text-muted-foreground">{r.sub}</div>
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.atg)}/{fmt(d.atz)}</td>
                     <td className="px-3 py-2 text-right tabular-nums"><strong>{fmt(d.analysen)}</strong><span className="text-muted-foreground">/{fmt(d.analysenZ)}</span></td>

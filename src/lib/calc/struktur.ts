@@ -93,6 +93,34 @@ export function sbSubtreeNames(tree: SbNode | null, managerName: string): Set<st
   return new Set(sbAll(node).map((n) => n.name))
 }
 
+/**
+ * Die "Frontier" der Führungskräfte unter `managerName` (managerName selbst
+ * ausgeschlossen) — für die Rollup-Ansicht "Nach Führungskräften" in der
+ * Planung (Wochen-/Monats-/Jahresplanung). Ein Zweig wird nur bis zur ersten
+ * gefundenen Führungskraft durchsucht (keine verschachtelten/doppelten
+ * Rollup-Zeilen, wenn eine Führungskraft selbst wieder Führungskräfte
+ * unter sich hat) — Nicht-Führungskraft-Zweige (reine Mitarbeiterketten)
+ * werden weiter nach unten durchsucht.
+ */
+export function sbLeadFrontier(tree: SbNode | null, managerName: string): { name: string; role: string }[] {
+  if (!tree) return []
+  let node = sbFindByName(tree, managerName)
+  if (!node) node = sbFindByLastName(tree, sbLastWord(managerName))
+  if (!node) return []
+  const out: { name: string; role: string }[] = []
+  function walk(n: SbNode) {
+    for (const c of n.children || []) {
+      if (c.role && isLeadRole(c.role)) {
+        out.push({ name: c.name, role: c.role })
+      } else {
+        walk(c)
+      }
+    }
+  }
+  walk(node)
+  return out
+}
+
 // ---- Karrierepläne (Einheiten-Vergütung) ----
 // Die vier Sparten aus den Karriereplänen (siehe src/lib/data/career.ts /
 // src/lib/calc/eh.ts EH_GROUPS — dieselben ids, hier eigenständig deklariert,

@@ -6,8 +6,8 @@
 import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { initials, type TeamGoal } from "@/lib/calc/format"
-import { periodWeekKeys, sumWeekEntries, weekLabel, shiftWeek } from "@/lib/calc/planung"
+import { fmt, initials, type TeamGoal } from "@/lib/calc/format"
+import { aggregateByGroup, periodWeekKeys, sumWeekEntries, weekLabel, shiftWeek, type PlanTeamGroup } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekEntry } from "@/types/dashboard"
@@ -121,14 +121,57 @@ function PersonCard({
   )
 }
 
+function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeekEntry }) {
+  return (
+    <Card>
+      <CardHeader className="border-b pb-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
+            {initials(group.name)}
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium">{group.name}</div>
+            <div className="truncate text-xs text-muted-foreground">{group.role} · Team gesamt ({group.names.length})</div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 pt-1">
+        <div className="grid grid-cols-2 gap-2">
+          {FIELD_GROUPS.map((g) => (
+            <div key={g.label} className="rounded-md border bg-muted/30 p-2">
+              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{g.label}</div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex flex-1 flex-col items-center gap-1">
+                  <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.left.sub}</span>
+                  <div className="flex h-8 w-full items-center justify-center rounded-md border border-input bg-background text-sm tabular-nums">
+                    {fmt(Number(entry[g.left.key]) || 0)}
+                  </div>
+                </div>
+                <span className="pt-3 text-muted-foreground">/</span>
+                <div className="flex flex-1 flex-col items-center gap-1">
+                  <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.right.sub}</span>
+                  <div className="flex h-8 w-full items-center justify-center rounded-md border border-input bg-background text-sm tabular-nums">
+                    {fmt(Number(entry[g.right.key]) || 0)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function Wochenplanung({
-  people, managerName, planung, isEditor, teamGoal,
+  people, managerName, planung, isEditor, teamGoal, teamGroups,
 }: {
   people: RosterEntry[]
   managerName: string | null
   planung: UsePlanungDocResult
   isEditor: boolean
   teamGoal: Pick<TeamGoal, "periodStart" | "periodEnd">
+  teamGroups?: PlanTeamGroup[] | null
 }) {
   const { activeWeek, setActiveWeek, weekDoc, saveWeekEntry } = planung
   const totals = useMemo(
@@ -157,6 +200,11 @@ export function Wochenplanung({
   const canGoPrev = !!firstAllowed && activeWeek > firstAllowed
   const canGoNext = !!lastAllowed && activeWeek < lastAllowed
 
+  const groupEntries = useMemo(
+    () => (teamGroups && teamGroups.length > 0 ? aggregateByGroup([weekDoc], teamGroups) : null),
+    [teamGroups, weekDoc]
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -173,7 +221,13 @@ export function Wochenplanung({
         </span>
       </div>
 
-      {people.length === 0 ? (
+      {groupEntries ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {teamGroups!.map((g) => (
+            <TeamGroupCard key={g.name} group={g} entry={groupEntries.get(g.name) ?? sumWeekEntries([])} />
+          ))}
+        </div>
+      ) : people.length === 0 ? (
         <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
           Keine Personen für {managerName ?? "diese Führungskraft"} im Strukturbaum.
         </div>
