@@ -16,6 +16,7 @@ const NOTE_FIELDS: { key: keyof PlanMonthNotesEntry; label: string }[] = [
   { key: "at", label: "AT" },
   { key: "bt", label: "BT" },
   { key: "st", label: "ST" },
+  { key: "et", label: "ET" },
 ]
 
 function MonthNoteCard({

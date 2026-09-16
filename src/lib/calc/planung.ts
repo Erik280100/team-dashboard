@@ -207,7 +207,7 @@ export function aggregateByName(docs: PlanWeekDoc[], names: string[]): Map<strin
 
 /** Leerer Monats-Notizeintrag (AT/BT/ST-Kacheln der Monatsplanung). */
 export function emptyMonthNoteEntry(): PlanMonthNotesEntry {
-  return { at: "", bt: "", st: "" }
+  return { at: "", bt: "", st: "", et: "" }
 }
 
 /** Abschlussquote in Prozent (Verträge / Beratungen), 0 bei beratungen <= 0. */

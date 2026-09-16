@@ -169,12 +169,13 @@ export interface PlanWeekDoc {
 /**
  * Freitext-Notizen je Mitarbeiter für einen Monat (Kachel-Ansicht der
  * Monatsplanung, analog zu den Wochenplanung-Karten, aber ohne Zahlenfelder —
- * hier werden Namen für Anruf-/Beratungs-/Servicetermine notiert).
+ * hier werden Namen für Anruf-/Beratungs-/Service-/Einstellungstermine notiert).
  */
 export interface PlanMonthNotesEntry {
   at: string
   bt: string
   st: string
+  et: string
 }
 
 /** finova/plan_month_notes_<YYYY-MM> — entries je Mitarbeitername. */
