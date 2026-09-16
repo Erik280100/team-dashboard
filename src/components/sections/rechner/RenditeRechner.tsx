@@ -322,6 +322,38 @@ export function RenditeRechner() {
           )
         })}
       </div>
+
+      <Card>
+        <CardContent>
+          <h3 className="mb-3 text-sm font-semibold">Jahrestabelle</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs font-semibold text-muted-foreground">
+                  <th className="px-2 py-1.5">Jahr</th>
+                  <th className="px-2 py-1.5">Einbezahlt</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.flv.line }}>FLV</th>
+                  <th className="px-2 py-1.5 text-muted-foreground/40">Fondssparer</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot</th>
+                  <th className="px-2 py-1.5 text-muted-foreground/40">VV</th>
+                </tr>
+              </thead>
+              <tbody>
+                {years.map((y, i) => (
+                  <tr key={y} className="border-b last:border-0">
+                    <td className="px-2 py-1.5">{y}</td>
+                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(einbezahlt[i])}</td>
+                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(flvY[i])}</td>
+                    <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(fondssparerY[i])}</td>
+                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotY[i])}</td>
+                    <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(vvY[i])}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
