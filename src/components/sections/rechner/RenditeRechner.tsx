@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
   RR_FLV_COSTS, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR,
-  simulateFLV, simulateFondsdepot, simulateFondssparer, simulateVV,
+  simulateFLV, simulateFondsdepot,
   type Provider, type RRProductKey,
 } from "@/lib/calc/rendite"
 import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
@@ -110,9 +110,7 @@ export function RenditeRechner() {
 
   const { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY } = useMemo(() => {
     const flvMonthly = simulateFLV(provider, monatNum, 0, jahreClamped, perf, waPctEff)
-    const fondssparerMonthly = simulateFondssparer(monatNum, jahreClamped, perf, waPctEff)
     const fondsdepotMonthly = simulateFondsdepot(monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff)
-    const vvMonthly = simulateVV(monatNum, 0, jahreClamped, perf, ageRenditeNum)
 
     const years: number[] = []
     const einbezahlt: number[] = []
@@ -122,26 +120,20 @@ export function RenditeRechner() {
       einbezahlt.push(monatNum * 12 * y)
       const idx = y * 12
       flvY.push(flvMonthly[idx])
-      fondssparerY.push(fondssparerMonthly[idx])
+      // Fondssparer & Vermögensverwaltung vorübergehend deaktiviert (ausgegraut, Werte auf 0)
+      fondssparerY.push(0)
       fondsdepotY.push(fondsdepotMonthly[idx])
-      vvY.push(vvMonthly[idx])
+      vvY.push(0)
     }
     return { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY }
   }, [provider, monatNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum])
 
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
-  // Fondssparer: die "Einbezahlt*"-Linie oben zeigt die nominelle Monatsprämie × Jahre;
-  // hier dagegen die tatsächlich gezahlten, jährlich dynamisierten Prämien (bei
-  // Wertanpassung steigt die reale Monatsprämie um waPctEff p.a., nicht nur der Depotwert).
-  let finalEinbezahltFondssparer = 0
-  for (let y = 0; y < jahreClamped; y++) {
-    finalEinbezahltFondssparer += monatNum * 12 * Math.pow(1 + waPctEff, y)
-  }
-  const products: { name: string; colorKey: RRProductKey; end: number; einbezahlt: number }[] = [
+  const products: { name: string; colorKey: RRProductKey; end: number; einbezahlt: number; disabled?: boolean }[] = [
     { name: "FLV", colorKey: "flv", end: flvY[flvY.length - 1], einbezahlt: finalEinbezahlt },
-    { name: "Fondssparer", colorKey: "fondssparer", end: fondssparerY[fondssparerY.length - 1], einbezahlt: finalEinbezahltFondssparer },
+    { name: "Fondssparer", colorKey: "fondssparer", end: 0, einbezahlt: 0, disabled: true },
     { name: "Depot", colorKey: "fondsdepot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt },
-    { name: "Vermögensverwaltung", colorKey: "vv", end: vvY[vvY.length - 1], einbezahlt: finalEinbezahlt },
+    { name: "Vermögensverwaltung", colorKey: "vv", end: 0, einbezahlt: 0, disabled: true },
   ]
 
   return (
@@ -218,27 +210,24 @@ export function RenditeRechner() {
           </CardContent>
         </Card>
 
-        <Card style={productCardStyle("vv")}>
+        <Card style={productCardStyle("vv")} className="pointer-events-none opacity-40 grayscale">
           <CardContent className="flex flex-col gap-2">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>3 × Monatsbeitrag</span></div>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>2,09 % p.a.</span></div>
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-pflichtig (27,5 %)</div>
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>—</span></div>
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>—</span></div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">Vorübergehend deaktiviert</div>
           </CardContent>
         </Card>
 
-        <Card style={productCardStyle("fondssparer")}>
+        <Card style={productCardStyle("fondssparer")} className="pointer-events-none opacity-40 grayscale">
           <CardContent className="flex flex-col gap-2">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
             <div className="flex flex-col gap-1">
-              {fondssparerKostenZeilen(jahreClamped).map(([label, val]) => (
-                <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
+              {fondssparerKostenZeilen(jahreClamped).map(([label]) => (
+                <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>—</span></div>
               ))}
             </div>
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
-            <div className="text-[10.5px] text-muted-foreground">
-              Kalibriert auf echte Angebote (zwei Fonds, Annahme 6 % p.a.)
-            </div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">Vorübergehend deaktiviert</div>
           </CardContent>
         </Card>
 
@@ -274,9 +263,9 @@ export function RenditeRechner() {
                 labels: years,
                 datasets: [
                   { label: "FLV", data: flvY, borderColor: RR_PRODUCT_COLORS.flv.line, backgroundColor: RR_PRODUCT_COLORS.flv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Fondssparer", data: fondssparerY, borderColor: RR_PRODUCT_COLORS.fondssparer.line, backgroundColor: RR_PRODUCT_COLORS.fondssparer.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                  { label: "Fondssparer (deaktiviert)", data: fondssparerY, borderColor: "#B9C2C4", backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
                   { label: "Depot", data: fondsdepotY, borderColor: RR_PRODUCT_COLORS.fondsdepot.line, backgroundColor: RR_PRODUCT_COLORS.fondsdepot.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Vermögensverwaltung", data: vvY, borderColor: RR_PRODUCT_COLORS.vv.line, backgroundColor: RR_PRODUCT_COLORS.vv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                  { label: "Vermögensverwaltung (deaktiviert)", data: vvY, borderColor: "#B9C2C4", backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
                   { label: "Einbezahlt*", data: einbezahlt, borderColor: "#8FA1A6", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0 },
                 ],
               }}
@@ -305,6 +294,19 @@ export function RenditeRechner() {
           const diff = p.end - p.einbezahlt
           const positive = diff >= 0
           const color = RR_PRODUCT_COLORS[p.colorKey]
+          if (p.disabled) {
+            return (
+              <Card key={p.name} style={productCardStyle(p.colorKey)} className="opacity-40 grayscale">
+                <CardContent>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: color.line }}>
+                    <ProductDot colorKey={p.colorKey} />{p.name}
+                  </div>
+                  <div className="mt-1 text-xl font-bold tabular-nums">{rrFormatEUR(0)}</div>
+                  <div className="text-xs font-bold text-muted-foreground">Vorübergehend deaktiviert</div>
+                </CardContent>
+              </Card>
+            )
+          }
           return (
             <Card key={p.name} style={{ ...productCardStyle(p.colorKey), backgroundColor: color.tint }}>
               <CardContent>
@@ -331,9 +333,9 @@ export function RenditeRechner() {
                   <th className="px-2 py-1.5">Jahr</th>
                   <th className="px-2 py-1.5">Einbezahlt</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.flv.line }}>FLV</th>
-                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondssparer.line }}>Fondssparer</th>
+                  <th className="px-2 py-1.5 text-muted-foreground/40">Fondssparer</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot</th>
-                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV</th>
+                  <th className="px-2 py-1.5 text-muted-foreground/40">VV</th>
                 </tr>
               </thead>
               <tbody>
@@ -342,9 +344,9 @@ export function RenditeRechner() {
                     <td className="px-2 py-1.5">{y}</td>
                     <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(einbezahlt[i])}</td>
                     <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(flvY[i])}</td>
-                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondssparerY[i])}</td>
+                    <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(fondssparerY[i])}</td>
                     <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotY[i])}</td>
-                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(vvY[i])}</td>
+                    <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(vvY[i])}</td>
                   </tr>
                 ))}
               </tbody>
