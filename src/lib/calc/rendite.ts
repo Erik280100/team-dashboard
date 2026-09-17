@@ -5,9 +5,19 @@
 // gegen echte Angebote kalibriert, siehe merkurFlv.ts / fondssparer.ts und
 // test/calc/merkur.reference.test.ts / test/calc/fondssparer.reference.test.ts).
 import { simulateFondssparerKalibriert } from "./fondssparer"
-import { simulateMerkurFLVEinmal, simulateMerkurFLVPraemie } from "./merkurFlv"
+import { simulateMerkurFLVEinmal, simulateMerkurFLVEntnahme, simulateMerkurFLVPraemie } from "./merkurFlv"
 
 export const RR_KEST = 0.275
+
+// Ergebnis einer Simulation mit optionaler Entnahmephase (siehe simulate*Verlauf-Funktionen
+// unten). entnommenNetto ist die tatsächlich ausbezahlte (Netto-)Summe über die Entnahmezeit;
+// reichtBisMonat ist der erste Monat (durchgezählt ab Start der Ansparphase), in dem die
+// gewünschte Entnahme nicht mehr voll gedeckt werden konnte — null, wenn das Kapital durchhält.
+export type RRVerlauf = {
+  values: number[]
+  entnommenNetto: number
+  reichtBisMonat: number | null
+}
 
 // Eine Farbe je Sparform, konsistent für Eingabe-Kachel, Chart-Linie und
 // Hochrechnungsergebnis-Kachel verwendet (siehe RenditeRechner.tsx).
@@ -46,20 +56,38 @@ export function rrRate(pa: number): number {
  * verzinst — die Zillmerbasis (gesamtBrutto) bleibt auf der ursprünglich vereinbarten
  * Prämiensumme, da Versicherer diese unabhängig von künftigen, nicht garantierten
  * Wertanpassungen für die Abschlusskostenberechnung heranziehen.
+ *
+ * entnahmeJahre/entnahmeMonat hängen im Anschluss an die Ansparphase eine konstante,
+ * KESt-freie Monatsentnahme an (netto in der Hand, FLV ist KESt-frei). Ohne Entnahme
+ * (entnahmeJahre = 0 oder entnahmeMonat = 0) unverändert zur bisherigen Ansparlogik.
  */
-export function simulateFLV(
+export function simulateFLVVerlauf(
   provider: Provider,
   monat: number,
   einmal: number,
   jahre: number,
   perf: number,
-  waPct = 0
-): number[] {
+  waPct = 0,
+  entnahmeJahre = 0,
+  entnahmeMonat = 0
+): RRVerlauf {
   if (provider === "merkur") {
     const praemieValues = simulateMerkurFLVPraemie(monat, jahre, perf, waPct)
-    if (einmal <= 0) return praemieValues
-    const einmalValues = simulateMerkurFLVEinmal(einmal, jahre, perf)
-    return praemieValues.map((v, i) => v + einmalValues[i])
+    const einmalValues = einmal > 0 ? simulateMerkurFLVEinmal(einmal, jahre, perf) : null
+    const ansparValues = einmalValues ? praemieValues.map((v, i) => v + einmalValues[i]) : praemieValues
+    if (entnahmeJahre <= 0 || entnahmeMonat <= 0) {
+      return { values: ansparValues, entnommenNetto: 0, reichtBisMonat: null }
+    }
+    // Die UI übergibt hier stets einmal = 0, daher wird der Gesamtwert am Ende der
+    // Ansparphase einheitlich mit dem Prämientopf-Ertragsaufschlag fortgeschrieben.
+    const entnahme = simulateMerkurFLVEntnahme(
+      ansparValues[ansparValues.length - 1], entnahmeJahre * 12, entnahmeMonat, perf
+    )
+    return {
+      values: ansparValues.concat(entnahme.values.slice(1)),
+      entnommenNetto: entnahme.entnommenNetto,
+      reichtBisMonat: entnahme.reichtBisMonat === null ? null : jahre * 12 + entnahme.reichtBisMonat,
+    }
   }
 
   const months = jahre * 12
@@ -106,7 +134,48 @@ export function simulateFLV(
     }
     values.push(depotP + depotE)
   }
-  return values
+
+  let entnommenNetto = 0
+  let reichtBisMonat: number | null = null
+  const entnahmeMonate = entnahmeJahre > 0 && entnahmeMonat > 0 ? entnahmeJahre * 12 : 0
+  for (let k = 1; k <= entnahmeMonate; k++) {
+    const m = months + k
+    const gesamt = depotP + depotE
+    const brutto = Math.min(gesamt, entnahmeMonat)
+    if (brutto < entnahmeMonat - 1e-9 && reichtBisMonat === null) reichtBisMonat = m
+    let rest = brutto
+    const ausP = Math.min(depotP, rest)
+    depotP -= ausP
+    rest -= ausP
+    const ausE = Math.min(depotE, rest)
+    depotE -= ausE
+    entnommenNetto += brutto
+
+    depotP *= 1 + r
+    depotP -= depotP * (depotCostPraemiePa / 12)
+    depotP += depotP * (kickbackPa(m) / 12)
+    if (depotP < 0) depotP = 0
+
+    depotE *= 1 + r
+    depotE -= depotE * (depotCostEinmalPa / 12)
+    depotE += depotE * (kickbackPa(m) / 12)
+    if (depotE < 0) depotE = 0
+
+    values.push(depotP + depotE)
+  }
+
+  return { values, entnommenNetto, reichtBisMonat }
+}
+
+export function simulateFLV(
+  provider: Provider,
+  monat: number,
+  einmal: number,
+  jahre: number,
+  perf: number,
+  waPct = 0
+): number[] {
+  return simulateFLVVerlauf(provider, monat, einmal, jahre, perf, waPct, 0, 0).values
 }
 
 /**
@@ -124,12 +193,19 @@ export function simulateFondssparer(
   return simulateFondssparerKalibriert(monat, jahre, perf, waPct)
 }
 
+export { simulateFondssparerVerlauf } from "./fondssparer"
+
 /**
  * Fondsdepot: KESt via jährliche ausschüttungsgleiche Erträge (agE) + Rest-KESt beim Verkauf.
  * waPct: jährliche Wertanpassung (Dynamik) auf die mtl. Sparrate, kontinuierlich verzinst
  * — analog zur Prämiendynamik in simulateFLV.
+ *
+ * entnahmeJahre/entnahmeMonat hängen im Anschluss eine konstante Netto-Monatsentnahme an: der
+ * Bruttobetrag wird so hochgerechnet, dass nach anteiliger KESt auf den noch unversteuerten
+ * Gewinnanteil genau der gewünschte Nettobetrag ankommt (Depot ist KESt-pflichtig, FLV nicht —
+ * das macht den Produktvergleich fair). Ohne Entnahme unverändert zur bisherigen Ansparlogik.
  */
-export function simulateFondsdepot(
+export function simulateFondsdepotVerlauf(
   monat: number,
   einmal: number,
   jahre: number,
@@ -138,8 +214,10 @@ export function simulateFondsdepot(
   depotgebuehrPa: number,
   ageRenditePa: number,
   einmalFixFee = 0,
-  waPct = 0
-): number[] {
+  waPct = 0,
+  entnahmeJahre = 0,
+  entnahmeMonat = 0
+): RRVerlauf {
   const months = jahre * 12
   const r = rrRate(perf)
   const aa = ausgabeaufschlagPct / 100
@@ -154,6 +232,18 @@ export function simulateFondsdepot(
   }
   const values = [depot]
   let yearStart = depot
+
+  function jahresAbschluss() {
+    const avg = (yearStart + depot) / 2
+    const ageBetrag = Math.max(0, avg) * (ageRenditePa / 100)
+    const kestAge = ageBetrag * RR_KEST
+    depot -= kestAge
+    if (depot < 0) depot = 0
+    cumAge += ageBetrag
+    values[values.length - 1] = depot
+    yearStart = depot
+  }
+
   for (let m = 1; m <= months; m++) {
     const monatAngepasst = waRateMonthly > 0 ? monat * Math.pow(1 + waRateMonthly, m - 1) : monat
     const net = monatAngepasst * (1 - aa)
@@ -163,33 +253,71 @@ export function simulateFondsdepot(
     depot -= depot * (depotgebuehrPa / 100 / 12)
     if (depot < 0) depot = 0
     values.push(depot)
-    if (m % 12 === 0) {
-      const avg = (yearStart + depot) / 2
-      const ageBetrag = Math.max(0, avg) * (ageRenditePa / 100)
-      const kestAge = ageBetrag * RR_KEST
-      depot -= kestAge
-      if (depot < 0) depot = 0
-      cumAge += ageBetrag
-      values[values.length - 1] = depot
-      yearStart = depot
-    }
+    if (m % 12 === 0) jahresAbschluss()
   }
+
+  let entnommenNetto = 0
+  let reichtBisMonat: number | null = null
+  const entnahmeMonate = entnahmeJahre > 0 && entnahmeMonat > 0 ? entnahmeJahre * 12 : 0
+  for (let k = 1; k <= entnahmeMonate; k++) {
+    const m = months + k
+    const unversteuerterGewinn = Math.max(0, depot - cumNetto - cumAge)
+    const gewinnQuote = depot > 0 ? unversteuerterGewinn / depot : 0
+    const bruttoBenoetigt = gewinnQuote > 0 ? entnahmeMonat / (1 - gewinnQuote * RR_KEST) : entnahmeMonat
+    const brutto = Math.min(depot, bruttoBenoetigt)
+    const nettoAusgezahlt = brutto - brutto * gewinnQuote * RR_KEST
+    if (nettoAusgezahlt < entnahmeMonat - 1e-9 && reichtBisMonat === null) reichtBisMonat = m
+    const anteil = depot > 0 ? brutto / depot : 0
+    cumNetto -= cumNetto * anteil
+    cumAge -= cumAge * anteil
+    depot -= brutto
+    entnommenNetto += nettoAusgezahlt
+    if (depot < 0) depot = 0
+
+    depot *= 1 + r
+    depot -= depot * (depotgebuehrPa / 100 / 12)
+    if (depot < 0) depot = 0
+    values.push(depot)
+    if (m % 12 === 0) jahresAbschluss()
+  }
+
   const restGewinn = depot - cumNetto - cumAge
   if (restGewinn > 0) {
     depot -= restGewinn * RR_KEST
     values[values.length - 1] = depot
   }
-  return values
+  return { values, entnommenNetto, reichtBisMonat }
 }
 
-/** Vermögensverwaltung: Setup verzehrt Monat 1-3, KESt wie Fondsdepot (teilt sich die agE-Rendite). */
-export function simulateVV(
+export function simulateFondsdepot(
   monat: number,
   einmal: number,
   jahre: number,
   perf: number,
-  ageRenditePa: number
+  ausgabeaufschlagPct: number,
+  depotgebuehrPa: number,
+  ageRenditePa: number,
+  einmalFixFee = 0,
+  waPct = 0
 ): number[] {
+  return simulateFondsdepotVerlauf(
+    monat, einmal, jahre, perf, ausgabeaufschlagPct, depotgebuehrPa, ageRenditePa, einmalFixFee, waPct, 0, 0
+  ).values
+}
+
+/**
+ * Vermögensverwaltung: Setup verzehrt Monat 1-3, KESt wie Fondsdepot (teilt sich die agE-Rendite).
+ * entnahmeJahre/entnahmeMonat: siehe simulateFondsdepotVerlauf (identische Brutto-Hochrechnung).
+ */
+export function simulateVVVerlauf(
+  monat: number,
+  einmal: number,
+  jahre: number,
+  perf: number,
+  ageRenditePa: number,
+  entnahmeJahre = 0,
+  entnahmeMonat = 0
+): RRVerlauf {
   const months = jahre * 12
   const r = rrRate(perf)
   let depot = 0
@@ -202,6 +330,18 @@ export function simulateVV(
   }
   const values = [depot]
   let yearStart = depot
+
+  function jahresAbschluss() {
+    const avg = (yearStart + depot) / 2
+    const ageBetrag = Math.max(0, avg) * (ageRenditePa / 100)
+    const kestAge = ageBetrag * RR_KEST
+    depot -= kestAge
+    if (depot < 0) depot = 0
+    cumAge += ageBetrag
+    values[values.length - 1] = depot
+    yearStart = depot
+  }
+
   for (let m = 1; m <= months; m++) {
     const net = m <= 3 ? 0 : monat
     depot += net
@@ -210,23 +350,71 @@ export function simulateVV(
     depot -= depot * (0.0209 / 12)
     if (depot < 0) depot = 0
     values.push(depot)
-    if (m % 12 === 0) {
-      const avg = (yearStart + depot) / 2
-      const ageBetrag = Math.max(0, avg) * (ageRenditePa / 100)
-      const kestAge = ageBetrag * RR_KEST
-      depot -= kestAge
-      if (depot < 0) depot = 0
-      cumAge += ageBetrag
-      values[values.length - 1] = depot
-      yearStart = depot
-    }
+    if (m % 12 === 0) jahresAbschluss()
   }
+
+  let entnommenNetto = 0
+  let reichtBisMonat: number | null = null
+  const entnahmeMonate = entnahmeJahre > 0 && entnahmeMonat > 0 ? entnahmeJahre * 12 : 0
+  for (let k = 1; k <= entnahmeMonate; k++) {
+    const m = months + k
+    const unversteuerterGewinn = Math.max(0, depot - cumNetto - cumAge)
+    const gewinnQuote = depot > 0 ? unversteuerterGewinn / depot : 0
+    const bruttoBenoetigt = gewinnQuote > 0 ? entnahmeMonat / (1 - gewinnQuote * RR_KEST) : entnahmeMonat
+    const brutto = Math.min(depot, bruttoBenoetigt)
+    const nettoAusgezahlt = brutto - brutto * gewinnQuote * RR_KEST
+    if (nettoAusgezahlt < entnahmeMonat - 1e-9 && reichtBisMonat === null) reichtBisMonat = m
+    const anteil = depot > 0 ? brutto / depot : 0
+    cumNetto -= cumNetto * anteil
+    cumAge -= cumAge * anteil
+    depot -= brutto
+    entnommenNetto += nettoAusgezahlt
+    if (depot < 0) depot = 0
+
+    depot *= 1 + r
+    depot -= depot * (0.0209 / 12)
+    if (depot < 0) depot = 0
+    values.push(depot)
+    if (m % 12 === 0) jahresAbschluss()
+  }
+
   const restGewinn = depot - cumNetto - cumAge
   if (restGewinn > 0) {
     depot -= restGewinn * RR_KEST
     values[values.length - 1] = depot
   }
-  return values
+  return { values, entnommenNetto, reichtBisMonat }
+}
+
+export function simulateVV(
+  monat: number,
+  einmal: number,
+  jahre: number,
+  perf: number,
+  ageRenditePa: number
+): number[] {
+  return simulateVVVerlauf(monat, einmal, jahre, perf, ageRenditePa, 0, 0).values
+}
+
+/**
+ * Größte konstante Netto-Monatsentnahme, die über die Entnahmezeit durchhält (Bisektion).
+ * `run(x)` liefert eine Simulation mit Entnahme x; reichtBisMonat === null heißt "trägt durch".
+ * `obergrenze` (z. B. der Endwert der Ansparphase) begrenzt die Suche nach oben.
+ */
+export function rrMaxEntnahme(
+  run: (entnahmeMonat: number) => RRVerlauf,
+  obergrenze: number,
+  iterationen = 60
+): number {
+  if (obergrenze <= 0) return 0
+  let lo = 0
+  let hi = obergrenze
+  for (let i = 0; i < iterationen; i++) {
+    const mid = (lo + hi) / 2
+    if (run(mid).reichtBisMonat === null) lo = mid
+    else hi = mid
+  }
+  return lo
 }
 
 export function rrFormatEUR(n: number): string {

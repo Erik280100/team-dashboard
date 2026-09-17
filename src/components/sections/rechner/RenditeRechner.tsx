@@ -1,13 +1,14 @@
 // Renditerechner — Äquivalent zu initRenditeRechner() aus legacy/index.html:3744–3978.
 import "@/lib/chartSetup"
-import { useMemo, useState, type CSSProperties } from "react"
+import { useMemo, useRef, useState, type CSSProperties } from "react"
 import { Line } from "react-chartjs-2"
+import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
-  RR_FLV_COSTS, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR,
-  simulateFLV, simulateFondsdepot,
-  type Provider, type RRProductKey,
+  RR_FLV_COSTS, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR, rrMaxEntnahme,
+  simulateFLVVerlauf, simulateFondsdepotVerlauf,
+  type Provider, type RRProductKey, type RRVerlauf,
 } from "@/lib/calc/rendite"
 import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
 import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
@@ -89,6 +90,9 @@ export function RenditeRechner() {
   const [ausgabeaufschlag, setAusgabeaufschlag] = useState("5")
   const [depotgebuehr, setDepotgebuehr] = useState("1.45")
   const [ageRendite, setAgeRendite] = useState("2")
+  const [entnahmeEnabled, setEntnahmeEnabled] = useState(false)
+  const [entnahmeJahre, setEntnahmeJahre] = useState("20")
+  const [entnahmeMonatEingabe, setEntnahmeMonatEingabe] = useState("1000")
 
   const monatNum = Number(monat) || 0
   const ausgabeaufschlagNum = Number(ausgabeaufschlag) || 0
@@ -98,6 +102,10 @@ export function RenditeRechner() {
   const perf = (customPerf !== "" && !isNaN(parseFloat(customPerf)) ? parseFloat(customPerf) : perfPreset ?? 6) / 100
   const jahreClamped = Math.min(65, Math.max(1, Math.round(Number(jahre) || 0) || 20))
   const waPctEff = waEnabled ? Math.max(0, Number(waPct) || 0) / 100 : 0
+  const entnahmeJahreEff = entnahmeEnabled
+    ? Math.min(50, Math.max(1, Math.round(Number(entnahmeJahre) || 0) || 20))
+    : 0
+  const entnahmeMonatNum = entnahmeEnabled ? Math.max(0, Number(entnahmeMonatEingabe) || 0) : 0
 
   function selectPerfPreset(p: number) {
     setPerfPreset(p)
@@ -108,44 +116,125 @@ export function RenditeRechner() {
     if (v !== "" && !isNaN(parseFloat(v))) setPerfPreset(null)
   }
 
-  const { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY } = useMemo(() => {
-    const flvMonthly = simulateFLV(provider, monatNum, 0, jahreClamped, perf, waPctEff)
-    const fondsdepotMonthly = simulateFondsdepot(monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff)
+  const jahreGesamt = jahreClamped + entnahmeJahreEff
+
+  const {
+    years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY,
+    flvVerlauf, fondsdepotVerlauf, flvMaxEntnahme, depotMaxEntnahme,
+  } = useMemo(() => {
+    const flvVerlauf: RRVerlauf = simulateFLVVerlauf(
+      provider, monatNum, 0, jahreClamped, perf, waPctEff, entnahmeJahreEff, entnahmeMonatNum
+    )
+    const fondsdepotVerlauf: RRVerlauf = simulateFondsdepotVerlauf(
+      monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff,
+      entnahmeJahreEff, entnahmeMonatNum
+    )
 
     const years: number[] = []
     const einbezahlt: number[] = []
     const flvY: number[] = [], fondssparerY: number[] = [], fondsdepotY: number[] = [], vvY: number[] = []
-    for (let y = 0; y <= jahreClamped; y++) {
+    for (let y = 0; y <= jahreGesamt; y++) {
       years.push(y)
-      einbezahlt.push(monatNum * 12 * y)
+      einbezahlt.push(monatNum * 12 * Math.min(y, jahreClamped))
       const idx = y * 12
-      flvY.push(flvMonthly[idx])
+      flvY.push(flvVerlauf.values[idx])
       // Fondssparer & Vermögensverwaltung vorübergehend deaktiviert (ausgegraut, Werte auf 0)
       fondssparerY.push(0)
-      fondsdepotY.push(fondsdepotMonthly[idx])
+      fondsdepotY.push(fondsdepotVerlauf.values[idx])
       vvY.push(0)
     }
-    return { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY }
-  }, [provider, monatNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum])
+
+    // Größte Monatsentnahme, die exakt bis zum Ende der Entnahmezeit trägt (Obergrenze: das am
+    // Ende der Ansparphase verfügbare Kapital).
+    const ansparIdx = jahreClamped * 12
+    const flvMaxEntnahme = entnahmeJahreEff > 0
+      ? rrMaxEntnahme(
+          (x) => simulateFLVVerlauf(provider, monatNum, 0, jahreClamped, perf, waPctEff, entnahmeJahreEff, x),
+          flvVerlauf.values[ansparIdx]
+        )
+      : 0
+    const depotMaxEntnahme = entnahmeJahreEff > 0
+      ? rrMaxEntnahme(
+          (x) => simulateFondsdepotVerlauf(
+            monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff,
+            entnahmeJahreEff, x
+          ),
+          fondsdepotVerlauf.values[ansparIdx]
+        )
+      : 0
+
+    return { years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY, flvVerlauf, fondsdepotVerlauf, flvMaxEntnahme, depotMaxEntnahme }
+  }, [
+    provider, monatNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum,
+    jahreGesamt, entnahmeJahreEff, entnahmeMonatNum,
+  ])
 
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
-  const products: { name: string; colorKey: RRProductKey; end: number; einbezahlt: number; disabled?: boolean }[] = [
-    { name: "FLV", colorKey: "flv", end: flvY[flvY.length - 1], einbezahlt: finalEinbezahlt },
+  const entnahmeAktiv = entnahmeJahreEff > 0
+  const products: {
+    name: string; colorKey: RRProductKey; end: number; einbezahlt: number; disabled?: boolean
+    entnommenNetto?: number; reichtBisMonat?: number | null; maxEntnahme?: number
+  }[] = [
+    {
+      name: "FLV", colorKey: "flv", end: flvY[flvY.length - 1], einbezahlt: finalEinbezahlt,
+      entnommenNetto: entnahmeAktiv ? flvVerlauf.entnommenNetto : undefined,
+      reichtBisMonat: entnahmeAktiv ? flvVerlauf.reichtBisMonat : undefined,
+      maxEntnahme: entnahmeAktiv ? flvMaxEntnahme : undefined,
+    },
     { name: "Fondssparer", colorKey: "fondssparer", end: 0, einbezahlt: 0, disabled: true },
-    { name: "Depot", colorKey: "fondsdepot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt },
+    {
+      name: "Depot", colorKey: "fondsdepot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt,
+      entnommenNetto: entnahmeAktiv ? fondsdepotVerlauf.entnommenNetto : undefined,
+      reichtBisMonat: entnahmeAktiv ? fondsdepotVerlauf.reichtBisMonat : undefined,
+      maxEntnahme: entnahmeAktiv ? depotMaxEntnahme : undefined,
+    },
     { name: "Vermögensverwaltung", colorKey: "vv", end: 0, einbezahlt: 0, disabled: true },
   ]
+
+  // react-chartjs-2 liest die `plugins`-Prop nur beim allerersten Mount des Charts ein — ein
+  // Plugin, das per Closure direkt auf entnahmeAktiv/jahreClamped zugreift, würde für immer die
+  // Werte vom ersten Render sehen. Deshalb ein Ref, das bei jedem Render aktualisiert wird; das
+  // (einmalig erzeugte) Plugin liest daraus erst beim tatsächlichen Zeichnen, also stets aktuell.
+  const entnahmeMarkerRef = useRef({ entnahmeAktiv, jahreClamped })
+  entnahmeMarkerRef.current = { entnahmeAktiv, jahreClamped }
+
+  const [entnahmeMarkerPlugin] = useState<Plugin<"line">>(() => ({
+    id: "entnahmeMarker",
+    afterDatasetsDraw(chart) {
+      const { entnahmeAktiv: aktiv, jahreClamped: startJahr } = entnahmeMarkerRef.current
+      if (!aktiv) return
+      const { ctx, chartArea, scales } = chart
+      const x = scales.x.getPixelForTick(startJahr)
+      ctx.save()
+      ctx.setLineDash([4, 4])
+      ctx.strokeStyle = "#8FA1A6"
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(x, chartArea.top)
+      ctx.lineTo(x, chartArea.bottom)
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.fillStyle = "#5B6B6E"
+      ctx.font = "10px sans-serif"
+      ctx.textAlign = "left"
+      ctx.fillText("Entnahmestart", x + 4, chartArea.top + 12)
+      ctx.restore()
+    },
+  }))
 
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
         <strong>Renditerechner:</strong> Vergleicht vier Anlageprodukte über die gewählte Laufzeit inklusive Kosten und KESt.
+        {" "}Bei aktivierter Entnahmephase ist die Monatsentnahme netto in der Hand gemeint — beim Depot wird die KESt auf
+        den Gewinnanteil dafür zusätzlich aus dem Depot entnommen (Brutto-Hochrechnung), die FLV ist KESt-frei. Das
+        Restkapital bleibt in beiden Fällen zu den gleichen Konditionen weiterveranlagt.
       </div>
 
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               <label htmlFor="rrMonat">Monatliche Einzahlung (€)</label>
               <Stepper id="rrMonat" value={monat} onChange={setMonat} step={25} />
@@ -164,6 +253,22 @@ export function RenditeRechner() {
               <input type="number" min={0} step={0.5} value={waPct} disabled={!waEnabled}
                 onChange={(e) => setWaPct(e.target.value)}
                 className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm disabled:opacity-50" />
+            </div>
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className="flex items-center gap-1.5">
+                <input type="checkbox" checked={entnahmeEnabled} onChange={(e) => setEntnahmeEnabled(e.target.checked)} className="size-4" />
+                Entnahmephase
+              </label>
+              <label className="flex flex-col gap-1" htmlFor="rrEntnahmeJahre">
+                Entnahmedauer (Jahre)
+                <input id="rrEntnahmeJahre" type="number" min={1} max={50} step={1} value={entnahmeJahre} disabled={!entnahmeEnabled}
+                  onChange={(e) => setEntnahmeJahre(e.target.value)}
+                  className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm disabled:opacity-50" />
+              </label>
+            </div>
+            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label htmlFor="rrEntnahmeMonat">Monatliche Entnahme (€, netto)</label>
+              <Stepper id="rrEntnahmeMonat" value={entnahmeMonatEingabe} onChange={setEntnahmeMonatEingabe} step={100} disabled={!entnahmeEnabled} />
             </div>
           </div>
           <div className="flex flex-wrap items-end gap-4">
@@ -282,6 +387,7 @@ export function RenditeRechner() {
                   y: { beginAtZero: true, ticks: { callback: (val) => rrFormatAxis(Number(val)) } },
                 },
               }}
+              plugins={[entnahmeMarkerPlugin]}
               aria-label="Wertentwicklungs-Vergleich der vier Produkte"
               role="img"
             />
@@ -307,6 +413,7 @@ export function RenditeRechner() {
               </Card>
             )
           }
+          const reichtNicht = p.reichtBisMonat != null
           return (
             <Card key={p.name} style={{ ...productCardStyle(p.colorKey), backgroundColor: color.tint }}>
               <CardContent>
@@ -314,9 +421,30 @@ export function RenditeRechner() {
                   <ProductDot colorKey={p.colorKey} />{p.name}
                 </div>
                 <div className="mt-1 text-xl font-bold tabular-nums">{rrFormatEUR(p.end)}</div>
-                <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
-                  {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
-                </div>
+                {entnahmeAktiv ? (
+                  <>
+                    <div className="text-[10.5px] text-muted-foreground">Restkapital nach Entnahme</div>
+                    {reichtNicht ? (
+                      <div className="text-xs font-bold text-destructive">
+                        Kapital reicht bis Jahr {Math.ceil((p.reichtBisMonat as number) / 12)}
+                      </div>
+                    ) : (
+                      <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
+                        {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
+                      </div>
+                    )}
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Entnommen: {rrFormatEUR(p.entnommenNetto ?? 0)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Max. Entnahme: {rrFormatEUR(p.maxEntnahme ?? 0)}/Monat
+                    </div>
+                  </>
+                ) : (
+                  <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
+                    {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
+                  </div>
+                )}
               </CardContent>
             </Card>
           )
@@ -326,6 +454,11 @@ export function RenditeRechner() {
       <Card>
         <CardContent>
           <h3 className="mb-3 text-sm font-semibold">Jahrestabelle</h3>
+          {entnahmeAktiv && (
+            <div className="mb-2 text-[10.5px] text-muted-foreground">
+              Ab Jahr {jahreClamped} (hinterlegte Zeilen): Entnahmephase, Restkapital wird zu gleichen Konditionen weiterveranlagt.
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] border-collapse text-sm">
               <thead>
@@ -339,16 +472,27 @@ export function RenditeRechner() {
                 </tr>
               </thead>
               <tbody>
-                {years.map((y, i) => (
-                  <tr key={y} className="border-b last:border-0">
-                    <td className="px-2 py-1.5">{y}</td>
-                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(einbezahlt[i])}</td>
-                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(flvY[i])}</td>
-                    <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(fondssparerY[i])}</td>
-                    <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotY[i])}</td>
-                    <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(vvY[i])}</td>
-                  </tr>
-                ))}
+                {years.map((y, i) => {
+                  const inEntnahme = entnahmeAktiv && y > jahreClamped
+                  const istEntnahmeStart = entnahmeAktiv && y === jahreClamped
+                  return (
+                    <tr
+                      key={y}
+                      className={cn(
+                        "border-b last:border-0",
+                        inEntnahme && "bg-muted/40",
+                        istEntnahmeStart && "border-t-2 border-t-foreground/30"
+                      )}
+                    >
+                      <td className="px-2 py-1.5">{y}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(einbezahlt[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(flvY[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(fondssparerY[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotY[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(vvY[i])}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

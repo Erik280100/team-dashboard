@@ -19,6 +19,7 @@
 // können — das macht den kalibrierten "Ertragsaufschlag" größer als bei Merkur, weil er diese
 // 1,89 pp mitkompensiert (siehe Kommentar bei FONDSSPARER_ERTRAGSAUFSCHLAG unten).
 import { interpLinear } from "./merkurFlv"
+import type { RRVerlauf } from "./rendite"
 
 /** Sparprämie: Anteil der Monatsprämie, der (netto nach VSt + Kosten) investiert wird. */
 export const FONDSSPARER_SPARPRAEMIE: Record<number, number> = {
@@ -139,11 +140,17 @@ export function fondssparerRisikokostenMtl(jahre: number): number {
 /**
  * Fondssparer: kein Einmalerlag, keine Zillmerung, keine Kickbacks. waPct = nominale jährliche
  * Wertanpassung der Monatsprämie zum Vertragsjubiläum; die tatsächlich wirksame Steigerung liegt
- * darunter, siehe fondssparerDynamikWirksamkeit().
+ * darunter, siehe fondssparerDynamikWirksamkeit(). entnahmeJahre/entnahmeMonat hängen eine KESt-freie
+ * Entnahmephase an: keine weiteren Prämien, Fortschreibung mit derselben Nettorendite iMonat.
  */
-export function simulateFondssparerKalibriert(
-  monat: number, jahre: number, perf: number, waPct = 0
-): number[] {
+export function simulateFondssparerVerlauf(
+  monat: number,
+  jahre: number,
+  perf: number,
+  waPct = 0,
+  entnahmeJahre = 0,
+  entnahmeMonat = 0
+): RRVerlauf {
   const months = jahre * 12
   const g = perf + fondssparerErtragsaufschlag(jahre)
   const iMonat =
@@ -164,7 +171,28 @@ export function simulateFondssparerKalibriert(
     if (depot < 0) depot = 0
     values.push(depot)
   }
-  return values
+
+  let entnommenNetto = 0
+  let reichtBisMonat: number | null = null
+  const entnahmeMonate = entnahmeJahre > 0 && entnahmeMonat > 0 ? entnahmeJahre * 12 : 0
+  for (let k = 1; k <= entnahmeMonate; k++) {
+    const m = months + k
+    const brutto = Math.min(depot, entnahmeMonat)
+    if (brutto < entnahmeMonat - 1e-9 && reichtBisMonat === null) reichtBisMonat = m
+    depot -= brutto
+    entnommenNetto += brutto
+    depot *= 1 + iMonat
+    if (depot < 0) depot = 0
+    values.push(depot)
+  }
+
+  return { values, entnommenNetto, reichtBisMonat }
+}
+
+export function simulateFondssparerKalibriert(
+  monat: number, jahre: number, perf: number, waPct = 0
+): number[] {
+  return simulateFondssparerVerlauf(monat, jahre, perf, waPct, 0, 0).values
 }
 
 /** Kostenzeilen für die Fondssparer-Anzeige — spiegelt die tatsächlich verwendeten Werte wider. */
