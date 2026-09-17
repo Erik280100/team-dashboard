@@ -118,6 +118,8 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
   // 80 % statt vormals 100 % — oberes Ende des banküblichen Rahmens von 70–80 % des Verkehrswerts,
   // frei überschreibbar.
   const [beleihungUmschuldungPct, setBeleihungUmschuldungPct] = useState("80")
+  // Leer = unbegrenzt (immer weiterkaufen/-umschulden, wie bisher).
+  const [wachstumsphaseJahre, setWachstumsphaseJahre] = useState("")
 
   // Steuer
   const [grenzsteuersatzPct, setGrenzsteuersatzPct] = useState("40")
@@ -180,6 +182,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
     sonstigeKostenMonat: n(sonstigeKostenMonat),
     wertzuwachsPct: n(wertzuwachsPct), umschuldungAlleJahre: Math.max(1, n(umschuldungAlleJahre) || 5),
     beleihungUmschuldungPct: beleihungClamped,
+    wachstumsphaseJahre: wachstumsphaseJahre.trim() === "" ? undefined : Math.max(0, n(wachstumsphaseJahre)),
     grenzsteuersatzPct: Math.min(55, Math.max(0, n(grenzsteuersatzPct))),
     gebaeudeanteilPct: saetze.gebaeudeanteilPct, afaSatzPct: saetze.afaSatzPct,
     bestandAnzahl: Math.max(0, Math.round(n(bestandAnzahl))), bestandWert: n(bestandWert),
@@ -208,7 +211,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
     ltvClamped, laufzeitClamped, zinssatzClamped, mitMakler, nkMitfinanziert, mietModus, mieteMonat, mietpreisProM2,
     indexierungClamped, leerstandClamped, befristet,
     hausverwaltungMonat, instandhaltungProM2Monat, sonstigeKostenMonat,
-    wertzuwachsPct, umschuldungAlleJahre, beleihungClamped, grenzsteuersatzPct, saetze,
+    wertzuwachsPct, umschuldungAlleJahre, beleihungClamped, wachstumsphaseJahre, grenzsteuersatzPct, saetze,
     bestandAnzahl, bestandWert, bestandRestschuld, bestandRateMonat, bestandMieteMonat, bestandRestlaufzeitJahre,
     bestandAnschaffungskosten, bestandAfaJahreVerbraucht,
     nettoeinkommenMonat, lebenshaltungMonat, dstiGrenzePct, horizontClamped,
@@ -485,6 +488,10 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
               </div>
             </label>
             <Feld label="Beleihung bei Umschuldung (% v. Verkehrswert)" value={beleihungUmschuldungPct} onChange={setBeleihungUmschuldungPct} step={5} suffix="%" />
+            <Feld
+              label="Wachstumsphase (Jahre, leer = unbegrenzt) — danach keine neuen Käufe/Umschuldungen mehr"
+              value={wachstumsphaseJahre} onChange={setWachstumsphaseJahre} step={1} suffix="J"
+            />
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               {istGmbh ? "Grenzsteuersatz (nur für die Gegenüberstellung mit dem Einzelunternehmen, %)" : "Grenzsteuersatz (%)"}
               <div className="flex flex-wrap items-center gap-2">
@@ -507,6 +514,14 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
               Praxis meist nur bis 70–80 % des Verkehrswerts.
             </div>
           )}
+          <p className="text-xs text-muted-foreground">
+            Leer gelassen wird ohne zeitliche Begrenzung immer weitergekauft/-umgeschuldet (Standardverhalten,
+            "Ansparphase" endet nie). Mit einer Zahl (z. B. 20) endet die Ansparphase nach diesem Jahr — bestehende
+            Kredite laufen ab dann normal weiter ab, statt ihre Restschuld bei jeder Umschuldung wieder auf den
+            aktuellen Verkehrswert hochzuziehen. Dadurch steigt der monatliche Cashflow ab diesem Zeitpunkt
+            spürbar, weil die Mieteinnahmen nicht mehr laufend neue Käufe finanzieren, sondern tatsächlich
+            bestehende Schulden abbauen — auf Kosten eines kleineren Endportfolios.
+          </p>
         </CardContent>
       </Card>
 

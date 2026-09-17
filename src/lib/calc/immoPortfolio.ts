@@ -99,6 +99,15 @@ export interface ImmoPortfolioEingabe {
   // Umschuldung
   umschuldungAlleJahre: number
   beleihungUmschuldungPct: number
+  /** Nach dieser Anzahl an Jahren finden keine neuen Käufe UND keine neuen Umschuldungen mehr
+   *  statt — die Ansparphase geht in eine reine Abzahlphase über: bestehende Kredite laufen
+   *  einfach zu Ende (normale Annuitätentilgung), ohne dass ihre Restschuld durch eine weitere
+   *  Umschuldung wieder auf den (inzwischen gestiegenen) Verkehrswert hochgezogen wird. Ohne das
+   *  bleibt das Portfolio strukturell dauerhaft bei ~umschuldungAlleJahre-taktender Vollbeleihung,
+   *  weil jede Umschuldung die Restschuld sofort wieder auffrischt — der Cashflow bleibt dadurch
+   *  auch nach Jahrzehnten dünn, selbst wenn das Nettovermögen stark wächst. Optional, Default:
+   *  unbegrenzt (immer weiterkaufen/-umschulden, wie bisher). */
+  wachstumsphaseJahre?: number
 
   // Steuer
   grenzsteuersatzPct: number
@@ -605,6 +614,11 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   // Nur "privat" relevant (siehe Kauf-/Umschuldungsprüfung weiter unten) — Default 40 %, derselbe
   // Wert wie die grüne Ampel-Schwelle der (bislang rein informativen) DSTI-Anzeige.
   const dstiGrenzePct = eingabe.dstiGrenzePct ?? 40
+  // Beide Rechtsformen: ohne Angabe unbegrenzt (immer weiterkaufen/-umschulden), sonst die
+  // Monatszahl, ab der Käufe UND Umschuldungen enden (Abzahlphase, siehe wachstumsphaseJahre).
+  const wachstumsphaseMonate = eingabe.wachstumsphaseJahre != null
+    ? Math.max(0, Math.round(eingabe.wachstumsphaseJahre)) * 12
+    : Infinity
 
   let liquiditaet = Math.max(0, eingabe.eigenmittel)
   let topfUmschuldung = 0
@@ -819,8 +833,11 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       deckeLiquiditaetNichtNegativ()
 
       // Umschuldung: alle `umschuldungAlleJahre` Jahre, wenn der beleihbare Wert die
-      // Restschuld übersteigt.
+      // Restschuld übersteigt — aber nicht mehr nach Ablauf der Wachstumsphase (siehe
+      // wachstumsphaseJahre): ab dann sollen bestehende Kredite normal auslaufen (Abzahlphase),
+      // statt ihre Restschuld immer wieder auf den gestiegenen Verkehrswert hochzuziehen.
       for (const obj of objekte) {
+        if (monat > wachstumsphaseMonate) break
         const monateSeitLetzter = monat - obj.letzteUmschuldungMonat
         if (monateSeitLetzter < eingabe.umschuldungAlleJahre * 12) continue
         const beleihbar = obj.verkehrswert * (eingabe.beleihungUmschuldungPct / 100)
@@ -902,7 +919,9 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
     // abwerfen — ein Rückkopplungseffekt, der die Simulation zum Einfrieren bringt. Ohne
     // Umschuldung/Käufe unterhalb der Grenze läuft die Simulation weiter (Sparen, Guthabenzinsen,
     // Bestand), nur eben ohne neue Käufe.
-    if (berechneKaufbedarf(eingabe, saetze, monat).referenzKaufpreis > KAUFPREIS_MINDESTGRENZE) {
+    // Nach Ablauf der Wachstumsphase (siehe wachstumsphaseJahre) finden keine neuen Käufe mehr
+    // statt — beide Rechtsformen, unabhängig von den Kapital-/Einkommenssperren unten.
+    if (monat <= wachstumsphaseMonate && berechneKaufbedarf(eingabe, saetze, monat).referenzKaufpreis > KAUFPREIS_MINDESTGRENZE) {
       // Zwei unabhängige harte Kaufsperren, beide NUR "privat" (eine GmbH hat kein
       // "Netto-Haushaltseinkommen" — dort entscheidet für die Kaufprüfung ausschließlich, ob
       // topfUmschuldung/topfSparen/liquiditaet den Kapitalbedarf decken, siehe die drei Phasen

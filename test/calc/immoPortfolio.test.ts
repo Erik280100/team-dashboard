@@ -164,6 +164,38 @@ describe("simuliereImmoPortfolio", () => {
     expect(mitEngerDsti.umschuldungen.length).toBe(0)
   })
 
+  it("wachstumsphaseJahre stoppt Käufe UND Umschuldungen ab dem angegebenen Jahr, in beiden Rechtsformen", () => {
+    const basis: ImmoPortfolioEingabe = {
+      // dstiGrenzePct hoch und nettoeinkommenMonat groß: die (separat getesteten) privaten
+      // Einkommenssperren sollen hier nicht mit hineinspielen — nur wachstumsphaseJahre soll den
+      // Unterschied machen, in beiden Rechtsformen gleichermaßen.
+      ...BASIS, eigenmittel: 200000, sparbetragMonat: 3000, umschuldungAlleJahre: 2,
+      horizontJahre: 20, wachstumsphaseJahre: 8, dstiGrenzePct: 1000,
+      nettoeinkommenMonat: 1_000_000, mindestResteinkommenMonat: 0,
+    }
+    for (const rechtsform of ["privat", "gmbh"] as const) {
+      const erg = simuliereImmoPortfolio({ ...basis, rechtsform })
+      expect(erg.kaeufe.every((k) => k.jahr <= 8)).toBe(true)
+      expect(erg.umschuldungen.every((u) => u.jahr <= 8)).toBe(true)
+      // Nachweis, dass ohne die Grenze tatsächlich noch später gekauft/umgeschuldet worden wäre —
+      // sonst würde der Test auch bei einem kaputten/wirkungslosen Feld grün bleiben.
+      const ohneGrenze = simuliereImmoPortfolio({ ...basis, rechtsform, wachstumsphaseJahre: undefined })
+      expect(ohneGrenze.kaeufe.some((k) => k.jahr > 8)).toBe(true)
+    }
+  })
+
+  it("wachstumsphaseJahre lässt die Restschuld danach tatsächlich sinken (Abzahlphase) statt sie durch Umschuldung wieder hochzuziehen", () => {
+    const erg = simuliereImmoPortfolio({
+      ...BASIS, eigenmittel: 200000, sparbetragMonat: 3000, umschuldungAlleJahre: 2,
+      horizontJahre: 20, wachstumsphaseJahre: 8, dstiGrenzePct: 1000,
+      nettoeinkommenMonat: 1_000_000, mindestResteinkommenMonat: 0,
+    })
+    const jahr8 = erg.jahre[7]
+    const jahr20 = erg.jahre[19]
+    expect(jahr8.anzahlObjekte).toBe(jahr20.anzahlObjekte) // keine weiteren Käufe mehr
+    expect(jahr20.restschuldGesamt).toBeLessThan(jahr8.restschuldGesamt) // echte Tilgung statt Refresh
+  })
+
   it("marks a purchase funded entirely from refinancing proceeds as gratis, and a savings-funded one as not", () => {
     // Großer Bestand mit viel Umschuldungspotenzial finanziert die erste neue Wohnung gratis.
     // Die Bestand-Rate (2.000 €/Monat auf nur 100.000 € Restschuld) impliziert einen sehr hohen
