@@ -15,6 +15,7 @@
 // separat herausgerechnet (zurückaddiert) und dann in den ersten 60 Monaten
 // explizit wieder abgezogen — sonst würde sie doppelt wirken.
 import { rrRate } from "./rendite"
+import type { RRVerlauf } from "./rendite"
 
 /** Sparprämie % bei Laufzeit 45 Jahre, je Monatsprämie (Stützstellen aus echten Angeboten). */
 export const MERKUR_SPARPRAEMIE_BASIS_45J: Record<number, number> = {
@@ -149,6 +150,35 @@ export function simulateMerkurFLVEinmal(einmal: number, jahre: number, perf: num
     values.push(depot)
   }
   return values
+}
+
+/**
+ * Entnahmephase im Anschluss an simulateMerkurFLVPraemie: keine weiteren Prämien, KESt-frei.
+ * Verzinsung mit demselben Ertragsaufschlag wie die Ansparphase; laufende Kosten stecken
+ * bereits in der (über die Laufzeit gemittelten) Sparprämien-Quote und fallen in der
+ * Entnahmephase nicht mehr gesondert an.
+ */
+export function simulateMerkurFLVEntnahme(
+  startwert: number,
+  monate: number,
+  entnahmeMonat: number,
+  perf: number
+): RRVerlauf {
+  const r = rrRate(perf + MERKUR_ERTRAGSAUFSCHLAG_PA)
+  let depot = startwert
+  let entnommenNetto = 0
+  let reichtBisMonat: number | null = null
+  const values = [depot]
+  for (let m = 1; m <= monate; m++) {
+    const brutto = Math.min(depot, entnahmeMonat)
+    if (brutto < entnahmeMonat - 1e-9 && reichtBisMonat === null) reichtBisMonat = m
+    depot -= brutto
+    entnommenNetto += brutto
+    depot *= 1 + r
+    if (depot < 0) depot = 0
+    values.push(depot)
+  }
+  return { values, entnommenNetto, reichtBisMonat }
 }
 
 /** Kostenzeilen für die Merkur-Anzeige — spiegelt die tatsächlich verwendeten Werte wider. */
