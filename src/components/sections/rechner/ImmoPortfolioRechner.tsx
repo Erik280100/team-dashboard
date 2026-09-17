@@ -184,11 +184,16 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
     bestandMieteMonat: n(bestandMieteMonat), bestandRestlaufzeitJahre: Math.max(1, n(bestandRestlaufzeitJahre) || 25),
     bestandAnschaffungskosten: n(bestandAnschaffungskosten),
     bestandAfaJahreVerbraucht: Math.max(0, n(bestandAfaJahreVerbraucht)),
-    // Nur "privat": eine GmbH hat kein "Netto-Haushaltseinkommen" — für sie zählt für die
-    // Kaufprüfung ausschließlich das verfügbare Kapital (siehe immoPortfolio.ts).
-    nettoeinkommenMonat: istGmbh ? 0 : n(nettoeinkommenMonat),
-    lebenshaltungMonat: istGmbh ? 0 : n(lebenshaltungMonat),
-    mindestResteinkommenMonat: istGmbh ? 0 : n(lebenshaltungMonat),
+    // Bei "gmbh" wirken sich diese drei Felder auf die EIGENE Simulation nicht aus (eine
+    // Gesellschaft hat kein Gehalt — die Kauf-/Umschuldungssperre ist für sie in immoPortfolio.ts
+    // vollständig deaktiviert, siehe die dortigen `!istGmbh`-Prüfungen). Sie bleiben trotzdem
+    // echte, vom Nutzer editierbare Werte (nicht auf 0 gezwungen), weil dieselbe eingabe/
+    // eingabeStand auch als Basis für die Gegenüberstellung mit dem Einzelunternehmen dient
+    // (vergleichPrivat weiter unten) — DORT muss ein realistisches Einkommen einfließen können,
+    // sonst würde die Vergleichsperson unrealistisch auf 0 € Einkommen gesetzt.
+    nettoeinkommenMonat: n(nettoeinkommenMonat),
+    lebenshaltungMonat: n(lebenshaltungMonat),
+    mindestResteinkommenMonat: n(lebenshaltungMonat),
     horizontJahre: horizontClamped, saetze,
     rechtsform,
     gmbhFixkostenJahr: istGmbh ? n(gmbhFixkostenJahr) : 0,
@@ -343,19 +348,23 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
               value={guthabenzinsPct} onChange={setGuthabenzinsPct} step={0.1} suffix="%"
             />
             <Feld label="Horizont (Jahre)" value={horizontJahre} onChange={setHorizontJahre} step={1} suffix="J" />
-            {!istGmbh && (
-              <>
-                <Feld label="Netto-Haushaltseinkommen (€/Monat)" value={nettoeinkommenMonat} onChange={setNettoeinkommenMonat} step={100} />
-                <Feld label="Fixkosten / Lebenshaltung (€/Monat)" value={lebenshaltungMonat} onChange={setLebenshaltungMonat} step={100} />
-              </>
-            )}
+            <Feld
+              label={istGmbh ? "Netto-Haushaltseinkommen (nur für die Gegenüberstellung mit dem Einzelunternehmen, €/Monat)" : "Netto-Haushaltseinkommen (€/Monat)"}
+              value={nettoeinkommenMonat} onChange={setNettoeinkommenMonat} step={100}
+            />
+            <Feld
+              label={istGmbh ? "Fixkosten / Lebenshaltung (nur für die Gegenüberstellung, €/Monat)" : "Fixkosten / Lebenshaltung (€/Monat)"}
+              value={lebenshaltungMonat} onChange={setLebenshaltungMonat} step={100}
+            />
           </div>
           {istGmbh && (
             <p className="text-xs text-muted-foreground">
-              Netto-Haushaltseinkommen und Fixkosten/Lebenshaltung sind hier nicht relevant — eine GmbH hat kein
-              Gehalt. Kapitalquelle für Käufe und Umschuldungen sind ausschließlich Eigenmittel, Sparbetrag und
-              Mietüberschüsse; ein laufender Fehlbetrag wird automatisch als weitere Einlage nachgeschossen (siehe
-              Warnhinweise), statt einen Kauf zu blockieren.
+              Für die GmbH selbst sind Netto-Haushaltseinkommen und Fixkosten/Lebenshaltung ohne Wirkung — eine
+              Gesellschaft hat kein Gehalt, für Käufe und Umschuldungen zählt nur das verfügbare Kapital (Eigenmittel,
+              Sparbetrag, Mietüberschüsse); ein laufender Fehlbetrag wird automatisch als weitere Einlage
+              nachgeschossen (siehe Warnhinweise). Die beiden Felder fließen ausschließlich in die
+              Gegenüberstellungs-Karte weiter unten ein, wo sie das Verhalten des verglichenen Einzelunternehmens
+              bestimmen.
             </p>
           )}
         </CardContent>
@@ -820,6 +829,9 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
                   <th className="py-1 pr-3 text-right font-medium">Portfolio-Wert</th>
                   <th className="py-1 pr-3 text-right font-medium">Restschuld</th>
                   <th className="py-1 pr-3 text-right font-medium">Mieteinnahmen</th>
+                  <th className="py-1 pr-3 text-right font-medium">
+                    {istGmbh ? "Kosten (Bewirtschaftung + Gesellschaft)" : "Bewirtschaftungskosten"}
+                  </th>
                   <th className="py-1 pr-3 text-right font-medium">Kreditraten</th>
                   <th className="py-1 pr-3 text-right font-medium">Zinsen</th>
                   <th className="py-1 pr-3 text-right font-medium">AfA</th>
@@ -839,6 +851,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
                     <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.portfolioWert)}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.restschuldGesamt)}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.mieteinnahmen)}</td>
+                    <td className="py-1 pr-3 text-right tabular-nums text-muted-foreground">{kreditFormatEUR(j.bewirtschaftungskosten)}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.kreditratenGesamt)}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.zinsenGesamt)}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(j.afaGesamt)}</td>
@@ -858,6 +871,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
                   <td className="pt-2 pr-3" />
                   <td className="pt-2 pr-3" />
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(jahre.reduce((s, j) => s + j.mieteinnahmen, 0))}</td>
+                  <td className="pt-2 pr-3 text-right tabular-nums text-muted-foreground">{kreditFormatEUR(jahre.reduce((s, j) => s + j.bewirtschaftungskosten, 0))}</td>
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(jahre.reduce((s, j) => s + j.kreditratenGesamt, 0))}</td>
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(jahre.reduce((s, j) => s + j.zinsenGesamt, 0))}</td>
                   <td className="pt-2 pr-3 text-right tabular-nums">{kreditFormatEUR(jahre.reduce((s, j) => s + j.afaGesamt, 0))}</td>
@@ -876,6 +890,12 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
             (Kapitalbedarf gesamt minus Umschuldungserlös, siehe Kauf-Timeline) — das beantwortet, wie viel eigenes
             Geld in welchem Jahr fließen muss, damit der Plan aufgeht. "davon kumuliert" ist die laufende Summe seit
             Simulationsstart.
+            {istGmbh && (
+              <> "Kosten" enthält neben Hausverwaltung/Instandhaltung/Sonstigem auch die laufenden
+                Gesellschaftskosten (Bilanz, StB, Firmenbuch) sowie im ersten Jahr die einmaligen Gründungskosten —
+                deshalb kann der Cashflow trotz Miete über der Kreditrate negativ sein, solange diese Fixkosten die
+                Differenz übersteigen.</>
+            )}
           </p>
         </CardContent>
       </Card>

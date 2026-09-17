@@ -196,6 +196,10 @@ export interface ImmoJahr {
    *  Einzelunternehmen. `null` bei rechtsform "privat". */
   nettovermoegenNachAusschuettung: number | null
   mieteinnahmen: number
+  /** Hausverwaltung + Instandhaltung + Sonstige Kosten aller Objekte. Nur "gmbh": zusätzlich die
+   *  laufenden Gesellschaftskosten (gmbhFixkostenJahr) und, im ersten Jahr, die einmaligen
+   *  Gründungskosten (gmbhGruendungskostenEinmalig) — beide mindern hier wie eine Betriebsausgabe
+   *  den Cashflow und das steuerliche Ergebnis. */
   bewirtschaftungskosten: number
   kreditratenGesamt: number
   zinsenGesamt: number
@@ -1003,7 +1007,11 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       // Wohnungszählung: der Bestand ist EIN Sammelposten-Objekt, steht aber für bestandAnzahl
       // tatsächliche Wohnungen (C1) — sonst widerspricht die Stückzahl dem vollen Portfolio-Wert.
       const anzahlObjekte = objekte.reduce((s, o) => s + (o.istBestand ? eingabe.bestandAnzahl : 1), 0)
-      const einkommensbasis = eingabe.nettoeinkommenMonat + 0.8 * (mieteJahr / 12)
+      // Nur "privat" bezieht ein Netto-Haushaltseinkommen mit ein — bei "gmbh" bleibt
+      // eingabe.nettoeinkommenMonat zwar für die Gegenüberstellung mit dem Einzelunternehmen
+      // gesetzt (siehe ImmoPortfolioRechner.tsx), darf aber nicht in die EIGENE
+      // Mietdeckungsgrad-Kennzahl der GmbH einfließen — eine Gesellschaft hat kein Gehalt.
+      const einkommensbasis = (istGmbh ? 0 : eingabe.nettoeinkommenMonat) + 0.8 * (mieteJahr / 12)
 
       jahre.push({
         jahr: monat / 12,
