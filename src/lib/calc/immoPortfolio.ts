@@ -119,7 +119,11 @@ export interface ImmoPortfolioEingabe {
   /** Anzahl der Jahre, für die der Bestand bereits linear abgeschrieben wurde. */
   bestandAfaJahreVerbraucht: number
 
-  // Leistbarkeit
+  // Leistbarkeit — NUR rechtsform "privat": eine GmbH hat kein "Netto-Haushaltseinkommen", diese
+  // drei Felder bleiben dort ohne Wirkung (siehe Kauf-/Umschuldungsprüfung weiter unten). Für
+  // "gmbh" zählt für die Kaufentscheidung ausschließlich das verfügbare Kapital (Eigenmittel +
+  // Sparbetrag + Mietüberschüsse); ein laufender Fehlbetrag wird automatisch als weitere Einlage
+  // des Gesellschafters nachgeschossen statt über eine Einkommensgrenze zu blockieren.
   nettoeinkommenMonat: number
   /** Nur zur Anzeige (DSTI-Kennzahl) — blockiert keinen Kauf. */
   lebenshaltungMonat: number
@@ -802,15 +806,21 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
         // Ohne diese Sperre reißt eine Welle gleichzeitiger 100%-Umschuldungen (jede erhöht die
         // Rate spürbar, weil sie den vollen aktuellen Verkehrswert neu finanziert) die
         // Haushaltsrechnung erst, NACHDEM längst weitere Käufe auf Basis der alten, niedrigeren
-        // Raten getätigt wurden.
+        // Raten getätigt wurden. Nur "privat": ein "Netto-Haushaltseinkommen" ist für eine GmbH
+        // kein sinnvolles Konzept (eine Gesellschaft hat kein Gehalt) — dort zählt für die
+        // Kaufprüfung nur, ob genug Kapital vorhanden ist (siehe Kaufprüfung weiter unten); ein
+        // laufender Fehlbetrag wird stattdessen automatisch als weitere Einlage nachgeschossen
+        // (deckeLiquiditaetNichtNegativ).
         const planNeu = berechneTilgungsplan(beleihbar, obj.zinsPct, eingabe.laufzeitJahre)
-        const cashflowAktuell = objekte.reduce((s, o) => s + objektMonatscashflow(eingabe, o), 0)
-        // obj.rate steckt aktuell noch mit NEGATIVEM Vorzeichen in cashflowAktuell (siehe
-        // objektMonatscashflow: "... - obj.rate"). Um die alte Rate herauszurechnen und die neue
-        // einzusetzen, wird sie deshalb ADDIERT (nicht subtrahiert) und die neue abgezogen.
-        const cashflowNachUmschuldung = cashflowAktuell + obj.rate - planNeu.rate
-        const defizitNachUmschuldung = Math.max(0, -cashflowNachUmschuldung)
-        if (eingabe.nettoeinkommenMonat - defizitNachUmschuldung < eingabe.mindestResteinkommenMonat) continue
+        if (!istGmbh) {
+          const cashflowAktuell = objekte.reduce((s, o) => s + objektMonatscashflow(eingabe, o), 0)
+          // obj.rate steckt aktuell noch mit NEGATIVEM Vorzeichen in cashflowAktuell (siehe
+          // objektMonatscashflow: "... - obj.rate"). Um die alte Rate herauszurechnen und die neue
+          // einzusetzen, wird sie deshalb ADDIERT (nicht subtrahiert) und die neue abgezogen.
+          const cashflowNachUmschuldung = cashflowAktuell + obj.rate - planNeu.rate
+          const defizitNachUmschuldung = Math.max(0, -cashflowNachUmschuldung)
+          if (eingabe.nettoeinkommenMonat - defizitNachUmschuldung < eingabe.mindestResteinkommenMonat) continue
+        }
 
         umschuldungen.push({
           objektId: obj.id, monat, jahr: jahrIndex, verkehrswert: obj.verkehrswert,
@@ -854,7 +864,11 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       // (z. B. Miete 500 €, Rate 520 €) — der Fehlbetrag wird faktisch von der Sparquote
       // aufgefangen. Kritisch wird es erst, wenn dieser Fehlbetrag so groß wird, dass er vom
       // Nettoeinkommen abgezogen weniger als mindestResteinkommenMonat übrig lässt. Bewusst keine
-      // DSTI-%-Grenze, sondern ein Absolutbetrag vom Gehalt.
+      // DSTI-%-Grenze, sondern ein Absolutbetrag vom Gehalt. NUR "privat": eine GmbH hat kein
+      // "Netto-Haushaltseinkommen" — dort entscheidet für die Kaufprüfung ausschließlich, ob
+      // topfUmschuldung/topfSparen/liquiditaet den Kapitalbedarf decken (siehe die drei Phasen
+      // weiter unten); ein laufender Cashflow-Fehlbetrag wird automatisch als weitere Einlage
+      // nachgeschossen (deckeLiquiditaetNichtNegativ), nicht über eine Einkommensgrenze blockiert.
       const resteinkommenMitObjekt = (zusaetzlich: ObjektZustand): number => {
         const cashflowGesamt = objekte.reduce((s, o) => s + objektMonatscashflow(eingabe, o), 0)
           + objektMonatscashflow(eingabe, zusaetzlich)
@@ -899,7 +913,7 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
           liebhabereiGeprueft: false,
         }
 
-        if (resteinkommenMitObjekt(neuesObjekt) < eingabe.mindestResteinkommenMonat) return false
+        if (!istGmbh && resteinkommenMitObjekt(neuesObjekt) < eingabe.mindestResteinkommenMonat) return false
 
         topfUmschuldung -= ausUmschuldung
         topfSparen -= (eigenmittelbedarf - ausUmschuldung)
@@ -1150,11 +1164,11 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   }
   if (nachschussKumuliert > 0) {
     warnungen.push(
-      `In Summe wurden ${Math.round(nachschussKumuliert).toLocaleString("de-AT")} € zusätzlich aus dem `
-      + "Nettoeinkommen zugeschossen, um zu verhindern, dass die Liquidität durch einen laufenden "
-      + "Cashflow-Fehlbetrag oder eine Steuernachzahlung negativ wird (eine Kontoüberziehung ist im Modell nicht "
-      + "vorgesehen). Dieser Betrag ist NICHT in \"Eigenmitteleinsatz (Kauf)\" enthalten, da er kein Kaufkapital "
-      + "ist, sondern laufende Deckung."
+      `In Summe wurden ${Math.round(nachschussKumuliert).toLocaleString("de-AT")} € zusätzlich `
+      + (istGmbh ? "als weitere Einlage des Gesellschafters" : "aus dem Nettoeinkommen")
+      + " zugeschossen, um zu verhindern, dass die Liquidität durch einen laufenden Cashflow-Fehlbetrag oder eine "
+      + "Steuernachzahlung negativ wird (eine Kontoüberziehung ist im Modell nicht vorgesehen). Dieser Betrag ist "
+      + "NICHT in \"Eigenmitteleinsatz (Kauf)\" enthalten, da er kein Kaufkapital ist, sondern laufende Deckung."
     )
   }
   // Nur "privat": eine GmbH ist bereits kraft Rechtsform stets gewerblich (§ 7 Abs. 3 KStG),

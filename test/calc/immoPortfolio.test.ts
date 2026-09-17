@@ -407,6 +407,26 @@ describe("simuliereImmoPortfolio — rechtsform \"gmbh\"", () => {
     expect(ohneFeld).toEqual(mitPrivat)
   })
 
+  it("ignoriert die Netto-Haushaltseinkommen-Kaufsperre — anders als \"privat\" kauft die GmbH auch bei einem hauchdünn negativen Cashflow und nettoeinkommenMonat=0", () => {
+    // Regressionstest für ein real gemeldetes Szenario: Kaufpreis 150.000 €, 80 % Beleihung,
+    // 3 % Zins, 35 Jahre Laufzeit ergibt eine Rate von ca. 462 €/Monat; Miete 495 € abzüglich
+    // 45 € Instandhaltung ergibt einen operativen Cashflow von nur rund -12 €/Monat. Mit
+    // nettoeinkommenMonat = 0 und mindestResteinkommenMonat = 0 blockierte das bei "privat"
+    // (korrekt) jeden Kauf — bei "gmbh" ist ein "Netto-Haushaltseinkommen" aber kein sinnvolles
+    // Konzept, dort darf allein das vorhandene Kapital (Eigenmittel + Sparbetrag) entscheiden.
+    const basis: ImmoPortfolioEingabe = {
+      ...BASIS,
+      eigenmittel: 20000, sparbetragMonat: 2000, guthabenzinsPct: 6, horizontJahre: 13,
+      nettoeinkommenMonat: 0, lebenshaltungMonat: 0, mindestResteinkommenMonat: 0,
+      kaufpreisReferenz: 150000, wohnflaecheM2: 45, ltvKaufPct: 80, laufzeitJahre: 35, zinssatzPct: 3,
+      mitMakler: true, mieteMonat: 495, instandhaltungProM2Monat: 1, wertzuwachsPct: 2,
+    }
+    const privat = simuliereImmoPortfolio({ ...basis, rechtsform: "privat" })
+    const gmbh = simuliereImmoPortfolio({ ...basis, rechtsform: "gmbh" })
+    expect(privat.kaeufe).toHaveLength(0)
+    expect(gmbh.kaeufe.length).toBeGreaterThan(0)
+  })
+
   it("taxes a profit year at the flat 23 % KöSt rate, independent of Grenzsteuersatz", () => {
     const basis: ImmoPortfolioEingabe = {
       ...BASIS,

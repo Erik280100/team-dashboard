@@ -184,8 +184,11 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
     bestandMieteMonat: n(bestandMieteMonat), bestandRestlaufzeitJahre: Math.max(1, n(bestandRestlaufzeitJahre) || 25),
     bestandAnschaffungskosten: n(bestandAnschaffungskosten),
     bestandAfaJahreVerbraucht: Math.max(0, n(bestandAfaJahreVerbraucht)),
-    nettoeinkommenMonat: n(nettoeinkommenMonat), lebenshaltungMonat: n(lebenshaltungMonat),
-    mindestResteinkommenMonat: n(lebenshaltungMonat),
+    // Nur "privat": eine GmbH hat kein "Netto-Haushaltseinkommen" — für sie zählt für die
+    // Kaufprüfung ausschließlich das verfügbare Kapital (siehe immoPortfolio.ts).
+    nettoeinkommenMonat: istGmbh ? 0 : n(nettoeinkommenMonat),
+    lebenshaltungMonat: istGmbh ? 0 : n(lebenshaltungMonat),
+    mindestResteinkommenMonat: istGmbh ? 0 : n(lebenshaltungMonat),
     horizontJahre: horizontClamped, saetze,
     rechtsform,
     gmbhFixkostenJahr: istGmbh ? n(gmbhFixkostenJahr) : 0,
@@ -294,10 +297,11 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
   }), [kaufJahrInfo])
 
   // C4: letztesJahr.mieteinnahmen ist bereits leerstandsbereinigt (kein zusätzlicher 0,8-Abschlag
-  // nötig, der war ein Doppelabzug) und die Bewirtschaftungskosten fehlten bisher ganz.
+  // nötig, der war ein Doppelabzug) und die Bewirtschaftungskosten fehlten bisher ganz. Bei "gmbh"
+  // fließen Netto-Haushaltseinkommen/Lebenshaltung nicht ein (siehe eingabe-Erzeugung oben).
   const freieLiquiditaetMonat = letztesJahr
-    ? n(nettoeinkommenMonat) + (letztesJahr.mieteinnahmen - letztesJahr.bewirtschaftungskosten) / 12
-      - n(lebenshaltungMonat) - letztesJahr.kreditratenGesamt / 12
+    ? (istGmbh ? 0 : n(nettoeinkommenMonat)) + (letztesJahr.mieteinnahmen - letztesJahr.bewirtschaftungskosten) / 12
+      - (istGmbh ? 0 : n(lebenshaltungMonat)) - letztesJahr.kreditratenGesamt / 12
     : 0
   const dstiAmpel = letztesJahr
     ? letztesJahr.dstiPct < 40 ? "grün" : letztesJahr.dstiPct <= 50 ? "gelb" : "rot"
@@ -339,9 +343,21 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
               value={guthabenzinsPct} onChange={setGuthabenzinsPct} step={0.1} suffix="%"
             />
             <Feld label="Horizont (Jahre)" value={horizontJahre} onChange={setHorizontJahre} step={1} suffix="J" />
-            <Feld label="Netto-Haushaltseinkommen (€/Monat)" value={nettoeinkommenMonat} onChange={setNettoeinkommenMonat} step={100} />
-            <Feld label="Fixkosten / Lebenshaltung (€/Monat)" value={lebenshaltungMonat} onChange={setLebenshaltungMonat} step={100} />
+            {!istGmbh && (
+              <>
+                <Feld label="Netto-Haushaltseinkommen (€/Monat)" value={nettoeinkommenMonat} onChange={setNettoeinkommenMonat} step={100} />
+                <Feld label="Fixkosten / Lebenshaltung (€/Monat)" value={lebenshaltungMonat} onChange={setLebenshaltungMonat} step={100} />
+              </>
+            )}
           </div>
+          {istGmbh && (
+            <p className="text-xs text-muted-foreground">
+              Netto-Haushaltseinkommen und Fixkosten/Lebenshaltung sind hier nicht relevant — eine GmbH hat kein
+              Gehalt. Kapitalquelle für Käufe und Umschuldungen sind ausschließlich Eigenmittel, Sparbetrag und
+              Mietüberschüsse; ein laufender Fehlbetrag wird automatisch als weitere Einlage nachgeschossen (siehe
+              Warnhinweise), statt einen Kauf zu blockieren.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -575,16 +591,16 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
         />
         <KPI label="Portfolio-Verkehrswert" value={kreditFormatEUR(letztesJahr?.portfolioWert ?? 0)} />
         <KPI label="Nettovermögen (vor Verkauf)" value={kreditFormatEUR(letztesJahr?.nettovermoegen ?? 0)} />
-        <KPI
-          label={istGmbh ? "Nettovermögen nach Verkaufssteuern (23 % KöSt, gedachter Verkauf)" : "Nettovermögen nach Verkaufssteuern (30 % ImmoESt, gedachter Verkauf)"}
-          value={kreditFormatEUR(letztesJahr?.nettovermoegenNachSteuer ?? 0)}
-        />
         {istGmbh && (
           <KPI
             label="Nettovermögen nach Vollausschüttung (KöSt + 27,5 % KESt)"
             value={kreditFormatEUR(letztesJahr?.nettovermoegenNachAusschuettung ?? 0)}
           />
         )}
+        <KPI
+          label={`Monatlicher Cashflow bei Weitervermietung (statt Verkauf, Jahr ${letztesJahr?.jahr ?? "–"})`}
+          value={kreditFormatEUR((letztesJahr?.cashflowNetto ?? 0) / 12)}
+        />
       </div>
 
       {istGmbh && vergleichPrivat && (
@@ -932,22 +948,37 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
               </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Schuldendienstquote / DSTI (Jahr {letztesJahr?.jahr ?? "–"})</span>
+              <span className="text-xs text-muted-foreground">
+                {istGmbh ? "Mietdeckungsgrad (Kreditraten / Mieteinnahmen)" : "Schuldendienstquote / DSTI"} (Jahr {letztesJahr?.jahr ?? "–"})
+              </span>
               <span className={cn("text-lg font-bold tabular-nums", dstiFarbe)}>{kreditFormatPct(letztesJahr?.dstiPct ?? 0, 1)}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Freie Liquidität/Monat (Jahr {letztesJahr?.jahr ?? "–"}, nur Anzeige)</span>
+              <span className="text-xs text-muted-foreground">
+                {istGmbh ? "Operativer Cashflow/Monat (vor Steuer, nur Anzeige)" : "Freie Liquidität/Monat (nur Anzeige)"} (Jahr {letztesJahr?.jahr ?? "–"})
+              </span>
               <span className="text-lg font-bold tabular-nums">{kreditFormatEUR(freieLiquiditaetMonat)}</span>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            DSTI ist reine Anzeige und blockiert keinen Kauf. Die Fixkosten/Lebenshaltung (oben bei "Start &amp;
-            Sparen") dagegen wirken als harte Kaufsperre: Ein cashflow-negatives Portfolio (Miete unter der
-            Kreditrate) ist für sich kein Problem — der Fehlbetrag wird von der Sparquote aufgefangen. Kritisch wird
-            es erst, wenn dieser Fehlbetrag vom Nettoeinkommen abgezogen weniger als die Fixkosten/Lebenshaltung
-            übrig lässt — dann kauft die Simulation nicht mehr weiter. DSTI = monatliche Kreditraten aller Objekte,
-            geteilt durch Nettoeinkommen + 80&nbsp;% der Mieteinnahmen. Ampel: grün &lt; 40&nbsp;%, gelb 40–50&nbsp;%,
-            rot &gt; 50&nbsp;%.
+            {istGmbh
+              ? <>
+                  Beide Werte sind reine Anzeige und blockieren keinen Kauf — bei einer GmbH gibt es kein
+                  Netto-Haushaltseinkommen, das eine harte Kaufsperre begründen könnte. Ein cashflow-negatives
+                  Portfolio ist deshalb für sich kein Problem: Ein laufender Fehlbetrag wird automatisch als
+                  weitere Einlage nachgeschossen (siehe Warnhinweise), statt einen Kauf zu blockieren. Der
+                  Mietdeckungsgrad = monatliche Kreditraten aller Objekte, geteilt durch 80&nbsp;% der
+                  Mieteinnahmen. Ampel: grün &lt; 40&nbsp;%, gelb 40–50&nbsp;%, rot &gt; 50&nbsp;%.
+                </>
+              : <>
+                  DSTI ist reine Anzeige und blockiert keinen Kauf. Die Fixkosten/Lebenshaltung (oben bei "Start
+                  &amp; Sparen") dagegen wirken als harte Kaufsperre: Ein cashflow-negatives Portfolio (Miete unter
+                  der Kreditrate) ist für sich kein Problem — der Fehlbetrag wird von der Sparquote aufgefangen.
+                  Kritisch wird es erst, wenn dieser Fehlbetrag vom Nettoeinkommen abgezogen weniger als die
+                  Fixkosten/Lebenshaltung übrig lässt — dann kauft die Simulation nicht mehr weiter. DSTI =
+                  monatliche Kreditraten aller Objekte, geteilt durch Nettoeinkommen + 80&nbsp;% der Mieteinnahmen.
+                  Ampel: grün &lt; 40&nbsp;%, gelb 40–50&nbsp;%, rot &gt; 50&nbsp;%.
+                </>}
           </p>
         </CardContent>
       </Card>
