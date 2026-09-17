@@ -125,14 +125,25 @@ export interface ImmoPortfolioEingabe {
   // Sparbetrag + Mietüberschüsse); ein laufender Fehlbetrag wird automatisch als weitere Einlage
   // des Gesellschafters nachgeschossen statt über eine Einkommensgrenze zu blockieren.
   nettoeinkommenMonat: number
-  /** Nur zur Anzeige (DSTI-Kennzahl) — blockiert keinen Kauf. */
+  /** Nur zur Anzeige in der Jahresübersicht — geht selbst in keine Sperre ein (nur
+   *  mindestResteinkommenMonat, das separat davon gesetzt wird, tut das). */
   lebenshaltungMonat: number
-  /** Harte Kauf-/Umschuldungssperre: Deckt ein cashflow-negatives Portfolio den Fehlbetrag nicht
-   *  aus dem laufenden Sparen, wird er vom Nettoeinkommen abgezogen ("Sparquote schrumpft").
-   *  Bleibt davon weniger als dieser Betrag vom Nettoeinkommen übrig, wird kein weiterer Kauf mehr
-   *  getätigt — anders als eine feste DSTI-%-Grenze, denn ein kleines Minus (z. B. Miete 500 €,
-   *  Rate 520 €) ist damit unproblematisch, solange genug Gehalt übrig bleibt. */
+  /** Harte Kauf-/Umschuldungssperre Nr. 1 (Absolutbetrag): Deckt ein cashflow-negatives Portfolio
+   *  den Fehlbetrag nicht aus dem laufenden Sparen, wird er vom Nettoeinkommen abgezogen
+   *  ("Sparquote schrumpft"). Bleibt davon weniger als dieser Betrag vom Nettoeinkommen übrig, wird
+   *  kein weiterer Kauf mehr getätigt — ein kleines Minus (z. B. Miete 500 €, Rate 520 €) ist damit
+   *  für sich unproblematisch, solange genug Gehalt übrig bleibt. Ergänzt (nicht ersetzt) durch die
+   *  %-basierte Sperre Nr. 2, siehe dstiGrenzePct. */
   mindestResteinkommenMonat: number
+  /** Harte Kauf-/Umschuldungssperre Nr. 2 (Bank-übliche %-Grenze), NUR rechtsform "privat": eine
+   *  Bank finanziert real nur bis zu einer Schuldendienstquote (DSTI) von grob 40 % des
+   *  Einkommens — seit 1.7.2025 als FMA-Aufsichtserwartung fortgeführt (zuvor KIM-V-Pflicht). Ohne
+   *  diese Sperre könnte sich die Simulation beliebig weit über die reale Kreditfähigkeit hinaus
+   *  verschulden, solange nur der Cashflow (Sperre Nr. 1) knapp positiv bleibt. Optional, Default
+   *  40 (siehe dstiGrenzePct-Fallback in simuliereImmoPortfolio). Bei "gmbh" ohne Wirkung — eine
+   *  Gesellschaft wird nicht gegen ein persönliches Einkommen, sondern gegen das verfügbare Kapital
+   *  geprüft (siehe nettoeinkommenMonat). */
+  dstiGrenzePct?: number
 
   horizontJahre: number
   saetze?: KreditSaetze
@@ -572,6 +583,18 @@ function objektMonatscashflow(eingabe: ImmoPortfolioEingabe, obj: ObjektZustand)
   return obj.mieteMonat * (1 - eingabe.leerstandPct / 100) - bewirtschaftungskostenMonat(eingabe, obj) - obj.rate
 }
 
+/** Bank-übliche Schuldendienstquote (DSTI) prospektiv für einen Kauf/eine Umschuldung: monatliche
+ *  Kreditraten ALLER Objekte (inkl. des gerade geprüften) geteilt durch Nettoeinkommen + 80 % der
+ *  (leerstandsbereinigten) Mieteinnahmen — dieselbe Formel wie die (bislang rein informative)
+ *  dstiPct-Kennzahl im Jahresergebnis, hier aber als tatsächliche Kaufsperre genutzt (nur
+ *  rechtsform "privat", siehe Aufrufer). Ohne Einkommensbasis (0 €) ist jede Restschuld > 0
+ *  automatisch "unendlich" — nicht 0/0 = NaN. */
+function berechneDstiPct(eingabe: ImmoPortfolioEingabe, kreditratenMonat: number, mieteMonatGesamt: number): number {
+  const einkommensbasis = eingabe.nettoeinkommenMonat + 0.8 * mieteMonatGesamt
+  if (einkommensbasis <= 0) return kreditratenMonat > 0 ? Infinity : 0
+  return (kreditratenMonat / einkommensbasis) * 100
+}
+
 /** Simuliert den Portfolioaufbau Monat für Monat über den gewählten Horizont. */
 export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortfolioErgebnis {
   const saetze = eingabe.saetze ?? KREDIT_DEFAULTS
@@ -579,6 +602,9 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   const monateGesamt = horizontJahre * 12
   const rechtsform = eingabe.rechtsform ?? "privat"
   const istGmbh = rechtsform === "gmbh"
+  // Nur "privat" relevant (siehe Kauf-/Umschuldungsprüfung weiter unten) — Default 40 %, derselbe
+  // Wert wie die grüne Ampel-Schwelle der (bislang rein informativen) DSTI-Anzeige.
+  const dstiGrenzePct = eingabe.dstiGrenzePct ?? 40
 
   let liquiditaet = Math.max(0, eingabe.eigenmittel)
   let topfUmschuldung = 0
@@ -824,6 +850,19 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
           const cashflowNachUmschuldung = cashflowAktuell + obj.rate - planNeu.rate
           const defizitNachUmschuldung = Math.max(0, -cashflowNachUmschuldung)
           if (eingabe.nettoeinkommenMonat - defizitNachUmschuldung < eingabe.mindestResteinkommenMonat) continue
+
+          // Zweite, unabhängige Sperre: die Bank-übliche Schuldendienstquote (DSTI), real seit
+          // 1.7.2025 als FMA-Aufsichtserwartung fortgeführt (zuvor KIM-V) — anders als die
+          // Resteinkommen-Sperre oben (ein Absolutbetrag) ist das eine echte %-Grenze auf die
+          // Kreditraten ALLER Objekte, unabhängig davon, wie klein der Fehlbetrag eines einzelnen
+          // Objekts ist. Ohne diese Sperre könnte sich die Simulation (siehe dstiPct im
+          // Jahresergebnis, rein zur Anzeige) beliebig weit über die reale Kreditfähigkeit hinaus
+          // verschulden.
+          const kreditratenMonatNachUmschuldung = objekte.reduce((s, o) => s + o.rate, 0) - obj.rate + planNeu.rate
+          const mieteMonatGesamtAktuell = objekte.reduce(
+            (s, o) => s + o.mieteMonat * (1 - eingabe.leerstandPct / 100), 0
+          )
+          if (berechneDstiPct(eingabe, kreditratenMonatNachUmschuldung, mieteMonatGesamtAktuell) > dstiGrenzePct) continue
         }
 
         umschuldungen.push({
@@ -864,20 +903,29 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
     // Umschuldung/Käufe unterhalb der Grenze läuft die Simulation weiter (Sparen, Guthabenzinsen,
     // Bestand), nur eben ohne neue Käufe.
     if (berechneKaufbedarf(eingabe, saetze, monat).referenzKaufpreis > KAUFPREIS_MINDESTGRENZE) {
-      // Harte Kaufsperre: Ein cashflow-negatives Portfolio ist für sich genommen kein Problem
-      // (z. B. Miete 500 €, Rate 520 €) — der Fehlbetrag wird faktisch von der Sparquote
-      // aufgefangen. Kritisch wird es erst, wenn dieser Fehlbetrag so groß wird, dass er vom
-      // Nettoeinkommen abgezogen weniger als mindestResteinkommenMonat übrig lässt. Bewusst keine
-      // DSTI-%-Grenze, sondern ein Absolutbetrag vom Gehalt. NUR "privat": eine GmbH hat kein
+      // Zwei unabhängige harte Kaufsperren, beide NUR "privat" (eine GmbH hat kein
       // "Netto-Haushaltseinkommen" — dort entscheidet für die Kaufprüfung ausschließlich, ob
-      // topfUmschuldung/topfSparen/liquiditaet den Kapitalbedarf decken (siehe die drei Phasen
-      // weiter unten); ein laufender Cashflow-Fehlbetrag wird automatisch als weitere Einlage
-      // nachgeschossen (deckeLiquiditaetNichtNegativ), nicht über eine Einkommensgrenze blockiert.
+      // topfUmschuldung/topfSparen/liquiditaet den Kapitalbedarf decken, siehe die drei Phasen
+      // weiter unten; ein laufender Cashflow-Fehlbetrag wird automatisch als weitere Einlage
+      // nachgeschossen, deckeLiquiditaetNichtNegativ, nicht über eine Einkommensgrenze blockiert):
+      //  1) Ein cashflow-negatives Portfolio ist für sich genommen kein Problem (z. B. Miete 500 €,
+      //     Rate 520 €) — der Fehlbetrag wird faktisch von der Sparquote aufgefangen. Kritisch wird
+      //     es erst, wenn dieser Fehlbetrag so groß wird, dass er vom Nettoeinkommen abgezogen
+      //     weniger als mindestResteinkommenMonat übrig lässt (Absolutbetrag vom Gehalt).
+      //  2) Zusätzlich die reale, bank-übliche Schuldendienstquote (DSTI, siehe dstiGrenzePct):
+      //     selbst wenn der Fehlbetrag klein bleibt, finanziert eine Bank ab einer gewissen
+      //     %-Auslastung des Einkommens durch Kreditraten schlicht nicht mehr weiter.
       const resteinkommenMitObjekt = (zusaetzlich: ObjektZustand): number => {
         const cashflowGesamt = objekte.reduce((s, o) => s + objektMonatscashflow(eingabe, o), 0)
           + objektMonatscashflow(eingabe, zusaetzlich)
         const portfolioDefizit = Math.max(0, -cashflowGesamt)
         return eingabe.nettoeinkommenMonat - portfolioDefizit
+      }
+      const dstiPctMitObjekt = (zusaetzlich: ObjektZustand): number => {
+        const kreditratenMonat = objekte.reduce((s, o) => s + o.rate, 0) + zusaetzlich.rate
+        const mieteMonatGesamt = objekte.reduce((s, o) => s + o.mieteMonat * (1 - eingabe.leerstandPct / 100), 0)
+          + zusaetzlich.mieteMonat * (1 - eingabe.leerstandPct / 100)
+        return berechneDstiPct(eingabe, kreditratenMonat, mieteMonatGesamt)
       }
 
       const fuehreKaufDurch = (bedarf: Kaufbedarf, ausUmschuldung: number): boolean => {
@@ -918,6 +966,7 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
         }
 
         if (!istGmbh && resteinkommenMitObjekt(neuesObjekt) < eingabe.mindestResteinkommenMonat) return false
+        if (!istGmbh && dstiPctMitObjekt(neuesObjekt) > dstiGrenzePct) return false
 
         topfUmschuldung -= ausUmschuldung
         topfSparen -= (eigenmittelbedarf - ausUmschuldung)

@@ -144,6 +144,9 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
   // kein weiterer Kauf mehr getätigt. Kein eigenes Feld dafür, da es inhaltlich dasselbe ist.
   const [nettoeinkommenMonat, setNettoeinkommenMonat] = useState("3500")
   const [lebenshaltungMonat, setLebenshaltungMonat] = useState("1800")
+  // Zweite, unabhängige harte Kaufsperre: die bank-übliche Schuldendienstquote (DSTI). Default 40 %
+  // deckt sich mit der grünen Ampel-Schwelle der DSTI-Anzeige weiter unten.
+  const [dstiGrenzePct, setDstiGrenzePct] = useState("40")
 
   const [horizontJahre, setHorizontJahre] = useState("35")
 
@@ -194,6 +197,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
     nettoeinkommenMonat: n(nettoeinkommenMonat),
     lebenshaltungMonat: n(lebenshaltungMonat),
     mindestResteinkommenMonat: n(lebenshaltungMonat),
+    dstiGrenzePct: Math.max(0, n(dstiGrenzePct) || 40),
     horizontJahre: horizontClamped, saetze,
     rechtsform,
     gmbhFixkostenJahr: istGmbh ? n(gmbhFixkostenJahr) : 0,
@@ -207,7 +211,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
     wertzuwachsPct, umschuldungAlleJahre, beleihungClamped, grenzsteuersatzPct, saetze,
     bestandAnzahl, bestandWert, bestandRestschuld, bestandRateMonat, bestandMieteMonat, bestandRestlaufzeitJahre,
     bestandAnschaffungskosten, bestandAfaJahreVerbraucht,
-    nettoeinkommenMonat, lebenshaltungMonat, horizontClamped,
+    nettoeinkommenMonat, lebenshaltungMonat, dstiGrenzePct, horizontClamped,
     rechtsform, istGmbh, gmbhFixkostenJahr, gmbhGruendungskostenEinmalig,
   ])
 
@@ -356,15 +360,26 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
               label={istGmbh ? "Fixkosten / Lebenshaltung (nur für die Gegenüberstellung, €/Monat)" : "Fixkosten / Lebenshaltung (€/Monat)"}
               value={lebenshaltungMonat} onChange={setLebenshaltungMonat} step={100}
             />
+            <Feld
+              label={istGmbh ? "DSTI-Grenze (nur für die Gegenüberstellung, %)" : "DSTI-Grenze — harte Kaufsperre (%)"}
+              value={dstiGrenzePct} onChange={setDstiGrenzePct} step={5} suffix="%"
+            />
           </div>
+          {!istGmbh && (
+            <p className="text-xs text-muted-foreground">
+              Eine Bank finanziert real nur bis zu einer Schuldendienstquote (DSTI) von grob 40 % des Einkommens
+              (seit 1.7.2025 als FMA-Aufsichtserwartung fortgeführt, zuvor KIM-V-Pflicht) — Kauf oder Umschuldung
+              finden ab dieser Grenze nicht mehr statt, unabhängig davon, wie viel Kapital sonst vorhanden wäre.
+            </p>
+          )}
           {istGmbh && (
             <p className="text-xs text-muted-foreground">
-              Für die GmbH selbst sind Netto-Haushaltseinkommen und Fixkosten/Lebenshaltung ohne Wirkung — eine
-              Gesellschaft hat kein Gehalt, für Käufe und Umschuldungen zählt nur das verfügbare Kapital (Eigenmittel,
-              Sparbetrag, Mietüberschüsse); ein laufender Fehlbetrag wird automatisch als weitere Einlage
-              nachgeschossen (siehe Warnhinweise). Die beiden Felder fließen ausschließlich in die
-              Gegenüberstellungs-Karte weiter unten ein, wo sie das Verhalten des verglichenen Einzelunternehmens
-              bestimmen.
+              Für die GmbH selbst sind Netto-Haushaltseinkommen, Fixkosten/Lebenshaltung und die DSTI-Grenze ohne
+              Wirkung — eine Gesellschaft hat kein Gehalt und wird nicht gegen ein persönliches Einkommen geprüft,
+              für Käufe und Umschuldungen zählt nur das verfügbare Kapital (Eigenmittel, Sparbetrag,
+              Mietüberschüsse); ein laufender Fehlbetrag wird automatisch als weitere Einlage nachgeschossen (siehe
+              Warnhinweise). Die drei Felder fließen ausschließlich in die Gegenüberstellungs-Karte weiter unten
+              ein, wo sie das Verhalten des verglichenen Einzelunternehmens bestimmen.
             </p>
           )}
         </CardContent>
@@ -991,11 +1006,14 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
                   Mieteinnahmen. Ampel: grün &lt; 40&nbsp;%, gelb 40–50&nbsp;%, rot &gt; 50&nbsp;%.
                 </>
               : <>
-                  DSTI ist reine Anzeige und blockiert keinen Kauf. Die Fixkosten/Lebenshaltung (oben bei "Start
-                  &amp; Sparen") dagegen wirken als harte Kaufsperre: Ein cashflow-negatives Portfolio (Miete unter
-                  der Kreditrate) ist für sich kein Problem — der Fehlbetrag wird von der Sparquote aufgefangen.
-                  Kritisch wird es erst, wenn dieser Fehlbetrag vom Nettoeinkommen abgezogen weniger als die
-                  Fixkosten/Lebenshaltung übrig lässt — dann kauft die Simulation nicht mehr weiter. DSTI =
+                  Zwei unabhängige harte Kaufsperren wirken hier zusammen: Die Fixkosten/Lebenshaltung (oben bei
+                  "Start &amp; Sparen") wirken als Sperre auf den ABSOLUTEN Fehlbetrag: Ein cashflow-negatives
+                  Portfolio (Miete unter der Kreditrate) ist für sich kein Problem — der Fehlbetrag wird von der
+                  Sparquote aufgefangen. Kritisch wird es erst, wenn dieser Fehlbetrag vom Nettoeinkommen abgezogen
+                  weniger als die Fixkosten/Lebenshaltung übrig lässt. UNABHÄNGIG davon wirkt die DSTI-Grenze (oben
+                  bei "Wertentwicklung, Umschuldung &amp; Steuer") als echte %-Kaufsperre, genau wie bei einer
+                  realen Bank: Sobald ein weiterer Kauf oder eine Umschuldung die DSTI-Grenze überschreiten würde,
+                  findet er nicht statt — selbst wenn Kapital und Resteinkommen sonst reichen würden. DSTI =
                   monatliche Kreditraten aller Objekte, geteilt durch Nettoeinkommen + 80&nbsp;% der Mieteinnahmen.
                   Ampel: grün &lt; 40&nbsp;%, gelb 40–50&nbsp;%, rot &gt; 50&nbsp;%.
                 </>}

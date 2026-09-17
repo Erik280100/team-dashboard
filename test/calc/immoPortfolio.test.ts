@@ -58,7 +58,10 @@ describe("simuliereImmoPortfolio", () => {
     // gekauft, wie das Kapital hergibt (z. B. ein Zinshaus mit mehreren Einheiten) — sonst bliebe
     // weiter angespartes Eigenkapital ungenutzt liegen.
     const erg = simuliereImmoPortfolio({
-      ...BASIS, eigenmittel: 5_000_000, sparbetragMonat: 0, horizontJahre: 6,
+      // dstiGrenzePct hochgesetzt: dieser Test prüft reine Liquiditäts-/Batch-Kauflogik, nicht die
+      // (separat getestete) DSTI-Sperre — bei mehreren Käufen im selben Monat würde die reale
+      // 40 %-Grenze sonst schon beim zweiten Objekt greifen.
+      ...BASIS, eigenmittel: 5_000_000, sparbetragMonat: 0, horizontJahre: 6, dstiGrenzePct: 1000,
     })
     expect(erg.kaeufe.length).toBeGreaterThan(2)
   })
@@ -68,7 +71,9 @@ describe("simuliereImmoPortfolio", () => {
     // Sparbetrag den nötigen Eigenmittelbedarf für die zweite Wohnung binnen weniger Monate wieder
     // auf — es gibt keine künstliche Mindestpause mehr, die das verzögern würde.
     const erg = simuliereImmoPortfolio({
-      ...BASIS, eigenmittel: 82000, sparbetragMonat: 15000, horizontJahre: 2,
+      // dstiGrenzePct hochgesetzt: dieser Test prüft den zeitlichen Abstand zwischen zwei Käufen,
+      // nicht die DSTI-Sperre.
+      ...BASIS, eigenmittel: 82000, sparbetragMonat: 15000, horizontJahre: 2, dstiGrenzePct: 1000,
     })
     expect(erg.kaeufe.length).toBeGreaterThanOrEqual(2)
     const [erste, zweite] = erg.kaeufe
@@ -77,8 +82,10 @@ describe("simuliereImmoPortfolio", () => {
 
   it("refinancing at 100% LTV pays out exactly Verkehrswert − Restschuld − Kosten", () => {
     const erg = simuliereImmoPortfolio({
+      // dstiGrenzePct hochgesetzt: dieser Test prüft die Auszahlungsformel der Umschuldung, nicht
+      // die DSTI-Sperre.
       ...BASIS, bestandAnzahl: 1, bestandWert: 300000, bestandRestschuld: 150000,
-      bestandRateMonat: 1000, bestandRestlaufzeitJahre: 25, horizontJahre: 5, 
+      bestandRateMonat: 1000, bestandRestlaufzeitJahre: 25, horizontJahre: 5, dstiGrenzePct: 1000,
     })
     expect(erg.umschuldungen.length).toBeGreaterThan(0)
     const u = erg.umschuldungen[0]
@@ -98,6 +105,27 @@ describe("simuliereImmoPortfolio", () => {
       ...BASIS, eigenmittel: 1_000_000, nettoeinkommenMonat: 3000, mindestResteinkommenMonat: 2999,
     })
     expect(ergBlockiert.kaeufe.length).toBe(0)
+  })
+
+  it("blocks a purchase once its DSTI would exceed dstiGrenzePct, even though cash and Resteinkommen would otherwise allow it (nur \"privat\")", () => {
+    const basis: ImmoPortfolioEingabe = {
+      ...BASIS, eigenmittel: 1_000_000, nettoeinkommenMonat: 3000, mindestResteinkommenMonat: 0,
+    }
+    // Ohne DSTI-Sperre (hoch gesetzt) kauft die permissive Resteinkommen-Sperre allein bereits.
+    const ohneDsti = simuliereImmoPortfolio({ ...basis, dstiGrenzePct: 1000 })
+    expect(ohneDsti.kaeufe.length).toBeGreaterThan(0)
+    // Mit einer engen, bank-üblichen DSTI-Grenze wird derselbe Kauf blockiert, obwohl Kapital und
+    // Resteinkommen längst reichen würden.
+    const mitEngerDsti = simuliereImmoPortfolio({ ...basis, dstiGrenzePct: 10 })
+    expect(mitEngerDsti.kaeufe).toHaveLength(0)
+  })
+
+  it("ignores dstiGrenzePct for rechtsform \"gmbh\" — eine Gesellschaft wird nicht gegen ein persönliches Einkommen geprüft", () => {
+    const erg = simuliereImmoPortfolio({
+      ...BASIS, rechtsform: "gmbh", eigenmittel: 1_000_000, nettoeinkommenMonat: 3000,
+      mindestResteinkommenMonat: 0, dstiGrenzePct: 10,
+    })
+    expect(erg.kaeufe.length).toBeGreaterThan(0)
   })
 
   it("blocks a refinance that would push the portfolio deficit past what net income can cover, allows it once income is sufficient", () => {
@@ -121,6 +149,19 @@ describe("simuliereImmoPortfolio", () => {
       nettoeinkommenMonat: 10000, mindestResteinkommenMonat: 1000,
     })
     expect(grosszuegig.umschuldungen.length).toBeGreaterThan(0)
+  })
+
+  it("blocks a refinance once its DSTI would exceed dstiGrenzePct, even with plenty of net income (nur \"privat\")", () => {
+    const basis: ImmoPortfolioEingabe = {
+      ...BASIS, bestandAnzahl: 1, bestandWert: 800000, bestandRestschuld: 100000,
+      bestandRateMonat: 500, bestandMieteMonat: 1000, bestandRestlaufzeitJahre: 25,
+      umschuldungAlleJahre: 1, horizontJahre: 2,
+      nettoeinkommenMonat: 10000, mindestResteinkommenMonat: 0,
+    }
+    const ohneDsti = simuliereImmoPortfolio({ ...basis, dstiGrenzePct: 1000 })
+    expect(ohneDsti.umschuldungen.length).toBeGreaterThan(0)
+    const mitEngerDsti = simuliereImmoPortfolio({ ...basis, dstiGrenzePct: 10 })
+    expect(mitEngerDsti.umschuldungen.length).toBe(0)
   })
 
   it("marks a purchase funded entirely from refinancing proceeds as gratis, and a savings-funded one as not", () => {
@@ -153,8 +194,11 @@ describe("simuliereImmoPortfolio", () => {
     // trotz des Mehrfachkauf-Batches innerhalb desselben Monats nur eine einzige Wohnung gekauft
     // wird — die Restschuld eines isolierten, nie umgeschuldeten Kredits soll geprüft werden.
     const erg = simuliereImmoPortfolio({
+      // dstiGrenzePct hochgesetzt: die kurze Laufzeit (10 Jahre) treibt die Rate so hoch, dass sie
+      // die reale 40 %-DSTI-Grenze sprengen würde — dieser Test prüft aber die Tilgung, nicht die
+      // DSTI-Sperre.
       ...BASIS, eigenmittel: 90_000, umschuldungAlleJahre: 1000,
-      laufzeitJahre: 10, horizontJahre: 20,
+      laufzeitJahre: 10, horizontJahre: 20, dstiGrenzePct: 1000,
     })
     expect(erg.kaeufe).toHaveLength(1)
     const kaufJahr = erg.kaeufe[0].jahr
