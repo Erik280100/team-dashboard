@@ -9,6 +9,34 @@
 // wiederkehrender Umschuldung und der Frage, wie viele Wohnungen sich davon "von selbst"
 // finanzieren.
 //
+// `eingabe.rechtsform` schaltet zwischen zwei steuerlichen Betrachtungen desselben Portfolios
+// um — die Kauf-/Miet-/Wertentwicklungsmechanik ist in beiden Fällen IDENTISCH, nur die
+// steuerlichen Konsequenzen unterscheiden sich (siehe berechneSteuerEffekt/berechneKoestEffekt
+// und die Verkaufssteuer-Berechnung am Jahresende):
+//  - "privat" (Default): natürliche Person, Einkünfte aus Vermietung und Verpachtung zum
+//    Grenzsteuersatz, gedeckelte Sofortgutschrift für Verluste, 25 % KESt auf Guthabenzinsen,
+//    30 % ImmoESt (§ 30a EStG) je Objekt bei einem gedachten Verkauf, Liebhaberei-Prüfung
+//    (§ 1 Abs. 2 Z 3 LVO).
+//  - "gmbh": Kapitalgesellschaft, 23 % KöSt auf das Jahresergebnis (kein Grenzsteuersatz-Bezug),
+//    Verluste NUR als Vortrag nutzbar (§ 8 Abs. 4 Z 2 lit. a KStG, 75 %-Verrechnungsgrenze,
+//    keine Sofortgutschrift), Mindest-KöSt 500 €/Jahr auch in Verlustjahren, Guthabenzinsen
+//    ungekürzt aber KöSt-pflichtig (keine Endbesteuerung wie privat), beim gedachten Verkauf
+//    23 % KöSt auf den SALDIERTEN Veräußerungsgewinn (Verluste einzelner Objekte mindern den
+//    Gewinn anderer, anders als privat), keine Liebhaberei-Prüfung (§ 7 Abs. 3 KStG: kraft
+//    Rechtsform stets gewerbliche Einkünfte). Zusätzlich als zweite Ebene ausgewiesen: das
+//    Nettovermögen nach einer gedachten Vollausschüttung ans Privatvermögen (+ 27,5 % KESt,
+//    Einlagenrückzahlung bis zum Einlagenstand KESt-frei) — der eigentliche Vergleichspunkt
+//    zum Einzelunternehmen, das sein Vermögen nie in einer Gesellschaft "einsperrt".
+//  Bewusst NICHT unterschiedlich zwischen den beiden Rechtsformen (damit die Eingabeparameter
+//  identisch bleiben und der Vergleich die wirklich unterschiedlichen Treiber isoliert):
+//  - AfA-Satz: § 8 Abs. 1 EStG sieht 2,5 % nur für betrieblich genutzte, NICHT Wohnzwecken
+//    dienende Gebäude vor — eine vermietete Anlegerwohnung dient Wohnzwecken, daher 1,5 % in
+//    beiden Fällen (die beschleunigte Anfangs-AfA nach § 8 Abs. 1a gilt für beide gleich).
+//  - Geldbeschaffungskosten werden in beiden Fällen sofort abgesetzt (im Betriebsvermögen wären
+//    sie nach § 6 Z 3 EStG über die Laufzeit zu verteilen — ein reiner Timing-Unterschied, der
+//    hier bewusst ausgeblendet bleibt).
+//  - Kaufnebenkosten/Grunderwerbsteuer, USt auf Wohnraumvermietung: unverändert.
+//
 // Bewusste Vereinfachungen (siehe auch die Warnhinweise im Ergebnis):
 //  - Umschuldung erfolgt zum eingestellten Beleihungssatz auf den AKTUELLEN Verkehrswert; real
 //    verlangen Banken meist 70–80 %, nicht 100 %.
@@ -32,6 +60,7 @@ import {
   KREDIT_DEFAULTS, berechneAfaBemessungsgrundlage, berechneAfaJahre, berechneKaufnebenkosten,
   berechneTilgungsplan, type AfaJahr, type KreditSaetze,
 } from "@/lib/calc/kredit"
+import { KEST_SATZ, KOEST_SATZ, MINDEST_KOEST_JAHR } from "@/lib/calc/gmbhVsEu"
 
 export interface ImmoPortfolioEingabe {
   // Start & Sparen
@@ -103,6 +132,17 @@ export interface ImmoPortfolioEingabe {
 
   horizontJahre: number
   saetze?: KreditSaetze
+
+  /** "privat" = natürliche Person (Einkünfte aus Vermietung und Verpachtung, Grenzsteuersatz,
+   *  ImmoESt); "gmbh" = Kapitalgesellschaft (KöSt, Verlustvortrag, KESt erst bei Ausschüttung).
+   *  Default "privat", wenn weggelassen — bestehende Aufrufer sind davon nicht betroffen. */
+  rechtsform?: "privat" | "gmbh"
+  /** Nur "gmbh": laufende Gesellschaftskosten (Bilanzierung, Steuerberatung, Firmenbuch) p.a.,
+   *  als Betriebsausgabe abzugsfähig. */
+  gmbhFixkostenJahr?: number
+  /** Nur "gmbh": einmalige Gründungskosten (Notar, Firmenbuch, Gesellschaftsvertrag) im ersten
+   *  Monat, ebenfalls als Betriebsausgabe abzugsfähig (§ 11 Abs. 1 Z 1 KStG). */
+  gmbhGruendungskostenEinmalig?: number
 }
 
 interface ObjektZustand {
@@ -140,10 +180,17 @@ export interface ImmoJahr {
   restschuldGesamt: number
   liquiditaet: number
   nettovermoegen: number
-  /** nettovermoegen abzüglich einer gedachten ImmoESt (30 %, § 30a EStG) auf einen Verkauf ALLER
-   *  Objekte zu diesem Zeitpunkt — siehe IMMOEST_PCT. Vereinfachung: kein Altvermögen-Sonderfall
-   *  (4,2 %-Pauschale), keine Berücksichtigung eines gewerblichen Grundstückshandels. */
+  /** nettovermoegen abzüglich einer gedachten Verkaufssteuer auf einen Verkauf ALLER Objekte zu
+   *  diesem Zeitpunkt (siehe `verkaufssteuer`) — privat: 30 % ImmoESt (§ 30a EStG) je Objekt bei
+   *  0 gekappt; gmbh: 23 % KöSt auf den saldierten Veräußerungsgewinn. Vereinfachung (beide
+   *  Rechtsformen): kein Altvermögen-Sonderfall (4,2 %-Pauschale), kein gewerblicher
+   *  Grundstückshandel. */
   nettovermoegenNachSteuer: number
+  /** Nur "gmbh": nettovermoegenNachSteuer nach einer gedachten Vollausschüttung ans
+   *  Privatvermögen (KöSt bereits abgezogen, zusätzlich 27,5 % KESt auf den Teil oberhalb der
+   *  kumulierten Einlagen, siehe `einlagenKumuliert`) — der eigentliche Vergleichspunkt zum
+   *  Einzelunternehmen. `null` bei rechtsform "privat". */
+  nettovermoegenNachAusschuettung: number | null
   mieteinnahmen: number
   bewirtschaftungskosten: number
   kreditratenGesamt: number
@@ -152,6 +199,17 @@ export interface ImmoJahr {
   afaGesamt: number
   steuerErgebnis: number
   steuerEffekt: number
+  /** Gedachte Steuer auf einen Verkauf ALLER Objekte zu diesem Zeitpunkt — 30 % ImmoESt (privat)
+   *  bzw. 23 % KöSt auf den saldierten Veräußerungsgewinn (gmbh). = nettovermoegen −
+   *  nettovermoegenNachSteuer. */
+  verkaufssteuer: number
+  /** Nur "gmbh": noch nicht verrechneter Verlustvortrag am Jahresende (§ 8 Abs. 2 KStG), 0 bei
+   *  rechtsform "privat". */
+  verlustvortrag: number
+  /** Nur "gmbh": kumulierte Einlagen des Gesellschafters (Startkapital + laufendes Sparen +
+   *  etwaige Liquiditätsnachschüsse) — die KESt-freie Rückzahlungsgrenze bei einer Ausschüttung
+   *  (§ 4 Abs. 12 EStG). Bei rechtsform "privat" ohne Bedeutung (Feld bleibt trotzdem befüllt). */
+  einlagenKumuliert: number
   cashflowNetto: number
   ltvPct: number
   dstiPct: number
@@ -206,6 +264,8 @@ export interface ImmoMeilenstein {
   restschuldGesamt: number
   nettovermoegen: number
   nettovermoegenNachSteuer: number
+  /** Nur "gmbh": siehe ImmoJahr.nettovermoegenNachAusschuettung. `null` bei rechtsform "privat". */
+  nettovermoegenNachAusschuettung: number | null
   jahresmiete: number
   jahresAfa: number
   jahresCashflow: number
@@ -233,6 +293,12 @@ export interface ImmoKennzahlen {
   eigenkapitalrenditeNachSteuerPct: number
   /** Wie irrPct, aber auf Basis von nettovermoegenNachSteuer. */
   irrNachSteuerPct: number | null
+  /** Nur "gmbh": wie eigenkapitalrenditeNachSteuerPct, aber auf Basis von
+   *  nettovermoegenNachAusschuettung. `null` bei rechtsform "privat". */
+  eigenkapitalrenditeNachAusschuettungPct: number | null
+  /** Nur "gmbh": wie irrNachSteuerPct, aber auf Basis von nettovermoegenNachAusschuettung.
+   *  `null` bei rechtsform "privat" oder wenn kein Vorzeichenwechsel gefunden wird. */
+  irrNachAusschuettungPct: number | null
   breakEvenJahr: number | null
 }
 
@@ -261,6 +327,12 @@ export const IMMO_KEST_PCT = 25
  *  Vereinfachung: keine 4,2 %-Pauschale für Altvermögen (Anschaffung vor dem 31.3.2002), kein
  *  Sonderfall gewerblicher Grundstückshandel. */
 export const IMMOEST_PCT = 30
+
+/** Anteil des laufenden steuerlichen Gewinns, gegen den ein Verlustvortrag maximal verrechnet
+ *  werden darf (§ 8 Abs. 4 Z 2 lit. a KStG, "75 %-Vortragsgrenze") — nur für rechtsform "gmbh"
+ *  relevant, eine natürliche Person hat hier keine Beschränkung (ihre Verlustgutschrift ist
+ *  ohnehin über berechneSteuerEffekt auf die Steuer des übrigen Einkommens gedeckelt). */
+export const KOEST_VORTRAGSGRENZE = 0.75
 
 /** Ermittelt Pfandrechts-/Vertragserrichtungskosten von einer Kreditsumme — dieselbe Formel wie
  *  in kredit.ts für die Kreditnebenkosten, hier zusätzlich für Umschuldungen wiederverwendet. */
@@ -425,6 +497,59 @@ function berechneSteuerEffekt(steuerErgebnis: number, eingabe: ImmoPortfolioEing
   return Math.min(rohEffekt, maxGutschrift)
 }
 
+/** Fortgeschriebener Zustand der Körperschaftsteuer-Rechnung über die Jahre — anders als bei der
+ *  Privatperson (berechneSteuerEffekt, zustandslos) braucht die GmbH einen Verlustvortrag und
+ *  ein Mindest-KöSt-Anrechnungsguthaben, die sich jahresübergreifend aufbauen. */
+export interface KoestZustand {
+  /** Noch nicht verrechneter Verlustvortrag (§ 8 Abs. 2 KStG) — zeitlich unbegrenzt vortragbar,
+   *  aber pro Jahr nur bis zur 75-%-Grenze (KOEST_VORTRAGSGRENZE) des laufenden Gewinns nutzbar. */
+  verlustvortrag: number
+  /** In Verlust- bzw. niedrigen Gewinnjahren über die tatsächliche KöSt hinaus bezahlte
+   *  Mindestkörperschaftsteuer (§ 24 Abs. 4 KStG) — wie eine Vorauszahlung in Folgejahren
+   *  anrechenbar, sobald die tatsächliche KöSt die Mindest-KöSt übersteigt. */
+  mindestKoestGuthaben: number
+}
+
+/** Körperschaftsteuer-Effekt eines Jahres (immer ≤ 0 — anders als bei der Privatperson gibt es
+ *  für eine GmbH KEINE Sofortgutschrift bei einem Verlust, nur einen Vortrag): Verluste mindern
+ *  ausschließlich künftige Gewinne (§ 8 Abs. 4 Z 2 lit. a KStG, 75-%-Grenze), und mindestens die
+ *  Mindest-KöSt (500 €/Jahr) ist immer fällig — auch in einem Verlustjahr —, wird aber wie eine
+ *  Vorauszahlung gutgeschrieben, sobald die tatsächliche KöSt eines Folgejahres sie übersteigt.
+ *  Mutiert `zustand` in place (Verlustvortrag/Guthaben fortschreiben). */
+export function berechneKoestEffekt(gewinn: number, zustand: KoestZustand): number {
+  let tatsaechlich: number
+  if (gewinn <= 0) {
+    zustand.verlustvortrag += -gewinn
+    tatsaechlich = 0
+  } else {
+    const verrechenbar = Math.min(zustand.verlustvortrag, gewinn * KOEST_VORTRAGSGRENZE)
+    zustand.verlustvortrag -= verrechenbar
+    tatsaechlich = (gewinn - verrechenbar) * KOEST_SATZ
+  }
+  const koest = Math.max(tatsaechlich, MINDEST_KOEST_JAHR)
+  const anrechnung = Math.min(zustand.mindestKoestGuthaben, Math.max(0, koest - MINDEST_KOEST_JAHR))
+  zustand.mindestKoestGuthaben -= anrechnung
+  zustand.mindestKoestGuthaben += Math.max(0, MINDEST_KOEST_JAHR - tatsaechlich)
+  return -(koest - anrechnung)
+}
+
+/** KöSt (23 %) auf einen gedachten Veräußerungsgewinn beim Verkauf des GESAMTEN Portfolios, ohne
+ *  jeden Objekt-Verlust bei 0 zu kappen — anders als bei der Privatperson (siehe IMMOEST_PCT) ist
+ *  eine GmbH ein einziges Steuersubjekt: der Verlust eines Objekts mindert den Gewinn eines
+ *  anderen (Saldierung). Nutzt den noch offenen Verlustvortrag (bis zur 75-%-Grenze), OHNE die
+ *  Mindest-KöSt erneut anzusetzen — die läuft bereits jährlich über den laufenden Steuereffekt
+ *  (berechneKoestEffekt) und würde bei einem rein gedachten, nicht real stattfindenden Verkauf
+ *  sonst ein zweites Mal "bezahlt". Liest `zustand` nur, verändert ihn nicht — der Verkauf ist
+ *  nur eine Momentaufnahme, die Simulation läuft mit dem echten Verlustvortrag unverändert weiter. */
+function berechneKoestVerkaufssteuer(objekte: ObjektZustand[], zustand: KoestZustand): number {
+  const veraeusserungsgewinnGesamt = objekte.reduce(
+    (s, o) => s + (o.verkehrswert - (o.anschaffungskostenGesamt - o.afaKumuliert)), 0
+  )
+  if (veraeusserungsgewinnGesamt <= 0) return 0
+  const verrechenbar = Math.min(zustand.verlustvortrag, veraeusserungsgewinnGesamt * KOEST_VORTRAGSGRENZE)
+  return (veraeusserungsgewinnGesamt - verrechenbar) * KOEST_SATZ
+}
+
 function bewirtschaftungskostenMonat(eingabe: ImmoPortfolioEingabe, obj: ObjektZustand): number {
   if (obj.istBestand) {
     return eingabe.bestandAnzahl * (eingabe.hausverwaltungMonat + eingabe.sonstigeKostenMonat)
@@ -444,11 +569,31 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   const saetze = eingabe.saetze ?? KREDIT_DEFAULTS
   const horizontJahre = Math.max(1, Math.round(eingabe.horizontJahre))
   const monateGesamt = horizontJahre * 12
+  const rechtsform = eingabe.rechtsform ?? "privat"
+  const istGmbh = rechtsform === "gmbh"
 
   let liquiditaet = Math.max(0, eingabe.eigenmittel)
   let topfUmschuldung = 0
   let topfSparen = liquiditaet
   const eigenmittelStart = liquiditaet
+
+  // Nur "gmbh": Verlustvortrag/Mindest-KöSt-Guthaben fortgeschrieben über alle Jahre (siehe
+  // berechneKoestEffekt), sowie die kumulierten Einlagen des Gesellschafters (Startkapital +
+  // laufendes Sparen + jeder Liquiditätsnachschuss) als KESt-freie Rückzahlungsgrenze bei einer
+  // späteren Ausschüttung (§ 4 Abs. 12 EStG).
+  const koestZustand: KoestZustand = { verlustvortrag: 0, mindestKoestGuthaben: 0 }
+  let einlagenKumuliert = eigenmittelStart
+
+  // Einmalige Gründungskosten (Notar, Firmenbuch, Gesellschaftsvertrag) fallen vor dem ersten
+  // Simulationsmonat an und mindern sofort die verfügbare Liquidität sowie (als Betriebsausgabe)
+  // das steuerliche Ergebnis des ersten Jahres.
+  let kostenJahrVorab = 0
+  if (istGmbh && eingabe.gmbhGruendungskostenEinmalig) {
+    const gruendungskosten = Math.max(0, eingabe.gmbhGruendungskostenEinmalig)
+    liquiditaet = Math.max(0, liquiditaet - gruendungskosten)
+    topfSparen = liquiditaet
+    kostenJahrVorab = gruendungskosten
+  }
 
   const objekte: ObjektZustand[] = []
   let naechsteObjektId = 0
@@ -489,12 +634,21 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   const umschuldungen: ImmoUmschuldung[] = []
   const liebhabereiWarnungen: string[] = []
 
-  let mieteJahr = 0, kostenJahr = 0, zinsenJahr = 0, tilgungJahr = 0, rateJahr = 0
+  let mieteJahr = 0, kostenJahr = kostenJahrVorab, zinsenJahr = 0, tilgungJahr = 0, rateJahr = 0
   let eigenmitteleinsatzJahr = 0
   let eigenmitteleinsatzKumuliert = 0
   let geldbeschaffungskostenJahr = 0
   let nachschussJahr = 0
   let nachschussKumuliert = 0
+  // Nur "gmbh": Guthabenzinsen fließen (anders als privat, wo sie mit 25 % KESt endbesteuert
+  // sind) ungekürzt in die Liquidität, sind aber Teil des KöSt-pflichtigen Jahresergebnisses.
+  let guthabenzinsJahr = 0
+  // Zwischenspeicher für den einmal pro Jahr berechneten Steuereffekt: wird weiter unten im
+  // Jahresschnappschuss (Abschnitt 5) wiederverwendet statt ein zweites Mal berechnet — bei
+  // "gmbh" würde ein zweiter Aufruf von berechneKoestEffekt den Verlustvortrag/das
+  // Mindest-KöSt-Guthaben (koestZustand) fälschlich ein zweites Mal fortschreiben.
+  let steuerErgebnisAktuellesJahr = 0
+  let steuerEffektAktuellesJahr = 0
 
   // Negative Liquidität ist nicht zulässig (kein Kontoüberziehungs-Modell): Würde ein laufender
   // Cashflow-Fehlbetrag oder eine Steuernachzahlung die Liquidität unter 0 drücken, wird der
@@ -502,7 +656,8 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   // mindestResteinkommenMonat-Sperre ohnehin schon für Käufe/Umschuldungen trifft — hier wird sie
   // auf JEDEN Monat angewendet, nicht nur auf neue Käufe). Der Zuschuss fließt in topfSparen, damit
   // topfUmschuldung + topfSparen === liquiditaet erhalten bleibt (A3), und wird kumuliert
-  // ausgewiesen (nachschussKumuliert), damit er nicht unsichtbar in den Zahlen verschwindet.
+  // ausgewiesen (nachschussKumuliert), damit er nicht unsichtbar in den Zahlen verschwindet. Bei
+  // einer GmbH ist ein solcher Zuschuss wirtschaftlich eine weitere Einlage des Gesellschafters.
   const deckeLiquiditaetNichtNegativ = () => {
     if (liquiditaet >= 0) return
     const nachschuss = -liquiditaet
@@ -510,6 +665,7 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
     topfSparen += nachschuss
     nachschussJahr += nachschuss
     nachschussKumuliert += nachschuss
+    einlagenKumuliert += nachschuss
   }
 
   for (let monat = 1; monat <= monateGesamt; monat++) {
@@ -517,8 +673,12 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
     //    — die Summe aus topfUmschuldung + topfSparen bleibt dabei exakt gleich liquiditaet.
     const zinsBasis = Math.max(0, liquiditaet)
     const guthabenzinsBrutto = zinsBasis * (eingabe.guthabenzinsPct / 100 / 12)
-    // KESt (25 % auf Geldeinlagen, § 27a Abs. 1 Z 1 EStG) wird von der Bank direkt einbehalten (E2).
-    const guthabenzinsNetto = guthabenzinsBrutto * (1 - IMMO_KEST_PCT / 100)
+    // Privat: KESt (25 % auf Geldeinlagen, § 27a Abs. 1 Z 1 EStG) wird von der Bank direkt
+    // einbehalten (E2), die Zinsen sind damit endbesteuert. GmbH: keine Bank-KESt (§ 94 Z 5
+    // EStG-Befreiungserklärung im Betriebsvermögen), die vollen Zinsen fließen zu, sind dafür
+    // Teil des KöSt-pflichtigen Jahresergebnisses (guthabenzinsJahr, siehe Jahresabschluss unten).
+    const guthabenzinsNetto = istGmbh ? guthabenzinsBrutto : guthabenzinsBrutto * (1 - IMMO_KEST_PCT / 100)
+    if (istGmbh) guthabenzinsJahr += guthabenzinsBrutto
     liquiditaet += guthabenzinsNetto
     if (zinsBasis > 0) {
       const anteilUmschuldung = Math.max(0, topfUmschuldung) / zinsBasis
@@ -529,9 +689,19 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       topfSparen += guthabenzinsNetto
     }
 
-    // 2) Sparbetrag.
+    // 2) Sparbetrag (= laufende Einlage des Gesellschafters bei einer GmbH).
     liquiditaet += eingabe.sparbetragMonat
     topfSparen += eingabe.sparbetragMonat
+    if (istGmbh) einlagenKumuliert += eingabe.sparbetragMonat
+
+    // 2b) Nur "gmbh": laufende Gesellschaftskosten (Bilanzierung, Steuerberatung, Firmenbuch),
+    // als Betriebsausgabe sofort abzugsfähig.
+    if (istGmbh && eingabe.gmbhFixkostenJahr) {
+      const gmbhKostenMonat = Math.max(0, eingabe.gmbhFixkostenJahr) / 12
+      liquiditaet -= gmbhKostenMonat
+      topfSparen -= gmbhKostenMonat
+      kostenJahr += gmbhKostenMonat
+    }
 
     // 3) Je Objekt: Kredit tilgen, Wert fortschreiben, Miete/Kosten verrechnen.
     for (const obj of objekte) {
@@ -586,20 +756,32 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       // Liebhaberei wird je Einkunftsquelle beurteilt (je Objekt), nicht im Portfolio-Saldo, und
       // die "kleine Vermietung" (Eigentumswohnung, § 1 Abs. 2 Z 3 LVO) muss den Gesamtüberschuss
       // innerhalb von 20 Jahren erzielen (E3) — jedes Objekt wird genau einmal, 20 Jahre nach
-      // seinem eigenen Kaufmonat, geprüft.
-      for (const obj of objekte) {
-        if (monat - obj.kaufMonat === 240 && !obj.liebhabereiGeprueft) {
-          obj.liebhabereiGeprueft = true
-          if (obj.eigenSteuerErgebnisKumuliert < 0) {
-            liebhabereiWarnungen.push(obj.istBestand ? "Bestand" : `Kauf aus Jahr ${obj.kaufJahrIndex}`)
+      // seinem eigenen Kaufmonat, geprüft. Nur "privat": eine GmbH erzielt kraft Rechtsform stets
+      // gewerbliche Einkünfte (§ 7 Abs. 3 KStG), die Liebhaberei-Prüfung entfällt (F).
+      if (!istGmbh) {
+        for (const obj of objekte) {
+          if (monat - obj.kaufMonat === 240 && !obj.liebhabereiGeprueft) {
+            obj.liebhabereiGeprueft = true
+            if (obj.eigenSteuerErgebnisKumuliert < 0) {
+              liebhabereiWarnungen.push(obj.istBestand ? "Bestand" : `Kauf aus Jahr ${obj.kaufJahrIndex}`)
+            }
           }
         }
       }
 
-      const steuerErgebnis = mieteJahr - kostenJahr - zinsenJahr - afaGesamtJahr - geldbeschaffungskostenJahr
-      const steuerEffekt = berechneSteuerEffekt(steuerErgebnis, eingabe)
-      liquiditaet += steuerEffekt
-      topfSparen += steuerEffekt
+      // GmbH: Guthabenzinsen sind (anders als privat) Teil des KöSt-pflichtigen Jahresergebnisses
+      // (guthabenzinsJahr), siehe Abschnitt 1) oben.
+      steuerErgebnisAktuellesJahr = mieteJahr - kostenJahr - zinsenJahr - afaGesamtJahr - geldbeschaffungskostenJahr
+        + guthabenzinsJahr
+      // Privat: gedeckelte Sofortgutschrift bei Verlust (berechneSteuerEffekt). GmbH: nie eine
+      // Gutschrift, nur Verlustvortrag, und mindestens die Mindest-KöSt fällt auch in einem
+      // Verlustjahr an (berechneKoestEffekt, mutiert koestZustand — GENAU EINMAL pro Jahr, siehe
+      // steuerEffektAktuellesJahr weiter unten im Jahresschnappschuss).
+      steuerEffektAktuellesJahr = istGmbh
+        ? berechneKoestEffekt(steuerErgebnisAktuellesJahr, koestZustand)
+        : berechneSteuerEffekt(steuerErgebnisAktuellesJahr, eingabe)
+      liquiditaet += steuerEffektAktuellesJahr
+      topfSparen += steuerEffektAktuellesJahr
       deckeLiquiditaetNichtNegativ()
 
       // Umschuldung: alle `umschuldungAlleJahre` Jahre, wenn der beleihbare Wert die
@@ -783,34 +965,49 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       const portfolioWert = objekte.reduce((s, o) => s + o.verkehrswert, 0)
       const restschuldGesamt = objekte.reduce((s, o) => s + o.restschuld, 0)
       const nettovermoegen = portfolioWert - restschuldGesamt + liquiditaet
-      // ImmoESt (30 %, § 30a EStG) auf einen GEDACHTEN Verkauf ALLER Objekte zu diesem Zeitpunkt —
-      // Basis je Objekt: Verkehrswert − Anschaffungskosten inkl. AK-NK + kumulierte AfA (B6/E8).
-      // Vereinfachung: keine 4,2 %-Altvermögens-Pauschale, kein gewerblicher Grundstückshandel.
-      const immoEstGesamt = objekte.reduce(
-        (s, o) => s + Math.max(0, o.verkehrswert - o.anschaffungskostenGesamt + o.afaKumuliert) * (IMMOEST_PCT / 100), 0
-      )
-      const nettovermoegenNachSteuer = nettovermoegen - immoEstGesamt
+      // Verkaufssteuer auf einen GEDACHTEN Verkauf ALLER Objekte zu diesem Zeitpunkt:
+      //  - privat: 30 % ImmoESt (§ 30a EStG) JE OBJEKT bei 0 gekappt — Basis: Verkehrswert −
+      //    Anschaffungskosten inkl. AK-NK + kumulierte AfA (B6/E8). Vereinfachung: keine
+      //    4,2 %-Altvermögens-Pauschale, kein gewerblicher Grundstückshandel.
+      //  - gmbh: 23 % KöSt auf den SALDIERTEN Veräußerungsgewinn (ein Objektverlust mindert den
+      //    Gewinn eines anderen), unter Nutzung eines etwaigen Verlustvortrags/Mindest-KöSt-
+      //    Guthabens — siehe berechneKoestVerkaufssteuer. Rechnet gegen eine lokale Kopie von
+      //    koestZustand, verändert also den echten Fortgang der laufenden Simulation nicht.
+      const verkaufssteuer = istGmbh
+        ? berechneKoestVerkaufssteuer(objekte, koestZustand)
+        : objekte.reduce(
+          (s, o) => s + Math.max(0, o.verkehrswert - o.anschaffungskostenGesamt + o.afaKumuliert) * (IMMOEST_PCT / 100), 0
+        )
+      const nettovermoegenNachSteuer = nettovermoegen - verkaufssteuer
+      // Nur "gmbh": zweite Vergleichsebene — Nettovermögen nach einer gedachten VOLLAUSSCHÜTTUNG
+      // ans Privatvermögen des Gesellschafters. Eine Einlagenrückzahlung (§ 4 Abs. 12 EStG) ist
+      // bis zur Höhe der kumulierten Einlagen KESt-frei, nur der darüber hinausgehende
+      // (thesaurierte) Teil trägt 27,5 % KESt.
+      const nettovermoegenNachAusschuettung = istGmbh
+        ? nettovermoegenNachSteuer - Math.max(0, nettovermoegenNachSteuer - einlagenKumuliert) * KEST_SATZ
+        : null
       // Wohnungszählung: der Bestand ist EIN Sammelposten-Objekt, steht aber für bestandAnzahl
       // tatsächliche Wohnungen (C1) — sonst widerspricht die Stückzahl dem vollen Portfolio-Wert.
       const anzahlObjekte = objekte.reduce((s, o) => s + (o.istBestand ? eingabe.bestandAnzahl : 1), 0)
       const einkommensbasis = eingabe.nettoeinkommenMonat + 0.8 * (mieteJahr / 12)
 
-      const steuerErgebnisJahr = mieteJahr - kostenJahr - zinsenJahr - afaGesamtJahr - geldbeschaffungskostenJahr
-      const steuerEffektJahr = berechneSteuerEffekt(steuerErgebnisJahr, eingabe)
-
       jahre.push({
         jahr: monat / 12,
         anzahlObjekte,
         portfolioWert, restschuldGesamt, liquiditaet, nettovermoegen, nettovermoegenNachSteuer,
+        nettovermoegenNachAusschuettung,
         mieteinnahmen: mieteJahr,
         bewirtschaftungskosten: kostenJahr,
         kreditratenGesamt: rateJahr,
         zinsenGesamt: zinsenJahr,
         tilgungGesamt: tilgungJahr,
         afaGesamt: afaGesamtJahr,
-        steuerErgebnis: steuerErgebnisJahr,
-        steuerEffekt: steuerEffektJahr,
-        cashflowNetto: mieteJahr - kostenJahr - rateJahr + steuerEffektJahr,
+        steuerErgebnis: steuerErgebnisAktuellesJahr,
+        steuerEffekt: steuerEffektAktuellesJahr,
+        verkaufssteuer,
+        verlustvortrag: koestZustand.verlustvortrag,
+        einlagenKumuliert,
+        cashflowNetto: mieteJahr - kostenJahr - rateJahr + steuerEffektAktuellesJahr,
         ltvPct: portfolioWert > 0 ? (restschuldGesamt / portfolioWert) * 100 : 0,
         dstiPct: einkommensbasis > 0 ? (rateJahr / 12 / einkommensbasis) * 100 : 0,
         eigenmitteleinsatzKauf: eigenmitteleinsatzJahr,
@@ -820,6 +1017,7 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       })
       mieteJahr = 0; kostenJahr = 0; zinsenJahr = 0; tilgungJahr = 0; rateJahr = 0
       eigenmitteleinsatzJahr = 0; geldbeschaffungskostenJahr = 0; nachschussJahr = 0
+      guthabenzinsJahr = 0
     }
   }
 
@@ -841,6 +1039,7 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
         restschuldGesamt: j.restschuldGesamt,
         nettovermoegen: j.nettovermoegen,
         nettovermoegenNachSteuer: j.nettovermoegenNachSteuer,
+        nettovermoegenNachAusschuettung: j.nettovermoegenNachAusschuettung,
         jahresmiete: j.mieteinnahmen,
         jahresAfa: j.afaGesamt,
         jahresCashflow: j.cashflowNetto,
@@ -869,6 +1068,15 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   const irrNachSteuerPct = berechnePortfolioIrrPct(
     eigenmittelStart, eingabe.sparbetragMonat, monateGesamt, letztesJahr.nettovermoegenNachSteuer
   )
+  const eigenkapitalrenditeNachAusschuettungPct =
+    istGmbh && eigenmittelGesamt > 0 && letztesJahr.nettovermoegenNachAusschuettung !== null
+      ? ((letztesJahr.nettovermoegenNachAusschuettung - eigenmittelGesamt) / eigenmittelGesamt) * 100
+      : null
+  const irrNachAusschuettungPct = istGmbh && letztesJahr.nettovermoegenNachAusschuettung !== null
+    ? berechnePortfolioIrrPct(
+      eigenmittelStart, eingabe.sparbetragMonat, monateGesamt, letztesJahr.nettovermoegenNachAusschuettung
+    )
+    : null
 
   // Cashflow-Breakeven: erstes Jahr, in dem die kumulierte operative Nettocashflow (inkl.
   // Steuereffekt) die Summe aus Start-Eigenmitteln und allen seither aus eigener Tasche
@@ -949,7 +1157,9 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       + "ist, sondern laufende Deckung."
     )
   }
-  if (letztesJahr && letztesJahr.anzahlObjekte >= 10) {
+  // Nur "privat": eine GmbH ist bereits kraft Rechtsform stets gewerblich (§ 7 Abs. 3 KStG),
+  // die Einstufungsfrage stellt sich für sie nicht.
+  if (!istGmbh && letztesJahr && letztesJahr.anzahlObjekte >= 10) {
     warnungen.push(
       `Ab einer zweistelligen Anzahl an Objekten (hier: ${letztesJahr.anzahlObjekte}) rückt bei einem späteren `
       + "Verkauf die Einstufung als gewerblicher Grundstückshandel näher — dann entfällt der 30-%-ImmoESt-Satz "
@@ -962,13 +1172,31 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
   if (kaeufe.length === 0) {
     warnungen.push("Im gewählten Zeitraum konnte keine einzige neue Wohnung finanziert werden — Eingaben prüfen.")
   }
+  if (istGmbh) {
+    warnungen.push(
+      "Eine junge GmbH bekommt Bankkredite in der Praxis oft nur gegen eine persönliche Haftung/Bürgschaft des "
+      + "Gesellschafters — die Fremdfinanzierung ist damit wirtschaftlich nicht so klar vom Privatvermögen "
+      + "getrennt, wie die reine KöSt-Betrachtung suggeriert."
+    )
+    warnungen.push(
+      "Verluste einzelner Jahre mindern nur künftige Gewinne (Verlustvortrag, max. 75 % pro Jahr) — anders als "
+      + "privat gibt es keine Sofortgutschrift gegen ein anderes Einkommen; die Mindest-KöSt (500 €/Jahr) fällt "
+      + "zudem auch in einem Verlustjahr an."
+    )
+    warnungen.push(
+      "Keine Hauptwohnsitzbefreiung und keine Altvermögens-Pauschale wie bei einer natürlichen Person — jeder "
+      + "Veräußerungsgewinn ist in voller Höhe KöSt-pflichtig. Eine Anteilsvereinigung von ≥ 95 % (z. B. durch "
+      + "einen Alleingesellschafter) kann außerdem selbst Grunderwerbsteuer auslösen."
+    )
+  }
 
   return {
     jahre, kaeufe, umschuldungen, meilensteine,
     kennzahlen: {
       anzahlGratis, ausUmschuldungGesamt, umschuldungsAnteilGesamtPct, gratisAequivalentAnzahl,
       bruttomietrenditeSchnittPct, nettomietrenditeSchnittPct,
-      eigenkapitalrenditePct, irrPct, eigenkapitalrenditeNachSteuerPct, irrNachSteuerPct, breakEvenJahr,
+      eigenkapitalrenditePct, irrPct, eigenkapitalrenditeNachSteuerPct, irrNachSteuerPct,
+      eigenkapitalrenditeNachAusschuettungPct, irrNachAusschuettungPct, breakEvenJahr,
     },
     warnungen,
   }

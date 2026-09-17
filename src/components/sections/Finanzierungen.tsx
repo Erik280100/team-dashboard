@@ -10,12 +10,13 @@ import type { Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
 import type { RosterEntry } from "@/lib/calc/struktur"
 
-type FinanzierungenTab = "offen" | "rechner" | "immo"
+type FinanzierungenTab = "offen" | "rechner" | "immo" | "immoGmbh"
 
 const TABS: { id: FinanzierungenTab; label: string; editorOnly?: boolean }[] = [
   { id: "offen", label: "Offene Abwicklungen" },
   { id: "rechner", label: "Finanzierungsrechner" },
   { id: "immo", label: "Anlegerwohnungen" },
+  { id: "immoGmbh", label: "Anlegerwohnungen GmbH" },
 ]
 
 export function Finanzierungen({
@@ -73,6 +74,7 @@ export function Finanzierungen({
       )}
       {activeTab === "rechner" && <KreditRechner />}
       {activeTab === "immo" && <ImmoPortfolioRechner />}
+      {activeTab === "immoGmbh" && <ImmoPortfolioRechner rechtsform="gmbh" />}
     </div>
   )
 }

@@ -78,7 +78,9 @@ function n(v: string): number {
   return Number(v) || 0
 }
 
-export function ImmoPortfolioRechner() {
+export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "privat" | "gmbh" }) {
+  const istGmbh = rechtsform === "gmbh"
+
   // Start & Sparen
   const [eigenmittel, setEigenmittel] = useState("40000")
   const [sparbetragMonat, setSparbetragMonat] = useState("500")
@@ -119,6 +121,11 @@ export function ImmoPortfolioRechner() {
 
   // Steuer
   const [grenzsteuersatzPct, setGrenzsteuersatzPct] = useState("40")
+
+  // Nur "gmbh": laufende Gesellschaftskosten und einmalige Gründungskosten (Default analog
+  // DEFAULTS_HOLDING_IMMO in holdingImmobilien.ts).
+  const [gmbhFixkostenJahr, setGmbhFixkostenJahr] = useState("2500")
+  const [gmbhGruendungskostenEinmalig, setGmbhGruendungskostenEinmalig] = useState("3000")
 
   // Bestand
   const [bestandOffen, setBestandOffen] = useState(false)
@@ -180,6 +187,9 @@ export function ImmoPortfolioRechner() {
     nettoeinkommenMonat: n(nettoeinkommenMonat), lebenshaltungMonat: n(lebenshaltungMonat),
     mindestResteinkommenMonat: n(lebenshaltungMonat),
     horizontJahre: horizontClamped, saetze,
+    rechtsform,
+    gmbhFixkostenJahr: istGmbh ? n(gmbhFixkostenJahr) : 0,
+    gmbhGruendungskostenEinmalig: istGmbh ? n(gmbhGruendungskostenEinmalig) : 0,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
     eigenmittel, sparbetragClamped, guthabenzinsPct, kaufpreisReferenz, wohnflaecheM2,
@@ -190,6 +200,7 @@ export function ImmoPortfolioRechner() {
     bestandAnzahl, bestandWert, bestandRestschuld, bestandRateMonat, bestandMieteMonat, bestandRestlaufzeitJahre,
     bestandAnschaffungskosten, bestandAfaJahreVerbraucht,
     nettoeinkommenMonat, lebenshaltungMonat, horizontClamped,
+    rechtsform, istGmbh, gmbhFixkostenJahr, gmbhGruendungskostenEinmalig,
   ])
 
   // Keine automatische Neuberechnung mehr bei jeder Eingabe — die Simulation (420 Monate,
@@ -207,6 +218,14 @@ export function ImmoPortfolioRechner() {
   }
   const { jahre, kaeufe, meilensteine, kennzahlen, warnungen } = ergebnis
   const letztesJahr = jahre[jahre.length - 1]
+
+  // Gegenüberstellung mit dem Einzelunternehmen (nur "gmbh"): dieselbe Simulation, aber mit
+  // rechtsform "privat" und ohne die GmbH-spezifischen Fixkosten — läuft nur ein zweites Mal, wenn
+  // auch die Hauptsimulation neu läuft ("Berechnen"-Gating über eingabeStand, siehe oben).
+  const vergleichPrivat = useMemo(
+    () => (istGmbh ? simuliereImmoPortfolio({ ...eingabeStand, rechtsform: "privat", gmbhFixkostenJahr: 0, gmbhGruendungskostenEinmalig: 0 }) : null),
+    [eingabeStand, istGmbh]
+  )
 
   const kaufJahrInfo = useMemo(() => {
     const map = new Map<number, boolean>()
@@ -239,9 +258,16 @@ export function ImmoPortfolioRechner() {
         borderColor: "#B5624A", borderDash: [5, 4], backgroundColor: "transparent", borderWidth: 2,
         tension: 0.1, fill: false, pointRadius: 0,
       },
+      ...(istGmbh
+        ? [{
+          label: "Nettovermögen nach Vollausschüttung", data: jahre.map((j) => j.nettovermoegenNachAusschuettung ?? 0),
+          borderColor: "#6b7280", borderDash: [2, 3], backgroundColor: "transparent", borderWidth: 2,
+          tension: 0.1, fill: false, pointRadius: 0,
+        }]
+        : []),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [jahre, kaufJahrInfo])
+  }), [jahre, kaufJahrInfo, istGmbh])
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -281,7 +307,10 @@ export function ImmoPortfolioRechner() {
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-        <strong>Anlegerwohnungs-Portfolio-Rechner:</strong> Simuliert, wie ein Wohnungsportfolio über die Zeit wächst und sich weitere Wohnungen von selbst finanzieren.
+        <strong>Anlegerwohnungs-Portfolio-Rechner{istGmbh ? " (GmbH)" : ""}:</strong> Simuliert, wie ein Wohnungsportfolio über die Zeit wächst und sich weitere Wohnungen von selbst finanzieren.{" "}
+        {istGmbh
+          ? "Steuerliche Betrachtung als Kapitalgesellschaft: 23 % KöSt statt Grenzsteuersatz/ImmoESt, Verlustvortrag statt Sofortgutschrift, KESt erst bei einer Ausschüttung — siehe die Gegenüberstellung mit dem Einzelunternehmen weiter unten."
+          : "Alle Eingaben und die Portfolio-Mechanik sind identisch zum Rechner \"Anlegerwohnungen GmbH\" — nur die steuerliche Betrachtung unterscheidet sich (natürliche Person statt Kapitalgesellschaft)."}
       </div>
 
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-lg border bg-card/95 px-4 py-3 shadow-sm backdrop-blur">
@@ -305,7 +334,10 @@ export function ImmoPortfolioRechner() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feld label="Aktuelle Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} />
             <Feld label="Sparbetrag (€/Monat)" value={sparbetragMonat} onChange={setSparbetragMonat} step={50} />
-            <Feld label="Guthabenzinsen, brutto (% p.a. — 25 % KESt wird automatisch abgezogen)" value={guthabenzinsPct} onChange={setGuthabenzinsPct} step={0.1} suffix="%" />
+            <Feld
+              label={istGmbh ? "Guthabenzinsen (% p.a. — ungekürzt, KöSt-pflichtig statt KESt)" : "Guthabenzinsen, brutto (% p.a. — 25 % KESt wird automatisch abgezogen)"}
+              value={guthabenzinsPct} onChange={setGuthabenzinsPct} step={0.1} suffix="%"
+            />
             <Feld label="Horizont (Jahre)" value={horizontJahre} onChange={setHorizontJahre} step={1} suffix="J" />
             <Feld label="Netto-Haushaltseinkommen (€/Monat)" value={nettoeinkommenMonat} onChange={setNettoeinkommenMonat} step={100} />
             <Feld label="Fixkosten / Lebenshaltung (€/Monat)" value={lebenshaltungMonat} onChange={setLebenshaltungMonat} step={100} />
@@ -414,7 +446,7 @@ export function ImmoPortfolioRechner() {
             </label>
             <Feld label="Beleihung bei Umschuldung (% v. Verkehrswert)" value={beleihungUmschuldungPct} onChange={setBeleihungUmschuldungPct} step={5} suffix="%" />
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Grenzsteuersatz (%)
+              {istGmbh ? "Grenzsteuersatz (nur für die Gegenüberstellung mit dem Einzelunternehmen, %)" : "Grenzsteuersatz (%)"}
               <div className="flex flex-wrap items-center gap-2">
                 <input type="number" step={1} value={grenzsteuersatzPct} onChange={(e) => setGrenzsteuersatzPct(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
                 <PillGroup value={grenzsteuersatzPct as never}
@@ -422,6 +454,12 @@ export function ImmoPortfolioRechner() {
                   onChange={(v) => setGrenzsteuersatzPct(v)} />
               </div>
             </label>
+            {istGmbh && (
+              <>
+                <Feld label="Laufende Gesellschaftskosten (Bilanz, StB, Firmenbuch, €/Jahr)" value={gmbhFixkostenJahr} onChange={setGmbhFixkostenJahr} step={100} />
+                <Feld label="Gründungskosten, einmalig (Notar, Firmenbuch, €)" value={gmbhGruendungskostenEinmalig} onChange={setGmbhGruendungskostenEinmalig} step={500} />
+              </>
+            )}
           </div>
           {beleihungClamped > 80 && (
             <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
@@ -537,8 +575,104 @@ export function ImmoPortfolioRechner() {
         />
         <KPI label="Portfolio-Verkehrswert" value={kreditFormatEUR(letztesJahr?.portfolioWert ?? 0)} />
         <KPI label="Nettovermögen (vor Verkauf)" value={kreditFormatEUR(letztesJahr?.nettovermoegen ?? 0)} />
-        <KPI label="Nettovermögen nach Verkaufssteuern (30 % ImmoESt, gedachter Verkauf)" value={kreditFormatEUR(letztesJahr?.nettovermoegenNachSteuer ?? 0)} />
+        <KPI
+          label={istGmbh ? "Nettovermögen nach Verkaufssteuern (23 % KöSt, gedachter Verkauf)" : "Nettovermögen nach Verkaufssteuern (30 % ImmoESt, gedachter Verkauf)"}
+          value={kreditFormatEUR(letztesJahr?.nettovermoegenNachSteuer ?? 0)}
+        />
+        {istGmbh && (
+          <KPI
+            label="Nettovermögen nach Vollausschüttung (KöSt + 27,5 % KESt)"
+            value={kreditFormatEUR(letztesJahr?.nettovermoegenNachAusschuettung ?? 0)}
+          />
+        )}
       </div>
+
+      {istGmbh && vergleichPrivat && (
+        <Card>
+          <CardContent>
+            <h3 className="mb-1 text-sm font-semibold">Gegenüberstellung: GmbH vs. Einzelunternehmen</h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Dieselben Eingaben, einmal als Kapitalgesellschaft (diese Seite) und einmal als natürliche Person
+              gerechnet — bei sonst identischer Portfolio-Mechanik (Käufe, Miete, Wertentwicklung, Umschuldung).
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs text-muted-foreground">
+                    <th className="py-1 pr-3 font-medium">Nach</th>
+                    {meilensteine.map((m) => <th key={m.jahr} className="py-1 pr-3 text-right font-medium">{m.jahr} Jahren</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border/50">
+                    <td className="py-1 pr-3 text-muted-foreground">Wohnungen (GmbH / EU)</td>
+                    {meilensteine.map((m, i) => (
+                      <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums">
+                        {m.anzahlObjekte} / {vergleichPrivat.meilensteine[i]?.anzahlObjekte ?? "–"}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-1 pr-3 text-muted-foreground">Portfolio-Verkehrswert (GmbH / EU)</td>
+                    {meilensteine.map((m, i) => (
+                      <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums">
+                        {kreditFormatEUR(m.portfolioWert)} / {kreditFormatEUR(vergleichPrivat.meilensteine[i]?.portfolioWert ?? 0)}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-1 pr-3 text-muted-foreground">Nettovermögen vor Verkauf (GmbH / EU)</td>
+                    {meilensteine.map((m, i) => (
+                      <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums">
+                        {kreditFormatEUR(m.nettovermoegen)} / {kreditFormatEUR(vergleichPrivat.meilensteine[i]?.nettovermoegen ?? 0)}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-1 pr-3 text-muted-foreground">Nettovermögen nach Verkaufssteuer (KöSt / ImmoESt)</td>
+                    {meilensteine.map((m, i) => (
+                      <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums">
+                        {kreditFormatEUR(m.nettovermoegenNachSteuer)} / {kreditFormatEUR(vergleichPrivat.meilensteine[i]?.nettovermoegenNachSteuer ?? 0)}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-1 pr-3 text-muted-foreground">GmbH nach Vollausschüttung (vs. EU-Nettovermögen n. St.)</td>
+                    {meilensteine.map((m, i) => (
+                      <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums font-semibold text-[#155767]">
+                        {kreditFormatEUR(m.nettovermoegenNachAusschuettung ?? 0)} / {kreditFormatEUR(vergleichPrivat.meilensteine[i]?.nettovermoegenNachSteuer ?? 0)}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="py-1 pr-3 text-muted-foreground">Differenz (GmbH n. Vollausschüttung − EU n. St.)</td>
+                    {meilensteine.map((m, i) => {
+                      const diff = (m.nettovermoegenNachAusschuettung ?? 0) - (vergleichPrivat.meilensteine[i]?.nettovermoegenNachSteuer ?? 0)
+                      return (
+                        <td key={m.jahr} className={cn("py-1 pr-3 text-right tabular-nums font-medium", diff >= 0 ? "text-emerald-600" : "text-red-600")}>
+                          {diff >= 0 ? "+" : ""}{kreditFormatEUR(diff)}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Zwei gegenläufige Effekte wirken hier gleichzeitig: Eine GmbH bekommt für Verlustjahre KEINE
+              Sofortgutschrift wie das Einzelunternehmen (nur einen Verlustvortrag) und zahlt selbst in einem
+              Verlustjahr die Mindest-KöSt (500&nbsp;€/Jahr) — das bremst gerade in der Anfangsphase, wie schnell sich
+              weitere Wohnungen "von selbst" finanzieren, und führt in der Simulation oft zu einem kleineren
+              Portfolio als beim Einzelunternehmen. Auf der reinen Steuersatz-Seite ist die GmbH dagegen oft günstiger
+              (23&nbsp;% KöSt statt Grenzsteuersatz/ImmoESt), was sich zeigt, solange das Geld in der Gesellschaft
+              bleibt ("vor Verkauf"/"nach Verkaufssteuer"). Eine Vollausschüttung (letzte Zeile) holt zusätzlich
+              27,5&nbsp;% KESt auf den über die Einlagen hinausgehenden Teil nach. Welcher Effekt am Ende überwiegt,
+              hängt stark von Grenzsteuersatz, Kaufpreis und Horizont ab — die Zahlen oben zeigen das tatsächliche
+              Ergebnis für die aktuell eingestellten Werte, eine pauschale Regel gibt es nicht.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {meilensteine.length > 0 && (
         <Card>
@@ -553,17 +687,23 @@ export function ImmoPortfolioRechner() {
                   </tr>
                 </thead>
                 <tbody>
-                  {([
-                    ["Wohnungen gesamt", (m: typeof meilensteine[number]) => String(m.anzahlObjekte)],
-                    ["davon gratis", (m: typeof meilensteine[number]) => String(m.davonGratis)],
-                    ["Portfolio-Verkehrswert", (m: typeof meilensteine[number]) => kreditFormatEUR(m.portfolioWert)],
-                    ["Restschuld gesamt", (m: typeof meilensteine[number]) => kreditFormatEUR(m.restschuldGesamt)],
-                    ["Nettovermögen (vor Verkauf)", (m: typeof meilensteine[number]) => kreditFormatEUR(m.nettovermoegen)],
-                    ["Nettovermögen (nach Verkaufssteuern)", (m: typeof meilensteine[number]) => kreditFormatEUR(m.nettovermoegenNachSteuer)],
-                    ["Jahresmiete", (m: typeof meilensteine[number]) => kreditFormatEUR(m.jahresmiete)],
-                    ["Jahres-AfA", (m: typeof meilensteine[number]) => kreditFormatEUR(m.jahresAfa)],
-                    ["Jahres-Cashflow (netto)", (m: typeof meilensteine[number]) => kreditFormatEUR(m.jahresCashflow)],
-                  ] as const).map(([label, fmt]) => (
+                  {(
+                    [
+                      ["Wohnungen gesamt", (m) => String(m.anzahlObjekte)],
+                      ["davon gratis", (m) => String(m.davonGratis)],
+                      ["Portfolio-Verkehrswert", (m) => kreditFormatEUR(m.portfolioWert)],
+                      ["Restschuld gesamt", (m) => kreditFormatEUR(m.restschuldGesamt)],
+                      ["Nettovermögen (vor Verkauf)", (m) => kreditFormatEUR(m.nettovermoegen)],
+                      ["Nettovermögen (nach Verkaufssteuern)", (m) => kreditFormatEUR(m.nettovermoegenNachSteuer)],
+                      istGmbh
+                        ? ["Nettovermögen (nach Vollausschüttung)", (m) => kreditFormatEUR(m.nettovermoegenNachAusschuettung ?? 0)]
+                        : null,
+                      ["Jahresmiete", (m) => kreditFormatEUR(m.jahresmiete)],
+                      ["Jahres-AfA", (m) => kreditFormatEUR(m.jahresAfa)],
+                      ["Jahres-Cashflow (netto)", (m) => kreditFormatEUR(m.jahresCashflow)],
+                    ] satisfies ([string, (m: typeof meilensteine[number]) => string] | null)[]
+                  ).filter((zeile): zeile is [string, (m: typeof meilensteine[number]) => string] => zeile !== null)
+                    .map(([label, fmt]) => (
                     <tr key={label} className="border-b border-border/50">
                       <td className="py-1 pr-3 text-muted-foreground">{label}</td>
                       {meilensteine.map((m) => <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums">{fmt(m)}</td>)}
@@ -737,27 +877,52 @@ export function ImmoPortfolioRechner() {
               <span className="text-lg font-bold tabular-nums">{kreditFormatPct(kennzahlen.nettomietrenditeSchnittPct, 1)}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Eigenkapitalrendite, vor / nach Verkaufssteuern</span>
+              <span className="text-xs text-muted-foreground">
+                Eigenkapitalrendite, vor / nach Verkaufssteuern{istGmbh ? " / nach Vollausschüttung" : ""}
+              </span>
               <span className="text-lg font-bold tabular-nums">
                 {kreditFormatPct(kennzahlen.eigenkapitalrenditePct, 1)}
                 <span className="ml-1.5 text-sm font-normal text-muted-foreground">/ {kreditFormatPct(kennzahlen.eigenkapitalrenditeNachSteuerPct, 1)}</span>
+                {istGmbh && (
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                    / {kennzahlen.eigenkapitalrenditeNachAusschuettungPct != null ? kreditFormatPct(kennzahlen.eigenkapitalrenditeNachAusschuettungPct, 1) : "n. v."}
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">IRR der Eigenmittel (p.a.), vor / nach Verkaufssteuern</span>
+              <span className="text-xs text-muted-foreground">
+                IRR der Eigenmittel (p.a.), vor / nach Verkaufssteuern{istGmbh ? " / nach Vollausschüttung" : ""}
+              </span>
               <span className="text-lg font-bold tabular-nums">
                 {kennzahlen.irrPct != null ? kreditFormatPct(kennzahlen.irrPct, 1) : "n. v."}
                 <span className="ml-1.5 text-sm font-normal text-muted-foreground">
                   / {kennzahlen.irrNachSteuerPct != null ? kreditFormatPct(kennzahlen.irrNachSteuerPct, 1) : "n. v."}
                 </span>
+                {istGmbh && (
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                    / {kennzahlen.irrNachAusschuettungPct != null ? kreditFormatPct(kennzahlen.irrNachAusschuettungPct, 1) : "n. v."}
+                  </span>
+                )}
               </span>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            "Nach Verkaufssteuern" unterstellt einen gedachten Verkauf des GESAMTEN Portfolios zum jeweiligen
-            Zeitpunkt, mit 30&nbsp;% ImmoESt auf Verkehrswert − Anschaffungskosten + kumulierte AfA je Objekt
-            (§ 30a EStG). Vereinfachung: keine 4,2&nbsp;%-Pauschale für Altvermögen, kein gewerblicher
-            Grundstückshandel berücksichtigt.
+            {istGmbh
+              ? <>
+                  "Nach Verkaufssteuern" unterstellt einen gedachten Verkauf des GESAMTEN Portfolios zum jeweiligen
+                  Zeitpunkt, mit 23&nbsp;% KöSt auf den SALDIERTEN Veräußerungsgewinn (Verlust eines Objekts mindert
+                  den Gewinn eines anderen), unter Nutzung eines etwaigen Verlustvortrags. "Nach Vollausschüttung"
+                  unterstellt zusätzlich eine vollständige Ausschüttung ans Privatvermögen (+ 27,5&nbsp;% KESt auf den
+                  Teil oberhalb der kumulierten Einlagen) — der eigentliche Vergleichspunkt zum Einzelunternehmen.
+                  Vereinfachung: keine 4,2&nbsp;%-Pauschale für Altvermögen.
+                </>
+              : <>
+                  "Nach Verkaufssteuern" unterstellt einen gedachten Verkauf des GESAMTEN Portfolios zum jeweiligen
+                  Zeitpunkt, mit 30&nbsp;% ImmoESt auf Verkehrswert − Anschaffungskosten + kumulierte AfA je Objekt
+                  (§ 30a EStG). Vereinfachung: keine 4,2&nbsp;%-Pauschale für Altvermögen, kein gewerblicher
+                  Grundstückshandel berücksichtigt.
+                </>}
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border-t pt-4">
             <div className="flex flex-col gap-1">

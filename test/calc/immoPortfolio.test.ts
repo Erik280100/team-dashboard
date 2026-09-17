@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
-  berechneAfaJahreLinear, berechneImpliziterZinssatzPct, berechnePortfolioIrrPct,
-  simuliereImmoPortfolio, type ImmoPortfolioEingabe,
+  berechneAfaJahreLinear, berechneImpliziterZinssatzPct, berechneKoestEffekt, berechnePortfolioIrrPct,
+  simuliereImmoPortfolio, type ImmoPortfolioEingabe, type KoestZustand,
 } from "../../src/lib/calc/immoPortfolio"
 import { KREDIT_DEFAULTS, berechneTilgungsplan } from "../../src/lib/calc/kredit"
 
@@ -366,6 +366,160 @@ describe("berechnePortfolioIrrPct", () => {
     expect(Number.isFinite(irr as number)).toBe(true)
     expect(irr as number).toBeGreaterThan(-50)
     expect(irr as number).toBeLessThan(50)
+  })
+})
+
+describe("berechneKoestEffekt (rechtsform \"gmbh\")", () => {
+  it("gives no immediate credit for a loss (unlike the private Grenzsteuersatz-Gutschrift), only a carryforward, but still owes the Mindest-KöSt", () => {
+    const zustand: KoestZustand = { verlustvortrag: 0, mindestKoestGuthaben: 0 }
+    const effekt = berechneKoestEffekt(-1200, zustand)
+    expect(effekt).toBe(-500)
+    expect(zustand.verlustvortrag).toBe(1200)
+    expect(zustand.mindestKoestGuthaben).toBe(500)
+  })
+
+  it("caps loss-carryforward usage at 75 % of the current year's profit (§ 8 Abs. 4 Z 2 lit. a KStG)", () => {
+    const zustand: KoestZustand = { verlustvortrag: 10000, mindestKoestGuthaben: 0 }
+    // verrechenbar = min(10000, 1000*0.75) = 750 -> tatsächlich = (1000-750)*0.23 = 57.5 -> koest = max(57.5, 500) = 500
+    const effekt = berechneKoestEffekt(1000, zustand)
+    expect(zustand.verlustvortrag).toBeCloseTo(10000 - 750, 6)
+    expect(effekt).toBeCloseTo(-500, 6)
+  })
+
+  it("credits previously paid Mindest-KöSt once a later year's actual tax exceeds it", () => {
+    const zustand: KoestZustand = { verlustvortrag: 0, mindestKoestGuthaben: 500 }
+    // tatsächlich = 5000*0.23 = 1150 -> koest = 1150 -> anrechnung = min(500, 1150-500) = 500
+    const effekt = berechneKoestEffekt(5000, zustand)
+    expect(effekt).toBeCloseTo(-(1150 - 500), 6)
+    expect(zustand.mindestKoestGuthaben).toBe(0)
+  })
+
+  it("never returns a positive (credit) effect, regardless of how large the loss", () => {
+    const zustand: KoestZustand = { verlustvortrag: 0, mindestKoestGuthaben: 0 }
+    expect(berechneKoestEffekt(-500000, zustand)).toBe(-500)
+  })
+})
+
+describe("simuliereImmoPortfolio — rechtsform \"gmbh\"", () => {
+  it("defaults to rechtsform \"privat\" when the field is omitted (no behaviour change for existing callers)", () => {
+    const ohneFeld = simuliereImmoPortfolio(BASIS)
+    const mitPrivat = simuliereImmoPortfolio({ ...BASIS, rechtsform: "privat" })
+    expect(ohneFeld).toEqual(mitPrivat)
+  })
+
+  it("taxes a profit year at the flat 23 % KöSt rate, independent of Grenzsteuersatz", () => {
+    const basis: ImmoPortfolioEingabe = {
+      ...BASIS,
+      rechtsform: "gmbh",
+      kaufpreisReferenz: 50000, // unter KAUFPREIS_MINDESTGRENZE -> keine neuen Käufe
+      wertzuwachsPct: 0, indexierungPct: 0,
+      bestandAnzahl: 1, bestandWert: 300000, bestandRestschuld: 0, bestandRateMonat: 0,
+      bestandMieteMonat: 2000, bestandRestlaufzeitJahre: 0,
+      bestandAnschaffungskosten: 300000, bestandAfaJahreVerbraucht: 1000, // bereits voll abgeschrieben
+      horizontJahre: 1,
+    }
+    const mit40 = simuliereImmoPortfolio({ ...basis, grenzsteuersatzPct: 40 })
+    const mit0 = simuliereImmoPortfolio({ ...basis, grenzsteuersatzPct: 0 })
+    // steuerErgebnis = 2000*12 = 24000 -> KöSt = 24000*0.23 = 5520 (über der Mindest-KöSt)
+    expect(mit40.jahre[0].steuerEffekt).toBeCloseTo(-5520, 2)
+    expect(mit0.jahre[0].steuerEffekt).toBeCloseTo(-5520, 2)
+  })
+
+  it("includes Guthabenzinsen ungekürzt (no KESt) in the taxable result, unlike \"privat\" where they stay outside steuerErgebnis", () => {
+    const basis: ImmoPortfolioEingabe = {
+      ...BASIS,
+      kaufpreisReferenz: 50000, eigenmittel: 100000, guthabenzinsPct: 5, horizontJahre: 1,
+    }
+    const privat = simuliereImmoPortfolio({ ...basis, rechtsform: "privat" })
+    const gmbh = simuliereImmoPortfolio({ ...basis, rechtsform: "gmbh" })
+    expect(privat.jahre[0].steuerErgebnis).toBe(0)
+    expect(gmbh.jahre[0].steuerErgebnis).toBeGreaterThan(4900)
+    expect(gmbh.jahre[0].steuerErgebnis).toBeLessThan(5200)
+  })
+
+  it("deducts one-off Gründungskosten and running Fixkosten from liquidity and carries them as a Verlustvortrag", () => {
+    const basis: ImmoPortfolioEingabe = {
+      ...BASIS,
+      rechtsform: "gmbh",
+      kaufpreisReferenz: 50000, eigenmittel: 200000, sparbetragMonat: 0, guthabenzinsPct: 0,
+      horizontJahre: 1,
+    }
+    const ohneKosten = simuliereImmoPortfolio({ ...basis, gmbhGruendungskostenEinmalig: 0, gmbhFixkostenJahr: 0 })
+    const mitKosten = simuliereImmoPortfolio({ ...basis, gmbhGruendungskostenEinmalig: 5000, gmbhFixkostenJahr: 1200 })
+    // Beide landen bei der Mindest-KöSt (0 bzw. -6200 Ergebnis sind beides ein Verlustjahr) — der
+    // gesamte Unterschied in der Liquidität ist daher exakt der zusätzliche Kosten-Cashout.
+    expect(ohneKosten.jahre[0].liquiditaet - mitKosten.jahre[0].liquiditaet).toBeCloseTo(5000 + 1200, 2)
+    expect(ohneKosten.jahre[0].verlustvortrag).toBe(0)
+    expect(mitKosten.jahre[0].verlustvortrag).toBeCloseTo(5000 + 1200, 2)
+  })
+
+  it("saldiert Objekt-Veräußerungsgewinne und -verluste beim gedachten Verkauf, anders als \"privat\" (das je Objekt bei 0 kappt)", () => {
+    const basis: ImmoPortfolioEingabe = {
+      ...BASIS,
+      eigenmittel: 50000, sparbetragMonat: 0, guthabenzinsPct: 0,
+      kaufpreisReferenz: 100000, wertzuwachsPct: 5, indexierungPct: 0,
+      bestandAnzahl: 1, bestandWert: 100000, bestandRestschuld: 0, bestandRateMonat: 0,
+      bestandMieteMonat: 0, bestandRestlaufzeitJahre: 0,
+      // Historisch deutlich teurer eingekauft als der heutige Verkehrswert -> ein klarer Buchverlust.
+      bestandAnschaffungskosten: 150000, bestandAfaJahreVerbraucht: 1000,
+      horizontJahre: 1,
+    }
+    const privat = simuliereImmoPortfolio({ ...basis, rechtsform: "privat" })
+    const gmbh = simuliereImmoPortfolio({ ...basis, rechtsform: "gmbh" })
+    // Vorbedingung: die zweite Wohnung wurde tatsächlich gekauft, sonst testet dieser Fall nichts.
+    expect(gmbh.kaeufe.length).toBeGreaterThan(0)
+    expect(privat.kaeufe.length).toBeGreaterThan(0)
+    // Privat: der Bestandsverlust wird bei 0 gekappt, die neue Wohnung trägt trotzdem ihre eigene
+    // ImmoESt -> Verkaufssteuer > 0.
+    expect(privat.jahre[0].verkaufssteuer).toBeGreaterThan(0)
+    // GmbH: derselbe Bestandsverlust mindert den Gewinn der neuen Wohnung (Saldierung) -> der
+    // Gesamtsaldo ist hier ein Verlust, also keine Verkaufssteuer.
+    expect(gmbh.jahre[0].verkaufssteuer).toBe(0)
+  })
+
+  it("bis zur Höhe der kumulierten Einlagen ist eine Vollausschüttung KESt-frei, nur der Überschuss trägt 27,5 % KESt", () => {
+    const kleinesPolster = simuliereImmoPortfolio({
+      ...BASIS, rechtsform: "gmbh",
+      kaufpreisReferenz: 50000, eigenmittel: 100000, sparbetragMonat: 0, guthabenzinsPct: 0,
+      horizontJahre: 1,
+    })
+    // Reine Mindest-KöSt-Belastung, kein Gewinn -> Nettovermögen bleibt unter den Einlagen ->
+    // die volle Ausschüttung ist KESt-frei.
+    expect(kleinesPolster.jahre[0].nettovermoegenNachAusschuettung).toBeCloseTo(
+      kleinesPolster.jahre[0].nettovermoegenNachSteuer, 6
+    )
+
+    const mitUeberschuss = simuliereImmoPortfolio({
+      ...BASIS, rechtsform: "gmbh",
+      kaufpreisReferenz: 50000, eigenmittel: 100000, sparbetragMonat: 0, guthabenzinsPct: 8,
+      horizontJahre: 20,
+    })
+    const letztes = mitUeberschuss.jahre[mitUeberschuss.jahre.length - 1]
+    expect(letztes.nettovermoegenNachSteuer).toBeGreaterThan(letztes.einlagenKumuliert)
+    expect(letztes.nettovermoegenNachAusschuettung).not.toBeNull()
+    expect(letztes.nettovermoegenNachAusschuettung as number).toBeLessThan(letztes.nettovermoegenNachSteuer)
+    expect(letztes.nettovermoegenNachAusschuettung as number).toBeGreaterThan(letztes.einlagenKumuliert)
+  })
+
+  it("ein gedachter Verkauf verändert den Verlustvortrag der Folgejahre nicht (nur eine Momentaufnahme)", () => {
+    const erg = simuliereImmoPortfolio({
+      ...BASIS, rechtsform: "gmbh",
+      kaufpreisReferenz: 50000, eigenmittel: 0, sparbetragMonat: 0, guthabenzinsPct: 0,
+      wertzuwachsPct: 0, indexierungPct: 0,
+      bestandAnzahl: 1, bestandWert: 200000, bestandRestschuld: 0, bestandRateMonat: 0,
+      bestandMieteMonat: 0, sonstigeKostenMonat: 100, bestandRestlaufzeitJahre: 0,
+      // Deutlicher Buchgewinn (200.000 Verkehrswert vs. 100.000 Anschaffungskosten), gleichzeitig
+      // ein laufender operativer Verlust (Kosten ohne Miete) -> die Verkaufssteuer-Berechnung
+      // "verbraucht" im ersten Jahr einen Teil des frisch entstandenen Verlustvortrags, ohne dass
+      // dieser Verbrauch in den echten Zustand der weiterlaufenden Simulation durchschlagen darf.
+      bestandAnschaffungskosten: 100000, bestandAfaJahreVerbraucht: 1000,
+      horizontJahre: 2,
+    })
+    expect(erg.jahre[0].verlustvortrag).toBeCloseTo(1200, 6)
+    expect(erg.jahre[0].verkaufssteuer).toBeGreaterThan(0)
+    // Jahr 2 verliert erneut 1.200 € operativ — stünde der Verlustvortrag nach der (nur gedachten)
+    // Verkaufssteuer-Berechnung aus Jahr 1 tatsächlich bei 0, läge er hier bei 1.200 statt 2.400.
+    expect(erg.jahre[1].verlustvortrag).toBeCloseTo(2400, 6)
   })
 })
 
