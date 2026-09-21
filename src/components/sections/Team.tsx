@@ -105,29 +105,35 @@ export function Team({
   // eingestellten Umsatzmonats) — dadurch entfällt die doppelte Erfassung auf
   // der Mitarbeiterseite. Nur live (planung gesetzt); im Archiv-Modus bleiben
   // die zum Monatsabschluss eingefrorenen Row-Werte unverändert.
-  const planWeeks = useMemo(
-    () => (planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd) : []),
-    [planung, teamGoal.periodStart, teamGoal.periodEnd]
-  )
+  //
+  // Bewusst ohne useMemo für planByName/merged: Team.tsx bleibt (anders als
+  // z.B. Monatsplanung.tsx) dauerhaft gemountet, auch während auf der
+  // Controlling-Seite Wochenplanung-Werte eingegeben werden (App.tsx zeigt
+  // Sektionen nur per CSS "hidden" an/aus, unmountet sie nicht). Ein
+  // useMemo mit fester Dependency-Liste hätte hier den ersten (meist noch
+  // ungeladenen) Stand eingefroren und nie neu aus dem Wochenplanung-Cache
+  // nachgezogen — die Berechnung ist für die paar Personen/Wochen aber
+  // billig genug, um bei jedem Render einfach neu zu laufen.
+  const planWeeks = planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd) : []
   useEffect(() => {
     if (!planung || planWeeks.length === 0) return
     void planung.loadWeeks(planWeeks)
-  }, [planung, planWeeks])
-  const planByName = useMemo(() => {
-    if (!planung) return null
-    const docs = planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null)
-    return aggregateByName(docs, roster.map((r) => r.name))
-    // planung selbst bewusst nicht als Dependency (neues Objekt je Render, siehe
-    // gleiches Muster in Monatsplanung.tsx) — planWeeks/roster genügen.
+    // planWeeks ist ein neues Array je Render — über die Key-Liste gated,
+    // damit loadWeeks nicht bei jedem Render erneut angestoßen wird.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planWeeks, roster])
-  const merged = useMemo(() => {
-    if (!planByName) return rosterMerged
-    return rosterMerged.map((r) => {
-      const p = planByName.get(r.name)
-      return { ...r, atIst: p?.atg ?? 0, btIst: p?.beratungen ?? 0, etIst: p?.etg ?? 0 }
-    })
-  }, [rosterMerged, planByName])
+  }, [planung, planWeeks.join(",")])
+  const planByName = planung
+    ? aggregateByName(
+        planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null),
+        roster.map((r) => r.name)
+      )
+    : null
+  const merged = planByName
+    ? rosterMerged.map((r) => {
+        const p = planByName.get(r.name)
+        return { ...r, atIst: p?.atg ?? 0, btIst: p?.beratungen ?? 0, etIst: p?.etg ?? 0 }
+      })
+    : rosterMerged
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
   const managerNames = useMemo(
     () => (managerFilter ? sbSubtreeNames(orgTree, managerFilter) : null),
