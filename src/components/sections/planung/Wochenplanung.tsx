@@ -143,14 +143,14 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
                   <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.left.sub}</span>
-                  <div className="flex h-8 w-full items-center justify-center rounded-md border border-input bg-background text-sm tabular-nums">
+                  <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.left.key]) || 0)}
                   </div>
                 </div>
                 <span className="pt-3 text-muted-foreground">/</span>
                 <div className="flex flex-1 flex-col items-center gap-1">
                   <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.right.sub}</span>
-                  <div className="flex h-8 w-full items-center justify-center rounded-md border border-input bg-background text-sm tabular-nums">
+                  <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.right.key]) || 0)}
                   </div>
                 </div>
