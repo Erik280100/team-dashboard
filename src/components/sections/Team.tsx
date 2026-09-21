@@ -55,7 +55,7 @@ function ComputedField({ value, wide }: { value: number | undefined; wide?: bool
   return (
     <div
       className={cn(
-        "flex h-8 items-center justify-end rounded-md border border-dashed border-input/60 bg-muted/40 px-2 text-sm tabular-nums text-muted-foreground",
+        "mx-auto flex h-8 items-center justify-end rounded-md border border-dashed border-input/60 bg-muted/40 px-2 text-sm tabular-nums text-muted-foreground",
         wide ? "w-20" : "w-16"
       )}
       title="Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"
@@ -342,12 +342,12 @@ export function Team({
                         {r.isNew ? "NEU" : "Bestand"}
                       </button>
                     </td>
-                    <td className="px-2 py-2"><NumField row={r} field="atPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2"><NumField row={r} field="btPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2"><NumField row={r} field="etPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2"><ComputedField value={r.atIst} /></td>
-                    <td className="px-2 py-2"><ComputedField value={r.btIst} /></td>
-                    <td className="px-2 py-2"><ComputedField value={r.etIst} /></td>
+                    <td className="px-2 py-2 text-center"><NumField row={r} field="atPlan" isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="px-2 py-2 text-center"><NumField row={r} field="btPlan" isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="px-2 py-2 text-center"><NumField row={r} field="etPlan" isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="px-2 py-2 text-center"><ComputedField value={r.atIst} /></td>
+                    <td className="px-2 py-2 text-center"><ComputedField value={r.btIst} /></td>
+                    <td className="px-2 py-2 text-center"><ComputedField value={r.etIst} /></td>
                     <td className="px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2">
                       <button
