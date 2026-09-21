@@ -178,6 +178,7 @@ export interface PlanMonthNotesEntry {
   bt: string
   st: string
   et: string
+  feedback: string
 }
 
 /** finova/plan_month_notes_<YYYY-MM> — entries je Mitarbeitername. */

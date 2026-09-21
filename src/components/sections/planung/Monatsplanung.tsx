@@ -18,6 +18,7 @@ const NOTE_FIELDS: { key: keyof PlanMonthNotesEntry; label: string }[] = [
   { key: "bt", label: "BT" },
   { key: "st", label: "ST" },
   { key: "et", label: "ET" },
+  { key: "feedback", label: "Feedback" },
 ]
 
 function MonthNoteCard({
@@ -48,7 +49,7 @@ function MonthNoteCard({
             <textarea
               key={`${person.name}-${f.key}-${entry[f.key]}`}
               disabled={!isEditor}
-              defaultValue={entry[f.key]}
+              defaultValue={entry[f.key] ?? ""}
               placeholder="Namen…"
               aria-label={`${f.label} – ${person.name}`}
               className="min-h-24 w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
