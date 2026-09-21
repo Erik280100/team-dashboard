@@ -5,7 +5,7 @@
 // Leistungszahlen bleiben in dashboard.rows (localStorage + Cloud-Push wie im
 // Original, siehe useDashboardDoc) und werden per Name mit dem Baum verknüpft
 // (mergeRosterWithRows aus src/lib/calc/team.ts, golden-master-getestet).
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { fmt, fmtEur, initials, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
@@ -13,16 +13,19 @@ import {
   getMergedFilteredSorted, leadRosterOptions, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
 } from "@/lib/calc/team"
+import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
 import { SB_LEAD_ROLE_ABBR, sbRoster, sbSubtreeNames, type PlanId, type SbNode } from "@/lib/calc/struktur"
 import { computeEarnings, withPlanUnits } from "@/lib/calc/verguetung"
 import { EmployeeEarningsDialog } from "@/components/sections/team/EmployeeEarningsDialog"
+import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import type { PlanWeekDoc } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
 function NumField({
   row, field, wide, isEditor, onCommit,
 }: {
   row: MergedRow
-  field: "atPlan" | "btPlan" | "etPlan" | "atIst" | "btIst" | "etIst" | "soll"
+  field: "atPlan" | "btPlan" | "etPlan" | "soll"
   wide?: boolean
   isEditor: boolean
   onCommit: (row: MergedRow, field: string, value: number) => void
@@ -45,6 +48,23 @@ function NumField({
   )
 }
 
+/** Read-only Anzeige für Ist AT/BT/ET — seit der Wochenplanung-Automatik (siehe
+ * Team.tsx planByName unten) keine Eingabefelder mehr, damit Werte nicht
+ * doppelt (händisch + Wochenplanung) erfasst werden. */
+function ComputedField({ value, wide }: { value: number | undefined; wide?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex h-8 items-center justify-end rounded-md border border-dashed border-input/60 bg-muted/40 px-2 text-sm tabular-nums text-muted-foreground",
+        wide ? "w-20" : "w-16"
+      )}
+      title="Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"
+    >
+      {fmt(value)}
+    </div>
+  )
+}
+
 export function Team({
   rows,
   saveRows,
@@ -53,6 +73,7 @@ export function Team({
   orgPlanRates,
   isEditor,
   now,
+  planung,
 }: {
   rows: EmployeeRow[]
   saveRows: (next: EmployeeRow[]) => void
@@ -65,6 +86,10 @@ export function Team({
    * Rot/Grün-Einfärbung gegen den vollen Monatsplan bewertet statt gegen einen
    * wochenanteiligen Stand zum heutigen Datum. Live per Default new Date(). */
   now?: Date
+  /** Wochenplanung-Zugriff für die automatische Ist-AT/BT/ET-Übernahme.
+   * undefined im Archiv-Modus — dort bleiben die eingefrorenen Row-Werte
+   * (Stand Monatsabschluss) sichtbar statt einer Live-Neuberechnung. */
+  planung?: UsePlanungDocResult
 }) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<TeamFilter>("all")
@@ -73,7 +98,36 @@ export function Team({
   const [managerFilter, setManagerFilter] = useState<string | null>(null)
 
   const roster = useMemo(() => sbRoster(orgTree), [orgTree])
-  const merged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
+  const rosterMerged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
+
+  // Ist AT/BT/ET automatisch aus der Wochenplanung übernehmen (Summe der
+  // Gemacht-Werte "atg"/"beratungen"/"etg" über alle Wochen des aktuell
+  // eingestellten Umsatzmonats) — dadurch entfällt die doppelte Erfassung auf
+  // der Mitarbeiterseite. Nur live (planung gesetzt); im Archiv-Modus bleiben
+  // die zum Monatsabschluss eingefrorenen Row-Werte unverändert.
+  const planWeeks = useMemo(
+    () => (planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd) : []),
+    [planung, teamGoal.periodStart, teamGoal.periodEnd]
+  )
+  useEffect(() => {
+    if (!planung || planWeeks.length === 0) return
+    void planung.loadWeeks(planWeeks)
+  }, [planung, planWeeks])
+  const planByName = useMemo(() => {
+    if (!planung) return null
+    const docs = planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null)
+    return aggregateByName(docs, roster.map((r) => r.name))
+    // planung selbst bewusst nicht als Dependency (neues Objekt je Render, siehe
+    // gleiches Muster in Monatsplanung.tsx) — planWeeks/roster genügen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planWeeks, roster])
+  const merged = useMemo(() => {
+    if (!planByName) return rosterMerged
+    return rosterMerged.map((r) => {
+      const p = planByName.get(r.name)
+      return { ...r, atIst: p?.atg ?? 0, btIst: p?.beratungen ?? 0, etIst: p?.etg ?? 0 }
+    })
+  }, [rosterMerged, planByName])
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
   const managerNames = useMemo(
     () => (managerFilter ? sbSubtreeNames(orgTree, managerFilter) : null),
@@ -138,7 +192,8 @@ export function Team({
 
       <p className="text-xs text-muted-foreground">
         Die Liste wird aus dem Strukturbaum gespiegelt (Personen mit Status „Kommt vielleicht" werden ausgeblendet).
-        Personen fügst du im Strukturbaum hinzu oder entfernst sie dort.
+        Personen fügst du im Strukturbaum hinzu oder entfernst sie dort. Ist AT/BT/ET wird automatisch aus der
+        Wochenplanung des aktuellen Umsatzmonats übernommen — keine doppelte Eingabe mehr nötig.
       </p>
 
       <div className="flex flex-wrap gap-3">
@@ -202,7 +257,13 @@ export function Team({
               <th className="sticky top-0 z-10 min-w-[300px] bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Status</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={3}>Plan (AT / BT / ET)</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={3}>Ist (AT / BT / ET)</th>
+              <th
+                className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur"
+                colSpan={3}
+                title="Wird automatisch aus der Wochenplanung übernommen"
+              >
+                Ist (AT / BT / ET)
+              </th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Soll</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Ist</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Fortschritt</th>
@@ -276,9 +337,9 @@ export function Team({
                     <td className="px-2 py-2"><NumField row={r} field="atPlan" isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2"><NumField row={r} field="btPlan" isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2"><NumField row={r} field="etPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2"><NumField row={r} field="atIst" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2"><NumField row={r} field="btIst" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2"><NumField row={r} field="etIst" isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="px-2 py-2"><ComputedField value={r.atIst} /></td>
+                    <td className="px-2 py-2"><ComputedField value={r.btIst} /></td>
+                    <td className="px-2 py-2"><ComputedField value={r.etIst} /></td>
                     <td className="px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2">
                       <button

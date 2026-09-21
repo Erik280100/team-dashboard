@@ -321,6 +321,7 @@ function AppShell() {
                     orgPlanRates={view.planRates}
                     isEditor={auth.isEditor && !isArchive}
                     now={view.now}
+                    planung={isArchive ? undefined : planung}
                   />
                 )
               )}
