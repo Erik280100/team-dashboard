@@ -101,10 +101,11 @@ export function Team({
   const rosterMerged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
 
   // Ist AT/BT/ET automatisch aus der Wochenplanung übernehmen (Summe der
-  // Gemacht-Werte "atg"/"beratungen"/"etg" über alle Wochen des aktuell
-  // eingestellten Umsatzmonats) — dadurch entfällt die doppelte Erfassung auf
-  // der Mitarbeiterseite. Nur live (planung gesetzt); im Archiv-Modus bleiben
-  // die zum Monatsabschluss eingefrorenen Row-Werte unverändert.
+  // Gemacht-Werte "analysen"/"beratungen"/"etg" über alle Wochen des aktuell
+  // eingestellten Umsatzmonats — AT=Analysen, BT=Beratungen, ET=Einstellungs-
+  // termine, siehe Nutzerangabe) — dadurch entfällt die doppelte Erfassung
+  // auf der Mitarbeiterseite. Nur live (planung gesetzt); im Archiv-Modus
+  // bleiben die zum Monatsabschluss eingefrorenen Row-Werte unverändert.
   //
   // Bewusst ohne useMemo für planByName/merged: Team.tsx bleibt (anders als
   // z.B. Monatsplanung.tsx) dauerhaft gemountet, auch während auf der
@@ -131,7 +132,8 @@ export function Team({
   const merged = planByName
     ? rosterMerged.map((r) => {
         const p = planByName.get(r.name)
-        return { ...r, atIst: p?.atg ?? 0, btIst: p?.beratungen ?? 0, etIst: p?.etg ?? 0 }
+        // Zuordnung nach Nutzerangabe: AT = Analysen, BT = Beratungen, ET = Einstellungstermine (jeweils "Gemacht").
+        return { ...r, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, etIst: p?.etg ?? 0 }
       })
     : rosterMerged
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
