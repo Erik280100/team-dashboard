@@ -28,6 +28,15 @@ describe("Entnahmephase: Regression ohne Entnahme", () => {
     expect(v.values).toEqual(simulateFLV("helvetia", 200, 5000, 20, 0.06, 0))
   })
 
+  it("simulateFLVVerlauf (helvetia) ignoriert eine gesetzte Entnahme (PDF-Modell kennt keine laufende Entnahme)", () => {
+    const ohneEntnahme = simulateFLV("helvetia", 200, 0, 20, 0.06, 0)
+    const mitEntnahme = simulateFLVVerlauf("helvetia", 200, 0, 20, 0.06, 0, 10, 500)
+    expect(mitEntnahme.entnommenNetto).toBe(0)
+    expect(mitEntnahme.reichtBisMonat).toBeNull()
+    expect(mitEntnahme.values.slice(0, ohneEntnahme.length)).toEqual(ohneEntnahme)
+    expect(mitEntnahme.values.length).toBe((20 + 10) * 12 + 1)
+  })
+
   it("simulateFondssparerVerlauf liefert bei entnahmeJahre=0 dieselben values wie simulateFondssparer", () => {
     const v = simulateFondssparerVerlauf(200, 20, 0.06, 0.02, 0, 0)
     expect(v.values).toEqual(simulateFondssparer(200, 20, 0.06, 0.02))

@@ -13,27 +13,12 @@ describe("rendite: golden master vs. legacy", () => {
     }
   })
 
-  // Merkur ist hier bewusst NICHT mehr dabei: der Merkur-Prämientopf in simulateFLV
-  // wurde gegen echte Angebote kalibriert (siehe merkurFlv.ts) und weicht daher
-  // absichtlich von der eingefrorenen Legacy-Referenz ab. Der Abgleich für Merkur
-  // läuft stattdessen über test/calc/merkur.reference.test.ts.
-  const providers = ["helvetia"] as const
-  const flvCases = [
-    { monat: 100, einmal: 0, jahre: 20, perf: 0.06, waPct: 0 },
-    { monat: 200, einmal: 5000, jahre: 35, perf: 0.05, waPct: 0.02 },
-    { monat: 50, einmal: 10000, jahre: 10, perf: 0.03, waPct: 0 },
-    { monat: 300, einmal: 0, jahre: 15, perf: 0.08, waPct: 0.03 },
-  ]
-
-  it("simulateFLV matches for helvetia across scenarios", () => {
-    for (const provider of providers) {
-      for (const c of flvCases) {
-        const a = ts.simulateFLV(provider, c.monat, c.einmal, c.jahre, c.perf, c.waPct)
-        const b = legacy.simulateFLV(provider, c.monat, c.einmal, c.jahre, c.perf, c.waPct)
-        expect(a).toEqual(b)
-      }
-    }
-  })
+  // Weder Merkur noch Helvetia sind hier noch dabei: der Merkur-Prämientopf in simulateFLV
+  // wurde gegen echte Angebote kalibriert (siehe merkurFlv.ts), und der Helvetia-Zweig folgt
+  // seit dem Port aus Helvetia_FLV_Schnellberechnung.pdf dem offiziellen Herstellermodell
+  // (siehe helvetiaFlv.ts) — beide weichen daher absichtlich von der eingefrorenen
+  // Legacy-Näherung ab. Der Abgleich läuft stattdessen über test/calc/merkur.reference.test.ts
+  // bzw. test/calc/helvetia.test.ts.
 
   // simulateFondssparer ist hier bewusst NICHT mehr dabei: das Modell wurde gegen echte
   // Angebote kalibriert (siehe fondssparer.ts) und weicht daher absichtlich von der

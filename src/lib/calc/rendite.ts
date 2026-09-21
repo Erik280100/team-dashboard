@@ -1,10 +1,13 @@
 // Renditerechner — 1:1 portiert aus legacy/index.html:3532–3740.
 // Reine Funktionen, keine DOM-Zugriffe. Bei jeder Änderung: Golden-Master-Test
 // in test/calc/rendite.golden.test.ts muss weiterhin grün bleiben (gilt nicht für
-// den Merkur-Prämientopf in simulateFLV und für simulateFondssparer — beide sind
-// gegen echte Angebote kalibriert, siehe merkurFlv.ts / fondssparer.ts und
-// test/calc/merkur.reference.test.ts / test/calc/fondssparer.reference.test.ts).
+// den Merkur-Prämientopf in simulateFLV, für simulateFondssparer und für Helvetia in
+// simulateFLV — alle drei sind gegen echte Angebote bzw. das offizielle Herstellermodell
+// kalibriert/portiert, siehe merkurFlv.ts / fondssparer.ts / helvetiaFlv.ts und
+// test/calc/merkur.reference.test.ts / test/calc/fondssparer.reference.test.ts /
+// test/calc/helvetia.test.ts).
 import { simulateFondssparerKalibriert } from "./fondssparer"
+import { simulateHelvetiaFLV } from "./helvetiaFlv"
 import { simulateMerkurFLVEinmal, simulateMerkurFLVEntnahme, simulateMerkurFLVPraemie } from "./merkurFlv"
 
 export const RR_KEST = 0.275
@@ -31,20 +34,6 @@ export const RR_PRODUCT_COLORS: Record<RRProductKey, { line: string; fill: strin
 
 export type Provider = "merkur" | "helvetia"
 
-// legacy/index.html:3546–3569. Merkur ist hier bewusst NICHT mehr enthalten — die
-// Kostenzeilen hängen bei Merkur von Prämie & Laufzeit ab und kommen daher aus
-// merkurKostenZeilen() in merkurFlv.ts (kalibriert gegen echte Angebote).
-export const RR_FLV_COSTS: Record<"helvetia", [string, string][]> = {
-  helvetia: [
-    ["Versicherungssteuer (laufend)", "4 %"],
-    ["Verwaltungskosten von Prämie", "7 %"],
-    ["Abschlusskosten (Zillmerung)", "7 % · Monat 1–60"],
-    ["Laufende Depotkosten", "0,348 % p.a."],
-    ["Kickbacks Jahr 1–7", "+0,20 % p.a."],
-    ["Kickbacks ab Jahr 8", "+0,40 % p.a."],
-  ],
-}
-
 /** Monatlicher Zinssatz aus einer jährlichen Performance (stetige Verzinsung über 12 Monate). */
 export function rrRate(pa: number): number {
   return Math.pow(1 + pa, 1 / 12) - 1
@@ -57,9 +46,12 @@ export function rrRate(pa: number): number {
  * Prämiensumme, da Versicherer diese unabhängig von künftigen, nicht garantierten
  * Wertanpassungen für die Abschlusskostenberechnung heranziehen.
  *
- * entnahmeJahre/entnahmeMonat hängen im Anschluss an die Ansparphase eine konstante,
- * KESt-freie Monatsentnahme an (netto in der Hand, FLV ist KESt-frei). Ohne Entnahme
+ * entnahmeJahre/entnahmeMonat hängen im Anschluss an die Ansparphase (nur bei Merkur) eine
+ * konstante, KESt-freie Monatsentnahme an (netto in der Hand, FLV ist KESt-frei). Ohne Entnahme
  * (entnahmeJahre = 0 oder entnahmeMonat = 0) unverändert zur bisherigen Ansparlogik.
+ *
+ * eintrittsalter wird nur von Helvetia verwendet (Risikokosten aus der Unisex-Sterbetafel,
+ * siehe helvetiaFlv.ts); Merkur ignoriert den Parameter.
  */
 export function simulateFLVVerlauf(
   provider: Provider,
@@ -69,7 +61,8 @@ export function simulateFLVVerlauf(
   perf: number,
   waPct = 0,
   entnahmeJahre = 0,
-  entnahmeMonat = 0
+  entnahmeMonat = 0,
+  eintrittsalter = 35
 ): RRVerlauf {
   if (provider === "merkur") {
     const praemieValues = simulateMerkurFLVPraemie(monat, jahre, perf, waPct)
@@ -90,81 +83,19 @@ export function simulateFLVVerlauf(
     }
   }
 
-  const months = jahre * 12
-  const r = rrRate(perf)
-  const waRateMonthly = waPct > 0 ? Math.pow(1 + waPct, 1 / 12) - 1 : 0
-  const vst = 0.04
-  const adminPraemie = 0.07
-  const abschlussPraemie = 0.07
-  const depotCostPraemiePa = 0.00348
-  const depotCostEinmalPa = 0.00348
-  const gesamtBrutto = monat * 12 * jahre
-  const zillmerMonatlich = (abschlussPraemie * gesamtBrutto) / 60
-
-  function kickbackPa(m: number): number {
-    return m <= 84 ? 0.002 : 0.004
+  // Helvetia: 1:1-Port aus Helvetia_FLV_Schnellberechnung.pdf (siehe helvetiaFlv.ts). Das
+  // PDF-Modell kennt nur eine einmalige Teilentnahme zu einem Stichtag, keine laufende
+  // Monatsentnahme wie der Rechner sie anbietet — die UI sperrt die Entnahmephase für Helvetia
+  // deshalb. Falls trotzdem eine Entnahme übergeben wird, wird hier nur der reine Ansparverlauf
+  // zurückgeliefert (values auf die passende Gesamtlänge aufgefüllt, damit index-basierte
+  // Zugriffe wie bei Merkur nicht außerhalb des Arrays landen).
+  const result = simulateHelvetiaFLV({ monat, jahre, perf, waPct, eintrittsalter, zuzahlung: einmal })
+  if (entnahmeJahre > 0 && entnahmeMonat > 0) {
+    const letzterWert = result.values[result.values.length - 1]
+    const values = result.values.concat(new Array(entnahmeJahre * 12).fill(letzterWert))
+    return { values, entnommenNetto: 0, reichtBisMonat: null }
   }
-
-  let depotP = 0
-  let depotE = 0
-  if (einmal > 0) {
-    depotE = einmal * (jahre >= 15 ? 0.9038 : 0.8423)
-    if (depotE < 0) depotE = 0
-  }
-
-  const values = [depotP + depotE]
-  for (let m = 1; m <= months; m++) {
-    const monatAngepasst =
-      waRateMonthly > 0 ? monat * Math.pow(1 + waRateMonthly, m - 1) : monat
-    const netPraemie = monatAngepasst * (1 - vst)
-    const netNachAdmin = netPraemie * (1 - adminPraemie)
-    let invest = m <= 60 ? netNachAdmin - zillmerMonatlich : netNachAdmin
-    if (invest < 0) invest = 0
-    depotP += invest
-    depotP *= 1 + r
-    depotP -= depotP * (depotCostPraemiePa / 12)
-    depotP += depotP * (kickbackPa(m) / 12)
-    if (depotP < 0) depotP = 0
-
-    if (einmal > 0) {
-      depotE *= 1 + r
-      depotE -= depotE * (depotCostEinmalPa / 12)
-      depotE += depotE * (kickbackPa(m) / 12)
-      if (depotE < 0) depotE = 0
-    }
-    values.push(depotP + depotE)
-  }
-
-  let entnommenNetto = 0
-  let reichtBisMonat: number | null = null
-  const entnahmeMonate = entnahmeJahre > 0 && entnahmeMonat > 0 ? entnahmeJahre * 12 : 0
-  for (let k = 1; k <= entnahmeMonate; k++) {
-    const m = months + k
-    const gesamt = depotP + depotE
-    const brutto = Math.min(gesamt, entnahmeMonat)
-    if (brutto < entnahmeMonat - 1e-9 && reichtBisMonat === null) reichtBisMonat = m
-    let rest = brutto
-    const ausP = Math.min(depotP, rest)
-    depotP -= ausP
-    rest -= ausP
-    const ausE = Math.min(depotE, rest)
-    depotE -= ausE
-    entnommenNetto += brutto
-
-    depotP *= 1 + r
-    depotP -= depotP * (depotCostPraemiePa / 12)
-    depotP += depotP * (kickbackPa(m) / 12)
-    if (depotP < 0) depotP = 0
-
-    depotE *= 1 + r
-    depotE -= depotE * (depotCostEinmalPa / 12)
-    depotE += depotE * (kickbackPa(m) / 12)
-    if (depotE < 0) depotE = 0
-
-    values.push(depotP + depotE)
-  }
-
-  return { values, entnommenNetto, reichtBisMonat }
+  return { values: result.values, entnommenNetto: 0, reichtBisMonat: null }
 }
 
 export function simulateFLV(
@@ -173,9 +104,10 @@ export function simulateFLV(
   einmal: number,
   jahre: number,
   perf: number,
-  waPct = 0
+  waPct = 0,
+  eintrittsalter = 35
 ): number[] {
-  return simulateFLVVerlauf(provider, monat, einmal, jahre, perf, waPct, 0, 0).values
+  return simulateFLVVerlauf(provider, monat, einmal, jahre, perf, waPct, 0, 0, eintrittsalter).values
 }
 
 /**
