@@ -5,6 +5,7 @@
 // (sbSubtreeNames) — kein eigener Hierarchie-Code, siehe Team.tsx.
 import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
 import type { TeamGoal } from "@/lib/calc/format"
 import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
@@ -38,6 +39,7 @@ export function Planung({
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
   const [managerFilter, setManagerFilter] = useState<string | null>(null)
   const [ebene, setEbene] = useState<PlanEbene>("woche")
+  const [search, setSearch] = useState("")
 
   const selectedManager =
     managerOptions.some((m) => m.name === managerFilter) ? managerFilter : managerOptions[0]?.name ?? null
@@ -47,6 +49,11 @@ export function Planung({
     [selectedManager, orgTree]
   )
   const people = useMemo(() => roster.filter((r) => names.has(r.name)), [roster, names])
+  const needle = search.trim().toLowerCase()
+  const filteredPeople = useMemo(
+    () => (needle ? people.filter((p) => p.name.toLowerCase().includes(needle)) : people),
+    [people, needle]
+  )
 
   // "Nach Führungskräften"-Rollup: die direkt unter selectedManager liegenden
   // Führungskräfte (siehe sbLeadFrontier), je eine Zeile/Kachel mit Team +
@@ -62,6 +69,10 @@ export function Planung({
       names: [...sbSubtreeNames(orgTree, lead.name)],
     })),
     [leadFrontier, orgTree]
+  )
+  const filteredTeamGroups = useMemo(
+    () => (needle ? teamGroups.filter((g) => g.name.toLowerCase().includes(needle)) : teamGroups),
+    [teamGroups, needle]
   )
   const [groupByLead, setGroupByLead] = useState(false)
   useEffect(() => {
@@ -127,36 +138,48 @@ export function Planung({
             </button>
           </>
         )}
+        <Input
+          placeholder="Name suchen…"
+          aria-label="Mitarbeiter nach Name suchen"
+          className="ml-auto w-56"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       {ebene === "woche" && (
         <Wochenplanung
           key={selectedManager}
-          people={people}
+          people={filteredPeople}
           managerName={selectedManager}
           planung={planung}
           isEditor={isEditor}
           teamGoal={teamGoal}
-          teamGroups={groupByLead ? teamGroups : null}
+          teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}
       {ebene === "monat" && (
         <Monatsplanung
           key={selectedManager}
-          people={people}
+          people={filteredPeople}
           planung={planung}
           isEditor={isEditor}
-          teamGroups={groupByLead ? teamGroups : null}
+          teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}
       {ebene === "jahr" && selectedManager && (
+        // people bewusst ungefiltert: Jahresplanung zeigt keine Einzelpersonen-
+        // Liste, sondern nur Team-Gesamtziele — die Namenssuche würde hier sonst
+        // unsichtbar nur die Summen verändern, ohne dass sich an der Anzeige
+        // etwas zeigt. Nur die "Nach Führungskräften"-Tabelle (teamGroups) hat
+        // sichtbare Zeilen, die gefiltert werden können.
         <Jahresplanung
           key={selectedManager}
           managerName={selectedManager}
           people={people}
           planung={planung}
           isEditor={isEditor}
-          teamGroups={groupByLead ? teamGroups : null}
+          teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}
     </div>
