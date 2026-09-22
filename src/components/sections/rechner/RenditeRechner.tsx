@@ -88,7 +88,7 @@ export function RenditeRechner() {
   const [perfPreset, setPerfPreset] = useState<number | null>(6)
   const [customPerf, setCustomPerf] = useState("")
   const [provider, setProvider] = useState<Provider>("merkur")
-  const [fondssparerProvider, setFondssparerProvider] = useState<Provider>("merkur")
+  const [fondssparerProvider, setFondssparerProvider] = useState<Provider>("helvetia")
   const [ausgabeaufschlag, setAusgabeaufschlag] = useState("5")
   const [depotgebuehr, setDepotgebuehr] = useState("1.45")
   const [ageRendite, setAgeRendite] = useState("2")
@@ -384,7 +384,7 @@ export function RenditeRechner() {
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
             <ToggleGroup
               value={fondssparerProvider}
-              options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia" }]}
+              options={[{ value: "merkur", label: "Merkur", disabled: true }, { value: "helvetia", label: "Helvetia" }]}
               onChange={setFondssparerProvider}
             />
             {fondssparerProvider === "helvetia" && (
