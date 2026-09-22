@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
   RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR, rrMaxEntnahme,
-  simulateFLVVerlauf, simulateFondsdepotVerlauf,
+  simulateFLVVerlauf, simulateFondsdepotVerlauf, simulateFondssparerProviderVerlauf,
   type Provider, type RRProductKey, type RRVerlauf,
 } from "@/lib/calc/rendite"
 import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
@@ -88,6 +88,7 @@ export function RenditeRechner() {
   const [perfPreset, setPerfPreset] = useState<number | null>(6)
   const [customPerf, setCustomPerf] = useState("")
   const [provider, setProvider] = useState<Provider>("merkur")
+  const [fondssparerProvider, setFondssparerProvider] = useState<Provider>("merkur")
   const [ausgabeaufschlag, setAusgabeaufschlag] = useState("5")
   const [depotgebuehr, setDepotgebuehr] = useState("1.45")
   const [ageRendite, setAgeRendite] = useState("2")
@@ -103,14 +104,17 @@ export function RenditeRechner() {
   const eintrittsalterNum = Math.min(75, Math.max(0, Math.round(Number(eintrittsalter) || 0) || 35))
 
   const perf = (customPerf !== "" && !isNaN(parseFloat(customPerf)) ? parseFloat(customPerf) : perfPreset ?? 6) / 100
-  // Helvetias PDF-Modell verlangt eine Laufzeit von 5-60 Jahren; Merkur bleibt bei 1-65.
-  const jahreMin = provider === "helvetia" ? 5 : 1
-  const jahreMax = provider === "helvetia" ? 60 : 65
+  // Helvetias PDF-Modell (beim Fondssparer, siehe rendite.ts) verlangt eine Laufzeit von
+  // 5-60 Jahren; Merkur bleibt bei 1-65.
+  const helvetiaAktiv = fondssparerProvider === "helvetia"
+  const jahreMin = helvetiaAktiv ? 5 : 1
+  const jahreMax = helvetiaAktiv ? 60 : 65
   const jahreClamped = Math.min(jahreMax, Math.max(jahreMin, Math.round(Number(jahre) || 0) || 20))
   const waPctEff = waEnabled ? Math.max(0, Number(waPct) || 0) / 100 : 0
   // Helvetias PDF-Modell kennt nur eine einmalige Teilentnahme zu einem Stichtag, keine
-  // laufende Monatsentnahme — die Entnahmephase ist deshalb nur bei Merkur verfügbar.
-  const entnahmeErlaubt = provider !== "helvetia"
+  // laufende Monatsentnahme — die Entnahmephase ist deshalb nicht verfügbar, solange der
+  // Fondssparer auf Helvetia steht.
+  const entnahmeErlaubt = !helvetiaAktiv
   const entnahmeJahreEff = entnahmeEnabled && entnahmeErlaubt
     ? Math.min(50, Math.max(1, Math.round(Number(entnahmeJahre) || 0) || 20))
     : 0
@@ -128,19 +132,23 @@ export function RenditeRechner() {
   const jahreGesamt = jahreClamped + entnahmeJahreEff
 
   const {
-    years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY,
-    flvVerlauf, fondsdepotVerlauf, flvMaxEntnahme, depotMaxEntnahme, helvetiaEffZinsPct,
+    years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY, finalEinbezahltFondssparer,
+    flvVerlauf, fondssparerVerlauf, fondsdepotVerlauf, flvMaxEntnahme, fondssparerMaxEntnahme, depotMaxEntnahme,
+    fondssparerEffZinsPct,
   } = useMemo(() => {
     const flvVerlauf: RRVerlauf = simulateFLVVerlauf(
       provider, monatNum, 0, jahreClamped, perf, waPctEff, entnahmeJahreEff, entnahmeMonatNum, eintrittsalterNum
+    )
+    const fondssparerVerlauf: RRVerlauf = simulateFondssparerProviderVerlauf(
+      fondssparerProvider, monatNum, jahreClamped, perf, waPctEff, entnahmeJahreEff, entnahmeMonatNum, eintrittsalterNum
     )
     const fondsdepotVerlauf: RRVerlauf = simulateFondsdepotVerlauf(
       monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff,
       entnahmeJahreEff, entnahmeMonatNum
     )
 
-    const helvetiaEffZinsPct = provider === "helvetia"
-      ? helvetiaEffektivverzinsung(flvVerlauf.values[jahreClamped * 12], monatNum, jahreClamped, 12, waPctEff) * 100
+    const fondssparerEffZinsPct = fondssparerProvider === "helvetia"
+      ? helvetiaEffektivverzinsung(fondssparerVerlauf.values[jahreClamped * 12], monatNum, jahreClamped, 12, waPctEff) * 100
       : null
 
     const years: number[] = []
@@ -151,10 +159,18 @@ export function RenditeRechner() {
       einbezahlt.push(monatNum * 12 * Math.min(y, jahreClamped))
       const idx = y * 12
       flvY.push(flvVerlauf.values[idx])
-      // Fondssparer & Vermögensverwaltung vorübergehend deaktiviert (ausgegraut, Werte auf 0)
-      fondssparerY.push(0)
+      fondssparerY.push(fondssparerVerlauf.values[idx])
       fondsdepotY.push(fondsdepotVerlauf.values[idx])
+      // Vermögensverwaltung vorübergehend deaktiviert (ausgegraut, Werte auf 0)
       vvY.push(0)
+    }
+
+    // Fondssparer: die "Einbezahlt*"-Linie oben zeigt die nominelle Monatsprämie × Jahre; hier
+    // dagegen die tatsächlich gezahlten, jährlich dynamisierten Prämien (bei Wertanpassung steigt
+    // die reale Monatsprämie um waPctEff p.a., nicht nur der Depotwert).
+    let finalEinbezahltFondssparer = 0
+    for (let y = 0; y < jahreClamped; y++) {
+      finalEinbezahltFondssparer += monatNum * 12 * Math.pow(1 + waPctEff, y)
     }
 
     // Größte Monatsentnahme, die exakt bis zum Ende der Entnahmezeit trägt (Obergrenze: das am
@@ -164,6 +180,14 @@ export function RenditeRechner() {
       ? rrMaxEntnahme(
           (x) => simulateFLVVerlauf(provider, monatNum, 0, jahreClamped, perf, waPctEff, entnahmeJahreEff, x),
           flvVerlauf.values[ansparIdx]
+        )
+      : 0
+    const fondssparerMaxEntnahme = entnahmeJahreEff > 0
+      ? rrMaxEntnahme(
+          (x) => simulateFondssparerProviderVerlauf(
+            fondssparerProvider, monatNum, jahreClamped, perf, waPctEff, entnahmeJahreEff, x, eintrittsalterNum
+          ),
+          fondssparerVerlauf.values[ansparIdx]
         )
       : 0
     const depotMaxEntnahme = entnahmeJahreEff > 0
@@ -177,12 +201,13 @@ export function RenditeRechner() {
       : 0
 
     return {
-      years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY,
-      flvVerlauf, fondsdepotVerlauf, flvMaxEntnahme, depotMaxEntnahme, helvetiaEffZinsPct,
+      years, einbezahlt, flvY, fondssparerY, fondsdepotY, vvY, finalEinbezahltFondssparer,
+      flvVerlauf, fondssparerVerlauf, fondsdepotVerlauf, flvMaxEntnahme, fondssparerMaxEntnahme, depotMaxEntnahme,
+      fondssparerEffZinsPct,
     }
   }, [
-    provider, monatNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum,
-    jahreGesamt, entnahmeJahreEff, entnahmeMonatNum, eintrittsalterNum,
+    provider, fondssparerProvider, monatNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum,
+    ageRenditeNum, jahreGesamt, entnahmeJahreEff, entnahmeMonatNum, eintrittsalterNum,
   ])
 
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
@@ -197,9 +222,15 @@ export function RenditeRechner() {
       entnommenNetto: entnahmeAktiv ? flvVerlauf.entnommenNetto : undefined,
       reichtBisMonat: entnahmeAktiv ? flvVerlauf.reichtBisMonat : undefined,
       maxEntnahme: entnahmeAktiv ? flvMaxEntnahme : undefined,
-      effektivverzinsungPct: helvetiaEffZinsPct,
     },
-    { name: "Fondssparer", colorKey: "fondssparer", end: 0, einbezahlt: 0, disabled: true },
+    {
+      name: "Fondssparer", colorKey: "fondssparer", end: fondssparerY[fondssparerY.length - 1],
+      einbezahlt: finalEinbezahltFondssparer,
+      entnommenNetto: entnahmeAktiv ? fondssparerVerlauf.entnommenNetto : undefined,
+      reichtBisMonat: entnahmeAktiv ? fondssparerVerlauf.reichtBisMonat : undefined,
+      maxEntnahme: entnahmeAktiv ? fondssparerMaxEntnahme : undefined,
+      effektivverzinsungPct: fondssparerEffZinsPct,
+    },
     {
       name: "Depot", colorKey: "fondsdepot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt,
       entnommenNetto: entnahmeAktiv ? fondsdepotVerlauf.entnommenNetto : undefined,
@@ -348,27 +379,15 @@ export function RenditeRechner() {
           </CardContent>
         </Card>
 
-        <Card style={productCardStyle("fondssparer")} className="pointer-events-none opacity-40 grayscale">
-          <CardContent className="flex flex-col gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
-            <div className="flex flex-col gap-1">
-              {fondssparerKostenZeilen(jahreClamped).map(([label]) => (
-                <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>—</span></div>
-              ))}
-            </div>
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">Vorübergehend deaktiviert</div>
-          </CardContent>
-        </Card>
-
-        <Card style={productCardStyle("flv")}>
+        <Card style={productCardStyle("fondssparer")}>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="flv" />FLV (Fondsgebundene Lebensversicherung)</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
             <ToggleGroup
-              value={provider}
+              value={fondssparerProvider}
               options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia" }]}
-              onChange={setProvider}
+              onChange={setFondssparerProvider}
             />
-            {provider === "helvetia" && (
+            {fondssparerProvider === "helvetia" && (
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Eintrittsalter
                 <input type="number" min={0} max={75} step={1} value={eintrittsalter}
@@ -377,22 +396,42 @@ export function RenditeRechner() {
               </label>
             )}
             <div className="flex flex-col gap-1">
-              {(provider === "merkur" ? merkurKostenZeilen(monatNum, jahreClamped) : helvetiaKostenZeilen()).map(([label, val]) => (
+              {(fondssparerProvider === "merkur" ? fondssparerKostenZeilen(jahreClamped) : helvetiaKostenZeilen()).map(([label, val]) => (
                 <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
               ))}
             </div>
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
-            {provider === "merkur" && (
+            {fondssparerProvider === "merkur" && (
               <div className="text-[10.5px] text-muted-foreground">
-                Sparprämie kalibriert auf echte Merkur-Angebote (Stand 08/2026, zwei Fonds, Annahme 6 % p.a.)
+                Kalibriert auf echte Angebote (zwei Fonds, Annahme 6 % p.a.)
               </div>
             )}
-            {provider === "helvetia" && (
+            {fondssparerProvider === "helvetia" && (
               <div className="text-[10.5px] text-muted-foreground">
-                1:1 nach der offiziellen Helvetia-FLV-Schnellberechnung. Laufzeit 5–60 Jahre, keine laufende
-                Entnahmephase.
+                1:1 nach der offiziellen Helvetia-FLV-Schnellberechnung (Helvetia-Fondssparer). Laufzeit 5–60 Jahre,
+                keine laufende Entnahmephase.
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card style={productCardStyle("flv")}>
+          <CardContent className="flex flex-col gap-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="flv" />FLV (Fondsgebundene Lebensversicherung)</h3>
+            <ToggleGroup
+              value={provider}
+              options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia", disabled: true }]}
+              onChange={setProvider}
+            />
+            <div className="flex flex-col gap-1">
+              {merkurKostenZeilen(monatNum, jahreClamped).map(([label, val]) => (
+                <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
+              ))}
+            </div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
+            <div className="text-[10.5px] text-muted-foreground">
+              Sparprämie kalibriert auf echte Merkur-Angebote (Stand 08/2026, zwei Fonds, Annahme 6 % p.a.)
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -406,7 +445,7 @@ export function RenditeRechner() {
                 labels: years,
                 datasets: [
                   { label: "FLV", data: flvY, borderColor: RR_PRODUCT_COLORS.flv.line, backgroundColor: RR_PRODUCT_COLORS.flv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Fondssparer (deaktiviert)", data: fondssparerY, borderColor: "#B9C2C4", backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+                  { label: "Fondssparer", data: fondssparerY, borderColor: RR_PRODUCT_COLORS.fondssparer.line, backgroundColor: RR_PRODUCT_COLORS.fondssparer.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
                   { label: "Depot", data: fondsdepotY, borderColor: RR_PRODUCT_COLORS.fondsdepot.line, backgroundColor: RR_PRODUCT_COLORS.fondsdepot.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
                   { label: "Vermögensverwaltung (deaktiviert)", data: vvY, borderColor: "#B9C2C4", backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
                   { label: "Einbezahlt*", data: einbezahlt, borderColor: "#8FA1A6", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0 },
@@ -512,7 +551,7 @@ export function RenditeRechner() {
                   <th className="px-2 py-1.5">Jahr</th>
                   <th className="px-2 py-1.5">Einbezahlt</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.flv.line }}>FLV</th>
-                  <th className="px-2 py-1.5 text-muted-foreground/40">Fondssparer</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondssparer.line }}>Fondssparer</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot</th>
                   <th className="px-2 py-1.5 text-muted-foreground/40">VV</th>
                 </tr>
@@ -533,7 +572,7 @@ export function RenditeRechner() {
                       <td className="px-2 py-1.5">{y}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(einbezahlt[i])}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(flvY[i])}</td>
-                      <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(fondssparerY[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondssparerY[i])}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotY[i])}</td>
                       <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(vvY[i])}</td>
                     </tr>

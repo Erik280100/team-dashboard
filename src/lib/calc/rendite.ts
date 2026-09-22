@@ -1,12 +1,14 @@
 // Renditerechner — 1:1 portiert aus legacy/index.html:3532–3740.
 // Reine Funktionen, keine DOM-Zugriffe. Bei jeder Änderung: Golden-Master-Test
 // in test/calc/rendite.golden.test.ts muss weiterhin grün bleiben (gilt nicht für
-// den Merkur-Prämientopf in simulateFLV, für simulateFondssparer und für Helvetia in
-// simulateFLV — alle drei sind gegen echte Angebote bzw. das offizielle Herstellermodell
-// kalibriert/portiert, siehe merkurFlv.ts / fondssparer.ts / helvetiaFlv.ts und
-// test/calc/merkur.reference.test.ts / test/calc/fondssparer.reference.test.ts /
-// test/calc/helvetia.test.ts).
-import { simulateFondssparerKalibriert } from "./fondssparer"
+// den Merkur-Prämientopf in simulateFLV, für simulateFondssparer/simulateFondssparerProviderVerlauf
+// und für Helvetia in simulateFLVVerlauf/simulateFondssparerProviderVerlauf — alle drei sind gegen
+// echte Angebote bzw. das offizielle Herstellermodell kalibriert/portiert, siehe merkurFlv.ts /
+// fondssparer.ts / helvetiaFlv.ts und test/calc/merkur.reference.test.ts /
+// test/calc/fondssparer.reference.test.ts / test/calc/helvetia.test.ts. Das Helvetia-Modell ist
+// in der UI (RenditeRechner.tsx) beim Fondssparer verortet, nicht bei der FLV — siehe Kommentar
+// bei simulateFondssparerProviderVerlauf.
+import { simulateFondssparerKalibriert, simulateFondssparerVerlauf as simulateFondssparerKalibriertVerlauf } from "./fondssparer"
 import { simulateHelvetiaFLV } from "./helvetiaFlv"
 import { simulateMerkurFLVEinmal, simulateMerkurFLVEntnahme, simulateMerkurFLVPraemie } from "./merkurFlv"
 
@@ -37,6 +39,33 @@ export type Provider = "merkur" | "helvetia"
 /** Monatlicher Zinssatz aus einer jährlichen Performance (stetige Verzinsung über 12 Monate). */
 export function rrRate(pa: number): number {
   return Math.pow(1 + pa, 1 / 12) - 1
+}
+
+/**
+ * Helvetia: 1:1-Port aus Helvetia_FLV_Schnellberechnung.pdf (siehe helvetiaFlv.ts). Das
+ * PDF-Modell kennt nur eine einmalige Teilentnahme zu einem Stichtag, keine laufende
+ * Monatsentnahme wie der Rechner sie anbietet — eine gesetzte Entnahme wird daher ignoriert
+ * (values auf die passende Gesamtlänge aufgefüllt, damit index-basierte Zugriffe nicht
+ * außerhalb des Arrays landen). Gemeinsam genutzt von simulateFLVVerlauf und
+ * simulateFondssparerProviderVerlauf.
+ */
+function simulateHelvetiaVerlauf(
+  monat: number,
+  einmal: number,
+  jahre: number,
+  perf: number,
+  waPct: number,
+  eintrittsalter: number,
+  entnahmeJahre: number,
+  entnahmeMonat: number
+): RRVerlauf {
+  const result = simulateHelvetiaFLV({ monat, jahre, perf, waPct, eintrittsalter, zuzahlung: einmal })
+  if (entnahmeJahre > 0 && entnahmeMonat > 0) {
+    const letzterWert = result.values[result.values.length - 1]
+    const values = result.values.concat(new Array(entnahmeJahre * 12).fill(letzterWert))
+    return { values, entnommenNetto: 0, reichtBisMonat: null }
+  }
+  return { values: result.values, entnommenNetto: 0, reichtBisMonat: null }
 }
 
 /**
@@ -83,19 +112,10 @@ export function simulateFLVVerlauf(
     }
   }
 
-  // Helvetia: 1:1-Port aus Helvetia_FLV_Schnellberechnung.pdf (siehe helvetiaFlv.ts). Das
-  // PDF-Modell kennt nur eine einmalige Teilentnahme zu einem Stichtag, keine laufende
-  // Monatsentnahme wie der Rechner sie anbietet — die UI sperrt die Entnahmephase für Helvetia
-  // deshalb. Falls trotzdem eine Entnahme übergeben wird, wird hier nur der reine Ansparverlauf
-  // zurückgeliefert (values auf die passende Gesamtlänge aufgefüllt, damit index-basierte
-  // Zugriffe wie bei Merkur nicht außerhalb des Arrays landen).
-  const result = simulateHelvetiaFLV({ monat, jahre, perf, waPct, eintrittsalter, zuzahlung: einmal })
-  if (entnahmeJahre > 0 && entnahmeMonat > 0) {
-    const letzterWert = result.values[result.values.length - 1]
-    const values = result.values.concat(new Array(entnahmeJahre * 12).fill(letzterWert))
-    return { values, entnommenNetto: 0, reichtBisMonat: null }
-  }
-  return { values: result.values, entnommenNetto: 0, reichtBisMonat: null }
+  // Helvetia: siehe simulateHelvetiaVerlauf oben. Die UI sperrt die Entnahmephase für Helvetia
+  // deshalb (das Produkt "FLV" bietet Helvetia aktuell ohnehin nicht als Auswahl an — siehe
+  // simulateFondssparerProviderVerlauf, wohin das Helvetia-Modell in der UI verschoben wurde).
+  return simulateHelvetiaVerlauf(monat, einmal, jahre, perf, waPct, eintrittsalter, entnahmeJahre, entnahmeMonat)
 }
 
 export function simulateFLV(
@@ -126,6 +146,31 @@ export function simulateFondssparer(
 }
 
 export { simulateFondssparerVerlauf } from "./fondssparer"
+
+/**
+ * Fondssparer, providerabhängig: "merkur" ist das gegen echte Angebote kalibrierte Modell
+ * (simulateFondssparerVerlauf/fondssparer.ts). "helvetia" ist der 1:1-Port aus
+ * Helvetia_FLV_Schnellberechnung.pdf (helvetiaFlv.ts) — trotz des Dateinamens beschreibt das
+ * PDF laut Helvetia tatsächlich deren Fondssparer-Produkt, nicht eine FLV; das Modell ist daher
+ * hier beim Fondssparer verortet, nicht bei simulateFLVVerlauf. eintrittsalter wird nur von
+ * Helvetia verwendet (siehe simulateFLVVerlauf), Merkur ignoriert den Parameter. Wie bei
+ * simulateFLVVerlauf kennt das Helvetia-Modell keine laufende Entnahmephase.
+ */
+export function simulateFondssparerProviderVerlauf(
+  provider: Provider,
+  monat: number,
+  jahre: number,
+  perf: number,
+  waPct = 0,
+  entnahmeJahre = 0,
+  entnahmeMonat = 0,
+  eintrittsalter = 35
+): RRVerlauf {
+  if (provider === "merkur") {
+    return simulateFondssparerKalibriertVerlauf(monat, jahre, perf, waPct, entnahmeJahre, entnahmeMonat)
+  }
+  return simulateHelvetiaVerlauf(monat, 0, jahre, perf, waPct, eintrittsalter, entnahmeJahre, entnahmeMonat)
+}
 
 /**
  * Fondsdepot: KESt via jährliche ausschüttungsgleiche Erträge (agE) + Rest-KESt beim Verkauf.
