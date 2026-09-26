@@ -305,6 +305,7 @@ function AppShell() {
                     now={view.now}
                     offenesFinanzierungsvolumen={offenesFinanzierungsvolumen}
                     offeneAnlegerwohnungen={offeneAnlegerwohnungen}
+                    planung={isArchive ? undefined : planung}
                   />
                 )
               )}

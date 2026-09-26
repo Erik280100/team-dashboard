@@ -4,7 +4,7 @@
 // dort durchgängig dunkel (.kpi-card/.panel-dark nutzen dieselbe Navy-Verlaufsfarbe),
 // nicht nur die Chart-Panels.
 import "@/lib/chartSetup"
-import { useState, type ChangeEvent } from "react"
+import { useEffect, useState, type ChangeEvent } from "react"
 import { Bar, Doughnut, Line, Pie } from "react-chartjs-2"
 import { Users, Landmark, Building2, UserPlus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +15,9 @@ import {
   barChartData, doughnutData, goalProgress, leaderboardData, recruitProgress,
   revenueShareData, summaryKpis, timelineData,
 } from "@/lib/calc/overview"
+import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
+import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import type { PlanWeekDoc } from "@/types/dashboard"
 import type { EmployeeRow, HistoryEntry, TeamGoal } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
@@ -40,6 +43,7 @@ export function Overview({
   now,
   offenesFinanzierungsvolumen,
   offeneAnlegerwohnungen,
+  planung,
 }: {
   rows: EmployeeRow[]
   teamGoal: TeamGoal
@@ -56,6 +60,10 @@ export function Overview({
   offenesFinanzierungsvolumen: number
   /** Anzahl offener (nicht archivierter) Finanzierungsfälle mit Art "anlegerwohnung". */
   offeneAnlegerwohnungen: number
+  /** Wochenplanung-Zugriff für die automatische Ist-AT-Übernahme ins
+   * Leaderboard (analog Team.tsx) — undefined im Archiv-Modus, dort bleiben
+   * die eingefrorenen Row-Werte (Stand Monatsabschluss) sichtbar. */
+  planung?: UsePlanungDocResult
 }) {
   const kpis = summaryKpis(rows)
   const goal = goalProgress(rows)
@@ -64,7 +72,27 @@ export function Overview({
   const bars = barChartData(rows)
   const doughnut = doughnutData(rows)
   const shares = revenueShareData(rows)
-  const leaderboard = leaderboardData(rows)
+
+  // Ist-AT fürs Leaderboard live aus der Wochenplanung übernehmen (Summe der
+  // "analysen"-Gemacht-Werte über alle Wochen des aktuellen Umsatzmonats) —
+  // dieselbe Quelle wie die "Ist"-Spalte auf der Mitarbeiterseite (Team.tsx),
+  // statt des zuletzt gespeicherten, potenziell veralteten row.atIst.
+  const planWeeks = planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd) : []
+  useEffect(() => {
+    if (!planung || planWeeks.length === 0) return
+    void planung.loadWeeks(planWeeks)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planung, planWeeks.join(",")])
+  const planByName = planung
+    ? aggregateByName(
+        planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null),
+        rows.map((r) => r.name as string)
+      )
+    : null
+  const rowsForLeaderboard = planByName
+    ? rows.map((r) => ({ ...r, atIst: planByName.get(r.name as string)?.analysen ?? 0 }))
+    : rows
+  const leaderboard = leaderboardData(rowsForLeaderboard)
 
   const [noteDraft, setNoteDraft] = useState(teamGoal.note)
   const [recruitGoalDraft, setRecruitGoalDraft] = useState(String(teamGoal.recruitGoal))
