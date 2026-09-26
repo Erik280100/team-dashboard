@@ -16,7 +16,7 @@ import { fmt, type EmployeeRow } from "@/lib/calc/format"
 import {
   DEFAULT_PLAN_RATES, PLAN_IDS, PLAN_LABELS,
   SB_COLORS, SB_NH, SB_NW, SB_ROLES, SB_STATUS, SB_VG,
-  sbAll, sbEsc, sbFind, sbLayout, sbLine, sbRoster, withDefaultPlanRates,
+  isLeadRole, sbAll, sbEsc, sbFind, sbLayout, sbLine, sbRoster, withDefaultPlanRates,
   type PlanId, type SbNode,
 } from "@/lib/calc/struktur"
 import { mergeRosterWithRows } from "@/lib/calc/team"
@@ -177,14 +177,23 @@ export function StrukturBaum({
   // eine Person zeigt ihr Team, darunterliegende Äste starten dabei ebenfalls
   // eingeklappt. Rein clientseitiger Anzeigezustand, wird nicht gespeichert.
   //
-  // Der Default (alles außer Wurzel eingeklappt) wird bei JEDEM Render frisch
-  // aus dem aktuellen doc.tree abgeleitet (nicht einmalig in useState
-  // vorberechnet) — sonst bliebe der Klapp-Status hängen, wenn doc.tree erst
-  // nach dem ersten Render nachlädt (z.B. Cloud-Sync kommt nach dem lokalen
-  // Cache an). Gespeichert wird nur, welche Knoten der Nutzer manuell vom
-  // Default weg umgeschaltet hat.
+  // Nur Führungsrollen (SB_LEAD_ROLES: Direktor/Regionalleiter/Geschäfts-
+  // stellenleiter/Teamleiter) sowie der Wurzelknoten bekommen einen eigenen
+  // Klapp-Button — Trainees (FT1–FT4) sollen ihr eigenes, ggf. selbst
+  // geworbenes Team nicht separat aufklappen können; deren Kopfzahlen zählen
+  // stattdessen einfach in die Gesamtzahl der übergeordneten Führungskraft
+  // hinein (descendantCount zählt ohnehin den ganzen Unterbau). Eine
+  // Ausnahme gibt es nur, falls unter einem Trainee doch wieder eine
+  // Führungskraft hängt (z.B. nach einem Umgliedern per Drag&Drop) — dann
+  // bleibt der Ast trotzdem aufklappbar, damit niemand unerreichbar wird.
   const [toggledIds, setToggledIds] = useState<Set<string>>(new Set())
+  function isExpandable(n: SbNode): boolean {
+    if (n.id === doc.tree.id) return true
+    if (isLeadRole(n.role || "")) return true
+    return !!treeInfo.get(n.id)?.hasLeadDescendant
+  }
   function isCollapsed(n: SbNode): boolean {
+    if (!isExpandable(n)) return true
     const defaultCollapsed = n.id !== doc.tree.id
     return toggledIds.has(n.id) ? !defaultCollapsed : defaultCollapsed
   }
@@ -199,13 +208,18 @@ export function StrukturBaum({
   // Kind-/Nachfahrenzahl je Knoten aus dem unveränderten Baum (für den Klapp-
   // Button — laidOutTree hat bei eingeklappten Knoten ja keine Kinder mehr).
   const treeInfo = useMemo(() => {
-    const m = new Map<string, { childCount: number; descendantCount: number }>()
-    function walk(n: SbNode): number {
+    const m = new Map<string, { childCount: number; descendantCount: number; hasLeadDescendant: boolean }>()
+    function walk(n: SbNode): { count: number; hasLead: boolean } {
       const kids = n.children || []
       let total = 0
-      kids.forEach((c) => { total += 1 + walk(c) })
-      m.set(n.id, { childCount: kids.length, descendantCount: total })
-      return total
+      let hasLead = false
+      kids.forEach((c) => {
+        const r = walk(c)
+        total += 1 + r.count
+        if (isLeadRole(c.role || "") || r.hasLead) hasLead = true
+      })
+      m.set(n.id, { childCount: kids.length, descendantCount: total, hasLeadDescendant: hasLead })
+      return { count: total, hasLead }
     }
     walk(doc.tree)
     return m
@@ -624,7 +638,7 @@ export function StrukturBaum({
       {!fullscreen && (
         <p className="text-xs text-muted-foreground">
           Klicke auf eine Person für Details &amp; Notizen. Ziehe eine Person auf eine andere, um sie dort einzugliedern.
-          Der Pfeil oben links an einer Person klappt ihr Team ein bzw. aus.
+          Der Pfeil oben links an Teamleitern/Geschäftsstellenleitern klappt ihr Team ein bzw. aus (Trainee-Teams sind in dieser Zahl mitgezählt, aber nicht extra aufklappbar).
         </p>
       )}
 
@@ -717,7 +731,7 @@ export function StrukturBaum({
                       +
                     </button>
                   )}
-                  {!!info?.childCount && (
+                  {!!info?.childCount && isExpandable(n) && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); toggleCollapse(n.id) }}
