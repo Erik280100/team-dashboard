@@ -240,10 +240,10 @@ export function emptyMonthNoteEntry(): PlanMonthNotesEntry {
   return { at: "", bt: "", st: "", et: "", feedback: "" }
 }
 
-/** Abschlussquote in Prozent (Verträge / Beratungen), 0 bei beratungen <= 0. */
-export function quotePct(vertraege: number, beratungen: number): number {
-  if (!beratungen) return 0
-  return Math.round((vertraege / beratungen) * 100)
+/** Quote in Prozent (a / b), 0 bei b <= 0 — z. B. AT-Quote (Ist / Soll). */
+export function quotePct(a: number, b: number): number {
+  if (!b) return 0
+  return Math.round((a / b) * 100)
 }
 
 // ---- Jahresplanung ----

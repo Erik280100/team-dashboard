@@ -143,8 +143,8 @@ export function Monatsplanung({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiTile label="ATG Gesamt" value={fmt(total.atg)} sub="Monat kumuliert" />
-        <KpiTile label="Analysen" value={`${fmt(total.analysen)}/${fmt(total.analysenZ)}`} sub="stattgef. / ausgemacht" />
-        <KpiTile label="Verträge" value={fmt(total.vertraege)} sub={`${quotePct(total.vertraege, total.beratungen)}% Abschlussquote`} />
+        <KpiTile label="AT" value={`${fmt(total.analysen)}/${fmt(total.analysenZ)}`} sub="Ist / Soll" />
+        <KpiTile label="AT-Quote" value={`${quotePct(total.analysen, total.analysenZ)}%`} sub="Erschienen von ausgemacht" />
         <KpiTile label="Einheiten gemacht" value={fmt(total.ehGemacht)} sub={`${fmt(total.ehOffen)} EH offen`} />
       </div>
 
@@ -159,10 +159,9 @@ export function Monatsplanung({
               <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                 <th className="sticky top-0 z-10 min-w-[220px] bg-muted/95 px-3 py-2 backdrop-blur">{byGroup ? "Führungskraft" : "Name"}</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ATG/ATZ</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">An. stat/ausm</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">Ber. stat/ausm</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">Verträge</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">Quote</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT SOLL/IST</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">BT SOLL/IST</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT-Quote</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ST g/z</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ET g/z</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">EH gemacht</th>
@@ -179,10 +178,9 @@ export function Monatsplanung({
                       <div className="truncate text-xs text-muted-foreground">{r.sub}</div>
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.atg)}/{fmt(d.atz)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums"><strong>{fmt(d.analysen)}</strong><span className="text-muted-foreground">/{fmt(d.analysenZ)}</span></td>
-                    <td className="px-3 py-2 text-right tabular-nums"><strong>{fmt(d.beratungen)}</strong><span className="text-muted-foreground">/{fmt(d.beratungenZ)}</span></td>
-                    <td className="px-3 py-2 text-right tabular-nums"><strong>{fmt(d.vertraege)}</strong></td>
-                    <td className="px-3 py-2 text-right tabular-nums">{quotePct(d.vertraege, d.beratungen)}%</td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-muted-foreground">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-muted-foreground">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums">{quotePct(d.analysen, d.analysenZ)}%</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.stg)}/{fmt(d.stz)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.etg)}/{fmt(d.etz)}</td>
                     <td className="px-3 py-2 text-right tabular-nums"><strong>{fmt(d.ehGemacht)}</strong></td>
@@ -199,10 +197,9 @@ export function Monatsplanung({
                     <>
                       <td className={cell.replace("text-right", "")}>Summe</td>
                       <td className={cell}>{fmt(total.atg)}/{fmt(total.atz)}</td>
-                      <td className={cell}>{fmt(total.analysen)}/{fmt(total.analysenZ)}</td>
-                      <td className={cell}>{fmt(total.beratungen)}/{fmt(total.beratungenZ)}</td>
-                      <td className={cell}>{fmt(total.vertraege)}</td>
-                      <td className={cell}>{quotePct(total.vertraege, total.beratungen)}%</td>
+                      <td className={cell}>{fmt(total.analysenZ)}/{fmt(total.analysen)}</td>
+                      <td className={cell}>{fmt(total.beratungenZ)}/{fmt(total.beratungen)}</td>
+                      <td className={cell}>{quotePct(total.analysen, total.analysenZ)}%</td>
                       <td className={cell}>{fmt(total.stg)}/{fmt(total.stz)}</td>
                       <td className={cell}>{fmt(total.etg)}/{fmt(total.etz)}</td>
                       <td className={cell}>{fmt(total.ehGemacht)}</td>

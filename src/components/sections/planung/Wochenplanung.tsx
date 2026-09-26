@@ -21,9 +21,9 @@ interface FieldGroup {
 
 const FIELD_GROUPS: FieldGroup[] = [
   { label: "Wählversuche", left: { sub: "Ziel", key: "atz" }, right: { sub: "Gemacht", key: "atg" } },
-  { label: "Analysen", left: { sub: "Ziel", key: "analysenZ" }, right: { sub: "Gemacht", key: "analysen" } },
-  { label: "Beratungen", left: { sub: "Ziel", key: "beratungenZ" }, right: { sub: "Gemacht", key: "beratungen" } },
-  { label: "Servicetermine", left: { sub: "Ziel", key: "stz" }, right: { sub: "Gemacht", key: "stg" } },
+  { label: "Analysen", left: { sub: "Ausgemacht", key: "analysenZ" }, right: { sub: "Gemacht", key: "analysen" } },
+  { label: "Beratungen", left: { sub: "Ausgemacht", key: "beratungenZ" }, right: { sub: "Gemacht", key: "beratungen" } },
+  { label: "Servicetermine", left: { sub: "Ausgemacht", key: "stz" }, right: { sub: "Gemacht", key: "stg" } },
   { label: "Einstellungstermine", left: { sub: "Ziel", key: "etz" }, right: { sub: "Gemacht", key: "etg" } },
   { label: "Einheiten", left: { sub: "Offen", key: "ehOffen" }, right: { sub: "Gemacht", key: "ehGemacht" } },
   { label: "Aktivitäten", left: { sub: "Soll", key: "aktivitaetenSoll" }, right: { sub: "Ist", key: "aktivitaetenIst" } },
