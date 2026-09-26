@@ -176,17 +176,20 @@ export function StrukturBaum({
   // dem Wurzelknoten eingeklappt ("nur Führungskraft sichtbar") — ein Klick auf
   // eine Person zeigt ihr Team, darunterliegende Äste starten dabei ebenfalls
   // eingeklappt. Rein clientseitiger Anzeigezustand, wird nicht gespeichert.
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => {
-    const s = new Set<string>()
-    function walk(n: SbNode, isRoot: boolean) {
-      if (!isRoot && n.children && n.children.length) s.add(n.id)
-      ;(n.children || []).forEach((c) => walk(c, false))
-    }
-    walk(doc.tree, true)
-    return s
-  })
+  //
+  // Der Default (alles außer Wurzel eingeklappt) wird bei JEDEM Render frisch
+  // aus dem aktuellen doc.tree abgeleitet (nicht einmalig in useState
+  // vorberechnet) — sonst bliebe der Klapp-Status hängen, wenn doc.tree erst
+  // nach dem ersten Render nachlädt (z.B. Cloud-Sync kommt nach dem lokalen
+  // Cache an). Gespeichert wird nur, welche Knoten der Nutzer manuell vom
+  // Default weg umgeschaltet hat.
+  const [toggledIds, setToggledIds] = useState<Set<string>>(new Set())
+  function isCollapsed(n: SbNode): boolean {
+    const defaultCollapsed = n.id !== doc.tree.id
+    return toggledIds.has(n.id) ? !defaultCollapsed : defaultCollapsed
+  }
   function toggleCollapse(id: string) {
-    setCollapsedIds((prev) => {
+    setToggledIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
@@ -236,13 +239,14 @@ export function StrukturBaum({
   const laidOutTree = useMemo(() => {
     const copy = deepClone(doc.tree)
     function prune(n: SbNode) {
-      if (collapsedIds.has(n.id)) n.children = []
+      if (isCollapsed(n)) n.children = []
       else (n.children || []).forEach(prune)
     }
     prune(copy)
     sbLayout(copy, 0, 0, 0)
     return copy
-  }, [doc.tree, collapsedIds])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.tree, toggledIds])
 
   const nodes = useMemo(() => sbAll(laidOutTree), [laidOutTree])
   const nodeMap = useMemo(() => {
@@ -660,7 +664,7 @@ export function StrukturBaum({
               const noteCount = (doc.notes[n.id] || []).length
               const promotion = promotionByName.get(n.name)
               const info = treeInfo.get(n.id)
-              const isCollapsed = collapsedIds.has(n.id)
+              const collapsed = isCollapsed(n)
               return (
                 <div
                   key={n.id}
@@ -719,13 +723,13 @@ export function StrukturBaum({
                       onClick={(e) => { e.stopPropagation(); toggleCollapse(n.id) }}
                       className="absolute -left-2 -top-2 flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full border bg-background px-1 text-[10px] font-bold text-foreground shadow-sm hover:bg-muted"
                       title={
-                        isCollapsed
+                        collapsed
                           ? `Team einblenden (${info.descendantCount} ${info.descendantCount === 1 ? "Person" : "Personen"})`
                           : "Team ausblenden"
                       }
-                      aria-label={isCollapsed ? `Team von ${n.name} einblenden` : `Team von ${n.name} ausblenden`}
+                      aria-label={collapsed ? `Team von ${n.name} einblenden` : `Team von ${n.name} ausblenden`}
                     >
-                      {isCollapsed ? <>▸{info.descendantCount}</> : "▾"}
+                      {collapsed ? <>▸{info.descendantCount}</> : "▾"}
                     </button>
                   )}
                 </div>
