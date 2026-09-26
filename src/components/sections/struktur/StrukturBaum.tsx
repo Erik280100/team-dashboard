@@ -15,8 +15,8 @@ import { computePromotionProgress, type PromotionProgress } from "@/lib/calc/bef
 import { fmt, type EmployeeRow } from "@/lib/calc/format"
 import {
   DEFAULT_PLAN_RATES, PLAN_IDS, PLAN_LABELS,
-  SB_COLORS, SB_HG, SB_NH, SB_NW, SB_ROLES, SB_STATUS, SB_VG,
-  sbAll, sbEsc, sbFind, sbLine, sbRoster, withDefaultPlanRates,
+  SB_COLORS, SB_NH, SB_NW, SB_ROLES, SB_STATUS, SB_VG,
+  sbAll, sbEsc, sbFind, sbLayout, sbLine, sbRoster, withDefaultPlanRates,
   type PlanId, type SbNode,
 } from "@/lib/calc/struktur"
 import { mergeRosterWithRows } from "@/lib/calc/team"
@@ -138,114 +138,6 @@ function detachNode(root: SbNode, id: string): SbNode | null {
   return copy
 }
 
-// ---- Zeilenumbruch-Layout für die Darstellung ----
-// sbLayout (struktur.ts) setzt jede Geschwistergruppe in eine einzige Reihe
-// nebeneinander — bei vielen Kindern wird der Baum dadurch extrem breit und
-// muss beim Rendern winzig herunterskaliert werden (kaum noch lesbar,
-// horizontale Scrollbar). Für die Anzeige brechen wir eine zu breite
-// Geschwistergruppe stattdessen auf mehrere Zeilen um (mehr Höhe statt
-// Breite) und behalten volle Knotengröße (kein Downscale mehr). sbLayout
-// selbst bleibt unverändert (golden-master-getestet, siehe struktur.ts).
-//
-// Wichtig: die nächste Umbruchzeile darf erst beginnen, NACHDEM der komplette
-// Teilbaum der vorigen Zeile (inkl. aller Enkel etc.) zu Ende ist — sonst
-// überlappt sie mit tieferen Nachfahren einer ungleich tiefen Nachbar-Zeile.
-// Deshalb wird hier bottom-up nicht nur die Breite, sondern auch die Höhe
-// jedes (ggf. selbst umgebrochenen) Teilbaums berechnet (sbBoxWrapped) und
-// jede Zeile bekommt exakt die Höhe ihres höchsten Kindes reserviert.
-const SB_ROW_GAP = 40 // Abstand zwischen zwei Umbruchzeilen derselben Ebene (etwas knapper als SB_VG zwischen Ebenen)
-
-/** Geschwister so in Zeilen packen, dass keine Zeile `maxW` überschreitet (greedy, gleiche Reihenfolge). */
-function packRows(widths: number[], maxW: number): number[][] {
-  const rows: number[][] = []
-  let row: number[] = []
-  let rowW = 0
-  widths.forEach((w, i) => {
-    const add = row.length ? w + SB_HG : w
-    if (row.length && rowW + add > maxW) {
-      rows.push(row)
-      row = [i]
-      rowW = w
-    } else {
-      row.push(i)
-      rowW += add
-    }
-  })
-  if (row.length) rows.push(row)
-  return rows
-}
-
-interface SbBox {
-  width: number
-  height: number
-  /** Kindindizes je Umbruchzeile plus deren Gesamtbreite/-höhe (Höhe = höchstes Kind der Zeile). */
-  rows: { idxs: number[]; width: number; height: number }[]
-}
-
-/** Größe des (ggf. umgebrochenen) Teilbaums unter n, memoisiert je Layout-Durchlauf. */
-function sbBoxWrapped(n: SbNode, maxW: number, cache: Map<SbNode, SbBox>): SbBox {
-  const cached = cache.get(n)
-  if (cached) return cached
-  const kids = n.children || []
-  let box: SbBox
-  if (!kids.length) {
-    box = { width: SB_NW, height: SB_NH, rows: [] }
-  } else {
-    const childBoxes = kids.map((c) => sbBoxWrapped(c, maxW, cache))
-    const rowIdxs = packRows(childBoxes.map((b) => b.width), maxW)
-    const rows = rowIdxs.map((idxs) => ({
-      idxs,
-      width: idxs.reduce((s, i) => s + childBoxes[i].width, 0) + SB_HG * (idxs.length - 1),
-      height: Math.max(...idxs.map((i) => childBoxes[i].height)),
-    }))
-    const childrenW = Math.max(...rows.map((r) => r.width))
-    const childrenH = rows.reduce((s, r) => s + r.height, 0) + SB_ROW_GAP * (rows.length - 1)
-    box = { width: Math.max(SB_NW, childrenW), height: SB_NH + SB_VG + childrenH, rows }
-  }
-  cache.set(n, box)
-  return box
-}
-
-/** Eine Umbruchzeile innerhalb einer Geschwistergruppe (für die Bus-Linien beim Rendern). */
-interface SbRowGroup {
-  y: number
-  children: SbNode[]
-}
-
-/** Wie sbLayout, aber mit Zeilenumbruch statt einer einzigen breiten Reihe je Ebene. */
-function sbLayoutWrapped(
-  n: SbNode,
-  x: number,
-  y: number,
-  d: number,
-  maxW: number,
-  cache: Map<SbNode, SbBox>,
-  rowsOut: Map<string, SbRowGroup[]>
-): void {
-  const box = sbBoxWrapped(n, maxW, cache)
-  n.x = x + (box.width - SB_NW) / 2
-  n.y = y
-  n.d = d
-  const kids = n.children || []
-  if (!kids.length) return
-  const childBoxes = kids.map((c) => sbBoxWrapped(c, maxW, cache))
-  const rows: SbRowGroup[] = []
-  let rowY = y + SB_NH + SB_VG
-  box.rows.forEach((row) => {
-    let cx = x + (box.width - row.width) / 2
-    const rowChildren: SbNode[] = []
-    row.idxs.forEach((i) => {
-      const c = kids[i]
-      sbLayoutWrapped(c, cx, rowY, d + 1, maxW, cache, rowsOut)
-      rowChildren.push(c)
-      cx += childBoxes[i].width + SB_HG
-    })
-    rows.push({ y: rowY, children: rowChildren })
-    rowY += row.height + SB_ROW_GAP
-  })
-  rowsOut.set(n.id, rows)
-}
-
 export function StrukturBaum({
   doc, rows, isEditor, saveOrgChart,
 }: {
@@ -276,7 +168,7 @@ export function StrukturBaum({
     {} as Record<PlanId, Record<string, string>>
   )
   const [fullscreen, setFullscreen] = useState(false)
-  const [containerW, setContainerW] = useState(1100)
+  const [scale, setScale] = useState(1)
 
   const [dialog, setDialog] = useState<
     | { kind: "add-child"; parentId: string }
@@ -299,32 +191,12 @@ export function StrukturBaum({
   } | null>(null)
   const [dragTick, setDragTick] = useState(0) // erzwingt Re-Render während des Drags
 
-  // ---- Breite der sichtbaren Fläche beobachten (Grundlage für den Zeilenumbruch) ----
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width
-      if (w) setContainerW(w)
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  const CHART_PAD = 24
-  const maxRowW = Math.max(SB_NW, containerW - CHART_PAD)
-
   // ---- Layout (auf einer Render-Kopie, damit x/y/d nicht im Dokument landen) ----
-  // Zu breite Geschwistergruppen werden auf mehrere Zeilen umgebrochen (sbLayoutWrapped),
-  // statt wie sbLayout alles in eine einzige, immer breiter werdende Reihe zu setzen —
-  // dadurch bleibt der Baum in voller Knotengröße lesbar und ohne horizontale Scrollbar.
-  const { laidOutTree, rowsMap } = useMemo(() => {
+  const laidOutTree = useMemo(() => {
     const copy = deepClone(doc.tree)
-    const cache = new Map<SbNode, SbBox>()
-    const rowsOut = new Map<string, SbRowGroup[]>()
-    sbLayoutWrapped(copy, 0, 0, 0, maxRowW, cache, rowsOut)
-    return { laidOutTree: copy, rowsMap: rowsOut }
-  }, [doc.tree, maxRowW])
+    sbLayout(copy, 0, 0, 0)
+    return copy
+  }, [doc.tree])
 
   const nodes = useMemo(() => sbAll(laidOutTree), [laidOutTree])
   const nodeMap = useMemo(() => {
@@ -339,10 +211,26 @@ export function StrukturBaum({
   const merged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
   const promotionByName = useMemo(() => computePromotionProgress(merged), [merged])
 
-  const chartW = Math.max(...nodes.map((n) => (n.x ?? 0) + SB_NW)) + CHART_PAD
-  const chartH = Math.max(...nodes.map((n) => (n.y ?? 0) + SB_NH)) + CHART_PAD
+  const chartW = Math.max(...nodes.map((n) => (n.x ?? 0) + SB_NW)) + 70
+  const chartH = Math.max(...nodes.map((n) => (n.y ?? 0) + SB_NH)) + 70
 
   const selected = selectedId ? nodeMap[selectedId] : null
+
+  // ---- Auto-Fit-Skalierung (Baum passt komplett in die sichtbare Fläche) ----
+  useEffect(() => {
+    function applyFit() {
+      const scrollEl = scrollRef.current
+      if (!scrollEl || !chartW || !chartH) return
+      const availW = Math.max(100, scrollEl.clientWidth - 100)
+      const availH = Math.max(100, scrollEl.clientHeight - 100)
+      let s = Math.min(1, availW / chartW, availH / chartH)
+      s = Math.max(s, 0.4)
+      setScale(s)
+    }
+    applyFit()
+    window.addEventListener("resize", applyFit)
+    return () => window.removeEventListener("resize", applyFit)
+  }, [chartW, chartH])
 
   // ---- Fullscreen ----
   useEffect(() => {
@@ -595,41 +483,22 @@ export function StrukturBaum({
   }
 
   // ---- SVG-Linien ----
-  // Je Ebene ein durchgehender "Stamm" von der Führungskraft nach unten, der an
-  // jeder Umbruchzeile einen Quersteg zu deren Kindern abzweigt (siehe sbLayoutWrapped).
-  // Bei genau einer Zeile (der Normalfall) entspricht das exakt dem alten Layout.
-  // Der Sprung zur nächsten Umbruchzeile (gleiche Ebene, nur wegen Platzmangel
-  // umgebrochen) wird gestrichelt gezeichnet — sonst sähe eine umgebrochene
-  // Zeile wie ein direktes Kind der Zeile darüber aus, obwohl beide echte
-  // Geschwister derselben Führungskraft sind.
   const svgMarkup = useMemo(() => {
     let s = ""
-    const LC = "#c2cce0", LW = 2
-    const LC_WRAP = "#b7c3de", LW_WRAP = 1.5
-    const line = (x1: number, y1: number, x2: number, y2: number, wrapped: boolean) =>
-      wrapped
-        ? `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${LC_WRAP}" stroke-width="${LW_WRAP}" stroke-dasharray="5 5" stroke-linecap="round"/>`
-        : sbLine(x1, y1, x2, y2, LC, LW)
     nodes.forEach((n) => {
-      const nodeRows = rowsMap.get(n.id)
-      if (!nodeRows || !nodeRows.length) return
-      const px = (n.x ?? 0) + SB_NW / 2
-      let prevBottom = (n.y ?? 0) + SB_NH
-      nodeRows.forEach((row, i) => {
-        const wrapped = i > 0
-        const my = (prevBottom + row.y) / 2
-        s += line(px, prevBottom, px, my, wrapped)
-        if (row.children.length === 1) {
-          const c = row.children[0], cx = (c.x ?? 0) + SB_NW / 2
-          if (Math.abs(cx - px) > 1) s += line(px, my, cx, my, wrapped)
-          s += line(cx, my, cx, c.y ?? 0, wrapped)
-        } else {
-          const lx = (row.children[0].x ?? 0) + SB_NW / 2, rx = (row.children[row.children.length - 1].x ?? 0) + SB_NW / 2
-          s += line(lx, my, rx, my, wrapped)
-          row.children.forEach((c) => { const cx = (c.x ?? 0) + SB_NW / 2; s += line(cx, my, cx, c.y ?? 0, wrapped) })
-        }
-        prevBottom = row.y + SB_NH
-      })
+      if (!n.children || !n.children.length) return
+      const px = (n.x ?? 0) + SB_NW / 2, py = (n.y ?? 0) + SB_NH, my = py + SB_VG / 2
+      const LC = "#c2cce0", LW = 2
+      s += sbLine(px, py, px, my, LC, LW)
+      if (n.children.length === 1) {
+        const c = n.children[0], cx = (c.x ?? 0) + SB_NW / 2
+        if (Math.abs(cx - px) > 1) s += sbLine(px, my, cx, my, LC, LW)
+        s += sbLine(cx, my, cx, c.y ?? 0, LC, LW)
+      } else {
+        const lx = (n.children[0].x ?? 0) + SB_NW / 2, rx = (n.children[n.children.length - 1].x ?? 0) + SB_NW / 2
+        s += sbLine(lx, my, rx, my, LC, LW)
+        n.children.forEach((c) => { const cx = (c.x ?? 0) + SB_NW / 2; s += sbLine(cx, my, cx, c.y ?? 0, LC, LW) })
+      }
     })
     ;doc.conns.forEach((c) => {
       const a = nodeMap[c.from], b = nodeMap[c.to]
@@ -647,7 +516,7 @@ export function StrukturBaum({
     // dragTick sorgt für Re-Render bei jedem Pointer-Move (Ghost/Hover-Status),
     // ohne dass die SVG-Linien selbst vom Drag abhängen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, rowsMap, doc.conns, nodeMap])
+  }, [nodes, doc.conns, nodeMap])
 
   const totalPeople = nodes.length
   const totalNotes = Object.values(doc.notes).reduce((s, a) => s + a.length, 0)
@@ -716,20 +585,21 @@ export function StrukturBaum({
         </div>
       )}
 
-      <div ref={scrollRef} className="relative h-[75vh] min-h-[520px] overflow-auto rounded-lg border bg-muted/20">
-        <div
-          ref={chartRef}
-          className="relative"
-          style={{ width: chartW, height: chartH }}
-        >
-          <svg
-            width={chartW}
-            height={chartH}
-            viewBox={`0 0 ${chartW} ${chartH}`}
-            className="absolute inset-0"
-            dangerouslySetInnerHTML={{ __html: svgMarkup }}
-          />
-          {nodes.map((n) => {
+      <div ref={scrollRef} className="relative h-[600px] overflow-auto rounded-lg border bg-muted/20">
+        <div style={{ width: chartW * scale, height: chartH * scale }}>
+          <div
+            ref={chartRef}
+            className="relative origin-top-left"
+            style={{ width: chartW, height: chartH, transform: `scale(${scale})` }}
+          >
+            <svg
+              width={chartW}
+              height={chartH}
+              viewBox={`0 0 ${chartW} ${chartH}`}
+              className="absolute inset-0"
+              dangerouslySetInnerHTML={{ __html: svgMarkup }}
+            />
+            {nodes.map((n) => {
               const colorDef = n.color ? SB_COLORS.find((c) => c.key === n.color) : null
               const colorDef2 = n.color2 ? SB_COLORS.find((c) => c.key === n.color2) : null
               const nodeBackground =
@@ -797,6 +667,7 @@ export function StrukturBaum({
                 </div>
               )
             })}
+          </div>
         </div>
       </div>
 
