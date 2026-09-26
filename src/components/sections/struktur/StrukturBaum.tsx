@@ -170,6 +170,44 @@ export function StrukturBaum({
   const [fullscreen, setFullscreen] = useState(false)
   const [scale, setScale] = useState(1)
 
+  // ---- Ein-/ausklappbare Äste ----
+  // Ohne das würde ein großes Team den Baum so breit/hoch machen, dass er kaum
+  // noch lesbar herunterskaliert werden müsste. Deshalb starten alle Äste außer
+  // dem Wurzelknoten eingeklappt ("nur Führungskraft sichtbar") — ein Klick auf
+  // eine Person zeigt ihr Team, darunterliegende Äste starten dabei ebenfalls
+  // eingeklappt. Rein clientseitiger Anzeigezustand, wird nicht gespeichert.
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => {
+    const s = new Set<string>()
+    function walk(n: SbNode, isRoot: boolean) {
+      if (!isRoot && n.children && n.children.length) s.add(n.id)
+      ;(n.children || []).forEach((c) => walk(c, false))
+    }
+    walk(doc.tree, true)
+    return s
+  })
+  function toggleCollapse(id: string) {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  // Kind-/Nachfahrenzahl je Knoten aus dem unveränderten Baum (für den Klapp-
+  // Button — laidOutTree hat bei eingeklappten Knoten ja keine Kinder mehr).
+  const treeInfo = useMemo(() => {
+    const m = new Map<string, { childCount: number; descendantCount: number }>()
+    function walk(n: SbNode): number {
+      const kids = n.children || []
+      let total = 0
+      kids.forEach((c) => { total += 1 + walk(c) })
+      m.set(n.id, { childCount: kids.length, descendantCount: total })
+      return total
+    }
+    walk(doc.tree)
+    return m
+  }, [doc.tree])
+
   const [dialog, setDialog] = useState<
     | { kind: "add-child"; parentId: string }
     | { kind: "add-conn"; from: string; to: string }
@@ -192,11 +230,19 @@ export function StrukturBaum({
   const [dragTick, setDragTick] = useState(0) // erzwingt Re-Render während des Drags
 
   // ---- Layout (auf einer Render-Kopie, damit x/y/d nicht im Dokument landen) ----
+  // Eingeklappte Knoten verlieren hier ihre Kinder (nur für die Anzeige/das
+  // Layout — doc.tree selbst bleibt unangetastet), damit sbLayout nur die
+  // sichtbaren Knoten vermisst und der Baum entsprechend schmal/klein bleibt.
   const laidOutTree = useMemo(() => {
     const copy = deepClone(doc.tree)
+    function prune(n: SbNode) {
+      if (collapsedIds.has(n.id)) n.children = []
+      else (n.children || []).forEach(prune)
+    }
+    prune(copy)
     sbLayout(copy, 0, 0, 0)
     return copy
-  }, [doc.tree])
+  }, [doc.tree, collapsedIds])
 
   const nodes = useMemo(() => sbAll(laidOutTree), [laidOutTree])
   const nodeMap = useMemo(() => {
@@ -518,7 +564,7 @@ export function StrukturBaum({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, doc.conns, nodeMap])
 
-  const totalPeople = nodes.length
+  const totalPeople = (treeInfo.get(doc.tree.id)?.descendantCount ?? 0) + 1
   const totalNotes = Object.values(doc.notes).reduce((s, a) => s + a.length, 0)
   const drag = dragRef.current
   void dragTick
@@ -574,6 +620,7 @@ export function StrukturBaum({
       {!fullscreen && (
         <p className="text-xs text-muted-foreground">
           Klicke auf eine Person für Details &amp; Notizen. Ziehe eine Person auf eine andere, um sie dort einzugliedern.
+          Der Pfeil oben links an einer Person klappt ihr Team ein bzw. aus.
         </p>
       )}
 
@@ -612,6 +659,8 @@ export function StrukturBaum({
               const isDragging = drag?.active && drag.nodeId === n.id
               const noteCount = (doc.notes[n.id] || []).length
               const promotion = promotionByName.get(n.name)
+              const info = treeInfo.get(n.id)
+              const isCollapsed = collapsedIds.has(n.id)
               return (
                 <div
                   key={n.id}
@@ -662,6 +711,21 @@ export function StrukturBaum({
                       aria-label={`Person unter ${n.name} hinzufügen`}
                     >
                       +
+                    </button>
+                  )}
+                  {!!info?.childCount && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggleCollapse(n.id) }}
+                      className="absolute -left-2 -top-2 flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full border bg-background px-1 text-[10px] font-bold text-foreground shadow-sm hover:bg-muted"
+                      title={
+                        isCollapsed
+                          ? `Team einblenden (${info.descendantCount} ${info.descendantCount === 1 ? "Person" : "Personen"})`
+                          : "Team ausblenden"
+                      }
+                      aria-label={isCollapsed ? `Team von ${n.name} einblenden` : `Team von ${n.name} ausblenden`}
+                    >
+                      {isCollapsed ? <>▸{info.descendantCount}</> : "▾"}
                     </button>
                   )}
                 </div>
