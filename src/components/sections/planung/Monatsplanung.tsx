@@ -143,7 +143,7 @@ export function Monatsplanung({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiTile label="ATG Gesamt" value={fmt(total.atg)} sub="Monat kumuliert" />
-        <KpiTile label="AT" value={`${fmt(total.analysen)}/${fmt(total.analysenZ)}`} sub="Ist / Soll" />
+        <KpiTile label="AT" value={`${fmt(total.analysenZ)}/${fmt(total.analysen)}`} sub="Soll / Ist" />
         <KpiTile label="AT-Quote" value={`${quotePct(total.analysen, total.analysenZ)}%`} sub="Erschienen von ausgemacht" />
         <KpiTile label="Einheiten gemacht" value={fmt(total.ehGemacht)} sub={`${fmt(total.ehOffen)} EH offen`} />
       </div>
