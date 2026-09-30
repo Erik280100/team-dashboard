@@ -115,6 +115,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
           const data = snap.data() as Partial<PlanWeekDoc>
           const next: PlanWeekDoc = { week: activeWeek, entries: data.entries ?? {} }
           setWeekDoc(next)
+          cacheRef.current.set(activeWeek, next) // Monats-/Jahresansicht nicht veraltet lassen
           try { localStorage.setItem(planWeekStorageKey(activeWeek), JSON.stringify(next)) } catch { /* noop */ }
         }
         // Kein setDoc bei fehlendem Dokument — eine leere Woche ist der Normalfall
@@ -155,7 +156,10 @@ export function usePlanungDoc(): UsePlanungDocResult {
     if (cached) return cached
 
     // Die aktuell live gesyncte Woche ist bereits im State — direkt übernehmen.
-    if (week === activeWeek) {
+    // Nur wenn das State-Dokument wirklich zu dieser Woche gehört: direkt nach
+    // einem Wochenwechsel hält es noch die Vorwoche (Effekt lädt erst danach) —
+    // das würde sonst unter dem falschen Schlüssel gecacht und doppelt zählen.
+    if (week === activeWeek && latestWeekDoc.current.week === week) {
       cacheRef.current.set(week, latestWeekDoc.current)
       return latestWeekDoc.current
     }
