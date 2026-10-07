@@ -6,7 +6,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import type { TeamGoal } from "@/lib/calc/format"
 import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { PlanTeamGroup } from "@/lib/calc/planung"
@@ -28,13 +27,12 @@ const PILL_INACTIVE = "border-border bg-card text-muted-foreground hover:border-
 const PILL_BASE = "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
 
 export function Planung({
-  roster, orgTree, planung, isEditor, teamGoal,
+  roster, orgTree, planung, isEditor,
 }: {
   roster: RosterEntry[]
   orgTree: SbNode
   planung: UsePlanungDocResult
   isEditor: boolean
-  teamGoal: Pick<TeamGoal, "periodStart" | "periodEnd">
 }) {
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
   const [managerFilter, setManagerFilter] = useState<string | null>(null)
