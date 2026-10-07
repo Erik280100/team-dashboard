@@ -241,7 +241,7 @@ export interface RevenueShareRow {
 
 export function revenueShareData(rows: EmployeeRow[]): RevenueShareRow[] {
   const contributors = rows.filter((r) => Number(r.ist || 0) > 0)
-  const shareRows = (contributors.length ? contributors : [...rows]).sort(
+  const shareRows = contributors.sort(
     (a, b) => Number(b.ist || 0) - Number(a.ist || 0)
   )
   const shareTotal = shareRows.reduce((s, r) => s + Number(r.ist || 0), 0)
