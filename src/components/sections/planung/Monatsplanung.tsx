@@ -11,7 +11,8 @@ import {
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
-import type { PlanMonthNotesEntry } from "@/types/dashboard"
+import { readPlanUnits, sumPlanUnits } from "@/lib/calc/verguetung"
+import type { EmployeeRow, PlanMonthNotesEntry } from "@/types/dashboard"
 
 const NOTE_FIELDS: { key: keyof PlanMonthNotesEntry; label: string }[] = [
   { key: "at", label: "AT" },
@@ -79,8 +80,12 @@ function KpiTile({ label, value, sub }: { label: string; value: string; sub: str
 }
 
 export function Monatsplanung({
-  people, planung, isEditor, teamGroups,
+  people, planung, isEditor, teamGroups, rows: employeeRows, unitsMonthKey,
 }: {
+  /** Mitarbeiterseite (dashboard.rows): dort werden ALLE Einheiten erfasst. */
+  rows: EmployeeRow[]
+  /** Umsatzmonat ("YYYY-MM"), auf den sich die Einheiten in rows beziehen. */
+  unitsMonthKey: string
   people: RosterEntry[]
   planung: UsePlanungDocResult
   isEditor: boolean
@@ -108,20 +113,46 @@ export function Monatsplanung({
   const loaded = weekDocs.filter((d) => d !== null)
   const loading = loaded.length < weeks.length
 
+  // Einheiten gemacht: für den laufenden Umsatzmonat kommt die Zahl von der
+  // Mitarbeiterseite (dort werden alle Einheiten gebucht), nicht aus den nur
+  // sporadisch gepflegten Wochenplänen. Andere Monate: weiter Wochenplan-Summe.
+  const unitsByName = useMemo(() => {
+    if (monthKey !== unitsMonthKey) return null
+    const m = new Map<string, number>()
+    employeeRows.forEach((r) => m.set(r.name, sumPlanUnits(readPlanUnits(r))))
+    return m
+  }, [monthKey, unitsMonthKey, employeeRows])
+
   const byName = useMemo(
-    () => aggregateByName(loaded, people.map((p) => p.name)),
+    () => {
+      const agg = aggregateByName(loaded, people.map((p) => p.name))
+      if (unitsByName) {
+        agg.forEach((e, name) => agg.set(name, { ...e, ehGemacht: unitsByName.get(name) ?? 0 }))
+      }
+      return agg
+    },
     // loaded ist ein neues Array je Render (planung.getWeek liest aus einem Ref-
     // Cache) — über weeks/loading/people gated, damit hier nicht bei jedem
     // Render neu aggregiert wird, sondern erst wenn sich echt etwas ändert.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weeks, loading, people]
+    [weeks, loading, people, unitsByName]
   )
   const total = useMemo(() => sumWeekEntries([...byName.values()]), [byName])
 
   const byGroup = useMemo(
-    () => (teamGroups && teamGroups.length > 0 ? aggregateByGroup(loaded, teamGroups) : null),
+    () => {
+      if (!teamGroups || teamGroups.length === 0) return null
+      const agg = aggregateByGroup(loaded, teamGroups)
+      if (unitsByName) {
+        teamGroups.forEach((g) => {
+          const e = agg.get(g.name)
+          if (e) agg.set(g.name, { ...e, ehGemacht: g.names.reduce((s, n) => s + (unitsByName.get(n) ?? 0), 0) })
+        })
+      }
+      return agg
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weeks, loading, teamGroups]
+    [weeks, loading, teamGroups, unitsByName]
   )
   const rows: { key: string; label: string; sub: string; data: ReturnType<typeof sumWeekEntries> }[] = byGroup
     ? teamGroups!.map((g) => ({ key: g.name, label: g.name, sub: `${g.role} · Team gesamt (${g.names.length})`, data: byGroup.get(g.name) ?? sumWeekEntries([]) }))

@@ -10,6 +10,7 @@ import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, ty
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { PlanTeamGroup } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import type { EmployeeRow } from "@/types/dashboard"
 import { Wochenplanung } from "@/components/sections/planung/Wochenplanung"
 import { Monatsplanung } from "@/components/sections/planung/Monatsplanung"
 import { Jahresplanung } from "@/components/sections/planung/Jahresplanung"
@@ -27,8 +28,10 @@ const PILL_INACTIVE = "border-border bg-card text-muted-foreground hover:border-
 const PILL_BASE = "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
 
 export function Planung({
-  roster, orgTree, planung, isEditor,
+  roster, orgTree, planung, isEditor, rows, unitsMonthKey,
 }: {
+  rows: EmployeeRow[]
+  unitsMonthKey: string
   roster: RosterEntry[]
   orgTree: SbNode
   planung: UsePlanungDocResult
@@ -158,6 +161,8 @@ export function Planung({
       {ebene === "monat" && (
         <Monatsplanung
           key={selectedManager}
+          rows={rows}
+          unitsMonthKey={unitsMonthKey}
           people={filteredPeople}
           planung={planung}
           isEditor={isEditor}
