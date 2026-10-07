@@ -3,11 +3,11 @@
 // Sublabels/Reihenfolge), umgesetzt mit Card/Input statt eigener CSS-Klassen.
 // Zahlenfelder nach dem NumField-Muster aus Team.tsx:21-46 (onBlur-Commit,
 // key-Reset gegen State-Rückschreiben während der Eingabe).
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { fmt, initials, type TeamGoal } from "@/lib/calc/format"
-import { aggregateByGroup, periodWeekKeys, sumWeekEntries, weekLabel, shiftWeek, type PlanTeamGroup } from "@/lib/calc/planung"
+import { fmt, initials } from "@/lib/calc/format"
+import { aggregateByGroup, sumWeekEntries, weekLabel, shiftWeek, type PlanTeamGroup } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekEntry } from "@/types/dashboard"
@@ -164,13 +164,12 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
 }
 
 export function Wochenplanung({
-  people, managerName, planung, isEditor, teamGoal, teamGroups,
+  people, managerName, planung, isEditor, teamGroups,
 }: {
   people: RosterEntry[]
   managerName: string | null
   planung: UsePlanungDocResult
   isEditor: boolean
-  teamGoal: Pick<TeamGoal, "periodStart" | "periodEnd">
   teamGroups?: PlanTeamGroup[] | null
 }) {
   const { activeWeek, setActiveWeek, weekDoc, saveWeekEntry } = planung
@@ -178,27 +177,6 @@ export function Wochenplanung({
     () => sumWeekEntries(people.map((p) => weekDoc.entries[p.name]).filter((e): e is PlanWeekEntry => !!e)),
     [people, weekDoc]
   )
-
-  // Nur Wochen des aktuell eingestellten Umsatzmonats (periodStart..periodEnd,
-  // Dashboard-Definition — kein Kalendermonat) sind zur Wochenplanung
-  // freigeschaltet. Liegt die aktive Woche außerhalb (z.B. weil sie noch auf
-  // der echten Kalenderwoche von heute steht), auf die erste erlaubte Woche
-  // springen.
-  const allowedWeeks = useMemo(
-    () => periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd),
-    [teamGoal.periodStart, teamGoal.periodEnd]
-  )
-  const firstAllowed = allowedWeeks[0]
-  const lastAllowed = allowedWeeks[allowedWeeks.length - 1]
-  useEffect(() => {
-    if (!firstAllowed) return
-    if (!allowedWeeks.includes(activeWeek)) {
-      setActiveWeek(activeWeek < firstAllowed ? firstAllowed : lastAllowed)
-    }
-  }, [allowedWeeks, activeWeek, firstAllowed, lastAllowed, setActiveWeek])
-
-  const canGoPrev = !!firstAllowed && activeWeek > firstAllowed
-  const canGoNext = !!lastAllowed && activeWeek < lastAllowed
 
   const groupEntries = useMemo(
     () => (teamGroups && teamGroups.length > 0 ? aggregateByGroup([weekDoc], teamGroups) : null),
@@ -208,14 +186,14 @@ export function Wochenplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="icon" disabled={!canGoPrev} onClick={() => setActiveWeek(shiftWeek(activeWeek, -1))} aria-label="Vorwoche">
+        <Button type="button" variant="outline" size="icon" onClick={() => setActiveWeek(shiftWeek(activeWeek, -1))} aria-label="Vorwoche">
           ‹
         </Button>
         <div className="text-sm font-medium">{weekLabel(activeWeek)}</div>
-        <Button type="button" variant="outline" size="icon" disabled={!canGoNext} onClick={() => setActiveWeek(shiftWeek(activeWeek, 1))} aria-label="Nächste Woche">
+        <Button type="button" variant="outline" size="icon" onClick={() => setActiveWeek(shiftWeek(activeWeek, 1))} aria-label="Nächste Woche">
           ›
         </Button>
-        <span className="text-xs text-muted-foreground">Nur Wochen des laufenden Umsatzmonats wählbar · Bitte bis Montag 10:00 Uhr abgeben</span>
+        <span className="text-xs text-muted-foreground">Bitte bis Montag 10:00 Uhr abgeben</span>
         <span className="ml-auto text-xs text-muted-foreground">
           Σ Einheiten gemacht {totals.ehGemacht} · Verträge {totals.vertraege}
         </span>
