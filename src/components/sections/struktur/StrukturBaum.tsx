@@ -193,15 +193,27 @@ export function StrukturBaum({
     return !!treeInfo.get(n.id)?.hasLeadDescendant
   }
   function isCollapsed(n: SbNode): boolean {
-    if (!isExpandable(n)) return true
+    // Trainee-Äste ohne Führungskraft darunter haben keinen eigenen Button —
+    // sie sind immer offen (erreicht prune sie, ist die übergeordnete FK offen),
+    // damit auch direkte und indirekte Trainees sichtbar sind.
+    if (!isExpandable(n)) return false
     const defaultCollapsed = n.id !== doc.tree.id
     return toggledIds.has(n.id) ? !defaultCollapsed : defaultCollapsed
   }
   function toggleCollapse(id: string) {
+    const target = sbFind(doc.tree, id)
+    const wasCollapsed = target ? isCollapsed(target) : false
     setToggledIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      // Beim Aufklappen auch alle direkten Führungskräfte darunter aufklappen
+      // (Standard = eingeklappt, also "getoggelt" = aufgeklappt).
+      if (wasCollapsed && target) {
+        ;(target.children || []).forEach((c) => {
+          if (isLeadRole(c.role || "") && c.id !== doc.tree.id) next.add(c.id)
+        })
+      }
       return next
     })
   }
@@ -638,7 +650,7 @@ export function StrukturBaum({
       {!fullscreen && (
         <p className="text-xs text-muted-foreground">
           Klicke auf eine Person für Details &amp; Notizen. Ziehe eine Person auf eine andere, um sie dort einzugliedern.
-          Der Pfeil oben links an Teamleitern/Geschäftsstellenleitern klappt ihr Team ein bzw. aus (Trainee-Teams sind in dieser Zahl mitgezählt, aber nicht extra aufklappbar).
+          Der Pfeil oben links an Teamleitern/Geschäftsstellenleitern klappt ihr Team ein bzw. aus (Beim Aufklappen werden direkte Führungskräfte mit aufgeklappt, Trainees samt ihren Trainees sind sofort sichtbar).
         </p>
       )}
 
