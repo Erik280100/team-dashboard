@@ -239,3 +239,144 @@
   font-size: 12.5px;
   border-radius: 8px;
 }
+
+/* Karriere-Kacheln (Stufen-Karten) — Basis aus legacy/index.html:1167-1189, hier um
+   Tarif (groß) und Kriterien-Chips erweitert (siehe enhanceStages() in Karriere.tsx). */
+.career-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.career-stage {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #16323f 0%, #0b1f2a 100%);
+  border-radius: 16px;
+  padding: 18px 20px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.career-stage:hover {
+  transform: translateY(-2px);
+  border-color: rgba(100, 221, 163, 0.35);
+}
+.career-stage .stage-label {
+  align-self: flex-start;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mint);
+  background: rgba(100, 221, 163, 0.12);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.career-stage.is-fuehrung .stage-label {
+  color: var(--amber);
+  background: rgba(231, 169, 76, 0.14);
+}
+.career-stage.is-start .stage-label {
+  color: #9fc3d0;
+  background: rgba(159, 195, 208, 0.14);
+}
+.career-stage .stage-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.career-stage .stage-desc {
+  font-size: 12.5px;
+  color: #b9c7c4;
+}
+.career-stage .stage-rate {
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--mint);
+  margin-bottom: 12px;
+}
+.career-stage.is-fuehrung .stage-rate {
+  color: var(--amber);
+}
+.career-stage .stage-rate small {
+  font-size: 12px;
+  font-weight: 600;
+  color: #b9c7c4;
+  margin-left: 4px;
+}
+.career-stage .stage-crit {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.career-stage .stage-chip {
+  position: relative;
+  padding: 6px 10px 6px 28px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #dbe7e4;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+}
+.career-stage .stage-chip::before {
+  content: "✓";
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  font-weight: 800;
+  color: var(--mint);
+}
+.career-stage.is-fuehrung .stage-chip::before {
+  color: var(--amber);
+}
+.career-plan .career-sub {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--brand-grey-light);
+}
+@media (max-width: 600px) {
+  .career-plan table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Rahmenbedingungen & Hinweise als Kacheln statt Fließliste */
+.career-tiles ul {
+  list-style: none;
+  padding-left: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+.career-tiles ul li {
+  margin: 0;
+  padding: 12px 14px 12px 38px;
+  position: relative;
+  border: 1px solid var(--border, #e2e8e6);
+  border-radius: 12px;
+  background: rgba(100, 221, 163, 0.07);
+  line-height: 1.45;
+}
+.career-tiles ul li::before {
+  content: "i";
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  font-style: italic;
+}
