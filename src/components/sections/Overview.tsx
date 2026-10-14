@@ -5,12 +5,12 @@
 // nicht nur die Chart-Panels.
 import "@/lib/chartSetup"
 import { useEffect, useState, type ChangeEvent } from "react"
-import { Bar, Doughnut, Line } from "react-chartjs-2"
+import { Doughnut, Line } from "react-chartjs-2"
 import { Users, Landmark, Building2, Shield, TrendingUp, Wallet } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
-import { fmt } from "@/lib/calc/format"
+import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_TICK } from "@/lib/chartSetup"
+import { fmt as fmtDecimal } from "@/lib/calc/format"
 import { readPlanUnits } from "@/lib/calc/verguetung"
 import { monthKeyOf } from "@/lib/calc/archive"
 import type { ArchiveIndexEntry } from "@/types/archive"
@@ -23,6 +23,11 @@ import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekDoc } from "@/types/dashboard"
 import type { EmployeeRow, HistoryEntry, TeamGoal } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
+
+/** Auf dem Dashboard nur ganze Zahlen. */
+function fmt(n: number | undefined | null): string {
+  return fmtDecimal(Math.round(Number(n) || 0))
+}
 
 function fmtEur(n: number): string {
   return Number(n || 0).toLocaleString("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
@@ -404,40 +409,26 @@ export function Overview({
       </div>
 
       {/* Jahreswerte je Sparte */}
-      <Card className={DARK_CARD}>
-        <DarkCardHeader
-          title={`Jahreswerte ${yearly.year}`}
-          sub={`Einheiten je Monat · Insurance ${fmt(yearly.totals.insurance)} · Invest ${fmt(yearly.totals.invest)} · Credit ${fmt(yearly.totals.credit)}`}
-        />
-        <CardContent>
-          <div className="h-[280px]">
-            <Bar
-              data={{
-                labels: MONTH_LABELS,
-                datasets: [
-                  { label: "Insurance", data: yearly.months.map((m) => m.insurance), backgroundColor: "#64DDA3", borderRadius: 4 },
-                  { label: "Invest", data: yearly.months.map((m) => m.invest), backgroundColor: "#E7A94C", borderRadius: 4 },
-                  { label: "Credit", data: yearly.months.map((m) => m.credit), backgroundColor: "#5B7C8A", borderRadius: 4 },
-                ],
-              }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: DARK_LEGEND },
-                scales: {
-                  x: { stacked: true, grid: { display: false }, ticks: DARK_TICK },
-                  y: { stacked: true, beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
-                },
-              }}
-              aria-label={
-                `Jahreswerte ${yearly.year} in Einheiten: Insurance ${fmt(yearly.totals.insurance)}, ` +
-                `Invest ${fmt(yearly.totals.invest)}, Credit ${fmt(yearly.totals.credit)}`
-              }
-              role="img"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { label: "Insurance", icon: Shield, units: yearly.totals.insurance },
+          { label: "Invest", icon: TrendingUp, units: yearly.totals.invest },
+          { label: "Credit", icon: Wallet, units: yearly.totals.credit },
+        ].map((s) => (
+          <Card key={s.label} className={DARK_CARD}>
+            <CardContent className="flex items-center gap-4">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
+                <s.icon className="size-4 text-[#64DDA3]" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">{s.label} {yearly.year}</div>
+                <div className="text-2xl font-extrabold">{fmt(s.units)}/{fmt(yearly.total)}</div>
+                <div className="text-xs text-white/50">Einheiten im Jahr</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }
@@ -474,5 +465,5 @@ function yearlyPlanData(rows: EmployeeRow[], teamGoal: TeamGoal, archiveIndex: A
     (a, m) => ({ insurance: a.insurance + m.insurance, invest: a.invest + m.invest, credit: a.credit + m.credit }),
     { insurance: 0, invest: 0, credit: 0 }
   )
-  return { year, months, totals }
+  return { year, months, totals, total: totals.insurance + totals.invest + totals.credit }
 }
