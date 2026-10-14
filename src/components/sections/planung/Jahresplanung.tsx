@@ -7,9 +7,10 @@ import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { fmt } from "@/lib/calc/format"
 import {
-  QUARTER_LIST, Q_MONTHS, emptyWeekEntry, monthWeekKeys, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
+  QUARTER_LIST, Q_MONTHS, emptyWeekEntry, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
+import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import { readPlanUnits, sumPlanUnits } from "@/lib/calc/verguetung"
 import {
@@ -45,8 +46,9 @@ function barColor(pct: number): string {
 }
 
 export function Jahresplanung({
-  managerName, people, planung, isEditor, teamGroups, rows, unitsMonthKey,
+  managerName, people, planung, isEditor, teamGroups, rows, unitsMonthKey, archive,
 }: {
+  archive: UseMonthArchiveResult
   /** Mitarbeiterseite (dashboard.rows): dort werden ALLE Einheiten erfasst. */
   rows: EmployeeRow[]
   /** Umsatzmonat ("YYYY-MM"), auf den sich die Einheiten in rows beziehen. */
@@ -78,21 +80,37 @@ export function Jahresplanung({
   const weekDocs = weeks.map((w) => ({ key: w, doc: planung.getWeek(w) }))
   const loading = weekDocs.some((w) => w.doc === null)
 
-  // Einheiten gemacht: für den laufenden Umsatzmonat kommt die Zahl von der
-  // Mitarbeiterseite (wie in der Monatsplanung), nicht aus den Wochenplänen.
-  // Deren EH in den Monatswochen werden ausgeblendet und durch den Wert aus
-  // rows ersetzt. Andere Monate: weiter Wochenplan-Summe.
-  const unitsOverride = useMemo(() => {
-    if (!unitsMonthKey.startsWith(`${year}-`)) return null
-    const byName = new Map<string, number>()
-    rows.forEach((r) => byName.set(r.name, sumPlanUnits(readPlanUnits(r))))
-    const month = Number(unitsMonthKey.slice(5, 7))
-    return { byName, weeks: new Set(monthWeekKeys(unitsMonthKey)), quarter: QUARTER_LIST[Math.floor((month - 1) / 3)] }
-  }, [year, unitsMonthKey, rows])
+  // Einheiten gemacht: nicht aus den (nur sporadisch gepflegten) Wochenplänen,
+  // sondern wie auf der Mitarbeiterseite/Statistik: abgeschlossene Monate des
+  // Jahres aus den Archiv-Snapshots, der laufende Umsatzmonat aus rows.
+  const yearMonths = useMemo(
+    () => archive.index.map((e) => e.month).filter((m) => m.startsWith(`${year}-`)),
+    [archive.index, year]
+  )
+  useEffect(() => {
+    if (yearMonths.length > 0) void archive.loadSnapshots(yearMonths)
+    // archive ist je Render ein neues Objekt — nur bei Monatswechsel nachladen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yearMonths])
 
-  const withUnits = (weekKey: string, entry: PlanWeekEntry): PlanWeekEntry =>
-    unitsOverride?.weeks.has(weekKey) ? { ...entry, ehGemacht: 0 } : entry
-  const unitEntry = (name: string): PlanWeekEntry => ({ ...emptyWeekEntry(), ehGemacht: unitsOverride?.byName.get(name) ?? 0 })
+  const unitSources = yearMonths.map((m) => ({ month: m, rows: archive.getSnapshot(m)?.rows ?? null }))
+  const unitsLoading = unitSources.some((s) => s.rows === null)
+  const unitEntries = useMemo(() => {
+    const out: { name: string; quarter: PlanQuarter; entry: PlanWeekEntry }[] = []
+    const add = (month: string, srcRows: EmployeeRow[]) => {
+      const quarter = QUARTER_LIST[Math.floor((Number(month.slice(5, 7)) - 1) / 3)]
+      srcRows.forEach((r) => {
+        out.push({ name: r.name, quarter, entry: { ...emptyWeekEntry(), ehGemacht: sumPlanUnits(readPlanUnits(r)) } })
+      })
+    }
+    unitSources.forEach((s) => { if (s.rows) add(s.month, s.rows) })
+    if (unitsMonthKey.startsWith(`${year}-`) && !yearMonths.includes(unitsMonthKey)) add(unitsMonthKey, rows)
+    return out
+    // unitSources wird aus yearMonths+Snapshot-Cache abgeleitet — über unitsLoading gated.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yearMonths, unitsLoading, unitsMonthKey, year, rows])
+
+  const zeroUnits = (entry: PlanWeekEntry): PlanWeekEntry => ({ ...entry, ehGemacht: 0 })
 
   const entriesFor = useMemo(() => {
     const byQuarter: Record<PlanQuarter, PlanWeekEntry[]> = { Q1: [], Q2: [], Q3: [], Q4: [] }
@@ -102,22 +120,20 @@ export function Jahresplanung({
       const q = weekToQuarter(key)
       Object.entries(doc.entries).forEach(([name, entry]) => {
         if (!names.has(name)) return
-        const e = withUnits(key, entry)
+        const e = zeroUnits(entry)
         all.push(e)
         byQuarter[q].push(e)
       })
     })
-    if (unitsOverride) {
-      names.forEach((name) => {
-        const e = unitEntry(name)
-        all.push(e)
-        byQuarter[unitsOverride.quarter].push(e)
-      })
-    }
+    unitEntries.forEach(({ name, quarter, entry }) => {
+      if (!names.has(name)) return
+      all.push(entry)
+      byQuarter[quarter].push(entry)
+    })
     return { all, byQuarter }
     // weekDocs wird aus weeks+loading-Zustand abgeleitet — über beide gated.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, loading, names, unitsOverride])
+  }, [weeks, loading, names, unitEntries])
 
   const yearActual = useMemo(() => sumWeekEntries(entriesFor.all), [entriesFor])
   const quarterActuals = useMemo(() => {
@@ -134,26 +150,23 @@ export function Jahresplanung({
     const byGroupEntries = new Map<string, PlanWeekEntry[]>(teamGroups.map((g) => [g.name, []]))
     const groupByName = new Map<string, string[]>()
     teamGroups.forEach((g) => { g.names.forEach((n) => groupByName.set(n, [...(groupByName.get(n) ?? []), g.name])) })
-    weekDocs.forEach(({ key, doc }) => {
+    weekDocs.forEach(({ doc }) => {
       if (!doc) return
       Object.entries(doc.entries).forEach(([name, entry]) => {
-        const e = withUnits(key, entry)
+        const e = zeroUnits(entry)
         groupByName.get(name)?.forEach((groupKey) => byGroupEntries.get(groupKey)!.push(e))
       })
     })
-    if (unitsOverride) {
-      groupByName.forEach((groupKeys, name) => {
-        const e = unitEntry(name)
-        groupKeys.forEach((groupKey) => byGroupEntries.get(groupKey)!.push(e))
-      })
-    }
+    unitEntries.forEach(({ name, entry }) => {
+      groupByName.get(name)?.forEach((groupKey) => byGroupEntries.get(groupKey)!.push(entry))
+    })
     const out = new Map<string, PlanWeekEntry>()
     teamGroups.forEach((g) => out.set(g.name, sumWeekEntries(byGroupEntries.get(g.name) ?? [])))
     return out
     // weekDocs wird aus weeks+loading-Zustand abgeleitet — über beide gated,
     // analog zu entriesFor oben.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, loading, teamGroups, unitsOverride])
+  }, [weeks, loading, teamGroups, unitEntries])
 
   // Änderungen werden beim Verlassen des Feldes direkt gespeichert.
   function commitTarget(key: PlanTargetKey, value: number) {
@@ -177,7 +190,7 @@ export function Jahresplanung({
         <Button type="button" variant="outline" size="icon" onClick={() => setYear((y) => y + 1)} aria-label="Folgejahr">
           ▶
         </Button>
-        {loading && <span className="text-xs text-muted-foreground">Lade Wochendaten…</span>}
+        {(loading || unitsLoading) && <span className="text-xs text-muted-foreground">Lade Wochendaten…</span>}
       </div>
 
       <section className="rounded-xl border bg-card p-5 shadow-sm">

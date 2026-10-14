@@ -341,6 +341,7 @@ function AppShell() {
                 <Planung
                   roster={roster}
                   orgTree={orgChart.tree}
+                  archive={archive}
                   planung={planung}
                   isEditor={auth.isEditor}
                   rows={planungRows}

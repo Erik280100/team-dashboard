@@ -10,6 +10,7 @@ import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, ty
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { PlanTeamGroup } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { EmployeeRow } from "@/types/dashboard"
 import { Wochenplanung } from "@/components/sections/planung/Wochenplanung"
 import { Monatsplanung } from "@/components/sections/planung/Monatsplanung"
@@ -28,8 +29,9 @@ const PILL_INACTIVE = "border-border bg-card text-muted-foreground hover:border-
 const PILL_BASE = "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
 
 export function Planung({
-  roster, orgTree, planung, isEditor, rows, unitsMonthKey,
+  roster, orgTree, planung, isEditor, rows, unitsMonthKey, archive,
 }: {
+  archive: UseMonthArchiveResult
   rows: EmployeeRow[]
   unitsMonthKey: string
   roster: RosterEntry[]
@@ -79,6 +81,16 @@ export function Planung({
   useEffect(() => {
     if (leadFrontier.length === 0) setGroupByLead(false)
   }, [leadFrontier])
+
+  // Jahresplanung gilt immer für das ganze Team: oberste Führungskraft aus dem
+  // Strukturbaum (Wurzel, sonst die höchste Führungsstufe) und alle Personen
+  // des Rosters — unabhängig von der gewählten Führungskraft-Pill.
+  const yearManager = managerOptions.some((m) => m.name === orgTree.name) ? orgTree.name : managerOptions[0]?.name ?? null
+  const yearLeadFrontier = useMemo(() => (yearManager ? sbLeadFrontier(orgTree, yearManager) : []), [yearManager, orgTree])
+  const yearTeamGroups: PlanTeamGroup[] = useMemo(
+    () => yearLeadFrontier.map((lead) => ({ name: lead.name, role: lead.role, names: [...sbSubtreeNames(orgTree, lead.name)] })),
+    [yearLeadFrontier, orgTree]
+  )
 
   if (managerOptions.length === 0) {
     return (
@@ -169,21 +181,22 @@ export function Planung({
           teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}
-      {ebene === "jahr" && selectedManager && (
+      {ebene === "jahr" && yearManager && (
         // people bewusst ungefiltert: Jahresplanung zeigt keine Einzelpersonen-
         // Liste, sondern nur Team-Gesamtziele — die Namenssuche würde hier sonst
         // unsichtbar nur die Summen verändern, ohne dass sich an der Anzeige
         // etwas zeigt. Nur die "Nach Führungskräften"-Tabelle (teamGroups) hat
         // sichtbare Zeilen, die gefiltert werden können.
         <Jahresplanung
-          key={selectedManager}
+          key={yearManager}
+          archive={archive}
           rows={rows}
           unitsMonthKey={unitsMonthKey}
-          managerName={selectedManager}
-          people={people}
+          managerName={yearManager}
+          people={roster}
           planung={planung}
           isEditor={isEditor}
-          teamGroups={groupByLead ? filteredTeamGroups : null}
+          teamGroups={yearTeamGroups.length > 0 ? yearTeamGroups : null}
         />
       )}
     </div>
