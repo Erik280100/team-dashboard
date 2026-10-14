@@ -5,7 +5,7 @@
 // nicht nur die Chart-Panels.
 import "@/lib/chartSetup"
 import { useEffect, useState, type ChangeEvent } from "react"
-import { Doughnut, Line } from "react-chartjs-2"
+import { Line, Pie } from "react-chartjs-2"
 import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,7 +15,7 @@ import { readPlanUnits } from "@/lib/calc/verguetung"
 import { monthKeyOf } from "@/lib/calc/archive"
 import type { ArchiveIndexEntry } from "@/types/archive"
 import {
-  doughnutData, goalProgress, leaderboardData,
+  goalProgress, leaderboardData,
   revenueShareData, summaryKpis, timelineData,
 } from "@/lib/calc/overview"
 import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
@@ -79,7 +79,6 @@ export function Overview({
   const kpis = summaryKpis(rows)
   const goal = goalProgress(rows)
   const timeline = timelineData(teamGoal, rows, history, now ?? new Date())
-  const doughnut = doughnutData(rows)
   const shares = revenueShareData(rows)
   const planTotals = rows.reduce(
     (acc, r) => {
@@ -303,48 +302,48 @@ export function Overview({
         </Card>
       </div>
 
-      {/* Team-Fortschritt / Umsatzanteil / Leaderboard */}
+      {/* Umsatzanteil / Top 10 Geschäftspartner / Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className={DARK_CARD}>
-          <DarkCardHeader title="Team-Fortschritt" sub="Ist / Team-Ziel, Einheiten" />
-          <CardContent className="flex flex-1 flex-col">
-            <div className="relative mx-auto aspect-square w-full max-w-[280px] flex-1">
-              <Doughnut
+          <DarkCardHeader title="Umsatzanteil" sub="Anteil je Mitarbeiter am Gesamtumsatz" />
+          <CardContent>
+            <div className="h-[220px]">
+              <Pie
                 data={{
-                  labels: ["Erreicht (Ist)", "Offen bis Ziel"],
+                  labels: shares.map((s) => s.name),
                   datasets: [{
-                    data: doughnut.hasData ? [doughnut.totalIst, doughnut.rest] : [1, 0],
-                    backgroundColor: doughnut.hasData
-                      ? ["#64DDA3", "rgba(255,255,255,.12)"]
-                      : ["rgba(255,255,255,.12)", "rgba(255,255,255,.12)"],
+                    data: shares.length ? shares.map((s) => s.value || 1) : [1],
+                    backgroundColor: shares.map((s) => s.color),
                     borderWidth: 0,
                   }],
                 }}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  cutout: "76%",
-                  plugins: { legend: { display: false } },
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label(item) {
+                          const s = shares[item.dataIndex]
+                          return `${s.name}: ${s.pct}%`
+                        },
+                      },
+                    },
+                  },
                 }}
-                aria-label={
-                  doughnut.hasData
-                    ? `Team-Fortschritt: ${fmt(doughnut.totalIst)} von ${fmt(doughnut.target)} Einheiten, ${doughnut.pct} Prozent erreicht.`
-                    : "Team-Fortschritt: kein Ziel gesetzt."
-                }
+                aria-label={"Umsatzanteil je Mitarbeiter: " + shares.map((s) => `${s.name} ${s.pct} Prozent`).join(", ")}
                 role="img"
               />
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <div className="text-3xl font-extrabold text-white">
-                  {doughnut.hasData ? `${doughnut.pct}%` : "—"}
-                </div>
-                <div className="mt-1 text-xs text-white/50">
-                  {doughnut.hasData ? `${fmt(doughnut.totalIst)} / ${fmt(doughnut.target)}` : "Kein Ziel gesetzt"}
-                </div>
-              </div>
             </div>
-            <div className="mt-4 flex justify-center gap-4 text-xs text-white/70">
-              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[#64DDA3]" />Erreicht (Ist)</span>
-              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-white/20" />Offen bis Ziel</span>
+            <div className="mt-3 flex flex-col gap-1.5">
+              {shares.map((s) => (
+                <div key={s.name} className="flex items-center gap-2 text-xs text-white/70">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
+                  <span className="flex-1 truncate">{s.name}</span>
+                  <span className="font-medium">{s.pct}%</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
