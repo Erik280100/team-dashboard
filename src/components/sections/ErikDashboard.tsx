@@ -169,7 +169,7 @@ export function ErikDashboard({
   const searchActive = searchTerm.length >= 2
   const visibleTodos = todos
     .filter((t) => !flaggedOnly || t.flagged)
-    .filter((t) => !searchActive || t.title.toLowerCase().includes(searchTerm) || t.description.toLowerCase().includes(searchTerm))
+    .filter((t) => !searchActive || (t.title ?? "").toLowerCase().includes(searchTerm) || (t.description ?? "").toLowerCase().includes(searchTerm))
 
   return (
     <div className="flex flex-col gap-4">
