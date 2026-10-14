@@ -82,16 +82,6 @@ export function Planung({
     if (leadFrontier.length === 0) setGroupByLead(false)
   }, [leadFrontier])
 
-  // Jahresplanung gilt immer für das ganze Team: oberste Führungskraft aus dem
-  // Strukturbaum (Wurzel, sonst die höchste Führungsstufe) und alle Personen
-  // des Rosters — unabhängig von der gewählten Führungskraft-Pill.
-  const yearManager = managerOptions.some((m) => m.name === orgTree.name) ? orgTree.name : managerOptions[0]?.name ?? null
-  const yearLeadFrontier = useMemo(() => (yearManager ? sbLeadFrontier(orgTree, yearManager) : []), [yearManager, orgTree])
-  const yearTeamGroups: PlanTeamGroup[] = useMemo(
-    () => yearLeadFrontier.map((lead) => ({ name: lead.name, role: lead.role, names: [...sbSubtreeNames(orgTree, lead.name)] })),
-    [yearLeadFrontier, orgTree]
-  )
-
   if (managerOptions.length === 0) {
     return (
       <div className="flex flex-col gap-4">
@@ -181,22 +171,22 @@ export function Planung({
           teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}
-      {ebene === "jahr" && yearManager && (
+      {ebene === "jahr" && selectedManager && (
         // people bewusst ungefiltert: Jahresplanung zeigt keine Einzelpersonen-
         // Liste, sondern nur Team-Gesamtziele — die Namenssuche würde hier sonst
         // unsichtbar nur die Summen verändern, ohne dass sich an der Anzeige
         // etwas zeigt. Nur die "Nach Führungskräften"-Tabelle (teamGroups) hat
         // sichtbare Zeilen, die gefiltert werden können.
         <Jahresplanung
-          key={yearManager}
+          key={selectedManager}
           archive={archive}
           rows={rows}
           unitsMonthKey={unitsMonthKey}
-          managerName={yearManager}
-          people={roster}
+          managerName={selectedManager}
+          people={people}
           planung={planung}
           isEditor={isEditor}
-          teamGroups={yearTeamGroups.length > 0 ? yearTeamGroups : null}
+          teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}
     </div>
