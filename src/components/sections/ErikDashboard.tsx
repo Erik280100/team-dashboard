@@ -120,7 +120,9 @@ export function ErikDashboard({
     function recompute() {
       const el = boardRef.current
       if (!el) return
-      const top = el.getBoundingClientRect().top
+      // Position unabhängig vom Scrollstand von <main> bestimmen (sonst schaukelt sich die Höhe beim Scrollen auf).
+      const main = el.closest("main")
+      const top = el.getBoundingClientRect().top + (main?.scrollTop ?? 0)
       // Math.floor + 2px Extra-Puffer: die gemessene top-Position ist subpixel-genau
       // (z. B. 156.8), ein einfaches Abrunden reicht daher nicht immer — ohne Puffer
       // ragt das Board 1px über die verfügbare Höhe hinaus und erzwingt eine
@@ -129,11 +131,21 @@ export function ErikDashboard({
     }
     recompute()
     const ro = new ResizeObserver(recompute)
+    // Banner/Topbar über dem Board erscheinen oder verschwinden asynchron (Login, Archiv) und
+    // verschieben das Board, ohne die Fenstergröße zu ändern — daher alle Geschwister im <main> beobachten.
     ro.observe(document.body)
+    const main = boardRef.current?.closest("main")
+    if (main) {
+      ro.observe(main)
+      Array.from(main.children).forEach((c) => ro.observe(c))
+    }
+    // Banner können später dazukommen/wegfallen (nicht beobachtbar) — Position daher zusätzlich leicht pollen.
+    const poll = window.setInterval(recompute, 500)
     window.addEventListener("resize", recompute)
     return () => {
       window.removeEventListener("resize", recompute)
       ro.disconnect()
+      window.clearInterval(poll)
     }
   }, [unlocked, view])
 
