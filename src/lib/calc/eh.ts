@@ -45,12 +45,22 @@ export const FROOTS_EINMALIG_VB_THRESHOLD = 10000
  * Vornamen (siehe ehAbwicklerOptions). */
 export const VB_ABWICKLER_FIRSTNAMES = ["Georg", "Sandro"]
 
+/** Namensbestandteile je Abwickler: Der Strukturbaum führt Personen teils nur
+ * mit Nachnamen ("Kögerl"), deshalb zählt jedes Wort des Namens. */
+const VB_ABWICKLER_KEYS: string[][] = [["georg", "kögerl", "koegerl"], ["sandro"]]
+
+/** Gehört dieser Name zu einem der Abwickler? */
+export function ehIsAbwickler(name: string): boolean {
+  const words = name.toLowerCase().split(/\s+/)
+  return VB_ABWICKLER_KEYS.some((keys) => words.some((w) => keys.includes(w)))
+}
+
 /** Abwickler-Kandidaten aus einer Mitarbeiterliste, in Reihenfolge von
  * VB_ABWICKLER_FIRSTNAMES. */
 export function ehAbwicklerOptions<T extends { name: string }>(employees: T[]): T[] {
   const out: T[] = []
-  VB_ABWICKLER_FIRSTNAMES.forEach((fn) => {
-    const e = employees.find((x) => x.name.trim().split(/\s+/)[0].toLowerCase() === fn.toLowerCase())
+  VB_ABWICKLER_KEYS.forEach((keys) => {
+    const e = employees.find((x) => x.name.toLowerCase().split(/\s+/).some((w) => keys.includes(w)))
     if (e) out.push(e)
   })
   return out

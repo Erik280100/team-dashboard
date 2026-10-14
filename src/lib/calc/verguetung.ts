@@ -25,7 +25,7 @@
 // würde Produktion aus deren Unterbaum fälschlich unter dem Satz des Trainees
 // erscheinen, obwohl sie zum höheren Differenzsatz der nächsten echten
 // Führungskraft gerechnet wird.
-import { VB_ABWICKLER_FIRSTNAMES } from "./eh"
+import { ehIsAbwickler } from "./eh"
 import type { EmployeeRow } from "./format"
 import { PLAN_IDS, isLeadRole, sbGetPlanRate, type PlanId } from "./struktur"
 import type { MergedRow } from "./team"
@@ -184,10 +184,8 @@ export function computeEarnings(
         }
       }
       const skip = new Set<string>(assigned.map(([abw]) => abw))
-      VB_ABWICKLER_FIRSTNAMES.forEach((fn) => {
-        merged.forEach((m) => {
-          if (m.name.trim().split(/\s+/)[0].toLowerCase() === fn.toLowerCase()) skip.add(m.name)
-        })
+      merged.forEach((m) => {
+        if (ehIsAbwickler(m.name)) skip.add(m.name)
       })
 
       const runChain = (chainUnits: number, abwickler: string | null) => {

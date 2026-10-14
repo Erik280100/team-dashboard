@@ -66,7 +66,9 @@ export function EhRechner({
     return acc
   }, {} as Record<PlanId, number>)
   const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
-  const abwicklerOptions = ehAbwicklerOptions(employees)
+  // Fallback auf alle Mitarbeiter, falls Georg/Sandro im Strukturbaum nicht gefunden werden.
+  const matched = ehAbwicklerOptions(employees)
+  const abwicklerOptions = matched.length > 0 ? matched : [...employees].sort((a, b) => a.name.localeCompare(b.name, "de"))
   const needsAbwickler = bookedUnits.investmentVb > 0 && abwicklerOptions.length > 0
   const chosenAbwickler = abwicklerOptions.find((a) => a.name === abwickler) ?? abwicklerOptions[0] ?? null
 
