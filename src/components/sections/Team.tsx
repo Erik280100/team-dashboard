@@ -54,12 +54,12 @@ function NumField({
 /** Read-only Anzeige für Ist AT/BT/ET — seit der Wochenplanung-Automatik (siehe
  * Team.tsx planByName unten) keine Eingabefelder mehr, damit Werte nicht
  * doppelt (händisch + Wochenplanung) erfasst werden. */
-function ComputedField({ value, wide }: { value: number | undefined; wide?: boolean }) {
+function ComputedField({ value, wide, narrow }: { value: number | undefined; wide?: boolean; narrow?: boolean }) {
   return (
     <div
       className={cn(
-        "mx-auto flex h-8 items-center justify-end rounded-md border border-dashed border-input/60 bg-muted/40 px-2 text-sm tabular-nums text-muted-foreground",
-        wide ? "w-20" : "w-16"
+        "mx-auto flex h-8 items-center justify-end rounded-md border border-dashed border-input/60 bg-muted/40 text-sm tabular-nums text-muted-foreground",
+        narrow ? "w-8 px-1" : "px-2", wide ? "w-20" : !narrow && "w-16"
       )}
       title="Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"
     >
@@ -286,10 +286,10 @@ export function Team({
                 (["AT", "BT", "ST", "ET"] as const).map((k) => (
                   <th
                     key={`${g}-${k}`}
-                    className={`sticky top-0 z-10 whitespace-nowrap ${g === "Plan" ? "bg-sky-200 dark:bg-sky-900" : "bg-amber-200 dark:bg-amber-900"} px-2 py-2 text-center backdrop-blur border-l border-foreground/20`}
+                    className={`sticky top-0 z-10 ${g === "Plan" ? "bg-sky-200 dark:bg-sky-900" : "bg-amber-200 dark:bg-amber-900"} px-1 py-1.5 text-center leading-tight backdrop-blur border-l border-foreground/20`}
                     title={g === "Ist" ? "Wird automatisch aus der Wochenplanung übernommen" : undefined}
                   >
-                    {g} {k}
+                    {g}<br />{k}
                   </th>
                 )),
               )}
@@ -363,14 +363,14 @@ export function Team({
                         {r.isNew ? "NEU" : "Bestand"}
                       </button>
                     </td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atPlan} /></td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btPlan} /></td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stPlan} /></td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etPlan} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atIst} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btIst} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stIst} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etIst} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.atPlan} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.btPlan} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.stPlan} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.etPlan} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.atIst} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.btIst} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.stIst} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.etIst} /></td>
                     <td className="border-l border-foreground/20 px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="border-l border-foreground/20 px-2 py-2">
                       <button
