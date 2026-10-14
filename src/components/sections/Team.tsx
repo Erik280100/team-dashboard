@@ -138,7 +138,7 @@ export function Team({
     ? rosterMerged.map((r) => {
         const p = planByName.get(r.name)
         // Zuordnung nach Nutzerangabe: AT = Analysen, BT = Beratungen, ST = Strukturtermine, ET = Einstellungstermine (jeweils "Gemacht").
-        return { ...r, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, stIst: p?.stg ?? 0, etIst: p?.etg ?? 0 }
+        return { ...r, atPlan: p?.analysenZ ?? 0, btPlan: p?.beratungenZ ?? 0, stPlan: p?.stz ?? 0, etPlan: p?.etz ?? 0, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, stIst: p?.stg ?? 0, etIst: p?.etg ?? 0 }
       })
     : rosterMerged
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
@@ -281,18 +281,18 @@ export function Team({
           <thead>
             <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
               <th className="sticky top-0 z-10 min-w-[300px] bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Status</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={4}>Plan (AT / BT / ST / ET)</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Status</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur border-l border-foreground/20" colSpan={4}>Plan (AT / BT / ST / ET)</th>
               <th
-                className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur"
+                className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur border-l border-foreground/20"
                 colSpan={4}
                 title="Wird automatisch aus der Wochenplanung übernommen"
               >
                 Ist (AT / BT / ST / ET)
               </th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Soll</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Ist</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Fortschritt</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Soll</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Ist</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Fortschritt</th>
             </tr>
           </thead>
           <tbody>
@@ -345,7 +345,7 @@ export function Team({
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="border-l border-foreground/20 px-3 py-2">
                       <button
                         type="button"
                         disabled={!isEditor}
@@ -360,16 +360,16 @@ export function Team({
                         {r.isNew ? "NEU" : "Bestand"}
                       </button>
                     </td>
-                    <td className="px-2 py-2 text-center"><NumField row={r} field="atPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2 text-center"><NumField row={r} field="btPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2 text-center"><NumField row={r} field="stPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2 text-center"><NumField row={r} field="etPlan" isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2 text-center"><ComputedField value={r.atIst} /></td>
-                    <td className="px-2 py-2 text-center"><ComputedField value={r.btIst} /></td>
-                    <td className="px-2 py-2 text-center"><ComputedField value={r.stIst} /></td>
-                    <td className="px-2 py-2 text-center"><ComputedField value={r.etIst} /></td>
-                    <td className="px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
-                    <td className="px-2 py-2">
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atPlan} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btPlan} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stPlan} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etPlan} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atIst} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btIst} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stIst} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etIst} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2">
                       <button
                         type="button"
                         onClick={() => setDetailName(r.name)}
@@ -379,7 +379,7 @@ export function Team({
                         {fmt(r.ist)}
                       </button>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="border-l border-foreground/20 px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                           <div
@@ -411,18 +411,18 @@ export function Team({
                           <span className="whitespace-nowrap">{fmtEur(grandTotalEur)} €</span>
                         </div>
                       </td>
-                      <td className={cell} />
-                      <td className={cn(cell, "text-center")}>{fmt(totals.atPlan)}</td>
-                      <td className={cn(cell, "text-center")}>{fmt(totals.btPlan)}</td>
-                      <td className={cn(cell, "text-center")}>{fmt(totals.stPlan)}</td>
-                      <td className={cn(cell, "text-center")}>{fmt(totals.etPlan)}</td>
-                      <td className={cn(cell, "text-center")}>{fmt(totals.atIst)}</td>
-                      <td className={cn(cell, "text-center")}>{fmt(totals.btIst)}</td>
-                      <td className={cn(cell, "text-center")}>{fmt(totals.stIst)}</td>
-                      <td className={cn(cell, "text-center")}>{fmt(totals.etIst)}</td>
-                      <td className={cell}>{fmt(totals.soll)}</td>
-                      <td className={cell}>{fmt(totals.ist)}</td>
-                      <td className={cell} />
+                      <td className={cn(cell, "border-l border-foreground/20")} />
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.atPlan)}</td>
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.btPlan)}</td>
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.stPlan)}</td>
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.etPlan)}</td>
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.atIst)}</td>
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.btIst)}</td>
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.stIst)}</td>
+                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.etIst)}</td>
+                      <td className={cn(cell, "border-l border-foreground/20")}>{fmt(totals.soll)}</td>
+                      <td className={cn(cell, "border-l border-foreground/20")}>{fmt(totals.ist)}</td>
+                      <td className={cn(cell, "border-l border-foreground/20")} />
                     </>
                   )
                 })()}
