@@ -128,9 +128,14 @@ export function ErikDashboard({
       setBoardHeight(Math.max(360, Math.floor(window.innerHeight - top - 24) - 2))
     }
     recompute()
+    const ro = new ResizeObserver(recompute)
+    ro.observe(document.body)
     window.addEventListener("resize", recompute)
-    return () => window.removeEventListener("resize", recompute)
-  }, [])
+    return () => {
+      window.removeEventListener("resize", recompute)
+      ro.disconnect()
+    }
+  }, [unlocked, view])
 
   function lock() {
     try { sessionStorage.removeItem(UNLOCK_KEY) } catch { /* noop */ }
