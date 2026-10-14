@@ -48,8 +48,10 @@ describe("team: golden master vs. legacy", () => {
   })
 
   it("teamTotals matches", () => {
-    expect(teamTotals(sampleRows())).toEqual(legacy.teamTotals(sampleRows()))
-    expect(teamTotals([])).toEqual(legacy.teamTotals([]))
+    // stPlan/stIst sind neu (kein Legacy-Gegenstück) und werden vor dem Vergleich entfernt.
+    const noSt = (t: Record<string, number>) => { const { stPlan: _p, stIst: _i, ...rest } = t; return rest }
+    expect(noSt(teamTotals(sampleRows()))).toEqual(legacy.teamTotals(sampleRows()))
+    expect(noSt(teamTotals([]))).toEqual(legacy.teamTotals([]))
   })
 })
 

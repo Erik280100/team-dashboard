@@ -15,7 +15,7 @@ export function newRowFor(name: string): EmployeeRow {
   return {
     name,
     isNew: false,
-    atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, etPlan: 0, etIst: 0,
+    atPlan: 0, atIst: 0, btPlan: 0, btIst: 0, stPlan: 0, stIst: 0, etPlan: 0, etIst: 0,
     soll: 0, ist: 0,
     joinDate: "",
     bonus: 0,
@@ -99,6 +99,8 @@ export function mergeRosterWithRows(roster: RosterEntry[], rows: EmployeeRow[]):
       atIst: Number(row?.atIst) || 0,
       btPlan: Number(row?.btPlan) || 0,
       btIst: Number(row?.btIst) || 0,
+      stPlan: Number(row?.stPlan) || 0,
+      stIst: Number(row?.stIst) || 0,
       etPlan: Number(row?.etPlan) || 0,
       etIst: Number(row?.etIst) || 0,
       soll: Number(row?.soll) || 0,
@@ -178,15 +180,15 @@ export function rowHighlight(row: Pick<EmployeeRow, "atPlan" | "atIst" | "soll" 
   return Number(row.atIst || 0) >= schwelle ? "at-above" : "at-below"
 }
 
-const TOTAL_FIELDS = ["atPlan", "btPlan", "etPlan", "atIst", "btIst", "etIst", "soll", "ist"] as const
+const TOTAL_FIELDS = ["atPlan", "btPlan", "stPlan", "etPlan", "atIst", "btIst", "stIst", "etIst", "soll", "ist"] as const
 
 export type TeamTotals = Record<(typeof TOTAL_FIELDS)[number], number>
 
 export function teamTotals(list: EmployeeRow[]): TeamTotals {
   const sum = (field: string) => list.reduce((s, r) => s + Number(r[field] || 0), 0)
   return {
-    atPlan: sum("atPlan"), btPlan: sum("btPlan"), etPlan: sum("etPlan"),
-    atIst: sum("atIst"), btIst: sum("btIst"), etIst: sum("etIst"),
+    atPlan: sum("atPlan"), btPlan: sum("btPlan"), stPlan: sum("stPlan"), etPlan: sum("etPlan"),
+    atIst: sum("atIst"), btIst: sum("btIst"), stIst: sum("stIst"), etIst: sum("etIst"),
     soll: sum("soll"), ist: sum("ist"),
   }
 }

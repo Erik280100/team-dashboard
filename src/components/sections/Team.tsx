@@ -25,7 +25,7 @@ function NumField({
   row, field, wide, isEditor, onCommit,
 }: {
   row: MergedRow
-  field: "atPlan" | "btPlan" | "etPlan" | "soll"
+  field: "atPlan" | "btPlan" | "stPlan" | "etPlan" | "soll"
   wide?: boolean
   isEditor: boolean
   onCommit: (row: MergedRow, field: string, value: number) => void
@@ -132,8 +132,8 @@ export function Team({
   const merged = planByName
     ? rosterMerged.map((r) => {
         const p = planByName.get(r.name)
-        // Zuordnung nach Nutzerangabe: AT = Analysen, BT = Beratungen, ET = Einstellungstermine (jeweils "Gemacht").
-        return { ...r, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, etIst: p?.etg ?? 0 }
+        // Zuordnung nach Nutzerangabe: AT = Analysen, BT = Beratungen, ST = Strukturtermine, ET = Einstellungstermine (jeweils "Gemacht").
+        return { ...r, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, stIst: p?.stg ?? 0, etIst: p?.etg ?? 0 }
       })
     : rosterMerged
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
@@ -264,13 +264,13 @@ export function Team({
             <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
               <th className="sticky top-0 z-10 min-w-[300px] bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Status</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={3}>Plan (AT / BT / ET)</th>
+              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur" colSpan={4}>Plan (AT / BT / ST / ET)</th>
               <th
                 className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur"
-                colSpan={3}
+                colSpan={4}
                 title="Wird automatisch aus der Wochenplanung übernommen"
               >
-                Ist (AT / BT / ET)
+                Ist (AT / BT / ST / ET)
               </th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Soll</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur">Ist</th>
@@ -280,7 +280,7 @@ export function Team({
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={13} className="px-3 py-8 text-center text-sm text-muted-foreground">
                   {merged.length === 0 ? "Noch keine Personen im Strukturbaum erfasst." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
                 </td>
               </tr>
@@ -344,9 +344,11 @@ export function Team({
                     </td>
                     <td className="px-2 py-2 text-center"><NumField row={r} field="atPlan" isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2 text-center"><NumField row={r} field="btPlan" isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="px-2 py-2 text-center"><NumField row={r} field="stPlan" isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2 text-center"><NumField row={r} field="etPlan" isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2 text-center"><ComputedField value={r.atIst} /></td>
                     <td className="px-2 py-2 text-center"><ComputedField value={r.btIst} /></td>
+                    <td className="px-2 py-2 text-center"><ComputedField value={r.stIst} /></td>
                     <td className="px-2 py-2 text-center"><ComputedField value={r.etIst} /></td>
                     <td className="px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="px-2 py-2">
@@ -394,9 +396,11 @@ export function Team({
                       <td className={cell} />
                       <td className={cn(cell, "text-center")}>{fmt(totals.atPlan)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.btPlan)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.stPlan)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.etPlan)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.atIst)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.btIst)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.stIst)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.etIst)}</td>
                       <td className={cell}>{fmt(totals.soll)}</td>
                       <td className={cell}>{fmt(totals.ist)}</td>

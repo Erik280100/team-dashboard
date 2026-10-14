@@ -26,6 +26,8 @@ export interface EmployeeRow {
   btPlan?: number
   btIst?: number
   et?: number
+  stPlan?: number
+  stIst?: number
   etPlan?: number
   etIst?: number
   [key: string]: unknown
@@ -152,6 +154,8 @@ export function migrateRow(r: EmployeeRow): EmployeeRow {
   if (r.atIst === undefined) r.atIst = 0
   if (r.btPlan === undefined) r.btPlan = Number(r.bt) || 0
   if (r.btIst === undefined) r.btIst = 0
+  if (r.stPlan === undefined) r.stPlan = 0
+  if (r.stIst === undefined) r.stIst = 0
   if (r.etPlan === undefined) r.etPlan = Number(r.et) || 0
   if (r.etIst === undefined) r.etIst = 0
   return r

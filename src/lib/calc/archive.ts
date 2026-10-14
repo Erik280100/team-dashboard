@@ -36,7 +36,7 @@ export const MONTH_CLOSE_ENABLED = true
  */
 export function resetRowsForNewMonth(rows: EmployeeRow[]): EmployeeRow[] {
   return rows.map((r) => {
-    const next: EmployeeRow = { ...r, ist: 0, atIst: 0, btIst: 0, etIst: 0, bonus: 0 }
+    const next: EmployeeRow = { ...r, ist: 0, atIst: 0, btIst: 0, stIst: 0, etIst: 0, bonus: 0 }
     if (r.ehByPlan) {
       const ehByPlan: NonNullable<EmployeeRow["ehByPlan"]> = {}
       PLAN_IDS.forEach((p) => { ehByPlan[p] = 0 })

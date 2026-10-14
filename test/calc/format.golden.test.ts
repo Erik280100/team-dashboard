@@ -69,7 +69,9 @@ describe("format: golden master vs. legacy", () => {
   it("migrateRow / migrateRows match", () => {
     const rowsA: EmployeeRow[] = [{ soll: 1, ist: 1, at: 10, bt: 20, et: 30 }]
     const rowsB = JSON.parse(JSON.stringify(rowsA))
-    expect(migrateRows(rowsA)).toEqual(legacy.migrateRows(rowsB))
-    expect(migrateRow({ soll: 1, ist: 1 } as EmployeeRow)).toEqual(legacy.migrateRow({ soll: 1, ist: 1 }))
+    // stPlan/stIst sind neu (kein Legacy-Gegenstück) und werden vor dem Vergleich entfernt.
+    const noSt = (r: EmployeeRow) => { const { stPlan: _p, stIst: _i, ...rest } = r; return rest }
+    expect(migrateRows(rowsA).map(noSt)).toEqual(legacy.migrateRows(rowsB))
+    expect(noSt(migrateRow({ soll: 1, ist: 1 } as EmployeeRow))).toEqual(legacy.migrateRow({ soll: 1, ist: 1 }))
   })
 })
