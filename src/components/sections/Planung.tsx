@@ -177,6 +177,8 @@ export function Planung({
         // sichtbare Zeilen, die gefiltert werden können.
         <Jahresplanung
           key={selectedManager}
+          rows={rows}
+          unitsMonthKey={unitsMonthKey}
           managerName={selectedManager}
           people={people}
           planung={planung}

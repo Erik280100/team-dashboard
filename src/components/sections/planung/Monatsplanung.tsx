@@ -189,12 +189,12 @@ export function Monatsplanung({
             <thead>
               <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                 <th className="sticky top-0 z-10 min-w-[220px] bg-muted/95 px-3 py-2 backdrop-blur">{byGroup ? "Führungskraft" : "Name"}</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ATG/ATZ</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ATG SOLL/IST</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT SOLL/IST</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">BT SOLL/IST</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT-Quote</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ST g/z</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ET g/z</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ST SOLL/IST</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ET SOLL/IST</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">EH gemacht</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">EH offen</th>
               </tr>
@@ -208,12 +208,12 @@ export function Monatsplanung({
                       <div className="truncate text-sm font-medium">{r.label}</div>
                       <div className="truncate text-xs text-muted-foreground">{r.sub}</div>
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(d.atg)}/{fmt(d.atz)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmt(d.atz)}/{fmt(d.atg)}</td>
                     <td className="px-3 py-2 text-right tabular-nums"><span className="text-muted-foreground">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
                     <td className="px-3 py-2 text-right tabular-nums"><span className="text-muted-foreground">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
                     <td className="px-3 py-2 text-right tabular-nums">{quotePct(d.analysen, d.analysenZ)}%</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(d.stg)}/{fmt(d.stz)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(d.etg)}/{fmt(d.etz)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmt(d.stz)}/{fmt(d.stg)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{fmt(d.etz)}/{fmt(d.etg)}</td>
                     <td className="px-3 py-2 text-right tabular-nums"><strong>{fmt(d.ehGemacht)}</strong></td>
                     <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{fmt(d.ehOffen)}</td>
                   </tr>
@@ -227,12 +227,12 @@ export function Monatsplanung({
                   return (
                     <>
                       <td className={cell.replace("text-right", "")}>Summe</td>
-                      <td className={cell}>{fmt(total.atg)}/{fmt(total.atz)}</td>
+                      <td className={cell}>{fmt(total.atz)}/{fmt(total.atg)}</td>
                       <td className={cell}>{fmt(total.analysenZ)}/{fmt(total.analysen)}</td>
                       <td className={cell}>{fmt(total.beratungenZ)}/{fmt(total.beratungen)}</td>
                       <td className={cell}>{quotePct(total.analysen, total.analysenZ)}%</td>
-                      <td className={cell}>{fmt(total.stg)}/{fmt(total.stz)}</td>
-                      <td className={cell}>{fmt(total.etg)}/{fmt(total.etz)}</td>
+                      <td className={cell}>{fmt(total.stz)}/{fmt(total.stg)}</td>
+                      <td className={cell}>{fmt(total.etz)}/{fmt(total.etg)}</td>
                       <td className={cell}>{fmt(total.ehGemacht)}</td>
                       <td className={cell}>{fmt(total.ehOffen)}</td>
                     </>

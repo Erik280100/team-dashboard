@@ -7,13 +7,14 @@ import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { fmt } from "@/lib/calc/format"
 import {
-  QUARTER_LIST, Q_MONTHS, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
+  QUARTER_LIST, Q_MONTHS, emptyWeekEntry, monthWeekKeys, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import { readPlanUnits, sumPlanUnits } from "@/lib/calc/verguetung"
 import {
   PLAN_TARGET_KEYS, PLAN_TARGET_LABELS,
-  type PlanAnnualDoc, type PlanQuarter, type PlanQuarterData, type PlanTargetKey, type PlanWeekEntry,
+  type EmployeeRow, type PlanAnnualDoc, type PlanQuarter, type PlanQuarterData, type PlanTargetKey, type PlanWeekEntry,
 } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
@@ -44,8 +45,12 @@ function barColor(pct: number): string {
 }
 
 export function Jahresplanung({
-  managerName, people, planung, isEditor, teamGroups,
+  managerName, people, planung, isEditor, teamGroups, rows, unitsMonthKey,
 }: {
+  /** Mitarbeiterseite (dashboard.rows): dort werden ALLE Einheiten erfasst. */
+  rows: EmployeeRow[]
+  /** Umsatzmonat ("YYYY-MM"), auf den sich die Einheiten in rows beziehen. */
+  unitsMonthKey: string
   managerName: string
   people: RosterEntry[]
   planung: UsePlanungDocResult
@@ -73,6 +78,22 @@ export function Jahresplanung({
   const weekDocs = weeks.map((w) => ({ key: w, doc: planung.getWeek(w) }))
   const loading = weekDocs.some((w) => w.doc === null)
 
+  // Einheiten gemacht: für den laufenden Umsatzmonat kommt die Zahl von der
+  // Mitarbeiterseite (wie in der Monatsplanung), nicht aus den Wochenplänen.
+  // Deren EH in den Monatswochen werden ausgeblendet und durch den Wert aus
+  // rows ersetzt. Andere Monate: weiter Wochenplan-Summe.
+  const unitsOverride = useMemo(() => {
+    if (!unitsMonthKey.startsWith(`${year}-`)) return null
+    const byName = new Map<string, number>()
+    rows.forEach((r) => byName.set(r.name, sumPlanUnits(readPlanUnits(r))))
+    const month = Number(unitsMonthKey.slice(5, 7))
+    return { byName, weeks: new Set(monthWeekKeys(unitsMonthKey)), quarter: QUARTER_LIST[Math.floor((month - 1) / 3)] }
+  }, [year, unitsMonthKey, rows])
+
+  const withUnits = (weekKey: string, entry: PlanWeekEntry): PlanWeekEntry =>
+    unitsOverride?.weeks.has(weekKey) ? { ...entry, ehGemacht: 0 } : entry
+  const unitEntry = (name: string): PlanWeekEntry => ({ ...emptyWeekEntry(), ehGemacht: unitsOverride?.byName.get(name) ?? 0 })
+
   const entriesFor = useMemo(() => {
     const byQuarter: Record<PlanQuarter, PlanWeekEntry[]> = { Q1: [], Q2: [], Q3: [], Q4: [] }
     const all: PlanWeekEntry[] = []
@@ -81,14 +102,22 @@ export function Jahresplanung({
       const q = weekToQuarter(key)
       Object.entries(doc.entries).forEach(([name, entry]) => {
         if (!names.has(name)) return
-        all.push(entry)
-        byQuarter[q].push(entry)
+        const e = withUnits(key, entry)
+        all.push(e)
+        byQuarter[q].push(e)
       })
     })
+    if (unitsOverride) {
+      names.forEach((name) => {
+        const e = unitEntry(name)
+        all.push(e)
+        byQuarter[unitsOverride.quarter].push(e)
+      })
+    }
     return { all, byQuarter }
     // weekDocs wird aus weeks+loading-Zustand abgeleitet — über beide gated.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, loading, names])
+  }, [weeks, loading, names, unitsOverride])
 
   const yearActual = useMemo(() => sumWeekEntries(entriesFor.all), [entriesFor])
   const quarterActuals = useMemo(() => {
@@ -105,28 +134,37 @@ export function Jahresplanung({
     const byGroupEntries = new Map<string, PlanWeekEntry[]>(teamGroups.map((g) => [g.name, []]))
     const groupByName = new Map<string, string[]>()
     teamGroups.forEach((g) => { g.names.forEach((n) => groupByName.set(n, [...(groupByName.get(n) ?? []), g.name])) })
-    weekDocs.forEach(({ doc }) => {
+    weekDocs.forEach(({ key, doc }) => {
       if (!doc) return
       Object.entries(doc.entries).forEach(([name, entry]) => {
-        groupByName.get(name)?.forEach((groupKey) => byGroupEntries.get(groupKey)!.push(entry))
+        const e = withUnits(key, entry)
+        groupByName.get(name)?.forEach((groupKey) => byGroupEntries.get(groupKey)!.push(e))
       })
     })
+    if (unitsOverride) {
+      groupByName.forEach((groupKeys, name) => {
+        const e = unitEntry(name)
+        groupKeys.forEach((groupKey) => byGroupEntries.get(groupKey)!.push(e))
+      })
+    }
     const out = new Map<string, PlanWeekEntry>()
     teamGroups.forEach((g) => out.set(g.name, sumWeekEntries(byGroupEntries.get(g.name) ?? [])))
     return out
     // weekDocs wird aus weeks+loading-Zustand abgeleitet — über beide gated,
     // analog zu entriesFor oben.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, loading, teamGroups])
+  }, [weeks, loading, teamGroups, unitsOverride])
 
+  // Änderungen werden beim Verlassen des Feldes direkt gespeichert.
   function commitTarget(key: PlanTargetKey, value: number) {
-    setDraft((d) => ({ ...d, targets: { ...d.targets, [key]: value } }))
+    const next = { ...draft, targets: { ...draft.targets, [key]: value } }
+    setDraft(next)
+    planung.saveAnnual(year, managerName, next)
   }
   function commitQuarterField(q: PlanQuarter, key: PlanTargetKey | "milestone", value: number | string) {
-    setDraft((d) => ({ ...d, quarters: { ...d.quarters, [q]: { ...d.quarters[q], [key]: value } } }))
-  }
-  function save() {
-    planung.saveAnnual(year, managerName, draft)
+    const next = { ...draft, quarters: { ...draft.quarters, [q]: { ...draft.quarters[q], [key]: value } } }
+    setDraft(next)
+    planung.saveAnnual(year, managerName, next)
   }
 
   return (
@@ -140,9 +178,6 @@ export function Jahresplanung({
           ▶
         </Button>
         {loading && <span className="text-xs text-muted-foreground">Lade Wochendaten…</span>}
-        {isEditor && (
-          <Button type="button" size="sm" className="ml-auto" onClick={save}>💾 Speichern</Button>
-        )}
       </div>
 
       <section className="rounded-xl border bg-card p-5 shadow-sm">
