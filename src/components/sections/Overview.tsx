@@ -362,7 +362,7 @@ export function Overview({
                   {i + 1}
                 </span>
                 <span className="flex-1 truncate text-white/80">{s.name}</span>
-                <span className="font-semibold tabular-nums text-white">{fmt(s.value)}</span>
+                <span className="font-semibold tabular-nums text-white">{fmt(s.value)} EH</span>
               </div>
             ))}
           </CardContent>
