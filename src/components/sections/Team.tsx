@@ -286,7 +286,7 @@ export function Team({
                 (["AT", "BT", "ST", "ET"] as const).map((k) => (
                   <th
                     key={`${g}-${k}`}
-                    className="sticky top-0 z-10 whitespace-nowrap bg-muted/95 px-2 py-2 text-center backdrop-blur border-l border-foreground/20"
+                    className={`sticky top-0 z-10 whitespace-nowrap ${g === "Plan" ? "bg-sky-200 dark:bg-sky-900" : "bg-amber-200 dark:bg-amber-900"} px-2 py-2 text-center backdrop-blur border-l border-foreground/20`}
                     title={g === "Ist" ? "Wird automatisch aus der Wochenplanung übernommen" : undefined}
                   >
                     {g} {k}
@@ -363,14 +363,14 @@ export function Team({
                         {r.isNew ? "NEU" : "Bestand"}
                       </button>
                     </td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atPlan} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btPlan} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stPlan} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etPlan} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atIst} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btIst} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stIst} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etIst} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atPlan} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btPlan} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stPlan} /></td>
+                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etPlan} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.atIst} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.btIst} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.stIst} /></td>
+                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-2 py-2 text-center"><ComputedField value={r.etIst} /></td>
                     <td className="border-l border-foreground/20 px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
                     <td className="border-l border-foreground/20 px-2 py-2">
                       <button
@@ -415,14 +415,14 @@ export function Team({
                         </div>
                       </td>
                       <td className={cn(cell, "border-l border-foreground/20")} />
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.atPlan)}</td>
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.btPlan)}</td>
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.stPlan)}</td>
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.etPlan)}</td>
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.atIst)}</td>
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.btIst)}</td>
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.stIst)}</td>
-                      <td className={cn(cell, "text-center border-l border-foreground/20")}>{fmt(totals.etIst)}</td>
+                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.atPlan)}</td>
+                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.btPlan)}</td>
+                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.stPlan)}</td>
+                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.etPlan)}</td>
+                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.atIst)}</td>
+                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.btIst)}</td>
+                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.stIst)}</td>
+                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.etIst)}</td>
                       <td className={cn(cell, "border-l border-foreground/20")}>{fmt(totals.soll)}</td>
                       <td className={cn(cell, "border-l border-foreground/20")}>{fmt(totals.ist)}</td>
                       <td className={cn(cell, "border-l border-foreground/20")} />
