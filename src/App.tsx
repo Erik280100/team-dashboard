@@ -52,7 +52,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   rechner: "Rechner",
   karriere: "Karrierepläne",
   guide: "Guide",
-  kalender: "Kalender/Anwesenheitsliste",
+  kalender: "Anwesenheitsliste",
   finanzierungen: "Finanzierungen",
   partner: "Partner",
   erik: "Erik-Dashboard",

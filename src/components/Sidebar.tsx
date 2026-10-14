@@ -16,7 +16,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; editorOnly?: 
   { id: "rechner", label: "Rechner", icon: Calculator },
   { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
   { id: "guide", label: "Guide", icon: BookOpen },
-  { id: "kalender", label: "Kalender/Anwesenheitsliste", icon: Calendar },
+  { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
   { id: "finanzierungen", label: "Finanzierungen", icon: Landmark },
   { id: "partner", label: "Partner", icon: Link2 },
 ]
