@@ -5,14 +5,15 @@
 // nicht nur die Chart-Panels.
 import "@/lib/chartSetup"
 import { useEffect, useState, type ChangeEvent } from "react"
-import { Bar, Doughnut, Line, Pie } from "react-chartjs-2"
-import { Users, Landmark, Building2, UserPlus } from "lucide-react"
+import { Bar, Doughnut, Line } from "react-chartjs-2"
+import { Users, Landmark, Building2, Shield, TrendingUp, Wallet } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
 import { fmt } from "@/lib/calc/format"
+import { readPlanUnits } from "@/lib/calc/verguetung"
 import {
-  barChartData, doughnutData, goalProgress, leaderboardData, recruitProgress,
+  barChartData, doughnutData, goalProgress, leaderboardData,
   revenueShareData, summaryKpis, timelineData,
 } from "@/lib/calc/overview"
 import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
@@ -67,11 +68,26 @@ export function Overview({
 }) {
   const kpis = summaryKpis(rows)
   const goal = goalProgress(rows)
-  const recruit = recruitProgress(rows, teamGoal)
   const timeline = timelineData(teamGoal, rows, history, now ?? new Date())
   const bars = barChartData(rows)
   const doughnut = doughnutData(rows)
   const shares = revenueShareData(rows)
+  const planTotals = rows.reduce(
+    (acc, r) => {
+      const u = readPlanUnits(r)
+      acc.insurance += u.insurance
+      acc.invest += u.investment + u.investmentVb
+      acc.credit += u.credit
+      return acc
+    },
+    { insurance: 0, invest: 0, credit: 0 }
+  )
+  const planSum = planTotals.insurance + planTotals.invest + planTotals.credit
+  const sparten = [
+    { label: "Insurance", icon: Shield, units: planTotals.insurance },
+    { label: "Invest", icon: TrendingUp, units: planTotals.invest },
+    { label: "Credit", icon: Wallet, units: planTotals.credit },
+  ].map((s) => ({ ...s, pct: planSum > 0 ? Math.round((s.units / planSum) * 100) : 0 }))
 
   // Ist-AT fürs Leaderboard live aus der Wochenplanung übernehmen (Summe der
   // "analysen"-Gemacht-Werte über alle Wochen des aktuellen Umsatzmonats) —
@@ -95,7 +111,6 @@ export function Overview({
   const leaderboard = leaderboardData(rowsForLeaderboard)
 
   const [noteDraft, setNoteDraft] = useState(teamGoal.note)
-  const [recruitGoalDraft, setRecruitGoalDraft] = useState(String(teamGoal.recruitGoal))
 
   function commitField<K extends keyof TeamGoal>(key: K, value: TeamGoal[K]) {
     saveGoal({ ...teamGoal, [key]: value })
@@ -245,7 +260,7 @@ export function Overview({
               <Users className="size-4 text-[#64DDA3]" aria-hidden="true" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Mitarbeiter</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Geschäftspartner</div>
               <div className="text-2xl font-extrabold">{kpis.employeeCount}</div>
               <div className="text-xs text-white/50">im Team</div>
             </div>
@@ -324,46 +339,17 @@ export function Overview({
         </Card>
 
         <Card className={DARK_CARD}>
-          <DarkCardHeader title="Umsatzanteil" sub="Anteil je Mitarbeiter am Gesamtumsatz" />
-          <CardContent>
-            <div className="h-[220px]">
-              <Pie
-                data={{
-                  labels: shares.map((s) => s.name),
-                  datasets: [{
-                    data: shares.length ? shares.map((s) => s.value || 1) : [1],
-                    backgroundColor: shares.map((s) => s.color),
-                    borderWidth: 0,
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                      callbacks: {
-                        label(item) {
-                          const s = shares[item.dataIndex]
-                          return `${s.name}: ${s.pct}%`
-                        },
-                      },
-                    },
-                  },
-                }}
-                aria-label={"Umsatzanteil je Mitarbeiter: " + shares.map((s) => `${s.name} ${s.pct} Prozent`).join(", ")}
-                role="img"
-              />
-            </div>
-            <div className="mt-3 flex flex-col gap-1.5">
-              {shares.map((s) => (
-                <div key={s.name} className="flex items-center gap-2 text-xs text-white/70">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
-                  <span className="flex-1 truncate">{s.name}</span>
-                  <span className="font-medium">{s.pct}%</span>
-                </div>
-              ))}
-            </div>
+          <DarkCardHeader title="Top 10 Geschäftspartner" sub="Anteil am Gesamtumsatz" />
+          <CardContent className="flex flex-col gap-1.5">
+            {shares.slice(0, 10).map((s, i) => (
+              <div key={s.name} className="flex items-center gap-3 text-sm">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/60">
+                  {i + 1}
+                </span>
+                <span className="flex-1 truncate text-white/80">{s.name}</span>
+                <span className="font-semibold tabular-nums text-white">{s.pct}%</span>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -388,41 +374,24 @@ export function Overview({
         </Card>
       </div>
 
-      {/* Recruiting-KPI */}
-      <Card className={cn(DARK_CARD, "border-[#64DDA3]/30")}>
-        <CardContent className="flex flex-wrap items-start gap-6">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
-            <UserPlus className="size-4 text-[#64DDA3]" aria-hidden="true" />
-          </div>
-          <div className="flex flex-1 flex-wrap gap-6">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Ziel</div>
-              <div className="text-xl font-extrabold">{recruit.target}</div>
-            </div>
-            <div>
-              <label htmlFor="kpiRecruitActual" className="text-[11px] font-bold uppercase tracking-wide text-white/50">
-                Tatsächlich
-              </label>
-              <Input
-                id="kpiRecruitActual"
-                type="number"
-                className={cn("w-24", DARK_INPUT)}
-                defaultValue={teamGoal.recruitActual ?? ""}
-                placeholder="auto"
-                disabled={!isEditor}
-                onChange={(e) => {
-                  commitField("recruitActual", e.target.value === "" ? null : Number(e.target.value))
-                }}
-              />
-            </div>
-          </div>
-          <p className="w-full text-xs text-white/50">
-            Ziel wird unten im Bereich „Mitarbeiter-Aufbau" gesetzt. Tatsächlich überschreibt
-            die automatische Zählung „NEU"-markierter Mitarbeiter — Feld leeren, um wieder
-            automatisch zu zählen.
-          </p>
-        </CardContent>
-      </Card>
+
+      {/* Umsatz nach Sparte */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {sparten.map((s) => (
+          <Card key={s.label} className={DARK_CARD}>
+            <CardContent className="flex items-center gap-4">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
+                <s.icon className="size-4 text-[#64DDA3]" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">{s.label}</div>
+                <div className="text-2xl font-extrabold">{fmt(s.units)}</div>
+                <div className="text-xs text-white/50">{s.pct}% vom Umsatz (Einheiten)</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Bar-Chart Soll vs. Ist */}
       <Card className={DARK_CARD}>
@@ -456,61 +425,6 @@ export function Overview({
         </CardContent>
       </Card>
 
-      {/* Mitarbeiter-Aufbau */}
-      <Card className={DARK_CARD}>
-        <CardContent className="flex flex-col gap-5">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-white/50">
-              Mitarbeiter-Aufbau
-            </div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <Input
-                type="number"
-                className={cn("w-24 text-2xl font-bold", DARK_INPUT)}
-                value={recruitGoalDraft}
-                disabled={!isEditor}
-                onChange={(e) => setRecruitGoalDraft(e.target.value)}
-                onBlur={() => {
-                  const next = Number(recruitGoalDraft) || 0
-                  setRecruitGoalDraft(String(next))
-                  if (next !== teamGoal.recruitGoal) commitField("recruitGoal", next)
-                }}
-              />
-              <span className="text-sm text-white/60">neue Mitarbeiter (Ziel)</span>
-            </div>
-            <p className="mt-2 text-xs text-white/50">
-              Zählt alle aktuell als „NEU" markierten Mitarbeiter im gewählten Zeitraum.
-            </p>
-          </div>
-          <div>
-            <div className="flex items-center justify-between text-sm">
-              <span>{recruit.count} von {recruit.target} neuen Mitarbeitern</span>
-              <span className="text-base font-extrabold text-[#64DDA3]">{recruit.pct}%</span>
-            </div>
-            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-white/15">
-              <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,#3FCB8E,#64DDA3)] transition-[width]"
-                style={{ width: `${Math.min(recruit.pct, 100)}%` }}
-              />
-            </div>
-            <div className="mt-3 flex flex-col gap-1.5">
-              {recruit.items.length === 0 ? (
-                <div className="text-xs text-white/50">Noch keine neuen Mitarbeiter markiert.</div>
-              ) : (
-                recruit.items.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between text-xs">
-                    <span>{item.name}</span>
-                    <span className="text-white/50">
-                      {item.dateLabel}
-                      {item.hasDate && !item.inPeriod ? " (außerhalb Zeitraum)" : ""}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
