@@ -219,6 +219,20 @@ export function EhRechner({
                   </option>
                 ))}
               </Select>
+              {needsAbwickler && (
+                <Select
+                  aria-label="Abwickler wählen"
+                  value={chosenAbwickler?.name ?? ""}
+                  onChange={(e) => setAbwickler(e.target.value)}
+                  className="w-56 border-white/25 bg-white/10 text-white [&>svg]:text-white/70"
+                >
+                  {abwicklerOptions.map((a) => (
+                    <option key={a.name} value={a.name} className="text-foreground">
+                      Abwickler: {a.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -252,19 +266,10 @@ export function EhRechner({
                 Die berechneten Einheiten werden je Karriereplan zu den bestehenden Einheiten addiert.
               </DialogDescription>
             </DialogHeader>
-            {needsAbwickler && (
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Abwickler (erhält die Differenz bei „Investment (mit VB)“)
-                <Select
-                  aria-label="Abwickler wählen"
-                  value={chosenAbwickler?.name ?? ""}
-                  onChange={(e) => setAbwickler(e.target.value)}
-                >
-                  {abwicklerOptions.map((a) => (
-                    <option key={a.name} value={a.name}>{a.name}</option>
-                  ))}
-                </Select>
-              </label>
+            {needsAbwickler && chosenAbwickler && (
+              <p className="text-sm">
+                Abwickler: <strong>{chosenAbwickler.name}</strong> (erhält die Differenz bei „Investment (mit VB)“)
+              </p>
             )}
             <div className="overflow-hidden rounded-md border">
               <table className="w-full border-collapse text-sm">
