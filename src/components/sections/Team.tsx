@@ -21,6 +21,9 @@ import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekDoc } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
+/** Anteil der Vergütung, der als Stornoreserve einbehalten und nicht ausgezahlt wird. */
+const STORNORESERVE_RATE = 0.15
+
 function NumField({
   row, field, wide, isEditor, onCommit,
 }: {
@@ -95,6 +98,8 @@ export function Team({
   const [filter, setFilter] = useState<TeamFilter>("all")
   const [sort, setSort] = useState<TeamSort>("name")
   const [detailName, setDetailName] = useState<string | null>(null)
+  const [stornoreserve, setStornoreserve] = useState(false)
+  const payoutFactor = stornoreserve ? 1 - STORNORESERVE_RATE : 1
   const [managerFilter, setManagerFilter] = useState<string | null>(null)
 
   const roster = useMemo(() => sbRoster(orgTree), [orgTree])
@@ -149,8 +154,8 @@ export function Team({
   const totals = teamTotals(list)
   const earnings = useMemo(() => computeEarnings(merged, orgPlanRates), [merged, orgPlanRates])
   const grandTotalEur = useMemo(
-    () => list.reduce((s, r) => s + (earnings.get(r.name)?.total ?? 0), 0),
-    [list, earnings]
+    () => list.reduce((s, r) => s + (earnings.get(r.name)?.total ?? 0), 0) * payoutFactor,
+    [list, earnings, payoutFactor]
   )
   const detailEntry = detailName ? merged.find((r) => r.name === detailName) ?? null : null
   const detailEarnings = detailName ? earnings.get(detailName) ?? null : null
@@ -205,6 +210,19 @@ export function Team({
       </p>
 
       <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={stornoreserve}
+          onClick={() => setStornoreserve((v) => !v)}
+          className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm shadow-xs"
+          title="Zieht 15 % Stornoreserve von den angezeigten Vergütungen ab (wird nicht ausgezahlt)"
+        >
+          <span className={cn("relative inline-block h-5 w-9 rounded-full transition-colors", stornoreserve ? "bg-primary" : "bg-muted-foreground/30")}>
+            <span className={cn("absolute top-0.5 size-4 rounded-full bg-white shadow transition-all", stornoreserve ? "left-[18px]" : "left-0.5")} />
+          </span>
+          Stornoreserve (15 %)
+        </button>
         <Input
           placeholder="Name suchen…"
           aria-label="Mitarbeiter nach Name suchen"
@@ -320,7 +338,7 @@ export function Team({
                             aria-label={`Verdienst-Details – ${r.name}`}
                             className="shrink-0 whitespace-nowrap text-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 hover:text-foreground"
                           >
-                            {fmtEur(rowEarnings.total)} €
+                            {fmtEur(rowEarnings.total * payoutFactor)} €
                           </button>
                         ) : (
                           <span className="shrink-0 text-muted-foreground">—</span>
@@ -421,6 +439,7 @@ export function Team({
           name={detailEntry.name}
           role={detailEntry.role}
           earnings={detailEarnings}
+          stornoreserveRate={stornoreserve ? STORNORESERVE_RATE : 0}
           isEditor={isEditor}
           onSave={(units, bonus) => saveEarnings(detailEntry, units, bonus)}
         />

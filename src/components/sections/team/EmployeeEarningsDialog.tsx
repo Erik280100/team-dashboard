@@ -33,7 +33,7 @@ function draftFromEarnings(earnings: EmployeeEarnings): Record<PlanId, string> {
 }
 
 export function EmployeeEarningsDialog({
-  open, onOpenChange, name, role, earnings, isEditor, onSave,
+  open, onOpenChange, name, role, earnings, isEditor, onSave, stornoreserveRate = 0,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -42,6 +42,8 @@ export function EmployeeEarningsDialog({
   earnings: EmployeeEarnings
   isEditor: boolean
   onSave: (units: Record<PlanId, number>, bonus: number) => void
+  /** Einbehaltener Anteil (0 = Stornoreserve aus). */
+  stornoreserveRate?: number
 }) {
   const [draft, setDraft] = useState<Record<PlanId, string>>(() => draftFromEarnings(earnings))
   const [bonusDraft, setBonusDraft] = useState<string>(() => String(earnings.bonus || 0))
@@ -201,9 +203,16 @@ export function EmployeeEarningsDialog({
             )}
           </div>
 
+          {stornoreserveRate > 0 && (
+            <div className="flex items-center justify-between px-3 text-sm text-muted-foreground">
+              <span>Stornoreserve (−{Math.round(stornoreserveRate * 100)} %, wird nicht ausgezahlt)</span>
+              <span className="tabular-nums">−{fmtEur(earnings.total * stornoreserveRate)} €</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2 text-sm font-bold">
-            <span>Gesamt</span>
-            <span className="tabular-nums">{fmtEur(earnings.total)} €</span>
+            <span>{stornoreserveRate > 0 ? "Auszahlung" : "Gesamt"}</span>
+            <span className="tabular-nums">{fmtEur(earnings.total * (1 - stornoreserveRate))} €</span>
           </div>
         </div>
 
