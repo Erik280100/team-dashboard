@@ -25,6 +25,7 @@
 // würde Produktion aus deren Unterbaum fälschlich unter dem Satz des Trainees
 // erscheinen, obwohl sie zum höheren Differenzsatz der nächsten echten
 // Führungskraft gerechnet wird.
+import { VB_ABWICKLER_FIRSTNAMES } from "./eh"
 import type { EmployeeRow } from "./format"
 import { PLAN_IDS, isLeadRole, sbGetPlanRate, type PlanId } from "./struktur"
 import type { MergedRow } from "./team"
@@ -166,48 +167,87 @@ export function computeEarnings(
       const producerRate = sbGetPlanRate(planRates, producer.role, planId)
       credit(producer.name, planId, "eigen", u, producerRate, producer.name)
 
-      // c: bereits durch echte Differenz abgedeckter Satz (startet beim eigenen
-      // Satz des Produzenten). tieUsedAtLevel: ob auf dem aktuellen Satz-Plateau
-      // bereits ein Gleichstand-Bonus vergeben wurde — wird bei jeder echten
-      // Differenz (neues Plateau) zurückgesetzt, sodass pro Stufe höchstens 1x
-      // ein Bonus möglich ist.
-      let c = producerRate
-      let tieUsedAtLevel = false
-      // Wer in der Anzeige als "Von" erscheint: das direkte Unterbau-Kind auf
-      // dem Weg zur jeweils gutgeschriebenen Führungskraft, nicht der ganz
-      // unten stehende Ursprungs-Produzent — Produktion, die tiefer im
-      // Unterbau dieses Kindes entsteht, wird so bei dessen direktem Chef
-      // gebündelt (z. B. Josef/Nico unter David, David/Noah unter Erik) statt
-      // als einzelne Zeile je Ursprungs-Produzent aufzuscheinen.
-      let fromName = producer.name
-      let managerName = producer.managerName
-      const visited = new Set<string>([producer.name])
-      let depth = 0
-
-      while (managerName && depth < MAX_CHAIN_DEPTH) {
-        if (visited.has(managerName)) break // Zyklenschutz
-        visited.add(managerName)
-        const manager = byName.get(managerName)
-        if (!manager) break
-        depth++
-
-        if (isLeadRole(manager.role)) {
-          const rA = sbGetPlanRate(planRates, manager.role, planId)
-          if (rA > c) {
-            credit(manager.name, planId, "differenz", u, rA - c, fromName)
-            c = rA
-            tieUsedAtLevel = false
-          } else if (rA > 0 && rA === c && !tieUsedAtLevel) {
-            // Nur die obere Seite des Gleichstands bekommt den Bonus — die
-            // untere (Produzent oder bereits per Differenz bezahlte Führungs-
-            // kraft) hat ihren Anteil schon erhalten.
-            credit(manager.name, planId, "gleichstand", u, 0.5, fromName)
-            tieUsedAtLevel = true
+      // Beim Plan "investmentVb" kann ein Teil der Einheiten beim Buchen einem
+      // Abwickler zugewiesen worden sein (vbByAbwickler). Dieser Teil läuft
+      // über die Kette OHNE die Abwickler selbst und der gewählte Abwickler
+      // bekommt zusätzlich die Differenz seines Satzes zum bis dahin
+      // erreichten Satz. Der Rest läuft wie bisher komplett über die Kette.
+      const assigned: [string, number][] = []
+      let assignedSum = 0
+      if (planId === "investmentVb" && producer.vbByAbwickler) {
+        for (const [abw, n] of Object.entries(producer.vbByAbwickler)) {
+          const take = Math.min(Number(n) || 0, u - assignedSum)
+          if (take > 0 && byName.has(abw)) {
+            assigned.push([abw, take])
+            assignedSum += take
           }
         }
-        if (isLeadRole(manager.role)) fromName = manager.name
-        managerName = manager.managerName
       }
+      const skip = new Set<string>(assigned.map(([abw]) => abw))
+      VB_ABWICKLER_FIRSTNAMES.forEach((fn) => {
+        merged.forEach((m) => {
+          if (m.name.trim().split(/\s+/)[0].toLowerCase() === fn.toLowerCase()) skip.add(m.name)
+        })
+      })
+
+      const runChain = (chainUnits: number, abwickler: string | null) => {
+        // c: bereits durch echte Differenz abgedeckter Satz (startet beim eigenen
+        // Satz des Produzenten). tieUsedAtLevel: ob auf dem aktuellen Satz-Plateau
+        // bereits ein Gleichstand-Bonus vergeben wurde — wird bei jeder echten
+        // Differenz (neues Plateau) zurückgesetzt, sodass pro Stufe höchstens 1x
+        // ein Bonus möglich ist.
+        let c = producerRate
+        let tieUsedAtLevel = false
+        // Wer in der Anzeige als "Von" erscheint: das direkte Unterbau-Kind auf
+        // dem Weg zur jeweils gutgeschriebenen Führungskraft, nicht der ganz
+        // unten stehende Ursprungs-Produzent — Produktion, die tiefer im
+        // Unterbau dieses Kindes entsteht, wird so bei dessen direktem Chef
+        // gebündelt (z. B. Josef/Nico unter David, David/Noah unter Erik) statt
+        // als einzelne Zeile je Ursprungs-Produzent aufzuscheinen.
+        let fromName = producer.name
+        let managerName = producer.managerName
+        const visited = new Set<string>([producer.name])
+        let depth = 0
+
+        while (managerName && depth < MAX_CHAIN_DEPTH) {
+          if (visited.has(managerName)) break // Zyklenschutz
+          visited.add(managerName)
+          const manager = byName.get(managerName)
+          if (!manager) break
+          depth++
+
+          // Zugewiesene VB-Einheiten: Abwickler-Kandidaten bekommen nichts aus
+          // der Kette, der gewählte Abwickler wird unten explizit bedient.
+          const skipManager = abwickler !== null && skip.has(manager.name)
+          if (isLeadRole(manager.role) && !skipManager) {
+            const rA = sbGetPlanRate(planRates, manager.role, planId)
+            if (rA > c) {
+              credit(manager.name, planId, "differenz", chainUnits, rA - c, fromName)
+              c = rA
+              tieUsedAtLevel = false
+            } else if (rA > 0 && rA === c && !tieUsedAtLevel) {
+              // Nur die obere Seite des Gleichstands bekommt den Bonus — die
+              // untere (Produzent oder bereits per Differenz bezahlte Führungs-
+              // kraft) hat ihren Anteil schon erhalten.
+              credit(manager.name, planId, "gleichstand", chainUnits, 0.5, fromName)
+              tieUsedAtLevel = true
+            }
+          }
+          if (isLeadRole(manager.role) && !skipManager) fromName = manager.name
+          managerName = manager.managerName
+        }
+
+        if (abwickler !== null) {
+          const abw = byName.get(abwickler)
+          const rAbw = abw ? sbGetPlanRate(planRates, abw.role, planId) : 0
+          if (abw && abw.name !== producer.name && rAbw > c) {
+            credit(abw.name, planId, "differenz", chainUnits, rAbw - c, fromName)
+          }
+        }
+      }
+
+      assigned.forEach(([abw, n]) => runChain(n, abw))
+      if (u - assignedSum > 0) runChain(u - assignedSum, null)
     })
   })
 

@@ -42,6 +42,7 @@ export function resetRowsForNewMonth(rows: EmployeeRow[]): EmployeeRow[] {
       PLAN_IDS.forEach((p) => { ehByPlan[p] = 0 })
       next.ehByPlan = ehByPlan
     }
+    if (r.vbByAbwickler) next.vbByAbwickler = {}
     return next
   })
 }

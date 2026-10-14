@@ -40,6 +40,22 @@ export interface EhItem {
 export const FROOTS_MTL_VB_THRESHOLD = 500
 export const FROOTS_EINMALIG_VB_THRESHOLD = 10000
 
+/** Vornamen der Abwickler, die VB-Geschäft (Plan "investmentVb") übernehmen
+ * dürfen — der erste ist der Standard. Zuordnung zu Mitarbeitern über den
+ * Vornamen (siehe ehAbwicklerOptions). */
+export const VB_ABWICKLER_FIRSTNAMES = ["Georg", "Sandro"]
+
+/** Abwickler-Kandidaten aus einer Mitarbeiterliste, in Reihenfolge von
+ * VB_ABWICKLER_FIRSTNAMES. */
+export function ehAbwicklerOptions<T extends { name: string }>(employees: T[]): T[] {
+  const out: T[] = []
+  VB_ABWICKLER_FIRSTNAMES.forEach((fn) => {
+    const e = employees.find((x) => x.name.trim().split(/\s+/)[0].toLowerCase() === fn.toLowerCase())
+    if (e) out.push(e)
+  })
+  return out
+}
+
 /** Ziel-Karriereplan der Einheiten eines Items für die konkrete Eingabe. */
 export function ehPlanIdFor(item: EhItem, g: number, j: number): PlanId {
   return item.planFor ? item.planFor(g, j) : item.sparte

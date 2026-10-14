@@ -275,3 +275,27 @@ describe("computeEarnings: Zyklenschutz", () => {
     expect(() => computeEarnings(merged, RATES)).not.toThrow()
   })
 })
+
+describe("VB-Abwickler-Zuweisung (investmentVb)", () => {
+  const rates = {
+    ...RATES,
+    investmentVb: { Direktor: 6, Geschäftsstellenleiter: 4, FT1: 1 },
+  }
+  const mk = (vb?: Record<string, number>) => [
+    row("Georg Kögerl", "Direktor", null),
+    row("Sandro Test", "Direktor", "Georg Kögerl"),
+    { ...row("Mitarbeiter", "FT1", "Sandro Test", { investmentVb: 10 }), vbByAbwickler: vb },
+  ]
+
+  it("ohne Zuweisung läuft die Kette wie bisher (Sandro, dann Georg)", () => {
+    const m = computeEarnings(mk(), rates)
+    expect(m.get("Sandro Test")!.diff.investmentVb.amount).toBe(50)
+    expect(m.get("Georg Kögerl")!.diff.investmentVb.amount).toBe(5) // nur Gleichstand-Bonus
+  })
+
+  it("zugewiesener Abwickler bekommt die Differenz, der andere nichts", () => {
+    const m = computeEarnings(mk({ "Georg Kögerl": 10 }), rates)
+    expect(m.get("Georg Kögerl")!.diff.investmentVb.amount).toBe(50)
+    expect(m.get("Sandro Test")!.diff.investmentVb.amount).toBe(0)
+  })
+})

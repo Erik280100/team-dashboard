@@ -14,7 +14,7 @@ import { PLAN_IDS, sbRoster, withDefaultPlanRates, type PlanId } from "@/lib/cal
 import { mergeRosterWithRows, newRowFor, relabelRowsByRoster } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
-import { formatISODateDE } from "@/lib/calc/format"
+import { formatISODateDE, type EmployeeRow } from "@/lib/calc/format"
 import { useAuth } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
@@ -166,17 +166,26 @@ function AppShell() {
   /** Bucht Einheiten (je Karriereplan) additiv auf einen Mitarbeiter — siehe
    * "Übernehmen"-Button im EH-Rechner. Legt bei Bedarf eine neue Zeile in
    * dashboard.rows an, analog zu Team.tsx commitField/commitPlanUnits. */
-  function applyUnitsToEmployee(name: string, delta: Record<PlanId, number>) {
+  function applyUnitsToEmployee(name: string, delta: Record<PlanId, number>, abwickler?: string) {
     const entry = merged.find((m) => m.name === name)
     if (!entry) return
     const current = readPlanUnits(entry)
     const next = {} as Record<PlanId, number>
     PLAN_IDS.forEach((p) => { next[p] = (Number(current[p]) || 0) + (Number(delta[p]) || 0) })
+    // VB-Einheiten (Plan "investmentVb") dem gewählten Abwickler zuweisen.
+    const vbDelta = Number(delta.investmentVb) || 0
+    const withVb = (row: EmployeeRow): EmployeeRow => {
+      const base = withPlanUnits(row, next)
+      if (!abwickler || vbDelta <= 0) return base
+      const vb = { ...(row.vbByAbwickler ?? {}) }
+      vb[abwickler] = (Number(vb[abwickler]) || 0) + vbDelta
+      return { ...base, vbByAbwickler: vb }
+    }
     if (entry.rowIndex !== null) {
-      const nextRows = dashboard.rows.map((r, i) => (i === entry.rowIndex ? withPlanUnits(r, next) : r))
+      const nextRows = dashboard.rows.map((r, i) => (i === entry.rowIndex ? withVb(r) : r))
       dashboard.saveRows(nextRows)
     } else {
-      dashboard.saveRows([...dashboard.rows, withPlanUnits(newRowFor(entry.name), next)])
+      dashboard.saveRows([...dashboard.rows, withVb(newRowFor(entry.name))])
     }
   }
 

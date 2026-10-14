@@ -106,6 +106,7 @@ export function mergeRosterWithRows(roster: RosterEntry[], rows: EmployeeRow[]):
       soll: Number(row?.soll) || 0,
       ist: Number(row?.ist) || 0,
       ehByPlan: row?.ehByPlan,
+      vbByAbwickler: row?.vbByAbwickler,
       bonus: Number(row?.bonus) || 0,
       role: entry.role,
       managerName: entry.managerName,

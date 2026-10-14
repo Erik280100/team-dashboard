@@ -15,6 +15,10 @@ export interface EmployeeRow {
    * Feld (Altbestand vor der Karrierepläne-Aufteilung), gilt ist als reiner
    * Insurance-Wert — siehe readPlanUnits() in verguetung.ts. */
   ehByPlan?: Partial<Record<PlanId, number>>
+  /** Anteil von ehByPlan.investmentVb je Abwickler (Name → Einheiten), der beim
+   * Buchen im EH-Rechner einem bestimmten Abwickler zugewiesen wurde. Der Rest
+   * (ohne Zuweisung) läuft wie bisher über die Vorgesetztenkette. */
+  vbByAbwickler?: Record<string, number>
   /** Manuell erfasster Bonusbetrag (€), wird zur Gesamtvergütung addiert. */
   bonus?: number
   isNew?: boolean

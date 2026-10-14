@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
-import { calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
+import { calcEh, ehAbwicklerOptions, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
 import { PLAN_IDS, PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
 
 // legacy/index.html:821-824 — Gruppen-Akzentfarbe (oberer Rand der Karte)
@@ -49,13 +49,14 @@ export function EhRechner({
   employees: { name: string; role: string; units: Record<PlanId, number> }[]
   /** Steuert nur die Buchen-Sektion — jeder Besucher darf hier auf sich buchen. */
   canBook: boolean
-  onApplyUnits: (name: string, units: Record<PlanId, number>) => void
+  onApplyUnits: (name: string, units: Record<PlanId, number>, abwickler?: string) => void
 }) {
   const [g, setG] = useState(defaultG)
   const [j, setJ] = useState(defaultJ)
   const [mult, setMult] = useState(defaultMult)
   const [selectedName, setSelectedName] = useState("")
   const [bookingOpen, setBookingOpen] = useState(false)
+  const [abwickler, setAbwickler] = useState("")
   const [lastBooked, setLastBooked] = useState<string | null>(null)
   const confirm = useConfirm()
 
@@ -65,6 +66,9 @@ export function EhRechner({
     return acc
   }, {} as Record<PlanId, number>)
   const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
+  const abwicklerOptions = ehAbwicklerOptions(employees)
+  const needsAbwickler = bookedUnits.investmentVb > 0 && abwicklerOptions.length > 0
+  const chosenAbwickler = abwicklerOptions.find((a) => a.name === abwickler) ?? abwicklerOptions[0] ?? null
 
   async function onReset() {
     const ok = await confirm("Alle Eingaben im EH-Rechner wirklich zurücksetzen?")
@@ -76,7 +80,7 @@ export function EhRechner({
 
   function onConfirmBooking() {
     if (!selectedEmployee) return
-    onApplyUnits(selectedEmployee.name, bookedUnits)
+    onApplyUnits(selectedEmployee.name, bookedUnits, needsAbwickler ? chosenAbwickler?.name : undefined)
     setLastBooked(selectedEmployee.name)
     setBookingOpen(false)
   }
@@ -246,6 +250,20 @@ export function EhRechner({
                 Die berechneten Einheiten werden je Karriereplan zu den bestehenden Einheiten addiert.
               </DialogDescription>
             </DialogHeader>
+            {needsAbwickler && (
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                Abwickler (erhält die Differenz bei „Investment (mit VB)“)
+                <Select
+                  aria-label="Abwickler wählen"
+                  value={chosenAbwickler?.name ?? ""}
+                  onChange={(e) => setAbwickler(e.target.value)}
+                >
+                  {abwicklerOptions.map((a) => (
+                    <option key={a.name} value={a.name}>{a.name}</option>
+                  ))}
+                </Select>
+              </label>
+            )}
             <div className="overflow-hidden rounded-md border">
               <table className="w-full border-collapse text-sm">
                 <thead>
