@@ -282,14 +282,17 @@ export function Team({
             <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
               <th className="sticky top-0 z-10 min-w-[300px] bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Status</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur border-l border-foreground/20" colSpan={4}>Plan (AT / BT / ST / ET)</th>
-              <th
-                className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-center backdrop-blur border-l border-foreground/20"
-                colSpan={4}
-                title="Wird automatisch aus der Wochenplanung übernommen"
-              >
-                Ist (AT / BT / ST / ET)
-              </th>
+              {(["Plan", "Ist"] as const).flatMap((g) =>
+                (["AT", "BT", "ST", "ET"] as const).map((k) => (
+                  <th
+                    key={`${g}-${k}`}
+                    className="sticky top-0 z-10 whitespace-nowrap bg-muted/95 px-2 py-2 text-center backdrop-blur border-l border-foreground/20"
+                    title={g === "Ist" ? "Wird automatisch aus der Wochenplanung übernommen" : undefined}
+                  >
+                    {g} {k}
+                  </th>
+                )),
+              )}
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Soll</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Ist</th>
               <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Fortschritt</th>
