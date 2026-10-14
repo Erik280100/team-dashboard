@@ -12,8 +12,10 @@ import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
 import { fmt } from "@/lib/calc/format"
 import { readPlanUnits } from "@/lib/calc/verguetung"
+import { monthKeyOf } from "@/lib/calc/archive"
+import type { ArchiveIndexEntry } from "@/types/archive"
 import {
-  barChartData, doughnutData, goalProgress, leaderboardData,
+  doughnutData, goalProgress, leaderboardData,
   revenueShareData, summaryKpis, timelineData,
 } from "@/lib/calc/overview"
 import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
@@ -45,6 +47,7 @@ export function Overview({
   offenesFinanzierungsvolumen,
   offeneAnlegerwohnungen,
   planung,
+  archiveIndex,
 }: {
   rows: EmployeeRow[]
   teamGoal: TeamGoal
@@ -65,11 +68,12 @@ export function Overview({
    * Leaderboard (analog Team.tsx) — undefined im Archiv-Modus, dort bleiben
    * die eingefrorenen Row-Werte (Stand Monatsabschluss) sichtbar. */
   planung?: UsePlanungDocResult
+  /** Abgeschlossene Monate aus dem Archiv, Basis der Jahreswerte. */
+  archiveIndex: ArchiveIndexEntry[]
 }) {
   const kpis = summaryKpis(rows)
   const goal = goalProgress(rows)
   const timeline = timelineData(teamGoal, rows, history, now ?? new Date())
-  const bars = barChartData(rows)
   const doughnut = doughnutData(rows)
   const shares = revenueShareData(rows)
   const planTotals = rows.reduce(
@@ -83,6 +87,7 @@ export function Overview({
     { insurance: 0, invest: 0, credit: 0 }
   )
   const planSum = planTotals.insurance + planTotals.invest + planTotals.credit
+  const yearly = yearlyPlanData(rows, teamGoal, archiveIndex)
   const sparten = [
     { label: "Insurance", icon: Shield, units: planTotals.insurance },
     { label: "Invest", icon: TrendingUp, units: planTotals.invest },
@@ -339,15 +344,20 @@ export function Overview({
         </Card>
 
         <Card className={DARK_CARD}>
-          <DarkCardHeader title="Top 10 Geschäftspartner" sub="Anteil am Gesamtumsatz" />
+          <DarkCardHeader title="Top 10 Geschäftspartner" sub="Einheiten" />
           <CardContent className="flex flex-col gap-1.5">
             {shares.slice(0, 10).map((s, i) => (
               <div key={s.name} className="flex items-center gap-3 text-sm">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/60">
+                <span
+                  className={
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold " +
+                    (i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-neutral-300 text-black" : i === 2 ? "bg-amber-700 text-white" : "bg-white/10 text-white/60")
+                  }
+                >
                   {i + 1}
                 </span>
                 <span className="flex-1 truncate text-white/80">{s.name}</span>
-                <span className="font-semibold tabular-nums text-white">{s.pct}%</span>
+                <span className="font-semibold tabular-nums text-white">{fmt(s.value)}</span>
               </div>
             ))}
           </CardContent>
@@ -393,17 +403,21 @@ export function Overview({
         ))}
       </div>
 
-      {/* Bar-Chart Soll vs. Ist */}
+      {/* Jahreswerte je Sparte */}
       <Card className={DARK_CARD}>
-        <DarkCardHeader title="Einheiten — Soll vs. Ist pro Mitarbeiter" sub="Aktueller Stand je Mitarbeiter" />
+        <DarkCardHeader
+          title={`Jahreswerte ${yearly.year}`}
+          sub={`Einheiten je Monat · Insurance ${fmt(yearly.totals.insurance)} · Invest ${fmt(yearly.totals.invest)} · Credit ${fmt(yearly.totals.credit)}`}
+        />
         <CardContent>
           <div className="h-[280px]">
             <Bar
               data={{
-                labels: bars.map((b) => b.shortName),
+                labels: MONTH_LABELS,
                 datasets: [
-                  { label: "Soll", data: bars.map((b) => b.soll), backgroundColor: "rgba(255,255,255,.12)", borderRadius: 4 },
-                  { label: "Ist", data: bars.map((b) => b.ist), backgroundColor: "#64DDA3", borderRadius: 4 },
+                  { label: "Insurance", data: yearly.months.map((m) => m.insurance), backgroundColor: "#64DDA3", borderRadius: 4 },
+                  { label: "Invest", data: yearly.months.map((m) => m.invest), backgroundColor: "#E7A94C", borderRadius: 4 },
+                  { label: "Credit", data: yearly.months.map((m) => m.credit), backgroundColor: "#5B7C8A", borderRadius: 4 },
                 ],
               }}
               options={{
@@ -411,20 +425,54 @@ export function Overview({
                 maintainAspectRatio: false,
                 plugins: { legend: DARK_LEGEND },
                 scales: {
-                  x: { grid: { display: false }, ticks: { ...DARK_TICK, maxRotation: 60, minRotation: 60 } },
-                  y: { beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
+                  x: { stacked: true, grid: { display: false }, ticks: DARK_TICK },
+                  y: { stacked: true, beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
                 },
               }}
               aria-label={
-                "Einheiten Soll vs. Ist pro Mitarbeiter: " +
-                bars.map((b) => `${b.fullName} Ist ${fmt(b.ist)} von Soll ${fmt(b.soll)}`).join(", ")
+                `Jahreswerte ${yearly.year} in Einheiten: Insurance ${fmt(yearly.totals.insurance)}, ` +
+                `Invest ${fmt(yearly.totals.invest)}, Credit ${fmt(yearly.totals.credit)}`
               }
               role="img"
             />
           </div>
         </CardContent>
       </Card>
-
     </div>
   )
+}
+
+const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
+
+interface PlanMonth { insurance: number; invest: number; credit: number }
+
+/** Einheiten je Sparte und Monat des Jahres der aktuellen Periode: abgeschlossene
+ * Monate aus dem Archiv, der laufende Monat live aus den Zeilen (falls noch nicht archiviert). */
+function yearlyPlanData(rows: EmployeeRow[], teamGoal: TeamGoal, archiveIndex: ArchiveIndexEntry[]) {
+  const currentKey = monthKeyOf(teamGoal)
+  const year = currentKey.slice(0, 4)
+  const months: PlanMonth[] = MONTH_LABELS.map(() => ({ insurance: 0, invest: 0, credit: 0 }))
+  const put = (key: string, p: PlanMonth) => {
+    if (key.slice(0, 4) !== year) return
+    months[Number(key.slice(5, 7)) - 1] = p
+  }
+  archiveIndex.forEach((e) => {
+    const u = e.totals.ehByPlan
+    put(e.month, { insurance: u.insurance || 0, invest: (u.investment || 0) + (u.investmentVb || 0), credit: u.credit || 0 })
+  })
+  if (!archiveIndex.some((e) => e.month === currentKey)) {
+    const p: PlanMonth = { insurance: 0, invest: 0, credit: 0 }
+    rows.forEach((r) => {
+      const u = readPlanUnits(r)
+      p.insurance += u.insurance
+      p.invest += u.investment + u.investmentVb
+      p.credit += u.credit
+    })
+    put(currentKey, p)
+  }
+  const totals = months.reduce(
+    (a, m) => ({ insurance: a.insurance + m.insurance, invest: a.invest + m.invest, credit: a.credit + m.credit }),
+    { insurance: 0, invest: 0, credit: 0 }
+  )
+  return { year, months, totals }
 }

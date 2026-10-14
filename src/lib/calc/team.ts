@@ -190,3 +190,19 @@ export function teamTotals(list: EmployeeRow[]): TeamTotals {
     soll: sum("soll"), ist: sum("ist"),
   }
 }
+
+/**
+ * Setzt in den rows die Namen auf die Schreibweise des Strukturbaums (Quelle der
+ * Wahrheit für Namen). Zuordnung wie in mergeRosterWithRows; nicht zugeordnete
+ * Zeilen bleiben unverändert. Reihenfolge/Indizes bleiben erhalten.
+ */
+export function relabelRowsByRoster(roster: RosterEntry[], rows: EmployeeRow[]): EmployeeRow[] {
+  const nameByIndex = new Map<number, string>()
+  mergeRosterWithRows(roster, rows).forEach((m) => {
+    if (m.rowIndex !== null) nameByIndex.set(m.rowIndex, m.name)
+  })
+  return rows.map((r, i) => {
+    const name = nameByIndex.get(i)
+    return name !== undefined && name !== r.name ? { ...r, name } : r
+  })
+}

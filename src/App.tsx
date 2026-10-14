@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { PLAN_IDS, sbRoster, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
-import { mergeRosterWithRows, newRowFor } from "@/lib/calc/team"
+import { mergeRosterWithRows, newRowFor, relabelRowsByRoster } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE } from "@/lib/calc/format"
@@ -128,7 +128,7 @@ function AppShell() {
           rates: orgChart.rates, planRates: orgChart.planRates,
         }
     return {
-      rows: snapshot?.rows ?? dashboard.rows,
+      rows: relabelRowsByRoster(sbRoster(orgDoc.tree), snapshot?.rows ?? dashboard.rows),
       teamGoal: snapshot?.teamGoal ?? dashboard.teamGoal,
       history: snapshot?.history ?? dashboard.history,
       orgTree: orgDoc.tree,
@@ -157,6 +157,7 @@ function AppShell() {
   // live, unabhängig vom Archiv-Modus (Rechner/Kalender sind keine Archiv-Sektionen).
   const roster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
   const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
+  const planungRows = useMemo(() => relabelRowsByRoster(roster, dashboard.rows), [roster, dashboard.rows])
   const rechnerEmployees = useMemo(
     () => merged.map((m) => ({ name: m.name, role: m.role, units: readPlanUnits(m) })),
     [merged]
@@ -305,6 +306,7 @@ function AppShell() {
                     now={view.now}
                     offenesFinanzierungsvolumen={offenesFinanzierungsvolumen}
                     offeneAnlegerwohnungen={offeneAnlegerwohnungen}
+                    archiveIndex={archive.index}
                     planung={isArchive ? undefined : planung}
                   />
                 )
@@ -332,7 +334,7 @@ function AppShell() {
                   orgTree={orgChart.tree}
                   planung={planung}
                   isEditor={auth.isEditor}
-                  rows={dashboard.rows}
+                  rows={planungRows}
                   unitsMonthKey={monthKeyOf(dashboard.teamGoal)}
                 />
               )}
