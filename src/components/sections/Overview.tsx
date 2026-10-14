@@ -6,7 +6,7 @@
 import "@/lib/chartSetup"
 import { useEffect, useState, type ChangeEvent } from "react"
 import { Doughnut, Line } from "react-chartjs-2"
-import { Users, Landmark, Building2, Shield, TrendingUp, Wallet } from "lucide-react"
+import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_TICK } from "@/lib/chartSetup"
@@ -98,6 +98,7 @@ export function Overview({
     { label: "Invest", icon: TrendingUp, units: planTotals.invest },
     { label: "Credit", icon: Wallet, units: planTotals.credit },
   ].map((s) => ({ ...s, pct: planSum > 0 ? Math.round((s.units / planSum) * 100) : 0 }))
+  sparten.push({ label: "Gesamt", icon: Sigma, units: planSum, pct: planSum > 0 ? 100 : 0 })
 
   // Ist-AT fürs Leaderboard live aus der Wochenplanung übernehmen (Summe der
   // "analysen"-Gemacht-Werte über alle Wochen des aktuellen Umsatzmonats) —
@@ -391,7 +392,7 @@ export function Overview({
 
 
       {/* Umsatz nach Sparte */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {sparten.map((s) => (
           <Card key={s.label} className={DARK_CARD}>
             <CardContent className="flex items-center gap-4">
@@ -409,11 +410,12 @@ export function Overview({
       </div>
 
       {/* Jahreswerte je Sparte */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Insurance", icon: Shield, units: yearly.totals.insurance },
           { label: "Invest", icon: TrendingUp, units: yearly.totals.invest },
           { label: "Credit", icon: Wallet, units: yearly.totals.credit },
+          { label: "Gesamt", icon: Sigma, units: yearly.total },
         ].map((s) => (
           <Card key={s.label} className={DARK_CARD}>
             <CardContent className="flex items-center gap-4">
@@ -422,7 +424,7 @@ export function Overview({
               </div>
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">{s.label} {yearly.year}</div>
-                <div className="text-2xl font-extrabold">{fmt(s.units)}/{fmt(yearly.total)}</div>
+                <div className="text-2xl font-extrabold">{fmt(s.units)}</div>
                 <div className="text-xs text-white/50">Einheiten im Jahr</div>
               </div>
             </CardContent>
