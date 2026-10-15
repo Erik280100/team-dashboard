@@ -79,51 +79,45 @@ function KpiTile({ label, value, sub }: { label: string; value: string; sub: str
   )
 }
 
-type RaceItem = { key: string; label: string; soll: number; ist: number }
+type RaceLine = { key: string; label: string; color: string; soll: number; ist: number; max: number }
 
-// Rennliste wie im Excel: je Kennzahl ein Block, je Person ein Balken (Ist),
-// dünne Markierung = Soll. Skala je Block gemeinsam, damit vergleichbar.
-function RaceBlock({
-  title, color, items, totalSoll, totalIst,
-}: {
-  title: string
-  color: string
-  items: RaceItem[]
-  totalSoll: number
-  totalIst: number
-}) {
-  const sorted = [...items].sort((a, b) => b.ist - a.ist || a.label.localeCompare(b.label))
-  const max = Math.max(1, ...items.map((i) => Math.max(i.ist, i.soll)))
+// Rennliste wie im Excel: je Person eine Kachel, darin je Kennzahl (AT/BT/ST/ET)
+// ein farbiger Balken (Ist) mit roter Soll-Markierung. Die Skala ist je Kennzahl
+// über alle Kacheln gleich, damit Personen untereinander vergleichbar bleiben.
+function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: RaceLine[] }) {
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: color }}>
-        <span className="text-sm font-bold text-black/80">{title}</span>
-        <span className="font-mono text-sm font-semibold tabular-nums text-black/80">
-          {fmt(totalIst)} / {fmt(totalSoll)}
-        </span>
+      <div className="border-b bg-muted/50 px-4 py-2.5">
+        <div className="truncate text-sm font-bold">{title}</div>
+        {sub && <div className="truncate text-xs text-muted-foreground">{sub}</div>}
       </div>
       <div className="flex flex-col gap-1.5 p-3">
-        {sorted.map((i) => {
-          const reached = i.soll > 0 && i.ist >= i.soll
+        {lines.map((l) => {
+          const reached = l.soll > 0 && l.ist >= l.soll
           return (
-            <div key={i.key} className="flex items-center gap-3">
-              <div className="w-32 shrink-0 truncate text-right text-xs sm:w-40">{i.label}</div>
+            <div key={l.key} className="flex items-center gap-3">
+              <div
+                className="w-10 shrink-0 rounded-sm py-0.5 text-center text-xs font-bold text-black/80"
+                style={{ backgroundColor: l.color }}
+              >
+                {l.label}
+              </div>
               <div className="relative h-5 flex-1 rounded-sm bg-muted/60">
                 <div
                   className="h-full rounded-sm"
-                  style={{ width: `${(i.ist / max) * 100}%`, backgroundColor: color, opacity: reached ? 1 : 0.6 }}
+                  style={{ width: `${(l.ist / l.max) * 100}%`, backgroundColor: l.color, opacity: reached ? 1 : 0.6 }}
                 />
-                {i.soll > 0 && (
+                {l.soll > 0 && (
                   <div
                     className="absolute inset-y-[-2px] w-0.5 bg-red-600"
-                    style={{ left: `${Math.min(100, (i.soll / max) * 100)}%` }}
-                    title={`Soll ${fmt(i.soll)}`}
+                    style={{ left: `${Math.min(100, (l.soll / l.max) * 100)}%` }}
+                    title={`Soll ${fmt(l.soll)}`}
                   />
                 )}
               </div>
               <div className="w-14 shrink-0 text-right text-xs tabular-nums">
-                <strong>{fmt(i.ist)}</strong>
-                <span className="text-muted-foreground">/{fmt(i.soll)}</span>
+                <strong>{fmt(l.ist)}</strong>
+                <span className="text-muted-foreground">/{fmt(l.soll)}</span>
               </div>
             </div>
           )
@@ -132,6 +126,13 @@ function RaceBlock({
     </div>
   )
 }
+
+const RACE_CATS = [
+  { label: "AT", color: "#93C47D", soll: "analysenZ", ist: "analysen" },
+  { label: "BT", color: "#FFE000", soll: "beratungenZ", ist: "beratungen" },
+  { label: "ST", color: "#FF9900", soll: "stz", ist: "stg" },
+  { label: "ET", color: "#FF2A1A", soll: "etz", ist: "etg" },
+] as const
 
 export function Monatsplanung({
   people, planung, isEditor, teamGroups, rows: employeeRows, unitsMonthKey,
@@ -233,25 +234,21 @@ export function Monatsplanung({
         <KpiTile label="Einheiten gemacht" value={fmt(total.ehGemacht)} sub={`${fmt(total.ehOffen)} EH offen`} />
       </div>
 
-      {rows.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {([
-            { title: "AT", color: "#93C47D", soll: "analysenZ", ist: "analysen" },
-            { title: "BT", color: "#FFE000", soll: "beratungenZ", ist: "beratungen" },
-            { title: "ST", color: "#FF9900", soll: "stz", ist: "stg" },
-            { title: "ET", color: "#FF2A1A", soll: "etz", ist: "etg" },
-          ] as const).map((b) => (
-            <RaceBlock
-              key={b.title}
-              title={b.title}
-              color={b.color}
-              totalSoll={total[b.soll]}
-              totalIst={total[b.ist]}
-              items={rows.map((r) => ({ key: r.key, label: r.label, soll: r.data[b.soll], ist: r.data[b.ist] }))}
-            />
-          ))}
-        </div>
-      )}
+      {rows.length > 0 && (() => {
+        const maxByCat = RACE_CATS.map((c) =>
+          Math.max(1, total[c.soll], total[c.ist], ...rows.map((r) => Math.max(r.data[c.soll], r.data[c.ist])))
+        )
+        const linesFor = (d: ReturnType<typeof sumWeekEntries>, id: string): RaceLine[] =>
+          RACE_CATS.map((c, i) => ({ key: `${id}-${c.label}`, label: c.label, color: c.color, soll: d[c.soll], ist: d[c.ist], max: maxByCat[i] }))
+        return (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <RaceCard title="Komplett" sub="Summe aller" lines={linesFor(total, "total")} />
+            {rows.map((r) => (
+              <RaceCard key={r.key} title={r.label} sub={r.sub} lines={linesFor(r.data, r.key)} />
+            ))}
+          </div>
+        )
+      })()}
 
       {rows.length === 0 ? (
         <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
