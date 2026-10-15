@@ -179,6 +179,8 @@ export interface PlanMonthNotesEntry {
   st: string
   et: string
   feedback: string
+  /** Einheitenziel (EH-Soll) des Monats — erscheint als Soll auf der Mitarbeiterseite. Ältere Dokumente haben es nicht. */
+  ehZiel?: number
 }
 
 /** finova/plan_month_notes_<YYYY-MM> — entries je Mitarbeitername. */

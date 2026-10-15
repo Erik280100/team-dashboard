@@ -88,6 +88,8 @@ export interface UsePlanungDocResult {
   monthNotesDoc: PlanMonthNotesDoc
   /** Schreibt/merged einen Notiz-Eintrag für `name` im aktuell angezeigten Monat. */
   saveMonthNoteEntry: (name: string, patch: Partial<PlanMonthNotesEntry>) => void
+  /** Monats-Notizen eines beliebigen Monats (z. B. Einheitenziel für die Mitarbeiterseite); null solange sie laden. */
+  getMonthNotes: (month: string) => PlanMonthNotesDoc | null
   /** Jahresplanungs-Dokument einer Führungskraft (Fallback: defaultAnnual()). */
   annual: (year: number, managerName: string) => PlanAnnualDoc
   annualStatus: (year: number, managerName: string) => WeekDocStatus
@@ -249,6 +251,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
       const nextEntry = { ...(current.entries[name] ?? emptyMonthNoteEntry()), ...patch }
       const next: PlanMonthNotesDoc = { month: current.month, entries: { ...current.entries, [name]: nextEntry } }
       setMonthNotesDoc(next)
+      monthCacheRef.current.set(next.month, next) // Mitarbeiterseite nicht veraltet lassen
       try { localStorage.setItem(planMonthNotesStorageKey(next.month), JSON.stringify(next)) } catch { /* noop */ }
       const docRef = planMonthNotesDocRef(next.month)
       if (CLOUD_CONFIGURED && monthCloudReady.current && docRef) {
@@ -258,6 +261,39 @@ export function usePlanungDoc(): UsePlanungDocResult {
       }
     },
     []
+  )
+
+  // Lazy-Cache für Monats-Notizen anderer Monate als activeMonth (Einheitenziel auf
+  // der Mitarbeiterseite). Der aktive Monat kommt direkt aus dem Live-State.
+  const monthCacheRef = useRef<Map<string, PlanMonthNotesDoc>>(new Map())
+  const monthLoadingRef = useRef<Set<string>>(new Set())
+  const [, bumpMonthCache] = useState(0)
+
+  const getMonthNotes = useCallback(
+    (month: string): PlanMonthNotesDoc | null => {
+      if (monthNotesDoc.month === month) return monthNotesDoc
+      const cached = monthCacheRef.current.get(month)
+      if (cached) return cached
+      if (!monthLoadingRef.current.has(month)) {
+        monthLoadingRef.current.add(month)
+        queueMicrotask(async () => {
+          let doc = loadLocalMonthNotesDoc(month)
+          const ref = planMonthNotesDocRef(month)
+          if (CLOUD_CONFIGURED && ref) {
+            try {
+              const snap = await getDoc(ref)
+              if (snap.exists()) doc = { month, entries: (snap.data() as Partial<PlanMonthNotesDoc>).entries ?? {} }
+            } catch (err) {
+              console.warn(`Monatsnotizen ${month} konnten nicht geladen werden`, err)
+            }
+          }
+          monthCacheRef.current.set(month, doc)
+          bumpMonthCache((n) => n + 1)
+        })
+      }
+      return null
+    },
+    [monthNotesDoc]
   )
 
   // ---- Jahresplanung — eigenes kleines Live-Cache-Set, ein Dokument je
@@ -343,7 +379,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
   return {
     activeWeek, setActiveWeek, weekDoc, saveWeekEntry,
     getWeek, loadWeeks,
-    activeMonth, setActiveMonth, monthNotesDoc, saveMonthNoteEntry,
+    activeMonth, setActiveMonth, monthNotesDoc, saveMonthNoteEntry, getMonthNotes,
     annual, annualStatus, saveAnnual,
   }
 }

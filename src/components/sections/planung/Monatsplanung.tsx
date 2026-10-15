@@ -23,12 +23,13 @@ const NOTE_FIELDS: { key: keyof PlanMonthNotesEntry; label: string }[] = [
 ]
 
 function MonthNoteCard({
-  person, entry, isEditor, onCommit,
+  person, entry, isEditor, onCommit, onCommitZiel,
 }: {
   person: RosterEntry
   entry: PlanMonthNotesEntry
   isEditor: boolean
   onCommit: (field: keyof PlanMonthNotesEntry, value: string) => void
+  onCommitZiel: (value: number) => void
 }) {
   return (
     <Card>
@@ -44,6 +45,19 @@ function MonthNoteCard({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-3">
+        <div>
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Einheitenziel</div>
+          <input
+            key={`${person.name}-ehZiel-${entry.ehZiel ?? 0}`}
+            type="number"
+            min={0}
+            disabled={!isEditor}
+            defaultValue={entry.ehZiel ?? 0}
+            aria-label={`Einheitenziel – ${person.name}`}
+            className="h-8 w-28 rounded-md border border-input bg-background px-2 text-sm tabular-nums outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
+            onBlur={(e) => onCommitZiel(Number(e.target.value) || 0)}
+          />
+        </div>
         {NOTE_FIELDS.map((f) => (
           <div key={f.key}>
             <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{f.label}</div>
@@ -128,7 +142,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
 }
 
 type WeekSum = ReturnType<typeof sumWeekEntries>
-// EH: Soll = gemacht + offen (noch zu leistende Einheiten).
+// EH: Soll wird in Monatsplanung() durch das Einheitenziel überschrieben (hier nur Fallback).
 const RACE_CATS: { label: string; color: string; soll: (d: WeekSum) => number; ist: (d: WeekSum) => number }[] = [
   { label: "EH", color: "#FFE000", soll: (d) => d.ehGemacht + d.ehOffen, ist: (d) => d.ehGemacht },
   { label: "AT", color: "#93C47D", soll: (d) => d.analysenZ, ist: (d) => d.analysen },
@@ -212,9 +226,17 @@ export function Monatsplanung({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [weeks, loading, teamGroups, unitsByName]
   )
-  const rows: { key: string; label: string; sub: string; data: ReturnType<typeof sumWeekEntries> }[] = byGroup
-    ? teamGroups!.map((g) => ({ key: g.name, label: g.name, sub: `${g.role} · Team gesamt (${g.names.length})`, data: byGroup.get(g.name) ?? sumWeekEntries([]) }))
-    : people.map((p) => ({ key: p.name, label: p.name, sub: p.role, data: byName.get(p.name) ?? sumWeekEntries([]) }))
+  // Einheitenziel je Person aus den Monats-Notizkacheln (nur gültig, wenn das
+  // Notizdokument zum angezeigten Monat gehört — direkt nach Monatswechsel noch nicht).
+  const zielOf = (name: string): number =>
+    planung.monthNotesDoc.month === monthKey ? Number(planung.monthNotesDoc.entries[name]?.ehZiel) || 0 : 0
+  const rows: { key: string; label: string; sub: string; data: WeekSum; ehZiel: number }[] = byGroup
+    ? teamGroups!.map((g) => ({
+        key: g.name, label: g.name, sub: `${g.role} · Team gesamt (${g.names.length})`,
+        data: byGroup.get(g.name) ?? sumWeekEntries([]),
+        ehZiel: g.names.reduce((s, n) => s + zielOf(n), 0),
+      }))
+    : people.map((p) => ({ key: p.name, label: p.name, sub: p.role, data: byName.get(p.name) ?? sumWeekEntries([]), ehZiel: zielOf(p.name) }))
 
   return (
     <div className="flex flex-col gap-4">
@@ -234,19 +256,21 @@ export function Monatsplanung({
         <KpiTile label="ATG Gesamt" value={fmt(total.atg)} sub="Monat kumuliert" />
         <KpiTile label="AT" value={`${fmt(total.analysenZ)}/${fmt(total.analysen)}`} sub="Soll / Ist" />
         <KpiTile label="AT-Quote" value={`${quotePct(total.analysen, total.analysenZ)}%`} sub="Erschienen von ausgemacht" />
-        <KpiTile label="Einheiten gemacht" value={fmt(total.ehGemacht)} sub={`${fmt(total.ehOffen)} EH offen`} />
+        <KpiTile label="Einheiten gemacht" value={fmt(total.ehGemacht)} sub="Laut Mitarbeiterseite" />
       </div>
 
       {rows.length > 0 && (() => {
+        // EH-Soll ist das Einheitenziel des Monats (Notizkachel), die übrigen Kennzahlen kommen aus den Wochenplänen.
+        const sollOf = (c: (typeof RACE_CATS)[number], r: (typeof rows)[number]) => (c.label === "EH" ? r.ehZiel : c.soll(r.data))
         const maxByCat = RACE_CATS.map((c) =>
-          Math.max(1, ...rows.map((r) => Math.max(c.soll(r.data), c.ist(r.data))))
+          Math.max(1, ...rows.map((r) => Math.max(sollOf(c, r), c.ist(r.data))))
         )
-        const linesFor = (d: WeekSum, id: string): RaceLine[] =>
-          RACE_CATS.map((c, i) => ({ key: `${id}-${c.label}`, label: c.label, color: c.color, soll: c.soll(d), ist: c.ist(d), max: maxByCat[i] }))
+        const linesFor = (r: (typeof rows)[number]): RaceLine[] =>
+          RACE_CATS.map((c, i) => ({ key: `${r.key}-${c.label}`, label: c.label, color: c.color, soll: sollOf(c, r), ist: c.ist(r.data), max: maxByCat[i] }))
         return (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {rows.map((r) => (
-              <RaceCard key={r.key} title={r.label} sub={r.sub} lines={linesFor(r.data, r.key)} />
+              <RaceCard key={r.key} title={r.label} sub={r.sub} lines={linesFor(r)} />
             ))}
           </div>
         )
@@ -269,7 +293,6 @@ export function Monatsplanung({
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ST SOLL/IST</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ET SOLL/IST</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">EH gemacht</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">EH offen</th>
               </tr>
             </thead>
             <tbody>
@@ -288,7 +311,6 @@ export function Monatsplanung({
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.stz)}/{fmt(d.stg)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.etz)}/{fmt(d.etg)}</td>
                     <td className="px-3 py-2 text-right tabular-nums"><strong>{fmt(d.ehGemacht)}</strong></td>
-                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{fmt(d.ehOffen)}</td>
                   </tr>
                 )
               })}
@@ -307,7 +329,6 @@ export function Monatsplanung({
                       <td className={cell}>{fmt(total.stz)}/{fmt(total.stg)}</td>
                       <td className={cell}>{fmt(total.etz)}/{fmt(total.etg)}</td>
                       <td className={cell}>{fmt(total.ehGemacht)}</td>
-                      <td className={cell}>{fmt(total.ehOffen)}</td>
                     </>
                   )
                 })()}
@@ -328,6 +349,7 @@ export function Monatsplanung({
                 entry={planung.monthNotesDoc.entries[p.name] ?? emptyMonthNoteEntry()}
                 isEditor={isEditor}
                 onCommit={(field, value) => planung.saveMonthNoteEntry(p.name, { [field]: value })}
+                onCommitZiel={(value) => planung.saveMonthNoteEntry(p.name, { ehZiel: value })}
               />
             ))}
           </div>

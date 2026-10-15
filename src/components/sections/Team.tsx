@@ -14,6 +14,7 @@ import {
   type MergedRow, type TeamFilter, type TeamSort,
 } from "@/lib/calc/team"
 import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
+import { monthKeyOf } from "@/lib/calc/archive"
 import { SB_LEAD_ROLE_ABBR, sbRoster, sbSubtreeNames, type PlanId, type SbNode } from "@/lib/calc/struktur"
 import { computeEarnings, stornoreserveAmount, withPlanUnits } from "@/lib/calc/verguetung"
 import { EmployeeEarningsDialog } from "@/components/sections/team/EmployeeEarningsDialog"
@@ -24,41 +25,14 @@ import { cn } from "@/lib/utils"
 /** Anteil der Vergütung, der als Stornoreserve einbehalten und nicht ausgezahlt wird. */
 const STORNORESERVE_RATE = 0.15
 
-function NumField({
-  row, field, wide, isEditor, onCommit,
-}: {
-  row: MergedRow
-  field: "atPlan" | "btPlan" | "stPlan" | "etPlan" | "soll"
-  wide?: boolean
-  isEditor: boolean
-  onCommit: (row: MergedRow, field: string, value: number) => void
-}) {
-  return (
-    <input
-      key={`${row.rowIndex}-${row.name}-${field}-${row[field]}`}
-      type="number"
-      disabled={!isEditor}
-      defaultValue={Number(row[field] || 0)}
-      aria-label={`${String(field)} – ${row.name}`}
-      className={cn(
-        "h-8 rounded-md border border-input bg-background px-2 text-sm tabular-nums shadow-xs outline-none",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        "disabled:opacity-60",
-        wide ? "w-20" : "w-16"
-      )}
-      onBlur={(e) => onCommit(row, field, Number(e.target.value) || 0)}
-    />
-  )
-}
-
 /** Read-only Anzeige für Ist AT/BT/ET — seit der Wochenplanung-Automatik (siehe
  * Team.tsx planByName unten) keine Eingabefelder mehr, damit Werte nicht
  * doppelt (händisch + Wochenplanung) erfasst werden. */
-function ComputedField({ value }: { value: number | undefined; wide?: boolean; narrow?: boolean }) {
+function ComputedField({ value, title }: { value: number | undefined; title?: string; wide?: boolean; narrow?: boolean }) {
   return (
     <div
       className="text-center text-sm tabular-nums"
-      title="Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"
+      title={title ?? "Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"}
     >
       {fmt(value)}
     </div>
@@ -131,11 +105,13 @@ export function Team({
         roster.map((r) => r.name)
       )
     : null
+  // Soll (Einheiten) = Einheitenziel aus den Monatsplanung-Kacheln des Umsatzmonats.
+  const zielDoc = planung ? planung.getMonthNotes(monthKeyOf(teamGoal)) : null
   const merged = planByName
     ? rosterMerged.map((r) => {
         const p = planByName.get(r.name)
         // Zuordnung nach Nutzerangabe: AT = Analysen, BT = Beratungen, ST = Strukturtermine, ET = Einstellungstermine (jeweils "Gemacht").
-        return { ...r, atPlan: p?.analysenZ ?? 0, btPlan: p?.beratungenZ ?? 0, stPlan: p?.stz ?? 0, etPlan: p?.etz ?? 0, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, stIst: p?.stg ?? 0, etIst: p?.etg ?? 0 }
+        return { ...r, soll: Number(zielDoc?.entries[r.name]?.ehZiel) || 0, atPlan: p?.analysenZ ?? 0, btPlan: p?.beratungenZ ?? 0, stPlan: p?.stz ?? 0, etPlan: p?.etz ?? 0, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, stIst: p?.stg ?? 0, etIst: p?.etg ?? 0 }
       })
     : rosterMerged
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
@@ -159,15 +135,6 @@ export function Team({
   )
   const detailEntry = detailName ? merged.find((r) => r.name === detailName) ?? null : null
   const detailEarnings = detailName ? earnings.get(detailName) ?? null : null
-
-  function commitField(entry: MergedRow, field: string, value: number | string) {
-    if (entry.rowIndex !== null) {
-      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...r, [field]: value } : r))
-      saveRows(next)
-    } else {
-      saveRows([...rows, { ...newRowFor(entry.name), [field]: value }])
-    }
-  }
 
   function saveEarnings(entry: MergedRow, units: Record<PlanId, number>, bonus: number) {
     if (entry.rowIndex !== null) {
@@ -371,7 +338,7 @@ export function Team({
                     <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.btIst} /></td>
                     <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.stIst} /></td>
                     <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.etIst} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2"><NumField row={r} field="soll" wide isEditor={isEditor} onCommit={commitField} /></td>
+                    <td className="border-l border-foreground/20 px-2 py-2"><ComputedField value={r.soll} title="Einheitenziel aus der Monatsplanung" /></td>
                     <td className="border-l border-foreground/20 px-2 py-2">
                       <button
                         type="button"

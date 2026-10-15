@@ -25,7 +25,6 @@ const FIELD_GROUPS: FieldGroup[] = [
   { label: "Beratungen", left: { sub: "Ausgemacht", key: "beratungenZ" }, right: { sub: "Gemacht", key: "beratungen" } },
   { label: "Servicetermine", left: { sub: "Ausgemacht", key: "stz" }, right: { sub: "Gemacht", key: "stg" } },
   { label: "Einstellungstermine", left: { sub: "Ziel", key: "etz" }, right: { sub: "Gemacht", key: "etg" } },
-  { label: "Einheiten", left: { sub: "Offen", key: "ehOffen" }, right: { sub: "Gemacht", key: "ehGemacht" } },
   { label: "Aktivitäten", left: { sub: "Soll", key: "aktivitaetenSoll" }, right: { sub: "Ist", key: "aktivitaetenIst" } },
 ]
 
@@ -195,7 +194,7 @@ export function Wochenplanung({
         </Button>
         <span className="text-xs text-muted-foreground">Bitte bis Montag 10:00 Uhr abgeben</span>
         <span className="ml-auto text-xs text-muted-foreground">
-          Σ Einheiten gemacht {totals.ehGemacht} · Verträge {totals.vertraege}
+          Σ Verträge {totals.vertraege}
         </span>
       </div>
 
