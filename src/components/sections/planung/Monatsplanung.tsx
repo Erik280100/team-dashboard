@@ -115,7 +115,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
                   />
                 )}
               </div>
-              <div className="w-14 shrink-0 text-right text-xs tabular-nums">
+              <div className="w-24 shrink-0 whitespace-nowrap text-right text-xs tabular-nums">
                 <strong>{fmt(l.ist)}</strong>
                 <span className="text-muted-foreground">/{fmt(l.soll)}</span>
               </div>
