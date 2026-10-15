@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { PLAN_IDS, PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
-import type { EmployeeEarnings } from "@/lib/calc/verguetung"
+import { stornoreserveAmount, type EmployeeEarnings } from "@/lib/calc/verguetung"
 import { cn } from "@/lib/utils"
 
 function fmtEur(n: number): string {
@@ -205,14 +205,14 @@ export function EmployeeEarningsDialog({
 
           {stornoreserveRate > 0 && (
             <div className="flex items-center justify-between px-3 text-sm text-muted-foreground">
-              <span>Stornoreserve (−{Math.round(stornoreserveRate * 100)} %, wird nicht ausgezahlt)</span>
-              <span className="tabular-nums">−{fmtEur(earnings.total * stornoreserveRate)} €</span>
+              <span>Stornoreserve (−{Math.round(stornoreserveRate * 100)} % der Insurance-Vergütung, wird nicht ausgezahlt)</span>
+              <span className="tabular-nums">−{fmtEur(stornoreserveAmount(earnings, stornoreserveRate))} €</span>
             </div>
           )}
 
           <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2 text-sm font-bold">
             <span>{stornoreserveRate > 0 ? "Auszahlung" : "Gesamt"}</span>
-            <span className="tabular-nums">{fmtEur(earnings.total * (1 - stornoreserveRate))} €</span>
+            <span className="tabular-nums">{fmtEur(earnings.total - stornoreserveAmount(earnings, stornoreserveRate))} €</span>
           </div>
         </div>
 

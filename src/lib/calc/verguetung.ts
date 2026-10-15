@@ -87,6 +87,14 @@ export interface EmployeeEarnings {
   total: number
 }
 
+/**
+ * Einbehaltene Stornoreserve: nur auf die Insurance-Vergütung (eigen + Differenz).
+ * Investment, Kredit und Immobilien sind stornofrei; der manuelle Bonus ebenfalls.
+ */
+export function stornoreserveAmount(e: EmployeeEarnings, rate: number): number {
+  return (e.own.insurance.amount + e.diff.insurance.amount) * rate
+}
+
 function emptyEarnings(name: string): EmployeeEarnings {
   const own = {} as Record<PlanId, PlanEarning>
   const diff = {} as Record<PlanId, { amount: number; sources: DiffSource[] }>
