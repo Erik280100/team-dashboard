@@ -127,12 +127,15 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
   )
 }
 
-const RACE_CATS = [
-  { label: "AT", color: "#93C47D", soll: "analysenZ", ist: "analysen" },
-  { label: "BT", color: "#FFE000", soll: "beratungenZ", ist: "beratungen" },
-  { label: "ST", color: "#FF9900", soll: "stz", ist: "stg" },
-  { label: "ET", color: "#FF2A1A", soll: "etz", ist: "etg" },
-] as const
+type WeekSum = ReturnType<typeof sumWeekEntries>
+// EH: Soll = gemacht + offen (noch zu leistende Einheiten).
+const RACE_CATS: { label: string; color: string; soll: (d: WeekSum) => number; ist: (d: WeekSum) => number }[] = [
+  { label: "EH", color: "#FFE000", soll: (d) => d.ehGemacht + d.ehOffen, ist: (d) => d.ehGemacht },
+  { label: "AT", color: "#93C47D", soll: (d) => d.analysenZ, ist: (d) => d.analysen },
+  { label: "BT", color: "#6FA8DC", soll: (d) => d.beratungenZ, ist: (d) => d.beratungen },
+  { label: "ST", color: "#FF9900", soll: (d) => d.stz, ist: (d) => d.stg },
+  { label: "ET", color: "#FF2A1A", soll: (d) => d.etz, ist: (d) => d.etg },
+]
 
 export function Monatsplanung({
   people, planung, isEditor, teamGroups, rows: employeeRows, unitsMonthKey,
@@ -236,13 +239,12 @@ export function Monatsplanung({
 
       {rows.length > 0 && (() => {
         const maxByCat = RACE_CATS.map((c) =>
-          Math.max(1, total[c.soll], total[c.ist], ...rows.map((r) => Math.max(r.data[c.soll], r.data[c.ist])))
+          Math.max(1, ...rows.map((r) => Math.max(c.soll(r.data), c.ist(r.data))))
         )
-        const linesFor = (d: ReturnType<typeof sumWeekEntries>, id: string): RaceLine[] =>
-          RACE_CATS.map((c, i) => ({ key: `${id}-${c.label}`, label: c.label, color: c.color, soll: d[c.soll], ist: d[c.ist], max: maxByCat[i] }))
+        const linesFor = (d: WeekSum, id: string): RaceLine[] =>
+          RACE_CATS.map((c, i) => ({ key: `${id}-${c.label}`, label: c.label, color: c.color, soll: c.soll(d), ist: c.ist(d), max: maxByCat[i] }))
         return (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <RaceCard title="Komplett" sub="Summe aller" lines={linesFor(total, "total")} />
             {rows.map((r) => (
               <RaceCard key={r.key} title={r.label} sub={r.sub} lines={linesFor(r.data, r.key)} />
             ))}
