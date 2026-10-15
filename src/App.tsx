@@ -116,6 +116,14 @@ function AppShell() {
   const archiveLoading = isArchive && !snapshot
   const archiveErrored = isArchive && archive.snapshotStatus[archiveMonth!] === "error"
 
+  // Soll (Einheiten) kommt live aus dem Einheitenziel der Monatsplanung (Umsatzmonat);
+  // gespeicherte rows.soll wird dafür überlagert. Fehlt das Ziel, bleibt 0.
+  const zielDoc = snapshot ? null : planung.getMonthNotes(monthKeyOf(dashboard.teamGoal))
+  const liveRows = useMemo(
+    () => (zielDoc ? dashboard.rows.map((r) => ({ ...r, soll: Number(zielDoc.entries[r.name]?.ehZiel) || 0 })) : dashboard.rows),
+    [dashboard.rows, zielDoc]
+  )
+
   const view = useMemo(() => {
     const orgDoc: OrgChartDoc = snapshot
       ? {
@@ -128,7 +136,7 @@ function AppShell() {
           rates: orgChart.rates, planRates: orgChart.planRates,
         }
     return {
-      rows: relabelRowsByRoster(sbRoster(orgDoc.tree), snapshot?.rows ?? dashboard.rows),
+      rows: relabelRowsByRoster(sbRoster(orgDoc.tree), snapshot?.rows ?? liveRows),
       teamGoal: snapshot?.teamGoal ?? dashboard.teamGoal,
       history: snapshot?.history ?? dashboard.history,
       orgTree: orgDoc.tree,
@@ -141,7 +149,7 @@ function AppShell() {
       planRates: withDefaultPlanRates(snapshot?.orgChart.planRates ?? orgChart.planRates),
       now: snapshot ? archiveNow(snapshot.teamGoal) : undefined,
     }
-  }, [snapshot, dashboard.rows, dashboard.teamGoal, dashboard.history, orgChart.tree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])
+  }, [snapshot, liveRows, dashboard.teamGoal, dashboard.history, orgChart.tree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])
 
   // Sicherheitsnetz: im Archiv-Modus dürfen die Seiten nichts schreiben (die
   // Seiten selbst sind über isEditor={false} bereits schreibgeschützt — siehe
@@ -205,7 +213,7 @@ function AppShell() {
 
     const result = await archive.closeMonth({
       month,
-      rows: dashboard.rows,
+      rows: liveRows,
       teamGoal: dashboard.teamGoal,
       history: dashboard.history,
       orgChart: {
