@@ -54,13 +54,10 @@ function NumField({
 /** Read-only Anzeige für Ist AT/BT/ET — seit der Wochenplanung-Automatik (siehe
  * Team.tsx planByName unten) keine Eingabefelder mehr, damit Werte nicht
  * doppelt (händisch + Wochenplanung) erfasst werden. */
-function ComputedField({ value, wide, narrow }: { value: number | undefined; wide?: boolean; narrow?: boolean }) {
+function ComputedField({ value }: { value: number | undefined; wide?: boolean; narrow?: boolean }) {
   return (
     <div
-      className={cn(
-        "mx-auto flex h-8 items-center justify-end rounded-md border border-dashed border-input/60 bg-muted/40 text-sm tabular-nums text-muted-foreground",
-        narrow ? "w-8 px-1" : "px-2", wide ? "w-20" : !narrow && "w-16"
-      )}
+      className="text-center text-sm tabular-nums"
       title="Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"
     >
       {fmt(value)}
