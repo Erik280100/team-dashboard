@@ -53,7 +53,10 @@ export function Overview({
   offeneAnlegerwohnungen,
   planung,
   archiveIndex,
+  teamSize,
 }: {
+  /** Mitarbeiterzahl laut Strukturbaum (live); im Archiv undefined → rows.length. */
+  teamSize?: number
   rows: EmployeeRow[]
   teamGoal: TeamGoal
   history: HistoryEntry[]
@@ -271,7 +274,7 @@ export function Overview({
             </div>
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Geschäftspartner</div>
-              <div className="text-2xl font-extrabold">{kpis.employeeCount}</div>
+              <div className="text-2xl font-extrabold">{teamSize ?? kpis.employeeCount}</div>
               <div className="text-xs text-white/50">im Team</div>
             </div>
           </CardContent>

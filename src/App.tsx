@@ -316,6 +316,7 @@ function AppShell() {
                   <Overview
                     key={archiveMonth ?? "live"}
                     rows={view.rows}
+                    teamSize={isArchive ? undefined : roster.length}
                     teamGoal={view.teamGoal}
                     history={view.history}
                     saveGoal={isArchive ? blocked : dashboard.saveGoal}

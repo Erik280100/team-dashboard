@@ -594,7 +594,8 @@ export function StrukturBaum({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, doc.conns, nodeMap])
 
-  const totalPeople = (treeInfo.get(doc.tree.id)?.descendantCount ?? 0) + 1
+  // Gleiche Zählung wie Mitarbeiterseite/Übersicht: ohne "Kommt vielleicht".
+  const totalPeople = useMemo(() => sbRoster(doc.tree).length, [doc.tree])
   const totalNotes = Object.values(doc.notes).reduce((s, a) => s + a.length, 0)
   const drag = dragRef.current
   void dragTick
