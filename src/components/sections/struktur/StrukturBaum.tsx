@@ -243,7 +243,6 @@ export function StrukturBaum({
     | null
   >(null)
   const [dlgName, setDlgName] = useState("")
-  const [dlgRole, setDlgRole] = useState("")
   const [dlgStatus, setDlgStatus] = useState("")
   const [dlgLabel, setDlgLabel] = useState("")
 
@@ -450,7 +449,7 @@ export function StrukturBaum({
       const parent = sbFind(next, dialog.parentId)
       if (parent) {
         parent.children = parent.children || []
-        parent.children.push({ id: newNodeId(), name, role: dlgRole.trim() || "Mitarbeiter", status: dlgStatus, children: [] })
+        parent.children.push({ id: newNodeId(), name, role: "FT1", status: dlgStatus, children: [] })
         persist({ tree: next })
       }
     } else {
@@ -553,7 +552,6 @@ export function StrukturBaum({
 
   function openAddChild(parentId: string) {
     setDlgName("")
-    setDlgRole("")
     setDlgStatus("")
     setDialog({ kind: "add-child", parentId })
   }
@@ -1013,14 +1011,6 @@ export function StrukturBaum({
             <div className="flex flex-col gap-3">
               <Input placeholder="Name" value={dlgName} onChange={(e) => setDlgName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submitDialog()} autoFocus />
-              <select
-                value={dlgRole}
-                onChange={(e) => setDlgRole(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-              >
-                <option value="">Bezeichnung / Rolle wählen…</option>
-                {SB_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
               <select
                 required
                 value={dlgStatus}
