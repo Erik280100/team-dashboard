@@ -83,6 +83,9 @@ export function Overview({
   const goal = goalProgress(rows)
   const timeline = timelineData(teamGoal, rows, history, now ?? new Date())
   const shares = revenueShareData(rows)
+  // Umsatzanteil-Kachel: nur Mitarbeiter mit mehr als 5 % am Gesamtumsatz
+  const shareTotal = shares.reduce((s, r) => s + r.value, 0)
+  const pieShares = shares.filter((s) => shareTotal > 0 && s.value / shareTotal > 0.05)
   const planTotals = rows.reduce(
     (acc, r) => {
       const u = readPlanUnits(r)
@@ -313,10 +316,10 @@ export function Overview({
             <div className="h-[220px]">
               <Pie
                 data={{
-                  labels: shares.map((s) => s.name),
+                  labels: pieShares.map((s) => s.name),
                   datasets: [{
-                    data: shares.length ? shares.map((s) => s.value || 1) : [1],
-                    backgroundColor: shares.map((s) => s.color),
+                    data: pieShares.length ? pieShares.map((s) => s.value || 1) : [1],
+                    backgroundColor: pieShares.map((s) => s.color),
                     borderWidth: 0,
                   }],
                 }}
@@ -328,19 +331,19 @@ export function Overview({
                     tooltip: {
                       callbacks: {
                         label(item) {
-                          const s = shares[item.dataIndex]
+                          const s = pieShares[item.dataIndex]
                           return `${s.name}: ${s.pct}%`
                         },
                       },
                     },
                   },
                 }}
-                aria-label={"Umsatzanteil je Mitarbeiter: " + shares.map((s) => `${s.name} ${s.pct} Prozent`).join(", ")}
+                aria-label={"Umsatzanteil je Mitarbeiter: " + pieShares.map((s) => `${s.name} ${s.pct} Prozent`).join(", ")}
                 role="img"
               />
             </div>
             <div className="mt-3 flex flex-col gap-1.5">
-              {shares.map((s) => (
+              {pieShares.map((s) => (
                 <div key={s.name} className="flex items-center gap-2 text-xs text-white/70">
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
                   <span className="flex-1 truncate">{s.name}</span>
