@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { PLAN_IDS, sbRoster, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
-import { mergeRosterWithRows, newRowFor, relabelRowsByRoster } from "@/lib/calc/team"
+import { mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, type EmployeeRow } from "@/lib/calc/format"
@@ -315,7 +315,7 @@ function AppShell() {
                 ) : (
                   <Overview
                     key={archiveMonth ?? "live"}
-                    rows={view.rows}
+                    rows={rowsMatchedToRoster(sbRoster(view.orgTree), view.rows)}
                     teamSize={isArchive ? undefined : roster.length}
                     teamGoal={view.teamGoal}
                     history={view.history}

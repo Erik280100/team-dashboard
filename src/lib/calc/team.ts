@@ -199,6 +199,17 @@ export function teamTotals(list: EmployeeRow[]): TeamTotals {
  * Wahrheit für Namen). Zuordnung wie in mergeRosterWithRows; nicht zugeordnete
  * Zeilen bleiben unverändert. Reihenfolge/Indizes bleiben erhalten.
  */
+/** Nur Zeilen, die einem Strukturbaum-Mitarbeiter zugeordnet sind (verwaiste
+ * Zeilen mit alten/falsch geschriebenen Namen fallen raus). Leerer Baum → alle. */
+export function rowsMatchedToRoster(roster: RosterEntry[], rows: EmployeeRow[]): EmployeeRow[] {
+  if (roster.length === 0) return rows
+  const matched = new Set<number>()
+  mergeRosterWithRows(roster, rows).forEach((m) => {
+    if (m.rowIndex !== null) matched.add(m.rowIndex)
+  })
+  return relabelRowsByRoster(roster, rows).filter((_, i) => matched.has(i))
+}
+
 export function relabelRowsByRoster(roster: RosterEntry[], rows: EmployeeRow[]): EmployeeRow[] {
   const nameByIndex = new Map<number, string>()
   mergeRosterWithRows(roster, rows).forEach((m) => {
