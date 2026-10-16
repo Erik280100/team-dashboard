@@ -14,9 +14,9 @@ type FinanzierungenTab = "offen" | "rechner" | "immo" | "immoGmbh"
 
 const TABS: { id: FinanzierungenTab; label: string; editorOnly?: boolean }[] = [
   { id: "offen", label: "Offene Abwicklungen" },
-  { id: "rechner", label: "Finanzierungsrechner" },
-  { id: "immo", label: "Anlegerwohnungen" },
-  { id: "immoGmbh", label: "Anlegerwohnungen GmbH" },
+  { id: "rechner", label: "Finanzierungsrechner", editorOnly: true },
+  { id: "immo", label: "Anlegerwohnungen", editorOnly: true },
+  { id: "immoGmbh", label: "Anlegerwohnungen GmbH", editorOnly: true },
 ]
 
 export function Finanzierungen({
