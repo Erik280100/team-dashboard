@@ -113,6 +113,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
       docRef,
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
+        if (snap.metadata.fromCache) return // Cache-Stand nie als "bereit" werten
         if (snap.exists()) {
           const data = snap.data() as Partial<PlanWeekDoc>
           const next: PlanWeekDoc = { week: activeWeek, entries: data.entries ?? {} }
@@ -232,6 +233,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
       docRef,
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
+        if (snap.metadata.fromCache) return // Cache-Stand nie als "bereit" werten
         if (snap.exists()) {
           const data = snap.data() as Partial<PlanMonthNotesDoc>
           const next: PlanMonthNotesDoc = { month: activeMonth, entries: data.entries ?? {} }
@@ -320,6 +322,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
       docRef,
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
+        if (snap.metadata.fromCache) return // Cache-Stand nie als "bereit" werten
         if (snap.exists()) {
           const data = snap.data() as PlanAnnualDoc
           setAnnualDocs((m) => new Map(m).set(cacheKey, data))

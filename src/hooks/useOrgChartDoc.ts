@@ -52,6 +52,9 @@ export function useOrgChartDoc(): UseOrgChartDocResult {
       docRef,
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
+        // Nur Server-Stände zählen: ein Cache-Snapshot ("Dokument fehlt"/veraltet) darf weder
+        // die Cloud mit lokalem Altstand überschreiben (setDoc) noch Schreiben freischalten.
+        if (snap.metadata.fromCache) return
         if (snap.exists()) {
           const data = (snap.data() || {}) as Partial<OrgChartDoc>
           if (data.tree && typeof data.tree === "object") {

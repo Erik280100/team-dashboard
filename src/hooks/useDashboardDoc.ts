@@ -71,6 +71,9 @@ export function useDashboardDoc(): UseDashboardDocResult {
       docRef,
       (snap) => {
         if (snap.metadata.hasPendingWrites) return // eigene, bereits lokal dargestellte Änderung
+        // Nur Server-Stände zählen: ein Cache-Snapshot ("Dokument fehlt"/veraltet) darf weder
+        // die Cloud mit lokalem Altstand überschreiben (setDoc) noch Schreiben freischalten.
+        if (snap.metadata.fromCache) return
         if (snap.exists()) {
           const data = (snap.data() || {}) as Partial<DashboardDoc>
           if (Array.isArray(data.rows) && data.rows.length) {
