@@ -7,11 +7,11 @@ import {
 import { cn } from "@/lib/utils"
 import type { SectionId } from "@/hooks/useHashSection"
 
-const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; editorOnly?: boolean }[] = [
+const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; access?: "admin" | "lead" }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "team", label: "Mitarbeiter", icon: Users },
   { id: "struktur", label: "Strukturbaum", icon: Network },
-  { id: "statistik", label: "Statistik", icon: BarChart3, editorOnly: true },
+  { id: "statistik", label: "Statistik", icon: BarChart3, access: "lead" },
   { id: "planung", label: "Controlling", icon: CalendarRange },
   { id: "rechner", label: "Rechner", icon: Calculator },
   { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
@@ -19,7 +19,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; editorOnly?: 
   { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
   { id: "finanzierungen", label: "Finanzierungen", icon: Landmark },
   { id: "partner", label: "Partner", icon: Link2 },
-  { id: "konten", label: "Konten", icon: UserCog, editorOnly: true },
+  { id: "konten", label: "Konten", icon: UserCog, access: "admin" },
 ]
 
 export function Sidebar({
@@ -27,17 +27,21 @@ export function Sidebar({
   onNavigate,
   open,
   onClose,
-  isEditor,
+  isAdmin,
+  isLead,
 }: {
   section: SectionId
   onNavigate: (section: SectionId) => void
   /** Mobil: Menü eingeblendet (off-canvas). Ab md ist die Sidebar immer sichtbar. */
   open: boolean
   onClose: () => void
-  /** Nur Admins sehen Statistik und Konten. */
-  isEditor: boolean
+  /** Konten sieht nur der Admin, die Statistik Führungskräfte und Admin. */
+  isAdmin: boolean
+  isLead: boolean
 }) {
-  const navItems = NAV_ITEMS.filter((item) => !item.editorOnly || isEditor)
+  const navItems = NAV_ITEMS.filter(
+    (item) => !item.access || isAdmin || (item.access === "lead" && isLead)
+  )
   return (
     <>
       {open && (

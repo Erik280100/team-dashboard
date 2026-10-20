@@ -3,14 +3,14 @@
 // die Schnittstelle bleibt die bisherige (rows als EmployeeRow-Liste), damit
 // Sektionen und calc/* unverändert weiterlaufen.
 //
-// Wer was sieht (erzwingen die Firestore-Regeln, hier nur die passenden Abfragen):
-//  - Admin: alle Mitarbeiter
-//  - sonst: eigenes Dokument + alle, bei denen die eigene ID in `ancestors` steht
+// Wer was sieht: alle Eingeloggten sehen alle Mitarbeiter-Dokumente (Stammdaten, Einheiten,
+// Monatssummen); geschrieben werden darf nur das eigene Dokument und die der Mitarbeiter darunter
+// (erzwingen die Firestore-Regeln).
 // Ohne Firebase-Config (lokaler Modus) bleibt es beim localStorage-Verhalten.
 // Im Cloud-Modus wird bewusst NICHTS in localStorage gecacht: Der Browser kann von
 // mehreren Konten benutzt werden, Zahlen dürfen nicht zwischen ihnen durchsickern.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { onSnapshot, query, setDoc, where, writeBatch } from "firebase/firestore"
+import { onSnapshot, setDoc, writeBatch } from "firebase/firestore"
 import { CLOUD_CONFIGURED, employeeDocRef, employeesCollection, firestore, orgDocRef } from "@/lib/firebase"
 import { migrateRows, recordSnapshot, type HistoryEntry } from "@/lib/calc/format"
 import {
@@ -68,8 +68,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
       ? { rows: [] as EmployeeRow[] }
       : { rows: migrateRows(loadLocal(STORAGE_KEY, JSON.parse(JSON.stringify(STARTER_DATA)), isRowArray)) }
   )
-  const [own, setOwn] = useState<Record<string, Stored>>({})
-  const [subtree, setSubtree] = useState<Record<string, Stored>>({})
+  const [stored, setStored] = useState<Record<string, Stored>>({})
   const [teamGoal, setTeamGoal] = useState<TeamGoal>(() => ({
     ...STARTER_GOAL,
     ...(cloud ? {} : loadLocal(GOAL_KEY, {}, isGoalObj)),
@@ -91,22 +90,13 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
       return out
     }
     const onError = (err: unknown) => { console.error("Cloud-Sync Fehler", err); setSyncStatus("error") }
+    // Alle Eingeloggten sehen alle Mitarbeiter (Dashboard/Mitarbeiterseite); bearbeiten duerfen sie nur
+    // die eigenen und die darunter (firestore.rules, canEditEmployee in roles.ts).
     const unsubs: (() => void)[] = []
-    if (isAdmin) {
+    if (isAdmin || myId) {
       unsubs.push(onSnapshot(col, (snap) => {
-        setSubtree(toMap(snap.docs)); setOwn({})
+        setStored(toMap(snap.docs))
         if (!snap.metadata.fromCache) setSyncStatus("connected")
-      }, onError))
-    } else if (myId) {
-      const selfRef = employeeDocRef(myId)
-      if (selfRef) {
-        unsubs.push(onSnapshot(selfRef, (snap) => {
-          setOwn(snap.exists() ? toMap([snap]) : {})
-          if (!snap.metadata.fromCache) setSyncStatus("connected")
-        }, onError))
-      }
-      unsubs.push(onSnapshot(query(col, where("ancestors", "array-contains", myId)), (snap) => {
-        setSubtree(toMap(snap.docs))
       }, onError))
     } else {
       setSyncStatus("connected") // Konto ohne verknüpften Mitarbeiter: nichts zu laden
@@ -129,7 +119,6 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
     }, (err) => console.warn("Teamziel konnte nicht geladen werden", err))
   }, [cloud])
 
-  const stored = useMemo(() => ({ ...subtree, ...own }), [subtree, own])
   const employees = useMemo(
     () => Object.values(stored).map((s) => s.meta).sort((a, b) => a.name.localeCompare(b.name, "de")),
     [stored]

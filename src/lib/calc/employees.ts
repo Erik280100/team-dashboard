@@ -37,7 +37,7 @@ export function employeeDocToRow(data: Record<string, unknown>): EmployeeRow {
 export function rowToEmployeeData(row: EmployeeRow): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(row)) {
-    if ((META_KEYS as readonly string[]).includes(k) || v === undefined) continue
+    if ((META_KEYS as readonly string[]).includes(k) || k === "monthStats" || v === undefined) continue
     out[k] = v
   }
   return out

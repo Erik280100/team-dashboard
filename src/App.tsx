@@ -11,10 +11,11 @@
 import { useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { PLAN_IDS, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
-import { mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
+import { applyMonthStats, mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, type EmployeeRow } from "@/lib/calc/format"
+import { canEditEmployee } from "@/lib/calc/roles"
 import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
@@ -94,14 +95,29 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const confirm = useConfirm()
   const { section, navigateTo } = useHashSection()
   const dashboard = useDashboardDoc(auth)
-  const attendance = useAttendanceDoc(dashboard.employees)
+  // Alle Eingeloggten sehen alle Mitarbeiter (dashboard.employees); Controlling, Anwesenheit und Einheiten
+  // gehören aber nur der Person selbst und ihren Vorgesetzten — die Regeln erzwingen das, hier die passenden Listen.
+  const accessibleEmployees = useMemo(
+    () => {
+      if (!CLOUD_CONFIGURED) return dashboard.employees
+      const account = { role: auth.role, employeeId: auth.employeeId, mustChangePassword: false }
+      return dashboard.employees.filter((e) => canEditEmployee(account, e.id, e.ancestors))
+    },
+    [auth.role, auth.employeeId, dashboard.employees]
+  )
+  const accessibleNames = useMemo(() => new Set(accessibleEmployees.map((e) => e.name.trim().toLowerCase())), [accessibleEmployees])
+  const canEditRow = useMemo(
+    () => (name: string) => !CLOUD_CONFIGURED || accessibleNames.has(name.trim().toLowerCase()),
+    [accessibleNames]
+  )
+  const attendance = useAttendanceDoc(accessibleEmployees)
   const orgChart = useOrgChartDoc(auth.isAdmin)
-  const planung = usePlanungDoc(dashboard.employees)
+  const planung = usePlanungDoc(accessibleEmployees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
   const erikTodos = useErikTodosDoc(auth.employeeId)
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
-  // Sichtbarkeit: Admin (und lokaler Modus) sehen den ganzen Baum, alle anderen nur den Teilbaum ab dem
-  // eigenen Knoten. Alle Listen (Team, Übersicht, Planung, Anwesenheit, Rechner ...) leiten sich daraus ab.
+  // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin (und lokaler Modus) sehen den ganzen Baum,
+  // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
   const scopeId = !CLOUD_CONFIGURED || auth.isAdmin ? null : (auth.employeeId ?? "none")
   const scopedTree = useMemo(() => sbScopedTree(orgChart.tree, scopeId), [orgChart.tree, scopeId])
   const offeneFinanzierungsfaelle = finanzierungen.cases.filter((c) => !c.archived)
@@ -128,20 +144,24 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   // Soll (Einheiten) kommt live aus dem Einheitenziel der Monatsplanung (Umsatzmonat);
   // gespeicherte rows.soll wird dafür überlagert. Fehlt das Ziel, bleibt 0.
   const zielDoc = snapshot ? null : planung.getMonthNotes(monthKeyOf(dashboard.teamGoal))
-  const liveRows = useMemo(
-    () => (zielDoc ? dashboard.rows.map((r) => ({ ...r, soll: Number(zielDoc.entries[r.name]?.ehZiel) || 0 })) : dashboard.rows),
-    [dashboard.rows, zielDoc]
-  )
+  // Für Personen außerhalb der eigenen Unterstruktur (Planung nicht lesbar) kommen AT/BT/ST/ET und Soll aus den
+  // vom Server berechneten Monatssummen (employees/{id}.monthStats).
+  const liveRows = useMemo(() => {
+    const withSoll = zielDoc
+      ? dashboard.rows.map((r) => (canEditRow(r.name) ? { ...r, soll: Number(zielDoc.entries[r.name]?.ehZiel) || 0 } : r))
+      : dashboard.rows
+    return CLOUD_CONFIGURED ? applyMonthStats(withSoll, monthKeyOf(dashboard.teamGoal), canEditRow) : withSoll
+  }, [dashboard.rows, dashboard.teamGoal, zielDoc, canEditRow])
 
   const view = useMemo(() => {
     const orgDoc: OrgChartDoc = snapshot
       ? {
-          tree: sbScopedTree(snapshot.orgChart.tree, scopeId), notes: snapshot.orgChart.notes,
+          tree: snapshot.orgChart.tree, notes: snapshot.orgChart.notes,
           conns: snapshot.orgChart.conns, rates: snapshot.orgChart.rates,
           planRates: snapshot.orgChart.planRates,
         }
       : {
-          tree: scopedTree, notes: orgChart.notes, conns: orgChart.conns,
+          tree: orgChart.tree, notes: orgChart.notes, conns: orgChart.conns,
           rates: orgChart.rates, planRates: orgChart.planRates,
         }
     return {
@@ -158,7 +178,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
       planRates: withDefaultPlanRates(snapshot?.orgChart.planRates ?? orgChart.planRates),
       now: snapshot ? archiveNow(snapshot.teamGoal) : undefined,
     }
-  }, [snapshot, liveRows, dashboard.teamGoal, dashboard.history, scopeId, scopedTree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])
+  }, [snapshot, liveRows, dashboard.teamGoal, dashboard.history, orgChart.tree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])
 
   // Sicherheitsnetz: im Archiv-Modus dürfen die Seiten nichts schreiben (die
   // Seiten selbst sind über isEditor={false} bereits schreibgeschützt — siehe
@@ -242,7 +262,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         onNavigate={navigateTo}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        isEditor={auth.isAdmin}
+        isAdmin={auth.isAdmin}
+        isLead={auth.isLead}
       />
       <main className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
         <Topbar
@@ -335,6 +356,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     offeneAnlegerwohnungen={offeneAnlegerwohnungen}
                     archiveIndex={archive.index}
                     planung={isArchive ? undefined : planung}
+                    canSeeLive={canEditRow}
                   />
                 )
               )}
@@ -350,6 +372,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     orgTree={view.orgTree}
                     orgPlanRates={view.planRates}
                     isEditor={auth.isEditor && !isArchive}
+                    canEditRow={canEditRow}
                     now={view.now}
                     planung={isArchive ? undefined : planung}
                   />
@@ -420,7 +443,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   />
                 )
               )}
-              {section === id && id === "statistik" && auth.isAdmin && <Statistik archive={archive} />}
+              {section === id && id === "statistik" && (auth.isAdmin || auth.isLead) && <Statistik archive={archive} />}
               {section === id && id === "konten" && auth.isAdmin && <Konten employees={dashboard.employees} />}
               {section === id && id === "einstellungen" && <Einstellungen auth={auth} />}
             </section>

@@ -217,7 +217,7 @@ export function Topbar({
         <span role="status" aria-live="polite" className="text-xs text-muted-foreground">
           {SYNC_STATUS_TEXT[dashboard.syncStatus]}
         </span>
-        {!isArchive && section === "overview" && (
+        {!isArchive && auth.isAdmin && section === "overview" && (
           <Button size="sm" variant="ghost" onClick={onExport}>
             Export
           </Button>

@@ -13,7 +13,7 @@ import {
   getMergedFilteredSorted, leadRosterOptions, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
 } from "@/lib/calc/team"
-import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
+import { aggregateByName, monthWeekKeys } from "@/lib/calc/planung"
 import { monthKeyOf } from "@/lib/calc/archive"
 import { SB_LEAD_ROLE_ABBR, sbRoster, sbSubtreeNames, type PlanId, type SbNode } from "@/lib/calc/struktur"
 import { computeEarnings, stornoreserveAmount, withPlanUnits } from "@/lib/calc/verguetung"
@@ -46,6 +46,7 @@ export function Team({
   orgTree,
   orgPlanRates,
   isEditor,
+  canEditRow = () => true,
   now,
   planung,
 }: {
@@ -55,6 +56,9 @@ export function Team({
   orgTree: SbNode
   orgPlanRates: Record<PlanId, Record<string, number>>
   isEditor: boolean
+  /** Darf der Betrachter die Daten dieser Person bearbeiten (sie selbst oder Vorgesetzte)? Alle anderen Zeilen
+   * sind schreibgeschützt und zeigen AT/BT/ST/ET aus den Monatssummen statt aus der (nicht lesbaren) Planung. */
+  canEditRow?: (name: string) => boolean
   /** Referenzzeitpunkt für monthWeekProgress — im Archiv-Modus ein Tag nach
    * periodEnd (siehe archiveNow() in lib/calc/archive.ts), damit die
    * Rot/Grün-Einfärbung gegen den vollen Monatsplan bewertet statt gegen einen
@@ -91,7 +95,7 @@ export function Team({
   // ungeladenen) Stand eingefroren und nie neu aus dem Wochenplanung-Cache
   // nachgezogen — die Berechnung ist für die paar Personen/Wochen aber
   // billig genug, um bei jedem Render einfach neu zu laufen.
-  const planWeeks = planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd) : []
+  const planWeeks = planung ? monthWeekKeys(monthKeyOf(teamGoal)) : []
   useEffect(() => {
     if (!planung || planWeeks.length === 0) return
     void planung.loadWeeks(planWeeks)
@@ -109,6 +113,7 @@ export function Team({
   const zielDoc = planung ? planung.getMonthNotes(monthKeyOf(teamGoal)) : null
   const merged = planByName
     ? rosterMerged.map((r) => {
+        if (!canEditRow(r.name)) return r // fremde Person: Werte stammen aus den Monatssummen (App.tsx)
         const p = planByName.get(r.name)
         // Zuordnung nach Nutzerangabe: AT = Analysen, BT = Beratungen, ST = Strukturtermine, ET = Einstellungstermine (jeweils "Gemacht").
         return { ...r, soll: Number(zielDoc?.entries[r.name]?.ehZiel) || 0, atPlan: p?.analysenZ ?? 0, btPlan: p?.beratungenZ ?? 0, stPlan: p?.stz ?? 0, etPlan: p?.etz ?? 0, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, stIst: p?.stg ?? 0, etIst: p?.etg ?? 0 }
@@ -318,7 +323,7 @@ export function Team({
                     <td className="border-l border-foreground/20 px-3 py-2">
                       <button
                         type="button"
-                        disabled={!isEditor}
+                        disabled={!isEditor || !canEditRow(r.name as string)}
                         onClick={() => toggleNew(r)}
                         aria-pressed={!!r.isNew}
                         aria-label={`Status ${r.name}: ${r.isNew ? "Neu" : "Bestand"}, umschalten`}
@@ -410,7 +415,7 @@ export function Team({
           role={detailEntry.role}
           earnings={detailEarnings}
           stornoreserveRate={reserveRate}
-          isEditor={isEditor}
+          isEditor={isEditor && canEditRow(detailEntry.name)}
           onSave={(units, bonus) => saveEarnings(detailEntry, units, bonus)}
         />
       )}

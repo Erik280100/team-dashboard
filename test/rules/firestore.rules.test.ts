@@ -68,17 +68,22 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       const db = as("member", "m1")
       await assertSucceeds(getDoc(doc(db, "employees", "m1")))
       await assertSucceeds(updateDoc(doc(db, "employees", "m1"), { atIst: 9 }))
-      await assertFails(getDoc(doc(db, "employees", "m2")))
+      await assertSucceeds(getDoc(doc(db, "employees", "m2")))
       await assertFails(updateDoc(doc(db, "employees", "m2"), { atIst: 9 }))
-      await assertFails(getDoc(doc(db, "employees", "lead")))
+      await assertSucceeds(getDoc(doc(db, "employees", "lead")))
+      await assertFails(updateDoc(doc(db, "employees", "lead"), { atIst: 9 }))
+    })
+    it("monthStats schreibt nur die Function (Admin SDK), kein Client", async () => {
+      await assertFails(updateDoc(doc(as("member", "m1"), "employees", "m1"), { monthStats: { atIst: 99 } }))
+      await assertFails(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { monthStats: { atIst: 99 } }))
     })
     it("Fuehrungskraft liest und bearbeitet Unterstruktur, nicht Gleichgestellte/Fremde", async () => {
       const db = as("lead", "lead")
       await assertSucceeds(getDoc(doc(db, "employees", "m1")))
       await assertSucceeds(updateDoc(doc(db, "employees", "m2"), { atIst: 7 }))
       await assertSucceeds(updateDoc(doc(db, "employees", "lead"), { atIst: 7 }))
-      await assertFails(getDoc(doc(db, "employees", "boss")))
-      await assertFails(getDoc(doc(db, "employees", "other")))
+      await assertSucceeds(getDoc(doc(db, "employees", "other")))
+      await assertFails(updateDoc(doc(db, "employees", "boss"), { atIst: 7 }))
       await assertFails(updateDoc(doc(db, "employees", "other"), { atIst: 7 }))
     })
     it("gesperrte Felder nur fuer Admin", async () => {
@@ -131,6 +136,19 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertFails(getDoc(doc(as("member", "m2"), "financings", "f1")))
       await assertFails(getDoc(doc(as("lead", "other"), "financings", "f1")))
     })
+    it("Abwickler sieht/bearbeitet zugewiesene Faelle, aendert aber Betreuer/Abwickler nicht", async () => {
+      await env.withSecurityRulesDisabled(async (c) =>
+        setDoc(doc(c.firestore(), "financings", "f5"), { ownerId: "m1", ancestors: ["lead", "boss"], abwicklerId: "other" }))
+      const ab = as("member", "other")
+      await assertSucceeds(getDoc(doc(ab, "financings", "f5")))
+      await assertFails(getDoc(doc(ab, "financings", "f1")))
+      await assertSucceeds(updateDoc(doc(ab, "financings", "f5"), { eingereicht: true }))
+      await assertFails(updateDoc(doc(ab, "financings", "f5"), { ownerId: "other", ancestors: ["boss2"] }))
+      await assertFails(updateDoc(doc(ab, "financings", "f5"), { abwicklerId: "m2" }))
+      await assertFails(deleteDoc(doc(ab, "financings", "f5")))
+      // Betreuer darf den Abwickler wechseln
+      await assertSucceeds(updateDoc(doc(as("member", "m1"), "financings", "f5"), { abwicklerId: "m2" }))
+    })
     it("Anlegen nur mit korrekten ancestors", async () => {
       const db = as("member", "m1")
       await assertSucceeds(setDoc(doc(db, "financings", "f2"), { ownerId: "m1", ancestors: ["lead", "boss"] }))
@@ -167,7 +185,8 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
     })
     it("snapshots: lesbar wie employees; anlegen nur Admin, danach unveraenderlich", async () => {
       await assertSucceeds(getDoc(doc(as("lead", "lead"), "snapshots", "2026-09", "employees", "m1")))
-      await assertFails(getDoc(doc(as("member", "m2"), "snapshots", "2026-09", "employees", "m1")))
+      await assertSucceeds(getDoc(doc(as("member", "m2"), "snapshots", "2026-09", "employees", "m1")))
+      await assertFails(getDoc(doc(anon(), "snapshots", "2026-09", "employees", "m1")))
       await assertFails(setDoc(doc(as("lead", "lead"), "snapshots", "2026-10", "employees", "m1"), { atIst: 0 }))
       await assertSucceeds(setDoc(doc(as("admin"), "snapshots", "2026-10", "employees", "m1"), { atIst: 0 }))
       await assertFails(setDoc(doc(as("admin"), "snapshots", "2026-09", "employees", "m1"), { atIst: 0 }))

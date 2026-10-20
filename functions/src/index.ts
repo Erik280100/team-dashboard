@@ -9,6 +9,7 @@ import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
 import { collectPeople, type SbNode } from "./structure"
 import { exportFirestore } from "./backup"
+import { computeMonthStats, monthKeyFromGoal, monthWeekKeys } from "./planStats"
 
 initializeApp()
 const db = getFirestore()
@@ -166,6 +167,48 @@ export const onStructureChange = onDocumentWritten({ document: "org/structure", 
   }
   batches.push(batch)
   for (const b of batches) await b.commit()
+})
+
+/**
+ * Monatssummen (AT/BT/ST/ET, Soll) eines Mitarbeiters aus seiner Controlling-Planung berechnen und als
+ * employees/{id}.monthStats ablegen — damit sie für alle sichtbar sind, ohne die Planung selbst freizugeben.
+ */
+async function refreshMonthStats(empId: string, month: string) {
+  const ref = db.doc(`employees/${empId}`)
+  if (!(await ref.get()).exists) return
+  const weekSnaps = await Promise.all(monthWeekKeys(month).map((w) => db.doc(`employees/${empId}/planWeeks/${w}`).get()))
+  const note = await db.doc(`employees/${empId}/planMonthNotes/${month}`).get()
+  const stats = computeMonthStats(
+    month,
+    weekSnaps.filter((w) => w.exists).map((w) => w.data() as Record<string, unknown>),
+    note.exists ? (note.data() as Record<string, unknown>) : undefined,
+  )
+  if (JSON.stringify((await ref.get()).get("monthStats")) === JSON.stringify(stats)) return
+  await ref.update({ monthStats: stats })
+}
+
+async function currentMonth(): Promise<string> {
+  const goal = (await db.doc("org/teamGoal").get()).get("teamGoal") as { periodStart?: string } | undefined
+  return monthKeyFromGoal(goal)
+}
+
+export const onPlanWeekChange = onDocumentWritten(
+  { document: "employees/{empId}/planWeeks/{week}", region: REGION },
+  async (event) => refreshMonthStats(event.params.empId, await currentMonth()),
+)
+
+export const onPlanMonthChange = onDocumentWritten(
+  { document: "employees/{empId}/planMonthNotes/{month}", region: REGION },
+  async (event) => refreshMonthStats(event.params.empId, await currentMonth()),
+)
+
+/** Umsatzmonat umgestellt (Monatsabschluss) -> Summen aller Mitarbeiter neu berechnen. */
+export const onTeamGoalChange = onDocumentWritten({ document: "org/teamGoal", region: REGION }, async (event) => {
+  const before = monthKeyFromGoal(event.data?.before.get("teamGoal"))
+  const after = monthKeyFromGoal(event.data?.after.get("teamGoal"))
+  if (before === after) return
+  const emps = await db.collection("employees").get()
+  for (const e of emps.docs) await refreshMonthStats(e.id, after)
 })
 
 /** Sofort-Backup (Admin) — der Client ruft das vor jedem Monatsabschluss auf. */

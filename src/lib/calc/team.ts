@@ -22,6 +22,25 @@ export function newRowFor(name: string): EmployeeRow {
   }
 }
 
+/**
+ * Zahlen für Personen, deren Controlling-Daten der Betrachter nicht lesen darf (außerhalb der eigenen
+ * Unterstruktur): AT/BT/ST/ET und Soll kommen aus den vom Server berechneten Monatssummen
+ * (employees/{id}.monthStats), sofern sie zum eingestellten Umsatzmonat passen, sonst 0.
+ * `canSeeLive` = Betrachter darf die Planung der Person lesen (dann gelten die Live-Werte unverändert).
+ */
+export function applyMonthStats<T extends EmployeeRow>(rows: T[], monthKey: string, canSeeLive: (name: string) => boolean): T[] {
+  return rows.map((r) => {
+    if (canSeeLive(r.name)) return r
+    const s = r.monthStats && r.monthStats.month === monthKey ? r.monthStats : null
+    return {
+      ...r,
+      atPlan: s?.atPlan ?? 0, atIst: s?.atIst ?? 0, btPlan: s?.btPlan ?? 0, btIst: s?.btIst ?? 0,
+      stPlan: s?.stPlan ?? 0, stIst: s?.stIst ?? 0, etPlan: s?.etPlan ?? 0, etIst: s?.etIst ?? 0,
+      soll: s?.soll ?? 0,
+    }
+  })
+}
+
 export interface IndexedRow extends EmployeeRow {
   _idx: number
 }
@@ -108,6 +127,7 @@ export function mergeRosterWithRows(roster: RosterEntry[], rows: EmployeeRow[]):
       ehByPlan: row?.ehByPlan,
       vbByAbwickler: row?.vbByAbwickler,
       bonus: Number(row?.bonus) || 0,
+      monthStats: row?.monthStats,
       role: entry.role,
       managerName: entry.managerName,
       depth: entry.depth,

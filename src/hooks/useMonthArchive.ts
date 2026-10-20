@@ -1,9 +1,9 @@
 // Monats-Archiv — Cloud-Modus:
 //   org/archiveIndex                      Liste abgeschlossener Monate + Aggregate
 //   snapshots/{YYYY-MM}                   Meta (Teamziel, Verlauf, Strukturbaum des Monats)
-//   snapshots/{YYYY-MM}/employees/{id}    eingefrorene Zahlen je Mitarbeiter (nur für Berechtigte lesbar)
+//   snapshots/{YYYY-MM}/employees/{id}    eingefrorene Zahlen je Mitarbeiter (für alle Eingeloggten lesbar)
 // Ein Snapshot wird beim Laden aus Meta + den für dieses Konto sichtbaren Mitarbeiter-
-// dokumenten zusammengesetzt, d. h. Führungskräfte sehen im Archiv nur ihre Unterstruktur.
+// dokumenten zusammengesetzt; da alle Mitarbeiter-Dokumente für alle lesbar sind, enthält er das ganze Team.
 // Schreiben (Monatsabschluss) darf nur der Admin. Snapshots sind unveränderlich (getDoc,
 // Cache veraltet nie); ein leeres Archiv ist der Normalzustand (kein setDoc zum Anlegen).
 // Kein localStorage-Cache im Cloud-Modus (mehrere Konten pro Browser).

@@ -31,7 +31,7 @@ service cloud.firestore {
     // Nur Admin/Function duerfen Struktur und Identitaet aendern.
     function lockedFieldsUntouched() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['managerId', 'ancestors', 'uid', 'role', 'name', 'email', 'active', 'createdAt']);
+        .hasAny(['managerId', 'ancestors', 'uid', 'role', 'name', 'email', 'active', 'createdAt', 'monthStats']);
     }
 
     match /users/{uid} {
@@ -40,7 +40,9 @@ service cloud.firestore {
     }
 
     match /employees/{empId} {
-      allow read: if isAdmin() || isSelf(empId) || isAncestor(resource.data.ancestors);
+      // Stammdaten und Monatssummen (Einheiten, AT/BT/ST/ET) sehen alle Eingeloggten;
+      // Planung, Anwesenheit und Todos (Subcollections) bleiben geschuetzt.
+      allow read: if signedIn();
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
         || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched());
@@ -67,17 +69,28 @@ service cloud.firestore {
     // (muss mit employees/{ownerId}.ancestors uebereinstimmen, damit niemand
     // per Client Fremde als "Vorgesetzte" eintragen kann).
     match /financings/{caseId} {
-      allow read: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
+      // Abwickler (abwicklerId) sehen und bearbeiten die ihnen zugewiesenen Faelle,
+      // koennen aber weder Betreuer noch Abwickler noch ancestors aendern.
+      function isAbwickler(data) { return isSelf(data.get('abwicklerId', '')); }
+      function abwicklerOk(data) { return !('abwicklerId' in data) || data.abwicklerId is string; }
+      allow read: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors)
+        || isAbwickler(resource.data);
       allow create: if (isAdmin() || canAccessEmployee(request.resource.data.ownerId))
-        && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors;
+        && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors
+        && abwicklerOk(request.resource.data);
       // Aendern: wer den Fall heute sehen darf. Betreuerwechsel (ownerId) ist erlaubt,
       // sofern die neuen ancestors exakt zum neuen Besitzer passen und der Aendernde
       // auf diesen Besitzer zugreifen darf.
-      allow update: if (isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors))
-        && ((request.resource.data.ownerId == resource.data.ownerId
-              && request.resource.data.ancestors == resource.data.ancestors)
-            || (canAccessEmployee(request.resource.data.ownerId)
-              && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors));
+      allow update: if abwicklerOk(request.resource.data) && (
+        ((isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors))
+          && ((request.resource.data.ownerId == resource.data.ownerId
+                && request.resource.data.ancestors == resource.data.ancestors)
+              || (canAccessEmployee(request.resource.data.ownerId)
+                && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors)))
+        || (isAbwickler(resource.data)
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.ancestors == resource.data.ancestors
+          && request.resource.data.get('abwicklerId', '') == resource.data.get('abwicklerId', '')));
       allow delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
     }
 
@@ -95,7 +108,7 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     match /snapshots/{month}/employees/{empId} {
-      allow read: if canAccessEmployee(empId);
+      allow read: if signedIn();
       allow create: if isAdmin();
       allow update, delete: if false;
     }

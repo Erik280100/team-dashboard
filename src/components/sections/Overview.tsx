@@ -18,7 +18,7 @@ import {
   goalProgress, leaderboardData,
   revenueShareData, summaryKpis, timelineData,
 } from "@/lib/calc/overview"
-import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
+import { aggregateByName, monthWeekKeys } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekDoc } from "@/types/dashboard"
 import type { EmployeeRow, HistoryEntry, TeamGoal } from "@/types/dashboard"
@@ -48,6 +48,7 @@ export function Overview({
   history,
   saveGoal,
   isEditor,
+  canSeeLive = () => true,
   now,
   offenesFinanzierungsvolumen,
   offeneAnlegerwohnungen,
@@ -62,6 +63,8 @@ export function Overview({
   history: HistoryEntry[]
   saveGoal: (next: TeamGoal) => void
   isEditor: boolean
+  /** Darf der Betrachter die Planung dieser Person lesen? Sonst bleibt der gespeicherte/Monatssummen-Wert. */
+  canSeeLive?: (name: string) => boolean
   /** Referenzzeitpunkt für den Zielverlauf — im Archiv-Modus ein Tag nach
    * periodEnd (siehe archiveNow() in lib/calc/archive.ts), damit die
    * Ist-Kurve den vollen abgeschlossenen Monat zeigt statt am heutigen Datum
@@ -109,7 +112,7 @@ export function Overview({
   // "analysen"-Gemacht-Werte über alle Wochen des aktuellen Umsatzmonats) —
   // dieselbe Quelle wie die "Ist"-Spalte auf der Mitarbeiterseite (Team.tsx),
   // statt des zuletzt gespeicherten, potenziell veralteten row.atIst.
-  const planWeeks = planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd) : []
+  const planWeeks = planung ? monthWeekKeys(monthKeyOf(teamGoal)) : []
   useEffect(() => {
     if (!planung || planWeeks.length === 0) return
     void planung.loadWeeks(planWeeks)
@@ -122,7 +125,7 @@ export function Overview({
       )
     : null
   const rowsForLeaderboard = planByName
-    ? rows.map((r) => ({ ...r, atIst: planByName.get(r.name as string)?.analysen ?? 0 }))
+    ? rows.map((r) => (canSeeLive(r.name as string) ? { ...r, atIst: planByName.get(r.name as string)?.analysen ?? 0 } : r))
     : rows
   const leaderboard = leaderboardData(rowsForLeaderboard)
 

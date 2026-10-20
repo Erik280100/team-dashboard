@@ -6,6 +6,17 @@
 // Golden-Master-Test: test/calc/format.golden.test.ts.
 import type { PlanId } from "./struktur"
 
+/** Monatssummen aus dem Controlling (vom Server in employees/{id}.monthStats geschrieben, für alle lesbar). */
+export interface MonthStats {
+  /** Umsatzmonat "YYYY-MM", für den die Summen gelten. */
+  month: string
+  atPlan: number; atIst: number
+  btPlan: number; btIst: number
+  stPlan: number; stIst: number
+  etPlan: number; etIst: number
+  soll: number
+}
+
 export interface EmployeeRow {
   name: string
   soll: number
@@ -23,6 +34,8 @@ export interface EmployeeRow {
   bonus?: number
   isNew?: boolean
   joinDate?: string
+  /** Nur lesen: vom Server berechnet, wird nie zurückgeschrieben (siehe rowToEmployeeData). */
+  monthStats?: MonthStats
   at?: number
   atPlan?: number
   atIst?: number
