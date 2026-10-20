@@ -330,6 +330,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
             rates: orgChart.rates, planRates: orgChart.planRates,
           }}
           financings={finanzierungen.cases}
+          scope={canSwitchScope ? (teamScope ? "team" : "gesamt") : undefined}
+          onScopeChange={changeDashScope}
         />
 
         {!CLOUD_CONFIGURED && (
@@ -397,8 +399,6 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     teamSize={isArchive ? undefined : dashRoster.length}
                     teamGoal={view.teamGoal}
                     history={dashHistory}
-                    scope={canSwitchScope ? (teamScope ? "team" : "gesamt") : undefined}
-                    onScopeChange={changeDashScope}
                     saveGoal={isArchive ? blocked : dashboard.saveGoal}
                     isEditor={auth.isAdmin && !isArchive}
                     now={view.now}

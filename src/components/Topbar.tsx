@@ -45,7 +45,12 @@ export function Topbar({
   attendance,
   orgChart,
   financings,
+  scope,
+  onScopeChange,
 }: {
+  /** Dashboard-Ansicht: alle Mitarbeiter oder nur das eigene Team. undefined = kein Umschalter (z. B. reiner Admin). */
+  scope?: "gesamt" | "team"
+  onScopeChange?: (scope: "gesamt" | "team") => void
   auth: ReturnType<typeof useAuth>
   dashboard: UseDashboardDocResult
   section: SectionId
@@ -167,6 +172,24 @@ export function Topbar({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
+        {scope && onScopeChange && section === "overview" && (
+          <div role="group" aria-label="Ansicht wählen" className="flex gap-1 rounded-md border p-1">
+            {([["gesamt", "Gesamt"], ["team", "Mein Team"]] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={scope === id}
+                onClick={() => onScopeChange(id)}
+                className={
+                  "rounded px-2.5 py-1 text-sm font-medium transition-colors " +
+                  (scope === id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         {showMonthPicker && (
           <div className="flex items-center gap-1.5 rounded-md border px-1.5 py-1">
             <Button size="icon" variant="ghost" className="size-7" aria-label="Vorheriger Monat" onClick={() => stepMonth(-1)}>

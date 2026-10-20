@@ -55,12 +55,7 @@ export function Overview({
   planung,
   archiveIndex,
   teamSize,
-  scope,
-  onScopeChange,
 }: {
-  /** Ansicht: alle Mitarbeiter oder nur das eigene Team. undefined = kein Umschalter (z. B. reiner Admin). */
-  scope?: "gesamt" | "team"
-  onScopeChange?: (scope: "gesamt" | "team") => void
   /** Mitarbeiterzahl laut Strukturbaum (live); im Archiv undefined → rows.length. */
   teamSize?: number
   rows: EmployeeRow[]
@@ -142,24 +137,6 @@ export function Overview({
 
   return (
     <div className="flex flex-col gap-6">
-      {scope && onScopeChange && (
-        <div role="group" aria-label="Ansicht wählen" className="flex w-fit gap-1 rounded-lg border bg-card p-1">
-          {([["gesamt", "Gesamt"], ["team", "Mein Team"]] as const).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={scope === id}
-              onClick={() => onScopeChange(id)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                scope === id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
       {/* Team-Ziel + KPI-Kacheln */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className={DARK_CARD}>
