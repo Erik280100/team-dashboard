@@ -23,7 +23,8 @@ gcloud firestore databases update --database='(default)' --enable-pitr --delete-
 
 ## 3. Eigener Export-Bucket (90 Tage Lebenszyklus)
 ```
-gcloud storage buckets create gs://finova-team-dashboard-backups --location=<REGION-DER-DB>
+# Datenbank liegt in eur3 (EU-Multiregion) -> Bucket in der EU-Multiregion
+gcloud storage buckets create gs://finova-team-dashboard-backups --location=eu
 gcloud storage buckets update gs://finova-team-dashboard-backups --lifecycle-file=scripts/backup/lifecycle.json
 ```
 
