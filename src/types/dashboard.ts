@@ -65,6 +65,8 @@ export interface FinanzierungCase {
   beschaeftigung: Beschaeftigung
   /** Name des zuständigen Mitarbeiters (aus dem Strukturbaum-Roster). */
   betreuer: string
+  /** Name des Abwicklers (Georg/Sandro), der den Fall sieht und mitbearbeitet; leer = keiner zugewiesen. */
+  abwickler?: string
   /** Item-ID (siehe lib/data/finanzierung.ts) -> abgehakt. */
   docs: Record<string, boolean>
   aufbereitet: boolean

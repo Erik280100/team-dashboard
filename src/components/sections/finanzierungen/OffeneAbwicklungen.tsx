@@ -187,7 +187,7 @@ function ChecklistGrid({
 }
 
 export function OffeneAbwicklungen({
-  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, canWrite, employeeRoster,
+  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, canWrite, employeeRoster, abwicklerNames,
 }: {
   cases: FinanzierungCase[]
   addCase: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => void
@@ -200,6 +200,7 @@ export function OffeneAbwicklungen({
   canWrite: boolean
   /** Aktive Mitarbeiter aus dem Strukturbaum-Roster (siehe App.tsx `roster`), für die Betreuer-Auswahl. */
   employeeRoster: RosterEntry[]
+  abwicklerNames: string[]
 }) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
@@ -312,7 +313,10 @@ export function OffeneAbwicklungen({
                               {fc.name}
                             </div>
                           </td>
-                          <td className="px-2 py-2 text-muted-foreground">{fc.betreuer || "—"}</td>
+                          <td className="px-2 py-2 text-muted-foreground">
+                            {fc.betreuer || "—"}
+                            {fc.abwickler && <div className="text-xs">Abwickler: {fc.abwickler}</div>}
+                          </td>
                           <td className="px-2 py-2">
                             <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
                               {ART_LABEL[fc.art]}
@@ -432,7 +436,22 @@ export function OffeneAbwicklungen({
                                     className="w-48"
                                   >
                                     <option value="">– auswählen –</option>
-                                    {employeeNames.map((n) => (
+                                    {[...new Set([...employeeNames, ...(fc.betreuer ? [fc.betreuer] : [])])].map((n) => (
+                                      <option key={n} value={n}>{n}</option>
+                                    ))}
+                                  </Select>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-abwickler-${fc.id}`}>Abwickler</label>
+                                  <Select
+                                    id={`fin-edit-abwickler-${fc.id}`}
+                                    value={fc.abwickler || ""}
+                                    onChange={(e) => patchCase(fc.id, { abwickler: e.target.value })}
+                                    disabled={!isEditor}
+                                    className="w-48"
+                                  >
+                                    <option value="">– keiner –</option>
+                                    {abwicklerNames.map((n) => (
                                       <option key={n} value={n}>{n}</option>
                                     ))}
                                   </Select>

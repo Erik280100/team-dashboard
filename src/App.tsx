@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { PLAN_IDS, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { applyMonthStats, mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
+import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, type EmployeeRow } from "@/lib/calc/format"
@@ -398,7 +399,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 <Rechner
                   employees={rechnerEmployees}
                   abwicklerCandidates={allRoster}
-                  planRates={view.planRates}
+                  planRates={withDefaultPlanRates(orgChart.planRates)}
                   defaultEmployee={myName}
                   canBookUnits={auth.ready && !!auth.user}
                   onApplyUnits={applyUnitsToEmployee}
@@ -422,6 +423,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   patchCase={finanzierungen.patchCase}
                   toggleDoc={finanzierungen.toggleDoc}
                   employeeRoster={roster}
+                  abwicklerNames={ehAbwicklerOptions(allRoster).map((r) => r.name)}
                   removeCase={finanzierungen.removeCase}
                   isEditor={auth.isEditor}
                   canWrite={auth.ready && !!auth.user}

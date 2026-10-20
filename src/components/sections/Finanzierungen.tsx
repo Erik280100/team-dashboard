@@ -20,7 +20,7 @@ const TABS: { id: FinanzierungenTab; label: string; editorOnly?: boolean }[] = [
 ]
 
 export function Finanzierungen({
-  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, canWrite, employeeRoster,
+  cases, addCase, patchCase, toggleDoc, removeCase, isEditor, canWrite, employeeRoster, abwicklerNames,
 }: {
   cases: FinanzierungCase[]
   addCase: (init: { name: string; betrag: number; art: FinanzierungArt; beschaeftigung: Beschaeftigung; betreuer: string }) => void
@@ -35,6 +35,8 @@ export function Finanzierungen({
   canWrite: boolean
   /** Aktive Mitarbeiter aus dem Strukturbaum-Roster (siehe App.tsx `roster`), für die Betreuer-Auswahl. */
   employeeRoster: RosterEntry[]
+  /** Namen, die als Abwickler wählbar sind (Georg/Sandro, aus dem ganzen Strukturbaum). */
+  abwicklerNames: string[]
 }) {
   const [tab, setTab] = useState<FinanzierungenTab>("offen")
   const visibleTabs = TABS.filter((t) => !t.editorOnly || isEditor)
@@ -70,6 +72,7 @@ export function Finanzierungen({
           isEditor={isEditor}
           canWrite={canWrite}
           employeeRoster={employeeRoster}
+          abwicklerNames={abwicklerNames}
         />
       )}
       {activeTab === "rechner" && <KreditRechner />}

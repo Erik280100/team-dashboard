@@ -48,10 +48,10 @@ export interface UseFinanzierungenDocResult {
   removeCase: (id: string) => void
 }
 
-type StoredCase = FinanzierungCase & { ownerId?: string; ancestors?: string[] }
+type StoredCase = FinanzierungCase & { ownerId?: string; ancestors?: string[]; abwicklerId?: string }
 
 function stripOwner(c: StoredCase): FinanzierungCase {
-  const { ownerId: _o, ancestors: _a, ...rest } = c
+  const { ownerId: _o, ancestors: _a, abwicklerId: _w, ...rest } = c
   return rest
 }
 
@@ -61,6 +61,7 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
   const [cases, setCases] = useState<FinanzierungCase[]>(loadLocalCases)
   const [byOwner, setByOwner] = useState<Record<string, StoredCase>>({})
   const [byAncestor, setByAncestor] = useState<Record<string, StoredCase>>({})
+  const [byAbwickler, setByAbwickler] = useState<Record<string, StoredCase>>({})
   const cloudReady = useRef(false)
   const latest = useRef(cases)
   latest.current = cases
@@ -92,16 +93,20 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
       unsubs.push(onSnapshot(query(col, where("ancestors", "array-contains", myId)), (snap) => {
         setByAncestor(toMap(snap.docs))
       }, onError))
+      // Fälle, bei denen man als Abwickler eingetragen ist (auch außerhalb der eigenen Struktur).
+      unsubs.push(onSnapshot(query(col, where("abwicklerId", "==", myId)), (snap) => {
+        setByAbwickler(toMap(snap.docs))
+      }, onError))
     }
     return () => unsubs.forEach((u) => u())
   }, [isAdmin, myId])
 
   useEffect(() => {
     if (!CLOUD_CONFIGURED) return
-    const merged = { ...byAncestor, ...byOwner }
+    const merged = { ...byAbwickler, ...byAncestor, ...byOwner }
     stored.current = merged
     setCases(Object.values(merged).map(stripOwner).sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
-  }, [byOwner, byAncestor])
+  }, [byOwner, byAncestor, byAbwickler])
 
   const commit = useCallback((next: FinanzierungCase[]) => {
     const prev = latest.current
@@ -123,7 +128,10 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
       const ownerId = ids.get(c.betreuer.trim().toLowerCase()) ?? known?.ownerId ?? myId
       const owner = ownerId ? metaById.get(ownerId) : undefined
       if (!ownerId || !owner) { console.warn(`Finanzierung "${c.name}": kein Besitzer ermittelbar`); continue }
-      setDoc(doc(firestore, "financings", c.id), { ...c, ownerId, ancestors: owner.ancestors }).catch(fail)
+      const abwicklerId = c.abwickler ? ids.get(c.abwickler.trim().toLowerCase()) : undefined
+      setDoc(doc(firestore, "financings", c.id), {
+        ...c, ownerId, ancestors: owner.ancestors, ...(abwicklerId ? { abwicklerId } : {}),
+      }).catch(fail)
     }
     for (const c of prev) {
       if (!nextIds.has(c.id)) deleteDoc(doc(firestore, "financings", c.id)).catch(fail)

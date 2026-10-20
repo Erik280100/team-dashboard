@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
-  calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, ehPlanIdFor, type EhInputs,
+  calcEh, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, ehMultForRole, ehPlanIdFor, type EhInputs,
 } from "../../src/lib/calc/eh"
 import { PLAN_IDS } from "../../src/lib/calc/struktur"
 // @ts-expect-error – plain JS fixture, keine Typen nötig
@@ -167,5 +167,15 @@ describe("eh: Investment (mit VB) — automatische Plan-Zuordnung", () => {
 
     const sum = PLAN_IDS.reduce((s, p) => s + (result.planSums[p] || 0), 0)
     expect(sum).toBeCloseTo(result.grandTotal)
+  })
+})
+
+describe("ehMultForRole", () => {
+  const ins = EH_GROUPS.find((g) => g.id === "insurance")!
+  it("nimmt den Stufensatz des ersten Plans der Sparte, sonst den Standard", () => {
+    expect(ehMultForRole({ insurance: { FT1: 1, Teamleiter: 4 } }, ins, "Teamleiter")).toBe(4)
+    expect(ehMultForRole({ insurance: { FT1: 1 } }, ins, "FT 1")).toBe(1)
+    expect(ehMultForRole({ insurance: { FT1: 1 } }, ins, "Direktor")).toBe(ins.multDefault)
+    expect(ehMultForRole({}, ins, undefined)).toBe(ins.multDefault)
   })
 })
