@@ -205,7 +205,7 @@ export function Topbar({
                 !MONTH_CLOSE_ENABLED
                   ? "Vorübergehend deaktiviert"
                   : !canCloseMonth(dashboard.teamGoal)
-                  ? "Erst ab Ende des eingestellten Umsatzmonats möglich"
+                  ? "Erst nach Monatsende möglich"
                   : undefined
               }
             >

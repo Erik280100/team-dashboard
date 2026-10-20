@@ -4,15 +4,15 @@
 // dort durchgängig dunkel (.kpi-card/.panel-dark nutzen dieselbe Navy-Verlaufsfarbe),
 // nicht nur die Chart-Panels.
 import "@/lib/chartSetup"
-import { useEffect, useState, type ChangeEvent } from "react"
+import { useEffect, useState } from "react"
 import { Line, Pie } from "react-chartjs-2"
 import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_TICK } from "@/lib/chartSetup"
-import { fmt as fmtDecimal } from "@/lib/calc/format"
+import { fmt as fmtDecimal, formatISODateDE } from "@/lib/calc/format"
 import { readPlanUnits } from "@/lib/calc/verguetung"
-import { monthKeyOf } from "@/lib/calc/archive"
+import { monthKeyOf, monthLabel } from "@/lib/calc/archive"
 import type { ArchiveIndexEntry } from "@/types/archive"
 import {
   goalProgress, leaderboardData,
@@ -162,37 +162,9 @@ export function Overview({
                 onChange={(e) => setNoteDraft(e.target.value)}
                 onBlur={() => { if (noteDraft !== teamGoal.note) commitField("note", noteDraft) }}
               />
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="periodStartInput" className="text-[10px] font-bold uppercase tracking-wide text-white/50">
-                    Umsatzmonat Start
-                  </label>
-                  <Input
-                    id="periodStartInput"
-                    type="date"
-                    className={DARK_INPUT}
-                    value={teamGoal.periodStart}
-                    disabled={!isEditor}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      if (e.target.value) commitField("periodStart", e.target.value)
-                    }}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="periodEndInput" className="text-[10px] font-bold uppercase tracking-wide text-white/50">
-                    Umsatzmonat Ende
-                  </label>
-                  <Input
-                    id="periodEndInput"
-                    type="date"
-                    className={DARK_INPUT}
-                    value={teamGoal.periodEnd}
-                    disabled={!isEditor}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      if (e.target.value) commitField("periodEnd", e.target.value)
-                    }}
-                  />
-                </div>
+              <div className="mt-3 text-xs text-white/60">
+                {monthLabel(monthKeyOf(teamGoal))} · {formatISODateDE(teamGoal.periodStart)} – {formatISODateDE(teamGoal.periodEnd)}
+                <span className="opacity-75"> (wird am Monatsende automatisch abgeschlossen)</span>
               </div>
             </div>
             <div>

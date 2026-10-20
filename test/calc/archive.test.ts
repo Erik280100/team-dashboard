@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   archiveNow, buildIndexEntry, buildSnapshot, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel,
-  monthTotals, nextMonthGoal, resetRowsForNewMonth,
+  monthTotals, nextMonthGoal, resetRowsForNewMonth, withCalendarPeriod,
 } from "../../src/lib/calc/archive"
 import { monthWeekProgress } from "../../src/lib/calc/format"
 import { timelineData } from "../../src/lib/calc/overview"
@@ -55,14 +55,11 @@ describe("resetRowsForNewMonth", () => {
 })
 
 describe("nextMonthGoal", () => {
-  // Geschäftsregel: Start = erster Mittwoch des Monats, Ende = Tag davor im
-  // Folgemonat (bestätigtes Praxisbeispiel: 05.08.2026-01.09.2026 (August) ->
-  // 02.09.2026-06.10.2026 (September), da der 2.9. der erste Mittwoch im
-  // September und der 7.10. der erste Mittwoch im Oktober 2026 ist).
-  it("Juli -> August (erster Mittwoch im Monat, Ende = Tag vor erstem Mittwoch im Folgemonat)", () => {
+  // Es wird immer im Kalendermonat gerechnet: 1. bis letzter Tag.
+  it("Juli -> August (1. bis 31.)", () => {
     const next = nextMonthGoal(GOAL)
-    expect(next.periodStart).toBe("2026-08-05")
-    expect(next.periodEnd).toBe("2026-09-01")
+    expect(next.periodStart).toBe("2026-08-01")
+    expect(next.periodEnd).toBe("2026-08-31")
     expect(next.recruitActual).toBeNull()
     expect(next.note).toBe("Fokus Juli")
     expect(next.recruitGoal).toBe(2)
@@ -71,17 +68,19 @@ describe("nextMonthGoal", () => {
   it("Dezember rollt korrekt ins Folgejahr", () => {
     const dec: TeamGoal = { ...GOAL, periodStart: "2026-12-01", periodEnd: "2026-12-31" }
     const next = nextMonthGoal(dec)
-    expect(next.periodStart).toBe("2027-01-06")
-    expect(next.periodEnd).toBe("2027-02-02")
+    expect(next.periodStart).toBe("2027-01-01")
+    expect(next.periodEnd).toBe("2027-01-31")
   })
 
-  it("überspringt keinen Monat, wenn periodEnd in den Folgemonat hineinläuft", () => {
-    // Praxisfall (siehe monthKeyOf): 05.08.-01.09. ist der Monat "August" —
-    // der nächste Monat muss "September" (02.09.-06.10.) sein, nicht Oktober.
-    const spanning: TeamGoal = { ...GOAL, periodStart: "2026-08-05", periodEnd: "2026-09-01" }
-    const next = nextMonthGoal(spanning)
-    expect(next.periodStart).toBe("2026-09-02")
-    expect(next.periodEnd).toBe("2026-10-06")
+  it("Februar hat im Schaltjahr 29 Tage", () => {
+    const jan: TeamGoal = { ...GOAL, periodStart: "2028-01-01", periodEnd: "2028-01-31" }
+    expect(nextMonthGoal(jan).periodEnd).toBe("2028-02-29")
+  })
+
+  it("alter Umsatzmonat (erster Mittwoch bis Tag davor) wird auf den Kalendermonat von periodStart gezogen", () => {
+    const old: TeamGoal = { ...GOAL, periodStart: "2026-08-05", periodEnd: "2026-09-01" }
+    expect(withCalendarPeriod(old)).toMatchObject({ periodStart: "2026-08-01", periodEnd: "2026-08-31" })
+    expect(nextMonthGoal(old)).toMatchObject({ periodStart: "2026-09-01", periodEnd: "2026-09-30" })
   })
 })
 
@@ -128,8 +127,9 @@ describe("canCloseMonth", () => {
   it("false vor periodEnd", () => {
     expect(canCloseMonth(GOAL, new Date("2026-07-15"))).toBe(false)
   })
-  it("true genau an periodEnd", () => {
-    expect(canCloseMonth(GOAL, new Date("2026-07-31"))).toBe(true)
+  it("false am letzten Tag des Monats, true ab dem 1. des Folgemonats", () => {
+    expect(canCloseMonth(GOAL, new Date("2026-07-31"))).toBe(false)
+    expect(canCloseMonth(GOAL, new Date("2026-08-01"))).toBe(true)
   })
   it("true nach periodEnd", () => {
     expect(canCloseMonth(GOAL, new Date("2026-08-01"))).toBe(true)

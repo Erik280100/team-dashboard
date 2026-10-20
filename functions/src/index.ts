@@ -249,6 +249,9 @@ export const backupNow = onCall({ region: REGION, timeoutSeconds: 300 }, async (
   return { prefix }
 })
 
+/** Automatischer Monatsabschluss (täglich 00:10 Wien, schließt den Vormonat), siehe monthClose.ts. */
+export { closeMonthAuto } from "./monthClose"
+
 /** Wöchentlicher Export in den eigenen Bucket (Lebenszyklusregel löscht nach 90 Tagen). */
 export const weeklyBackup = onSchedule(
   { schedule: "every sunday 03:00", timeZone: "Europe/Vienna", region: REGION, timeoutSeconds: 540 },

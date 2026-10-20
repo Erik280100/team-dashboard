@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { onSnapshot, setDoc, writeBatch } from "firebase/firestore"
 import { CLOUD_CONFIGURED, employeeDocRef, employeesCollection, firestore, orgDocRef } from "@/lib/firebase"
 import { migrateRows, recordSnapshot, type HistoryEntry } from "@/lib/calc/format"
+import { withCalendarPeriod } from "@/lib/calc/archive"
 import {
   diffRowWrites, employeeDocToRow, employeeMetaOf, type EmployeeMeta,
 } from "@/lib/calc/employees"
@@ -69,7 +70,9 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
       : { rows: migrateRows(loadLocal(STORAGE_KEY, JSON.parse(JSON.stringify(STARTER_DATA)), isRowArray)) }
   )
   const [stored, setStored] = useState<Record<string, Stored>>({})
-  const [teamGoal, setTeamGoal] = useState<TeamGoal>(() => ({
+  // Gerechnet wird immer im Kalendermonat: ältere Stände (Umsatzmonat ab erstem Mittwoch) werden beim Laden
+  // auf 1. bis letzter Tag des Startmonats gezogen.
+  const [teamGoal, setTeamGoal] = useState<TeamGoal>(() => withCalendarPeriod({
     ...STARTER_GOAL,
     ...(cloud ? {} : loadLocal(GOAL_KEY, {}, isGoalObj)),
   }))
@@ -112,7 +115,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
       if (snap.metadata.fromCache) return
       if (snap.exists()) {
         const data = snap.data() as Partial<DashboardDoc>
-        if (data.teamGoal && typeof data.teamGoal === "object") setTeamGoal({ ...STARTER_GOAL, ...data.teamGoal })
+        if (data.teamGoal && typeof data.teamGoal === "object") setTeamGoal(withCalendarPeriod({ ...STARTER_GOAL, ...data.teamGoal }))
         if (Array.isArray(data.history)) setHistory(data.history)
       }
       goalReady.current = true

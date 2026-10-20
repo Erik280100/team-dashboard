@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   fmt, pctOf, teamTarget, progressClass, initials, recruitActualValue,
-  parseISODate, toISODate, addDays, defaultPeriod, monthWeekProgress, migrateRow, migrateRows,
+  parseISODate, toISODate, addDays, calendarPeriod, defaultPeriod, monthWeekProgress, migrateRow, migrateRows,
   recordSnapshot, type EmployeeRow, type HistoryEntry,
 } from "../../src/lib/calc/format"
 // @ts-expect-error – plain JS fixture, keine Typen nötig
@@ -43,7 +43,14 @@ describe("format: golden master vs. legacy", () => {
     expect(toISODate(addDays(parseISODate(iso), 10))).toBe(
       legacy.toISODate(legacy.addDays(legacy.parseISODate(iso), 10))
     )
-    expect(defaultPeriod()).toEqual(legacy.defaultPeriod())
+    // Bewusste Abweichung vom Legacy-Original: dort kam der Zeitraum über toISOString() (UTC) und lag in
+    // Zeitzonen östlich von UTC einen Tag zu früh. Jetzt: voller Kalendermonat in lokaler Zeit.
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = String(now.getMonth() + 1).padStart(2, "0")
+    const last = String(new Date(y, now.getMonth() + 1, 0).getDate()).padStart(2, "0")
+    expect(defaultPeriod()).toEqual({ periodStart: `${y}-${m}-01`, periodEnd: `${y}-${m}-${last}` })
+    expect(calendarPeriod("2028-02")).toEqual({ periodStart: "2028-02-01", periodEnd: "2028-02-29" })
   })
 
   it("monthWeekProgress matches across a range of reference dates", () => {

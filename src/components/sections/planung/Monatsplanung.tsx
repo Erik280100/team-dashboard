@@ -1,12 +1,11 @@
 // Monatsplanung — read-only Verdichtung der Wochen des Monats. Vorbild
 // Finova_Controlling.html:824-829 (KPI-Kacheln) und 1558-1587 (Tabelle).
 // Lädt die betroffenen Wochendokumente lazy nach (usePlanungDoc.loadWeeks).
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { fmt, initials } from "@/lib/calc/format"
 import {
-  aggregateByGroup, aggregateByName, currentMonthKey, emptyMonthNoteEntry, monthLabel, monthWeekKeys, quotePct,
+  aggregateByGroup, aggregateByName, emptyMonthNoteEntry, monthLabel, monthWeekKeys, quotePct,
   sumWeekEntries, type PlanTeamGroup,
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
@@ -75,12 +74,6 @@ function MonthNoteCard({
       </CardContent>
     </Card>
   )
-}
-
-function shiftMonth(monthKey: string, n: number): string {
-  const [y, m] = monthKey.split("-").map(Number)
-  const d = new Date(y, m - 1 + n, 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
 }
 
 function KpiTile({ label, value, sub }: { label: string; value: string; sub: string }) {
@@ -163,7 +156,8 @@ export function Monatsplanung({
   isEditor: boolean
   teamGroups?: PlanTeamGroup[] | null
 }) {
-  const [monthKey, setMonthKey] = useState<string>(currentMonthKey)
+  // Immer der aktuelle (offene) Monat — vergangene Monate stehen im Archiv/Statistik.
+  const monthKey = unitsMonthKey
   const weeks = useMemo(() => monthWeekKeys(monthKey), [monthKey])
 
   useEffect(() => {
@@ -241,13 +235,7 @@ export function Monatsplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="icon" onClick={() => setMonthKey((m) => shiftMonth(m, -1))} aria-label="Vormonat">
-          ‹
-        </Button>
         <div className="text-sm font-medium">{monthLabel(monthKey)}</div>
-        <Button type="button" variant="outline" size="icon" onClick={() => setMonthKey((m) => shiftMonth(m, 1))} aria-label="Folgemonat">
-          ›
-        </Button>
         <span className="text-xs text-muted-foreground">Kumulierte Wochenpläne</span>
         {loading && <span className="ml-auto text-xs text-muted-foreground">Lade Wochendaten…</span>}
       </div>

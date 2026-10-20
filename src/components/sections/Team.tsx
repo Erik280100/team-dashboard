@@ -32,7 +32,7 @@ function ComputedField({ value, title }: { value: number | undefined; title?: st
   return (
     <div
       className="text-center text-sm tabular-nums"
-      title={title ?? "Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"}
+      title={title ?? "Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Monat)"}
     >
       {fmt(value)}
     </div>
@@ -178,7 +178,7 @@ export function Team({
       <p className="text-xs text-muted-foreground">
         Die Liste wird aus dem Strukturbaum gespiegelt (Personen mit Status „Kommt vielleicht" werden ausgeblendet).
         Personen fügst du im Strukturbaum hinzu oder entfernst sie dort. Ist AT/BT/ET wird automatisch aus der
-        Wochenplanung des aktuellen Umsatzmonats übernommen — keine doppelte Eingabe mehr nötig.
+        Wochenplanung des aktuellen Monats übernommen — keine doppelte Eingabe mehr nötig.
       </p>
 
       <div className="flex flex-wrap gap-3">

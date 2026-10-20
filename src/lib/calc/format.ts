@@ -125,12 +125,15 @@ export function addDays(d: Date, n: number): Date {
   return r
 }
 
+/** Kalendermonat "YYYY-MM" als Zeitraum: 1. bis letzter Tag des Monats (lokale Datumsteile, kein UTC-Versatz). */
+export function calendarPeriod(monthKey: string): { periodStart: string; periodEnd: string } {
+  const [y, m] = monthKey.split("-").map(Number)
+  return { periodStart: toISODate(new Date(y, m - 1, 1)), periodEnd: toISODate(new Date(y, m, 0)) }
+}
+
 export function defaultPeriod(): { periodStart: string; periodEnd: string } {
   const now = new Date()
-  const first = new Date(now.getFullYear(), now.getMonth(), 1)
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const toISO = (d: Date) => d.toISOString().slice(0, 10)
-  return { periodStart: toISO(first), periodEnd: toISO(last) }
+  return calendarPeriod(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`)
 }
 
 export interface MonthWeekProgress {

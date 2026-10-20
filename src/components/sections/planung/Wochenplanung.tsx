@@ -3,11 +3,11 @@
 // Sublabels/Reihenfolge), umgesetzt mit Card/Input statt eigener CSS-Klassen.
 // Zahlenfelder nach dem NumField-Muster aus Team.tsx:21-46 (onBlur-Commit,
 // key-Reset gegen State-Rückschreiben während der Eingabe).
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { fmt, initials } from "@/lib/calc/format"
-import { aggregateByGroup, sumWeekEntries, weekLabel, shiftWeek, type PlanTeamGroup } from "@/lib/calc/planung"
+import { aggregateByGroup, isoWeekKey, monthLabel, monthWeekKeys, sumWeekEntries, weekLabel, type PlanTeamGroup } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekEntry } from "@/types/dashboard"
@@ -163,8 +163,10 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
 }
 
 export function Wochenplanung({
-  people, managerName, planung, isEditor, teamGroups,
+  people, managerName, planung, isEditor, teamGroups, monthKey,
 }: {
+  /** Offener Monat ("YYYY-MM"): es werden nur dessen Wochen angeboten. */
+  monthKey: string
   people: RosterEntry[]
   managerName: string | null
   planung: UsePlanungDocResult
@@ -172,6 +174,17 @@ export function Wochenplanung({
   teamGroups?: PlanTeamGroup[] | null
 }) {
   const { activeWeek, setActiveWeek, weekDoc, saveWeekEntry } = planung
+  // Nur Wochen des offenen Monats (Randwochen zählen zu beiden angrenzenden Monaten). Start: die aktuelle
+  // Woche, falls sie dazugehört, sonst die nächstliegende Woche des Monats.
+  const weeks = useMemo(() => monthWeekKeys(monthKey), [monthKey])
+  useEffect(() => {
+    if (weeks.includes(activeWeek)) return
+    const current = isoWeekKey(new Date())
+    setActiveWeek(weeks.includes(current) ? current : current < weeks[0] ? weeks[0] : weeks[weeks.length - 1])
+    // setActiveWeek ist stabil genug; nur auf Wochenwechsel/Monat reagieren.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeks, activeWeek])
+  const weekIdx = weeks.indexOf(activeWeek)
   const totals = useMemo(
     () => sumWeekEntries(people.map((p) => weekDoc.entries[p.name]).filter((e): e is PlanWeekEntry => !!e)),
     [people, weekDoc]
@@ -185,13 +198,14 @@ export function Wochenplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="icon" onClick={() => setActiveWeek(shiftWeek(activeWeek, -1))} aria-label="Vorwoche">
+        <Button type="button" variant="outline" size="icon" disabled={weekIdx <= 0} onClick={() => setActiveWeek(weeks[weekIdx - 1])} aria-label="Vorwoche">
           ‹
         </Button>
         <div className="text-sm font-medium">{weekLabel(activeWeek)}</div>
-        <Button type="button" variant="outline" size="icon" onClick={() => setActiveWeek(shiftWeek(activeWeek, 1))} aria-label="Nächste Woche">
+        <Button type="button" variant="outline" size="icon" disabled={weekIdx < 0 || weekIdx >= weeks.length - 1} onClick={() => setActiveWeek(weeks[weekIdx + 1])} aria-label="Nächste Woche">
           ›
         </Button>
+        <span className="text-xs font-medium text-muted-foreground">{monthLabel(monthKey)}</span>
         <span className="text-xs text-muted-foreground">Bitte bis Montag 10:00 Uhr abgeben</span>
         <span className="ml-auto text-xs text-muted-foreground">
           Σ Verträge {totals.vertraege}

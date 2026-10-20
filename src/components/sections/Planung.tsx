@@ -157,6 +157,7 @@ export function Planung({
           managerName={selectedManager}
           planung={planung}
           isEditor
+          monthKey={unitsMonthKey}
           teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}

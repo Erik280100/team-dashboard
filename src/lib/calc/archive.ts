@@ -4,7 +4,7 @@
 // timelineData nehmen `now` bereits als optionalen Parameter entgegen).
 // Getestet in test/calc/archive.test.ts (kein Legacy-Äquivalent — neues Feature).
 import {
-  addDays, defaultPeriod, parseISODate, recruitActualValue, toISODate,
+  addDays, calendarPeriod, defaultPeriod, parseISODate, recruitActualValue,
   type EmployeeRow, type HistoryEntry, type TeamGoal,
 } from "@/lib/calc/format"
 import {
@@ -47,50 +47,31 @@ export function resetRowsForNewMonth(rows: EmployeeRow[]): EmployeeRow[] {
   })
 }
 
-const WEDNESDAY = 3 // Date#getDay(): 0=So ... 3=Mi
-
-/** Erster Wochentag `weekday` (0=So..6=Sa) im Monat `monthIndex0` (0=Jan). */
-function firstWeekdayOfMonth(year: number, monthIndex0: number, weekday: number): Date {
-  const first = new Date(year, monthIndex0, 1)
-  const diff = (weekday - first.getDay() + 7) % 7
-  return new Date(year, monthIndex0, 1 + diff)
-}
-
 /**
- * Verschiebt den Umsatzmonat auf den Folgemonat. Geschäftsregel: ein
- * Umsatzmonat beginnt immer am ersten Mittwoch des Kalendermonats und endet am
- * Tag davor im Folgemonat (z.B. Start 02.09.2026, Ende 06.10.2026, da der
- * 07.10.2026 der erste Mittwoch im Oktober ist) — unabhängig vom genauen
- * periodStart/periodEnd-Wert des abzuschließenden Monats. Der Folgemonat wird
- * relativ zum Monat von periodStart bestimmt (siehe monthKeyOf), nicht relativ
- * zu periodEnd, das ein paar Tage in den Folgemonat hineinlaufen kann (z.B.
- * 05.08.–01.09. ist "August"). Dezember rollt korrekt ins nächste Jahr (JS-
- * Date-Monatsüberlauf). `note`/`recruitGoal` bleiben erhalten, `recruitActual`
- * wird auf null gesetzt (wieder automatische Zählung der "NEU"-markierten
- * Mitarbeiter im neuen Monat).
+ * Verschiebt den Monat auf den Folgemonat. Gerechnet wird immer im Kalendermonat (1. bis letzter Tag).
+ * Der Folgemonat wird aus dem Monat von periodStart bestimmt (siehe monthKeyOf); Dezember rollt ins
+ * nächste Jahr. `note`/`recruitGoal` bleiben erhalten, `recruitActual` wird auf null gesetzt (wieder
+ * automatische Zählung der "NEU"-markierten Mitarbeiter im neuen Monat).
  */
 export function nextMonthGoal(goal: TeamGoal): TeamGoal {
-  const def = defaultPeriod()
-  const start = parseISODate(goal.periodStart || def.periodStart)
-  const y = start.getFullYear()
-  const m = start.getMonth()
-  const nextStart = firstWeekdayOfMonth(y, m + 1, WEDNESDAY)
-  const followingStart = firstWeekdayOfMonth(y, m + 2, WEDNESDAY)
+  const [y, m] = monthKeyOf(goal).split("-").map(Number)
+  const next = new Date(y, m, 1) // m ist 1-basiert, also ist Index m der Folgemonat
   return {
     ...goal,
     recruitActual: null,
-    periodStart: toISODate(nextStart),
-    periodEnd: toISODate(addDays(followingStart, -1)),
+    ...calendarPeriod(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`),
   }
 }
 
 /**
- * Monatsschlüssel ("YYYY-MM") eines Zeitraums, abgeleitet aus periodStart (nicht
- * periodEnd!). Ein Umsatzmonat läuft in der Praxis oft ein paar Tage in den
- * Folgemonat hinein (z.B. 01.07.-05.08.), heißt aber trotzdem nach dem Monat,
- * in dem er beginnt ("Juli", nicht "August") — periodEnd würde in diesem Fall
- * den falschen Monat liefern.
+ * Zwingt den Zeitraum eines gespeicherten Teamziels auf den vollen Kalendermonat von periodStart
+ * (alte Umsatzmonate liefen vom ersten Mittwoch bis zum Tag davor im Folgemonat).
  */
+export function withCalendarPeriod<T extends Pick<TeamGoal, "periodStart" | "periodEnd">>(goal: T): T {
+  return { ...goal, ...calendarPeriod(monthKeyOf(goal)) }
+}
+
+/** Monatsschlüssel ("YYYY-MM") eines Zeitraums, abgeleitet aus periodStart. */
 export function monthKeyOf(goal: Pick<TeamGoal, "periodStart">): MonthKey {
   const def = defaultPeriod()
   const start = parseISODate(goal.periodStart || def.periodStart)
@@ -206,17 +187,16 @@ export function buildIndexEntry(snapshot: MonthSnapshot): ArchiveIndexEntry {
 }
 
 /**
- * Darf "Monat abschließen" überhaupt ausgelöst werden? Sperrt den Button, bis
- * das heutige Datum das auf der Übersichtsseite eingetragene Ende des
- * Umsatzmonats (periodEnd) erreicht oder überschritten hat — verhindert einen
- * verfrühten Abschluss mitten im laufenden Monat.
+ * Darf der Monat abgeschlossen werden? Erst wenn das Monatsende (periodEnd) vorbei ist, also ab dem 1. des
+ * Folgemonats. Normalerweise schließt die Cloud Function closeMonthAuto automatisch; der Button ist nur der
+ * Notfall-Weg für den Admin.
  */
 export function canCloseMonth(goal: Pick<TeamGoal, "periodEnd">, now: Date = new Date()): boolean {
   const def = defaultPeriod()
   const end = parseISODate(goal.periodEnd || def.periodEnd)
   const today = new Date(now)
   today.setHours(0, 0, 0, 0)
-  return today >= end
+  return today > end
 }
 
 /**

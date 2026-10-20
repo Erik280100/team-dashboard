@@ -240,7 +240,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
       `• Der aktuelle Stand wird als Archiv gespeichert und ist danach über den Monatswähler einsehbar.\n` +
       `• Alle Ist-Werte (Einheiten, AT/BT/ET) werden auf 0 gesetzt — Plan- und Soll-Werte bleiben erhalten.\n` +
       `• "NEU"-Markierungen bleiben bestehen und werden nicht automatisch entfernt.\n` +
-      `• Der Umsatzmonat springt auf ${monthLabel(monthKeyOf(nextGoal))}.\n` +
+      `• Der laufende Monat springt auf ${monthLabel(monthKeyOf(nextGoal))}.\n` +
       `• Bitte andere offene Tabs (auch die alte Dashboard-Seite) vorher schließen.\n\n` +
       `Das lässt sich nicht rückgängig machen.`
     )
@@ -317,7 +317,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         {!isArchive && auth.isAdmin && isMonthCloseDue(dashboard.teamGoal, archive.index) && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-emerald-50 px-6 py-2 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
             <span>
-              Der Umsatzmonat {monthLabel(monthKeyOf(dashboard.teamGoal))} ist beendet — jetzt abschließen und archivieren.
+              Der Monat {monthLabel(monthKeyOf(dashboard.teamGoal))} ist beendet und wurde noch nicht automatisch abgeschlossen — jetzt von Hand abschließen.
             </span>
             <Button
               size="sm"
@@ -327,7 +327,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 !MONTH_CLOSE_ENABLED
                   ? "Vorübergehend deaktiviert"
                   : !canCloseMonth(dashboard.teamGoal)
-                  ? "Erst ab Ende des eingestellten Umsatzmonats möglich"
+                  ? "Erst nach Monatsende möglich"
                   : undefined
               }
             >
