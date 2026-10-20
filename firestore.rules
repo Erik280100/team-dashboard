@@ -1,12 +1,90 @@
 rules_version = '2';
 
-// PLATZHALTER (Phase 1): entspricht dem heutigen Live-Stand (jeder Eingeloggte,
-// auch anonym, darf alles). NICHT deployen, bevor Phase 2 (echte Regeln) fertig
-// und getestet ist — und erst scharf schalten, wenn alle Accounts existieren.
+// Rollenmodell (siehe Umbauplan "User-Accounts"):
+//  - Custom Claims am Auth-Token: role ("admin"|"lead"|"member"), employeeId.
+//    Gesetzt ausschliesslich von der Cloud Function inviteUser (Admin SDK).
+//  - employees/{id}.ancestors enthaelt die IDs aller Vorgesetzten (von
+//    onStructureChange berechnet). Zugriff: selbst, Vorgesetzter (ancestor) oder Admin.
+//  - Alles, was nicht ausdruecklich erlaubt ist, ist verboten.
+//
+// ACHTUNG: erst deployen, wenn alle Accounts existieren und die Daten migriert sind
+// (solange die alte App noch finova/* nutzt, wuerde das Deployen sie aussperren).
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    function signedIn() { return request.auth != null; }
+    function role() { return request.auth.token.get('role', ''); }
+    function myEmp() { return request.auth.token.get('employeeId', ''); }
+    function isAdmin() { return signedIn() && role() == 'admin'; }
+    function isSelf(empId) { return signedIn() && myEmp() != '' && myEmp() == empId; }
+    function isAncestor(ancestors) { return signedIn() && myEmp() != '' && myEmp() in ancestors; }
+
+    function empDoc(empId) {
+      return get(/databases/$(database)/documents/employees/$(empId));
+    }
+    // Zugriff auf Daten, die einem Mitarbeiter gehoeren (self / Vorgesetzte / Admin).
+    function canAccessEmployee(empId) {
+      return isAdmin() || isSelf(empId) || isAncestor(empDoc(empId).data.ancestors);
+    }
+
+    // Nur Admin/Function duerfen Struktur und Identitaet aendern.
+    function lockedFieldsUntouched() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['managerId', 'ancestors', 'uid', 'role', 'name', 'email']);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /employees/{empId} {
+      allow read: if isAdmin() || isSelf(empId) || isAncestor(resource.data.ancestors);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched());
+
+      match /planWeeks/{id} {
+        allow read, write: if canAccessEmployee(empId);
+      }
+      match /planMonthNotes/{id} {
+        allow read, write: if canAccessEmployee(empId);
+      }
+      match /planAnnual/{id} {
+        allow read, write: if canAccessEmployee(empId);
+      }
+      match /attendance/{id} {
+        allow read, write: if canAccessEmployee(empId);
+      }
+      // Persoenliches Board: nur der Besitzer (auch Vorgesetzte und Admin nicht).
+      match /todos/{id} {
+        allow read, write: if isSelf(empId);
+      }
+    }
+
+    // Finanzierungsfaelle: ownerId = Betreuer, ancestors = dessen Vorgesetzte
+    // (muss mit employees/{ownerId}.ancestors uebereinstimmen, damit niemand
+    // per Client Fremde als "Vorgesetzte" eintragen kann).
+    match /financings/{caseId} {
+      allow read: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
+      allow create: if (isAdmin() || canAccessEmployee(request.resource.data.ownerId))
+        && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors;
+      allow update: if (isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors))
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.ancestors == resource.data.ancestors;
+      allow delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
+    }
+
+    // Strukturbaum, Saetze, Teamziel: alle Eingeloggten lesen, nur Admin schreibt.
+    match /org/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Monatsarchiv: Schreiben nur ueber die Cloud Function (Admin SDK).
+    match /snapshots/{month}/employees/{empId} {
+      allow read: if canAccessEmployee(empId);
+      allow write: if false;
     }
   }
 }
