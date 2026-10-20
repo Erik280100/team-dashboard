@@ -1,63 +1,89 @@
-// Auth-Hook — Äquivalent zu initAuth()/applyPermissions() aus
-// legacy/index.html:2197–2246. isEditor === true nur für eingeloggte Nutzer
-// (die drei angelegten Editor-Konten); ohne Firebase-Config bleibt die App
-// dauerhaft im Read-only-Modus (wie im Original).
+// Auth-Hook — E-Mail/Passwort-Login (Firebase Auth). Es gibt keinen anonymen
+// Zugang mehr: ohne Login zeigt App.tsx nur die LoginPage.
 //
-// Besucher ohne echten Login werden im Hintergrund automatisch anonym
-// angemeldet (Firestore-Regel verlangt nur request.auth != null zum
-// Schreiben, siehe firestore.rules in der Firebase-Console). Das gibt jedem
-// ein gültiges Auth-Token, ohne dass ein sichtbarer Login nötig ist — genutzt
-// vom EH-Rechner ("Auf Mitarbeiter buchen", siehe App.tsx canBookUnits).
-// isEditor bleibt bewusst an einen echten (nicht-anonymen) Account gebunden,
-// damit Team-Seite/Struktur/Monatsabschluss weiterhin gesperrt sind.
+// Rolle und Mitarbeiter-ID kommen aus den Custom Claims des ID-Tokens
+// (siehe lib/calc/roles.ts, firestore.rules). Ohne Firebase-Config bleibt die
+// App im lokalen Modus (wie bisher), dann gibt es keinen Login.
 import { useEffect, useState } from "react"
 import {
   onAuthStateChanged,
-  signInAnonymously,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth"
 import { auth } from "@/lib/firebase"
+import { accountFromClaims, type AccountInfo } from "@/lib/calc/roles"
 
-export interface UseAuthResult {
+type Result = { ok: true } | { ok: false; message: string }
+
+export interface UseAuthResult extends AccountInfo {
   user: User | null
-  /** Echter Login (E-Mail/Passwort) — nicht der automatische anonyme Login. */
+  /** Darf Zahlen bearbeiten (Admin/Führungskraft). Feingranular pro Mitarbeiter: canEditEmployee. */
   isEditor: boolean
-  /** Bekannt erst nachdem der erste Auth-State empfangen wurde (verhindert Flackern). */
+  isAdmin: boolean
+  /** Bekannt erst nachdem der erste Auth-State (inkl. Claims) empfangen wurde (verhindert Flackern). */
   ready: boolean
-  signIn: (email: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>
+  signIn: (email: string, password: string) => Promise<Result>
+  resetPassword: (email: string) => Promise<Result>
   signOut: () => Promise<void>
+}
+
+const NO_ACCOUNT: AccountInfo = { role: "member", employeeId: null }
+
+function loginErrorMessage(err: unknown): string {
+  const code = typeof err === "object" && err && "code" in err ? String((err as { code: unknown }).code) : ""
+  if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) {
+    return "E-Mail oder Passwort falsch."
+  }
+  if (code.includes("too-many-requests")) return "Zu viele Versuche — bitte kurz warten."
+  if (code.includes("network")) return "Keine Verbindung zum Server."
+  return "Anmeldung fehlgeschlagen."
 }
 
 export function useAuth(): UseAuthResult {
   const [user, setUser] = useState<User | null>(null)
+  const [account, setAccount] = useState<AccountInfo>(NO_ACCOUNT)
   const [ready, setReady] = useState(!auth)
 
   useEffect(() => {
     if (!auth) return
-    const authInstance = auth
-    const unsub = onAuthStateChanged(authInstance, (u) => {
+    return onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        try {
+          const token = await u.getIdTokenResult()
+          setAccount(accountFromClaims(token.claims))
+        } catch (err) {
+          console.error("Claims konnten nicht geladen werden", err)
+          setAccount(NO_ACCOUNT)
+        }
+      } else {
+        setAccount(NO_ACCOUNT)
+      }
       setUser(u)
       setReady(true)
-      if (!u) {
-        signInAnonymously(authInstance).catch((err) => {
-          console.error("Anonyme Anmeldung fehlgeschlagen", err)
-        })
-      }
     })
-    return unsub
   }, [])
 
-  async function signIn(email: string, password: string) {
-    if (!auth) return { ok: false as const, message: "Cloud-Anmeldung nicht konfiguriert." }
+  async function signIn(email: string, password: string): Promise<Result> {
+    if (!auth) return { ok: false, message: "Cloud-Anmeldung nicht konfiguriert." }
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password)
-      return { ok: true as const }
+      return { ok: true }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      return { ok: false as const, message: "Anmeldung fehlgeschlagen: " + message }
+      return { ok: false, message: loginErrorMessage(err) }
     }
+  }
+
+  async function resetPassword(email: string): Promise<Result> {
+    if (!auth) return { ok: false, message: "Cloud-Anmeldung nicht konfiguriert." }
+    try {
+      await sendPasswordResetEmail(auth, email.trim())
+    } catch (err) {
+      // Bewusst keine Unterscheidung "Konto existiert nicht", um keine Konten preiszugeben.
+      console.error("Passwort-Reset fehlgeschlagen", err)
+    }
+    return { ok: true }
   }
 
   async function signOut() {
@@ -65,5 +91,15 @@ export function useAuth(): UseAuthResult {
     await firebaseSignOut(auth)
   }
 
-  return { user, isEditor: !!user && !user.isAnonymous, ready, signIn, signOut }
+  const isAdmin = !!user && account.role === "admin"
+  return {
+    user,
+    ...account,
+    isAdmin,
+    isEditor: isAdmin || (!!user && account.role === "lead"),
+    ready,
+    signIn,
+    resetPassword,
+    signOut,
+  }
 }

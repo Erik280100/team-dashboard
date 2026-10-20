@@ -15,7 +15,7 @@ import { mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoste
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, type EmployeeRow } from "@/lib/calc/format"
-import { useAuth } from "@/hooks/useAuth"
+import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
 import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
@@ -27,6 +27,7 @@ import { useMonthArchive } from "@/hooks/useMonthArchive"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
+import { LoginPage } from "@/components/LoginPage"
 import { Button } from "@/components/ui/button"
 import { Overview } from "@/components/sections/Overview"
 import { Team } from "@/components/sections/Team"
@@ -84,8 +85,7 @@ function ArchiveStatusCard({
   )
 }
 
-function AppShell() {
-  const auth = useAuth()
+function AppShell({ auth }: { auth: UseAuthResult }) {
   const confirm = useConfirm()
   const { section, navigateTo } = useHashSection()
   const dashboard = useDashboardDoc()
@@ -263,7 +263,7 @@ function AppShell() {
         )}
         {!auth.isEditor && (
           <div className="border-b bg-muted px-6 py-2 text-sm text-muted-foreground">
-            Nur Lesezugriff — melde dich an, um Zahlen zu ändern.
+            Nur Lesezugriff — für Änderungen fehlt dir die Berechtigung.
           </div>
         )}
         {isArchive && (
@@ -420,10 +420,24 @@ function AppShell() {
   )
 }
 
+// Login-Gate: ohne Anmeldung ist nichts sichtbar. Die Daten-Hooks in AppShell
+// starten erst nach dem Login (kein Firestore-Zugriff ohne Token). Ohne
+// Firebase-Config (lokaler Modus) entfällt das Gate.
+function AuthGate() {
+  const auth = useAuth()
+  if (CLOUD_CONFIGURED) {
+    if (!auth.ready) {
+      return <div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">Lädt…</div>
+    }
+    if (!auth.user) return <LoginPage auth={auth} />
+  }
+  return <AppShell key={auth.user?.uid ?? "local"} auth={auth} />
+}
+
 function App() {
   return (
     <ConfirmProvider>
-      <AppShell />
+      <AuthGate />
     </ConfirmProvider>
   )
 }
