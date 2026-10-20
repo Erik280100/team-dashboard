@@ -9,7 +9,7 @@
 // (mehrere Konten pro Browser). Ohne Firebase-Config: wie bisher nur localStorage.
 import { useCallback, useEffect, useRef, useState } from "react"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
-import { fetchEmployeeDocs, subscribeEmployeeDocs, writeEmployeeSubDoc } from "@/lib/employeeSubdocs"
+import { fetchEmployeeDocs, fetchEmployeeRange, subscribeEmployeeDocs, writeEmployeeSubDoc } from "@/lib/employeeSubdocs"
 import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
 import { currentMonthKey, defaultAnnual, emptyMonthNoteEntry, emptyWeekEntry, isoWeekKey, planManagerKey } from "@/lib/calc/planung"
 import {
@@ -234,20 +234,62 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     return p
   }, [fetchOne])
 
+  // Mehrere Wochen auf einmal (Jahresansicht): je Mitarbeiter EINE Bereichsabfrage über alle fehlenden Wochen,
+  // statt Woche x Mitarbeiter einzelne Abrufe.
+  const fetchRange = useCallback(async (weeks: string[]): Promise<void> => {
+    const sorted = [...weeks].sort()
+    const perWeek = new Map<string, Record<string, PlanWeekEntry>>(weeks.map((w) => [w, {}]))
+    await fetchEmployeeRange<PlanWeekEntry>("planWeeks", "week", sorted[0], sorted[sorted.length - 1], employeesRef.current, (key, name, entry) => {
+      const bucket = perWeek.get(key)
+      if (bucket) bucket[name] = entry
+    })
+    for (const w of weeks) {
+      if (cacheRef.current.has(w)) continue // z. B. inzwischen live gesyncte Woche
+      if (w === activeWeek && latestWeekDoc.current.week === w) {
+        cacheRef.current.set(w, latestWeekDoc.current)
+      } else {
+        const local = loadLocalWeekDoc(w)
+        cacheRef.current.set(w, Object.keys(local.entries).length > 0 ? local : { week: w, entries: perWeek.get(w) ?? {} })
+      }
+      statusRef.current.set(w, "ready")
+    }
+    scheduleBump()
+  }, [activeWeek, scheduleBump])
+
+  const loadMany = useCallback((weeks: string[]): Promise<PlanWeekDoc[]> => {
+    const missing = weeks.filter((w) => !cacheRef.current.has(w) && !inflightRef.current.has(w))
+    if (CLOUD_CONFIGURED && missing.length > 3) {
+      const done = fetchRange(missing).catch((err) => console.warn("Planungswochen konnten nicht geladen werden", err))
+      missing.forEach((w) => {
+        const p = done
+          .then(() => cacheRef.current.get(w) ?? emptyWeekDoc(w))
+          .finally(() => { inflightRef.current.delete(w) })
+        inflightRef.current.set(w, p)
+      })
+    }
+    return Promise.all(weeks.map((w) => loadOne(w)))
+  }, [fetchRange, loadOne])
+
+  // getWeek() wird beim Rendern je Woche aufgerufen — die angeforderten Wochen eines Renders gesammelt laden.
+  const pendingWeeksRef = useRef<Set<string>>(new Set())
   const getWeek = useCallback(
     (week: string): PlanWeekDoc | null => {
       const cached = cacheRef.current.get(week)
       if (cached) return cached
-      queueMicrotask(() => { void loadOne(week) })
+      pendingWeeksRef.current.add(week)
+      if (pendingWeeksRef.current.size === 1) {
+        queueMicrotask(() => {
+          const weeks = [...pendingWeeksRef.current]
+          pendingWeeksRef.current.clear()
+          void loadMany(weeks)
+        })
+      }
       return null
     },
-    [loadOne]
+    [loadMany]
   )
 
-  const loadWeeks = useCallback(
-    async (weeks: string[]): Promise<PlanWeekDoc[]> => Promise.all(weeks.map((w) => loadOne(w))),
-    [loadOne]
-  )
+  const loadWeeks = loadMany
 
   // ---- Monats-Notizen (AT/BT/ST-Kacheln der Monatsplanung) ----
   const [activeMonth, setActiveMonth] = useState<string>(() => currentMonthKey())
@@ -341,7 +383,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     }
     annualStatusMap.current.set(cacheKey, "loading")
     const unsub = subscribeEmployeeDocs<PlanAnnualDoc>(
-      "planAnnual", String(year), "__none__", [{ id, name: managerName, role: "", managerId: null, ancestors: [], uid: null, email: null, accountPending: false }],
+      "planAnnual", String(year), "__none__", [{ id, name: managerName, role: "", managerId: null, ancestors: [] }],
       (entries, ready) => {
         const data = entries[managerName]
         if (data) setAnnualDocs((m) => new Map(m).set(cacheKey, data))
