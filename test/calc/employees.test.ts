@@ -8,7 +8,7 @@ const doc = {
 
 describe("employees bridge", () => {
   it("trennt Stammdaten und Zeile", () => {
-    expect(employeeMetaOf("m1", doc)).toEqual({ id: "m1", name: "Mia Eins", role: "FT 1", managerId: "lead", ancestors: ["lead", "boss"], uid: null })
+    expect(employeeMetaOf("m1", doc)).toEqual({ id: "m1", name: "Mia Eins", role: "FT 1", managerId: "lead", ancestors: ["lead", "boss"], uid: null, email: null, accountPending: false })
     const row = employeeDocToRow(doc)
     expect(row.name).toBe("Mia Eins")
     expect(row).not.toHaveProperty("ancestors")

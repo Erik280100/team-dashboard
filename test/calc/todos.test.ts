@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { dueState, reorderForMove, todosInLane } from "../../src/lib/calc/todos"
-import type { ErikTodo } from "../../src/types/dashboard"
+import type { BoardTodo } from "../../src/types/dashboard"
 
-function makeTodo(overrides: Partial<ErikTodo> & Pick<ErikTodo, "id">): ErikTodo {
+function makeTodo(overrides: Partial<BoardTodo> & Pick<BoardTodo, "id">): BoardTodo {
   return {
     title: "Titel",
     description: "",

@@ -38,7 +38,7 @@ export let archiveIndexDocRef: DocumentReference | null = null
 // ein neues Dokument in derselben Collection, das die Legacy-Seite nicht kennt.
 export let financingsDocRef: DocumentReference | null = null
 
-// Erik-Dashboard / persönliches Kanban-Board (siehe src/hooks/useErikTodosDoc.ts) —
+// Mein Board / persönliches Kanban-Board (siehe src/hooks/useBoardTodosDoc.ts) —
 // ebenfalls ein neues Dokument in derselben Collection, das die Legacy-Seite nicht kennt.
 export let erikTodosDocRef: DocumentReference | null = null
 

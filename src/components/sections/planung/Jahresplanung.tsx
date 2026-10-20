@@ -12,6 +12,7 @@ import {
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import { EinheitenUebersicht } from "@/components/sections/planung/EinheitenUebersicht"
 import { readPlanUnits, sumPlanUnits } from "@/lib/calc/verguetung"
 import {
   PLAN_TARGET_KEYS, PLAN_TARGET_LABELS,
@@ -46,7 +47,7 @@ function barColor(pct: number): string {
 }
 
 export function Jahresplanung({
-  managerName, people, planung, isEditor, teamGroups, rows, unitsMonthKey, archive,
+  managerName, people, roster, planung, isEditor, teamGroups, rows, unitsMonthKey, archive,
 }: {
   archive: UseMonthArchiveResult
   /** Mitarbeiterseite (dashboard.rows): dort werden ALLE Einheiten erfasst. */
@@ -55,6 +56,8 @@ export function Jahresplanung({
   unitsMonthKey: string
   managerName: string
   people: RosterEntry[]
+  /** Gesamter Strukturbaum (für die Team-Summen in der Einheiten-Übersicht). */
+  roster: RosterEntry[]
   planung: UsePlanungDocResult
   isEditor: boolean
   teamGroups?: PlanTeamGroup[] | null
@@ -202,9 +205,9 @@ export function Jahresplanung({
             const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0
             return (
               <div key={k} className="rounded-lg border bg-muted/30 p-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{PLAN_TARGET_LABELS[k]}</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{PLAN_TARGET_LABELS[k]} Ist</div>
                 <div className="mt-1 font-mono text-xl font-medium tabular-nums">{fmt(actual)}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">Ziel: {fmt(target)} · {pct}%</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">Soll: {fmt(target)} · {pct}%</div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div className={cn("h-full rounded-full", barColor(pct))} style={{ width: `${pct}%` }} />
                 </div>
@@ -215,14 +218,14 @@ export function Jahresplanung({
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {PLAN_TARGET_KEYS.map((k) => (
             <label key={k} className="flex flex-col gap-1 text-xs text-muted-foreground">
-              {PLAN_TARGET_LABELS[k]} Ziel
+              {PLAN_TARGET_LABELS[k]} Soll
               <input
                 key={`${year}-${managerName}-${k}-target`}
                 type="number"
                 min={0}
                 disabled={!isEditor}
                 defaultValue={draft.targets[k] || 0}
-                aria-label={`${PLAN_TARGET_LABELS[k]} Ziel`}
+                aria-label={`${PLAN_TARGET_LABELS[k]} Soll`}
                 className="h-8 rounded-md border border-input bg-background px-2 text-sm tabular-nums outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
                 onBlur={(e) => commitTarget(k, Number(e.target.value) || 0)}
               />
@@ -264,14 +267,14 @@ export function Jahresplanung({
                 <div className="grid grid-cols-2 gap-2">
                   {(["vertraege", "einheiten", "atg", "analysen"] as PlanTargetKey[]).map((k) => (
                     <label key={k} className="flex flex-col gap-1 rounded-md border bg-muted/30 p-2 text-[10px] font-semibold uppercase text-muted-foreground">
-                      {PLAN_TARGET_LABELS[k]}-Ziel
+                      {PLAN_TARGET_LABELS[k]} Soll
                       <input
                         key={`${year}-${managerName}-${q}-${k}`}
                         type="number"
                         min={0}
                         disabled={!isEditor}
                         defaultValue={qData[k] || 0}
-                        aria-label={`${PLAN_TARGET_LABELS[k]}-Ziel ${q}`}
+                        aria-label={`${PLAN_TARGET_LABELS[k]} Soll ${q}`}
                         className="h-7 rounded border border-input bg-background px-1.5 text-sm normal-case tabular-nums text-foreground outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
                         onBlur={(e) => commitQuarterField(q, k, Number(e.target.value) || 0)}
                       />
@@ -287,10 +290,10 @@ export function Jahresplanung({
                 </div>
                 <div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
                   {[
-                    { label: "ATG ist", value: actuals.atg },
-                    { label: "Analysen ist", value: actuals.analysen },
-                    { label: "Beratungen ist", value: actuals.beratungen },
-                    { label: "Einheiten ist", value: actuals.ehGemacht },
+                    { label: "Wählversuche Ist", value: actuals.atg },
+                    { label: "AT Ist", value: actuals.analysen },
+                    { label: "BT Ist", value: actuals.beratungen },
+                    { label: "Einheiten Ist", value: actuals.ehGemacht },
                   ].map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-0.5">
                       <div className="font-mono text-sm font-medium">{fmt(item.value)}</div>
@@ -303,6 +306,16 @@ export function Jahresplanung({
           })}
         </div>
       </section>
+
+      <EinheitenUebersicht
+        managerName={managerName}
+        people={people}
+        roster={roster}
+        year={year}
+        archive={archive}
+        rows={rows}
+        unitsMonthKey={unitsMonthKey}
+      />
 
       {groupYearActuals && (
         <section>

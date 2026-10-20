@@ -17,6 +17,7 @@ import { Monatsplanung } from "@/components/sections/planung/Monatsplanung"
 import { Jahresplanung } from "@/components/sections/planung/Jahresplanung"
 
 type PlanEbene = "woche" | "monat" | "jahr"
+type PlanScope = "alle" | "fuehrung" | "direkt"
 
 const EBENEN: { id: PlanEbene; label: string }[] = [
   { id: "woche", label: "Wochenplanung" },
@@ -51,7 +52,13 @@ export function Planung({
     () => (selectedManager ? sbSubtreeNames(orgTree, selectedManager) : new Set<string>()),
     [selectedManager, orgTree]
   )
-  const people = useMemo(() => roster.filter((r) => names.has(r.name)), [roster, names])
+  const [scope, setScope] = useState<PlanScope>("alle")
+  // "Direkte Mitarbeiter": nur die unmittelbar unterstellten Personen (ohne die Führungskraft selbst und ohne
+  // tiefere Ebenen) — managerName im Roster überspringt "vielleicht"-Knoten bereits.
+  const people = useMemo(
+    () => roster.filter((r) => (scope === "direkt" ? r.managerName === selectedManager : names.has(r.name))),
+    [roster, names, scope, selectedManager]
+  )
   const needle = search.trim().toLowerCase()
   const filteredPeople = useMemo(
     () => (needle ? people.filter((p) => p.name.toLowerCase().includes(needle)) : people),
@@ -77,10 +84,10 @@ export function Planung({
     () => (needle ? teamGroups.filter((g) => g.name.toLowerCase().includes(needle)) : teamGroups),
     [teamGroups, needle]
   )
-  const [groupByLead, setGroupByLead] = useState(false)
   useEffect(() => {
-    if (leadFrontier.length === 0) setGroupByLead(false)
+    if (leadFrontier.length === 0) setScope((s) => (s === "fuehrung" ? "alle" : s))
   }, [leadFrontier])
+  const groupByLead = scope === "fuehrung"
 
   if (managerOptions.length === 0) {
     return (
@@ -122,24 +129,29 @@ export function Planung({
             {e.label}
           </button>
         ))}
+        <span className="mx-1 h-5 w-px bg-border" />
+        <button
+          type="button"
+          onClick={() => setScope("alle")}
+          className={cn(PILL_BASE, scope === "alle" ? PILL_ACTIVE : PILL_INACTIVE)}
+        >
+          Alle Mitarbeiter
+        </button>
+        <button
+          type="button"
+          onClick={() => setScope("direkt")}
+          className={cn(PILL_BASE, scope === "direkt" ? PILL_ACTIVE : PILL_INACTIVE)}
+        >
+          Direkte Mitarbeiter
+        </button>
         {leadFrontier.length > 0 && (
-          <>
-            <span className="mx-1 h-5 w-px bg-border" />
-            <button
-              type="button"
-              onClick={() => setGroupByLead(false)}
-              className={cn(PILL_BASE, !groupByLead ? PILL_ACTIVE : PILL_INACTIVE)}
-            >
-              Alle Mitarbeiter
-            </button>
-            <button
-              type="button"
-              onClick={() => setGroupByLead(true)}
-              className={cn(PILL_BASE, groupByLead ? PILL_ACTIVE : PILL_INACTIVE)}
-            >
-              Nach Führungskräften
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => setScope("fuehrung")}
+            className={cn(PILL_BASE, scope === "fuehrung" ? PILL_ACTIVE : PILL_INACTIVE)}
+          >
+            Nach Führungskräften
+          </button>
         )}
         <Input
           placeholder="Name suchen…"
@@ -185,6 +197,7 @@ export function Planung({
           unitsMonthKey={unitsMonthKey}
           managerName={selectedManager}
           people={people}
+          roster={roster}
           planung={planung}
           isEditor={isEditor}
           teamGroups={groupByLead ? filteredTeamGroups : null}

@@ -20,11 +20,11 @@ interface FieldGroup {
 }
 
 const FIELD_GROUPS: FieldGroup[] = [
-  { label: "Wählversuche", left: { sub: "Ziel", key: "atz" }, right: { sub: "Gemacht", key: "atg" } },
-  { label: "Analysen", left: { sub: "Ausgemacht", key: "analysenZ" }, right: { sub: "Gemacht", key: "analysen" } },
-  { label: "Beratungen", left: { sub: "Ausgemacht", key: "beratungenZ" }, right: { sub: "Gemacht", key: "beratungen" } },
-  { label: "Servicetermine", left: { sub: "Ausgemacht", key: "stz" }, right: { sub: "Gemacht", key: "stg" } },
-  { label: "Einstellungstermine", left: { sub: "Ziel", key: "etz" }, right: { sub: "Gemacht", key: "etg" } },
+  { label: "Wählversuche", left: { sub: "Soll", key: "atz" }, right: { sub: "Ist", key: "atg" } },
+  { label: "AT", left: { sub: "Soll", key: "analysenZ" }, right: { sub: "Ist", key: "analysen" } },
+  { label: "BT", left: { sub: "Soll", key: "beratungenZ" }, right: { sub: "Ist", key: "beratungen" } },
+  { label: "ST", left: { sub: "Soll", key: "stz" }, right: { sub: "Ist", key: "stg" } },
+  { label: "ET", left: { sub: "Soll", key: "etz" }, right: { sub: "Ist", key: "etg" } },
   { label: "Aktivitäten", left: { sub: "Soll", key: "aktivitaetenSoll" }, right: { sub: "Ist", key: "aktivitaetenIst" } },
 ]
 

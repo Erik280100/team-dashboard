@@ -7,23 +7,23 @@ import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firesto
 import { CLOUD_CONFIGURED, firestore } from "@/lib/firebase"
 import { reorderForMove } from "@/lib/calc/todos"
 import {
-  ERIK_TODOS_KEY,
-  type ErikTodo,
+  BOARD_TODOS_KEY,
+  type BoardTodo,
   type TodoCategory,
   type TodoColor,
   type TodoLane,
 } from "@/types/dashboard"
 
-function loadLocalTodos(): ErikTodo[] {
+function loadLocalTodos(): BoardTodo[] {
   if (CLOUD_CONFIGURED) return []
   try {
-    const raw = localStorage.getItem(ERIK_TODOS_KEY)
+    const raw = localStorage.getItem(BOARD_TODOS_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) return parsed
     }
   } catch (e) {
-    console.warn("Konnte Erik-Todos nicht laden", e)
+    console.warn("Konnte Todos nicht laden", e)
   }
   return []
 }
@@ -34,16 +34,16 @@ function newTodoId(): string {
     : `todo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-export interface UseErikTodosDocResult {
-  todos: ErikTodo[]
+export interface UseBoardTodosDocResult {
+  todos: BoardTodo[]
   addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
-  patchTodo: (id: string, patch: Partial<ErikTodo>) => void
+  patchTodo: (id: string, patch: Partial<BoardTodo>) => void
   moveTodo: (id: string, lane: TodoLane, beforeId: string | null) => void
   removeTodo: (id: string) => void
 }
 
-export function useErikTodosDoc(employeeId: string | null = null): UseErikTodosDocResult {
-  const [todos, setTodos] = useState<ErikTodo[]>(loadLocalTodos)
+export function useBoardTodosDoc(employeeId: string | null = null): UseBoardTodosDocResult {
+  const [todos, setTodos] = useState<BoardTodo[]>(loadLocalTodos)
   const cloudReady = useRef(false)
   const latest = useRef(todos)
   latest.current = todos
@@ -55,18 +55,18 @@ export function useErikTodosDoc(employeeId: string | null = null): UseErikTodosD
       collection(firestore, "employees", employeeId, "todos"),
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
-        setTodos(snap.docs.map((d) => d.data() as ErikTodo))
+        setTodos(snap.docs.map((d) => d.data() as BoardTodo))
         if (!snap.metadata.fromCache) cloudReady.current = true
       },
       (err) => console.warn("Mein Board: Cloud-Verbindung fehlgeschlagen", err)
     )
   }, [employeeId])
 
-  const commit = useCallback((next: ErikTodo[]) => {
+  const commit = useCallback((next: BoardTodo[]) => {
     const prev = latest.current
     setTodos(next)
     if (!CLOUD_CONFIGURED) {
-      try { localStorage.setItem(ERIK_TODOS_KEY, JSON.stringify(next)) } catch { /* noop */ }
+      try { localStorage.setItem(BOARD_TODOS_KEY, JSON.stringify(next)) } catch { /* noop */ }
       return
     }
     if (!cloudReady.current || !firestore || !employeeId) return
@@ -87,7 +87,7 @@ export function useErikTodosDoc(employeeId: string | null = null): UseErikTodosD
     (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => {
       const inTodoLane = latest.current.filter((t) => t.lane === "todo")
       const minOrder = inTodoLane.reduce((m, t) => Math.min(m, t.order), 0)
-      const next: ErikTodo = {
+      const next: BoardTodo = {
         id: newTodoId(),
         title: init.title,
         description: init.description,
@@ -105,7 +105,7 @@ export function useErikTodosDoc(employeeId: string | null = null): UseErikTodosD
   )
 
   const patchTodo = useCallback(
-    (id: string, patch: Partial<ErikTodo>) => {
+    (id: string, patch: Partial<BoardTodo>) => {
       commit(latest.current.map((t) => (t.id === id ? { ...t, ...patch } : t)))
     },
     [commit]

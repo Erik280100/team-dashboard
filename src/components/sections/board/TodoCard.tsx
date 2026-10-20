@@ -1,15 +1,15 @@
-// Einzelne Kanban-Karte im Erik-Dashboard. Drag-Start wird hier ausgelöst (native
-// HTML5-DnD, siehe ErikDashboard.tsx für das Gegenstück onDragOver/onDrop auf der
+// Einzelne Kanban-Karte im Mein Board. Drag-Start wird hier ausgelöst (native
+// HTML5-DnD, siehe MeinBoard.tsx für das Gegenstück onDragOver/onDrop auf der
 // Lane) — Drop-Zielberechnung (vor welcher Karte losgelassen wird) macht die Lane
 // selbst anhand von data-todo-id, nicht diese Komponente.
 import { useEffect, useRef, useState, type DragEvent } from "react"
 import { Flag, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { dueState } from "@/lib/calc/todos"
-import { TODO_CATEGORY_LABELS, TODO_COLOR_LABELS, TODO_COLORS, type ErikTodo } from "@/types/dashboard"
-import { COLOR_DOT_CLASS } from "@/components/sections/erik/colors"
+import { TODO_CATEGORY_LABELS, TODO_COLOR_LABELS, TODO_COLORS, type BoardTodo } from "@/types/dashboard"
+import { COLOR_DOT_CLASS } from "@/components/sections/board/colors"
 
-const CARD_BORDER_CLASS: Record<ErikTodo["color"], string> = {
+const CARD_BORDER_CLASS: Record<BoardTodo["color"], string> = {
   grau: "border-l-slate-400",
   gruen: "border-l-emerald-500",
   gelb: "border-l-amber-400",
@@ -31,9 +31,9 @@ function todayStr(): string {
 export function TodoCard({
   todo, showCategory, onPatch, onDelete, onDragStart,
 }: {
-  todo: ErikTodo
+  todo: BoardTodo
   showCategory: boolean
-  onPatch: (patch: Partial<ErikTodo>) => void
+  onPatch: (patch: Partial<BoardTodo>) => void
   onDelete: () => void
   onDragStart: (e: DragEvent<HTMLDivElement>) => void
 }) {

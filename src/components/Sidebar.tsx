@@ -1,7 +1,7 @@
 // Hauptnavigation — Äquivalent zur .sidebar-Nav aus legacy/index.html:1571–1588.
 import {
   LayoutDashboard, Users, Network, BarChart3, CalendarRange, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
-  KanbanSquare, UserCog, Settings,
+  KanbanSquare, UserCog, Settings, FilePlus2, ExternalLink,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -10,17 +10,24 @@ import type { SectionId } from "@/hooks/useHashSection"
 const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; access?: "admin" | "lead" }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "team", label: "Mitarbeiter", icon: Users },
-  { id: "struktur", label: "Strukturbaum", icon: Network },
-  { id: "statistik", label: "Statistik", icon: BarChart3, access: "lead" },
-  { id: "planung", label: "Controlling", icon: CalendarRange },
   { id: "rechner", label: "Rechner", icon: Calculator },
-  { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
-  { id: "guide", label: "Guide", icon: BookOpen },
-  { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
+  { id: "planung", label: "Controlling", icon: CalendarRange },
   { id: "finanzierungen", label: "Finanzierungen", icon: Landmark },
-  { id: "partner", label: "Partner", icon: Link2 },
+  { id: "struktur", label: "Strukturbaum", icon: Network },
+  { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
+  { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
+  { id: "statistik", label: "Statistik", icon: BarChart3, access: "lead" },
   { id: "konten", label: "Konten", icon: UserCog, access: "admin" },
 ]
+
+/** Untere Gruppe (über "Neue Analyse starten" und "Mein Board"). */
+const LOWER_ITEMS: typeof NAV_ITEMS = [
+  { id: "guide", label: "Guide", icon: BookOpen },
+  { id: "partner", label: "Partner", icon: Link2 },
+]
+
+/** Externer Link (öffnet in neuem Tab, nie "aktive Seite"), steht unten bei "Mein Board". */
+const ANALYSE_URL = "https://finova.anyconcept.ai/finanzanalyse/home"
 
 export function Sidebar({
   section,
@@ -29,7 +36,10 @@ export function Sidebar({
   onClose,
   isAdmin,
   isLead,
+  boardAlert = false,
 }: {
+  /** Mindestens ein offenes Todo ist fällig (Datum erreicht/überschritten): rotes Ausrufezeichen bei "Mein Board". */
+  boardAlert?: boolean
   section: SectionId
   onNavigate: (section: SectionId) => void
   /** Mobil: Menü eingeblendet (off-canvas). Ab md ist die Sidebar immer sichtbar. */
@@ -42,6 +52,31 @@ export function Sidebar({
   const navItems = NAV_ITEMS.filter(
     (item) => !item.access || isAdmin || (item.access === "lead" && isLead)
   )
+  const renderItem = (item: (typeof NAV_ITEMS)[number]) => {
+    const Icon = item.icon
+    const active = section === item.id
+    return (
+      <button
+        key={item.id}
+        type="button"
+        data-section={item.id}
+        aria-current={active ? "page" : undefined}
+        onClick={() => {
+          onNavigate(item.id)
+          onClose()
+        }}
+        className={cn(
+          "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
+          active
+            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
+            : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+        )}
+      >
+        <Icon aria-hidden="true" className="size-4 shrink-0" />
+        {item.label}
+      </button>
+    )
+  }
   return (
     <>
       {open && (
@@ -77,51 +112,48 @@ export function Sidebar({
           Direktion KKB · Team Dashboard
         </div>
 
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const active = section === item.id
-          return (
-            <button
-              key={item.id}
-              type="button"
-              data-section={item.id}
-              aria-current={active ? "page" : undefined}
-              onClick={() => {
-                onNavigate(item.id)
-                onClose()
-              }}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
-                active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
-                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )}
-            >
-              <Icon aria-hidden="true" className="size-4 shrink-0" />
-              {item.label}
-            </button>
-          )
-        })}
+        {navItems.map(renderItem)}
 
         <div className="mt-auto flex flex-col gap-1 border-t border-sidebar-foreground/10 pt-3">
           <button
             type="button"
-            data-section="erik"
-            aria-current={section === "erik" ? "page" : undefined}
+            data-section="board"
+            aria-current={section === "board" ? "page" : undefined}
             onClick={() => {
-              onNavigate("erik")
+              onNavigate("board")
               onClose()
             }}
             className={cn(
               "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
-              section === "erik"
+              section === "board"
                 ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
                 : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
             )}
           >
             <KanbanSquare aria-hidden="true" className="size-4 shrink-0" />
             Mein Board
+            {boardAlert && (
+              <span
+                title="offene todos"
+                aria-label="offene todos"
+                className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-red-500 text-xs font-extrabold leading-none text-white"
+              >
+                !
+              </span>
+            )}
           </button>
+          <a
+            href={ANALYSE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            className="flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          >
+            <FilePlus2 aria-hidden="true" className="size-4 shrink-0" />
+            Neue Analyse starten
+            <ExternalLink aria-hidden="true" className="ml-auto size-3.5 shrink-0 opacity-60" />
+          </a>
+          {LOWER_ITEMS.map(renderItem)}
           <button
             type="button"
             data-section="einstellungen"

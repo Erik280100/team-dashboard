@@ -125,6 +125,12 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
   const cacheRef = useRef<Map<string, PlanWeekDoc>>(new Map())
   const statusRef = useRef<Map<string, WeekDocStatus>>(new Map())
   const [, bumpCacheVersion] = useState(0)
+  // Viele Wochen laden gleichzeitig (Jahresplanung: ~53) — Re-Render gebündelt statt je Woche einmal.
+  const bumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scheduleBump = useCallback(() => {
+    if (bumpTimer.current !== null) return
+    bumpTimer.current = setTimeout(() => { bumpTimer.current = null; bumpCacheVersion((n) => n + 1) }, 80)
+  }, [])
   const monthCacheRef = useRef<Map<string, PlanMonthNotesDoc>>(new Map())
   const monthLoadingRef = useRef<Set<string>>(new Set())
   const [, bumpMonthCache] = useState(0)
@@ -174,7 +180,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     []
   )
 
-  const loadOne = useCallback(async (week: string): Promise<PlanWeekDoc> => {
+  const fetchOne = useCallback(async (week: string): Promise<PlanWeekDoc> => {
     const cached = cacheRef.current.get(week)
     if (cached) return cached
 
@@ -205,7 +211,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       const data: PlanWeekDoc = { week, entries }
       cacheRef.current.set(week, data)
       statusRef.current.set(week, "ready")
-      bumpCacheVersion((n) => n + 1)
+      scheduleBump()
       return data
     } catch (err) {
       console.warn(`Planungswoche ${week} konnte nicht geladen werden`, err)
@@ -214,7 +220,19 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       cacheRef.current.set(week, empty)
       return empty
     }
-  }, [activeWeek])
+  }, [activeWeek, scheduleBump])
+
+  // Ladevorgänge je Woche zusammenfassen: getWeek() stößt beim Rendern für jede noch nicht geladene Woche ein
+  // Nachladen an — ohne diese Bündelung startet jeder Re-Render erneut Abrufe für alle ~53 Wochen aller
+  // Mitarbeiter (Anfragen-Lawine, die Jahresplanung friert ein).
+  const inflightRef = useRef<Map<string, Promise<PlanWeekDoc>>>(new Map())
+  const loadOne = useCallback((week: string): Promise<PlanWeekDoc> => {
+    const pending = inflightRef.current.get(week)
+    if (pending) return pending
+    const p = fetchOne(week).finally(() => { inflightRef.current.delete(week) })
+    inflightRef.current.set(week, p)
+    return p
+  }, [fetchOne])
 
   const getWeek = useCallback(
     (week: string): PlanWeekDoc | null => {

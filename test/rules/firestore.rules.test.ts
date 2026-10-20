@@ -64,6 +64,11 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertFails(getDoc(doc(noClaims(), "employees", "m1")))
       await assertFails(setDoc(doc(noClaims(), "employees", "m1"), { atIst: 5 }, { merge: true }))
     })
+    it("accountPending ist gesperrt (nur Admin/Function)", async () => {
+      await assertFails(updateDoc(doc(as("member", "m1"), "employees", "m1"), { accountPending: true }))
+      await assertFails(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { accountPending: true }))
+      await assertSucceeds(updateDoc(doc(as("admin"), "employees", "m1"), { accountPending: true }))
+    })
     it("Mitarbeiter liest/schreibt sich selbst, nicht fremde", async () => {
       const db = as("member", "m1")
       await assertSucceeds(getDoc(doc(db, "employees", "m1")))

@@ -24,9 +24,11 @@ import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
 import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
 import { usePlanungDoc } from "@/hooks/usePlanungDoc"
 import { useFinanzierungenDoc } from "@/hooks/useFinanzierungenDoc"
-import { useErikTodosDoc } from "@/hooks/useErikTodosDoc"
+import { useBoardTodosDoc } from "@/hooks/useBoardTodosDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
 import { useFinancingStats } from "@/hooks/useFinancingStats"
+import { useToday } from "@/hooks/useToday"
+import { hasOpenDueTodos } from "@/lib/calc/todos"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
@@ -40,7 +42,7 @@ import { Guide } from "@/components/sections/Guide"
 import { Kalender } from "@/components/sections/Kalender"
 import { Finanzierungen } from "@/components/sections/Finanzierungen"
 import { Partner } from "@/components/sections/Partner"
-import { ErikDashboard } from "@/components/sections/ErikDashboard"
+import { MeinBoard } from "@/components/sections/MeinBoard"
 import { Konten } from "@/components/sections/Konten"
 import { Einstellungen } from "@/components/sections/Einstellungen"
 import { ChangePasswordPage } from "@/components/ChangePasswordPage"
@@ -62,7 +64,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   kalender: "Anwesenheitsliste",
   finanzierungen: "Finanzierungen",
   partner: "Partner",
-  erik: "Mein Board",
+  board: "Mein Board",
   konten: "Konten",
   einstellungen: "Einstellungen",
 }
@@ -116,7 +118,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const orgChart = useOrgChartDoc(auth.isAdmin, auth.employeeId)
   const planung = usePlanungDoc(accessibleEmployees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
-  const erikTodos = useErikTodosDoc(auth.employeeId)
+  const boardTodos = useBoardTodosDoc(auth.employeeId)
+  const boardAlert = hasOpenDueTodos(boardTodos.todos, useToday())
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
   // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin (und lokaler Modus) sehen den ganzen Baum,
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
@@ -312,6 +315,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         onClose={() => setSidebarOpen(false)}
         isAdmin={auth.isAdmin}
         isLead={auth.isLead}
+        boardAlert={boardAlert}
       />
       <main className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
         <Topbar
@@ -474,13 +478,13 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 />
               )}
               {section === id && id === "partner" && <Partner />}
-              {section === id && id === "erik" && (
-                <ErikDashboard
-                  todos={erikTodos.todos}
-                  addTodo={erikTodos.addTodo}
-                  patchTodo={erikTodos.patchTodo}
-                  moveTodo={erikTodos.moveTodo}
-                  removeTodo={erikTodos.removeTodo}
+              {section === id && id === "board" && (
+                <MeinBoard
+                  todos={boardTodos.todos}
+                  addTodo={boardTodos.addTodo}
+                  patchTodo={boardTodos.patchTodo}
+                  moveTodo={boardTodos.moveTodo}
+                  removeTodo={boardTodos.removeTodo}
                 />
               )}
               {section === id && id === "struktur" && (
@@ -491,6 +495,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     key={archiveMonth ?? "live"}
                     doc={view.orgDoc}
                     rows={view.rows}
+                    employees={dashboard.employees}
                     isEditor={auth.isEditor && !isArchive}
                     isAdmin={auth.isAdmin}
                     myNodeId={auth.employeeId}

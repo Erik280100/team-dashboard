@@ -11,10 +11,10 @@ import { useConfirm } from "@/hooks/useConfirm"
 import { todosInLane, type BoardFilter } from "@/lib/calc/todos"
 import {
   TODO_CATEGORIES, TODO_CATEGORY_LABELS, TODO_LANES, TODO_LANE_LABELS,
-  type ErikTodo, type TodoCategory, type TodoLane,
+  type BoardTodo, type TodoCategory, type TodoLane,
 } from "@/types/dashboard"
-import { NewTodoDialog } from "@/components/sections/erik/NewTodoDialog"
-import { TodoCard } from "@/components/sections/erik/TodoCard"
+import { NewTodoDialog } from "@/components/sections/board/NewTodoDialog"
+import { TodoCard } from "@/components/sections/board/TodoCard"
 import { EuVsGmbhRechner } from "@/components/sections/rechner/EuVsGmbhRechner"
 import { HoldingImmobilienRechner } from "@/components/sections/rechner/HoldingImmobilienRechner"
 import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
@@ -33,26 +33,26 @@ const BOARD_TABS: { id: BoardFilter; label: string }[] = [
   ...TODO_CATEGORIES.map((c) => ({ id: c as BoardFilter, label: TODO_CATEGORY_LABELS[c] })),
 ]
 
-type ErikView = "todos" | "euVsGmbh" | "holdingImmoRechner" | "gmbhVsZypern"
+type BoardView = "todos" | "euVsGmbh" | "holdingImmoRechner" | "gmbhVsZypern"
 
-const VIEW_TABS: { id: ErikView; label: string }[] = [
+const VIEW_TABS: { id: BoardView; label: string }[] = [
   { id: "todos", label: "Todos" },
   { id: "euVsGmbh", label: "EU vs. GmbH" },
   { id: "holdingImmoRechner", label: "Holding & Immobilien" },
   { id: "gmbhVsZypern", label: "EU vs. GmbH vs. Zypern" },
 ]
 
-export function ErikDashboard({
+export function MeinBoard({
   todos, addTodo, patchTodo, moveTodo, removeTodo,
 }: {
-  todos: ErikTodo[]
-  addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: ErikTodo["color"] }) => void
-  patchTodo: (id: string, patch: Partial<ErikTodo>) => void
+  todos: BoardTodo[]
+  addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: BoardTodo["color"] }) => void
+  patchTodo: (id: string, patch: Partial<BoardTodo>) => void
   moveTodo: (id: string, lane: TodoLane, beforeId: string | null) => void
   removeTodo: (id: string) => void
 }) {
   const confirm = useConfirm()
-  const [view, setView] = useState<ErikView>("todos")
+  const [view, setView] = useState<BoardView>("todos")
   const [filter, setFilter] = useState<BoardFilter>("alle")
   const [flaggedOnly, setFlaggedOnly] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -118,7 +118,7 @@ export function ErikDashboard({
     moveTodo(id, lane, beforeId)
   }
 
-  async function handleDelete(todo: ErikTodo) {
+  async function handleDelete(todo: BoardTodo) {
     const ok = await confirm(`Todo "${todo.title}" wirklich löschen?`)
     if (ok) removeTodo(todo.id)
   }

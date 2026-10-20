@@ -81,7 +81,7 @@ export interface FinanzierungenDoc {
   cases: FinanzierungCase[]
 }
 
-// Erik-Dashboard — persönliches Kanban-Board (siehe src/components/sections/ErikDashboard.tsx).
+// Mein Board — persönliches Kanban-Board (siehe src/components/sections/MeinBoard.tsx).
 // Keine Legacy-Entsprechung, neues Feature. Fixe Swimlanes/Kategorien/Farben (keine
 // benutzerdefinierten Lanes), analog zum FinanzierungArt-Enum oben.
 export const TODO_LANES = ["todo", "progress", "berechnung", "kunde", "fertig"] as const
@@ -115,7 +115,7 @@ export const TODO_COLOR_LABELS: Record<TodoColor, string> = {
   blau: "Blau",
 }
 
-export interface ErikTodo {
+export interface BoardTodo {
   id: string
   title: string
   /** Optional, leer = keine Beschreibung. */
@@ -133,7 +133,7 @@ export interface ErikTodo {
 
 /** finova/erik_todos */
 export interface ErikTodosDoc {
-  todos: ErikTodo[]
+  todos: BoardTodo[]
 }
 
 // Planung — Wochen-/Monats-/Jahresplanung je Führungskraft (siehe
@@ -197,9 +197,9 @@ export type PlanTargetKey = (typeof PLAN_TARGET_KEYS)[number]
 export const PLAN_TARGET_LABELS: Record<PlanTargetKey, string> = {
   vertraege: "Verträge",
   einheiten: "Einheiten",
-  atg: "ATG",
-  analysen: "Analysen",
-  beratungen: "Beratungen",
+  atg: "Wählversuche",
+  analysen: "AT",
+  beratungen: "BT",
 }
 
 export const PLAN_QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const
@@ -233,7 +233,7 @@ export const HISTORY_KEY = "finova_dashboard_history_v1"
 export const ATTENDANCE_KEY = "finova_dashboard_attendance_v1"
 export const SB_STORAGE_KEY = "finova_orgchart_data_v1"
 export const FINANZIERUNGEN_KEY = "finova_finanzierungen_v1"
-export const ERIK_TODOS_KEY = "finova_erik_todos_v1"
+export const BOARD_TODOS_KEY = "finova_erik_todos_v1"
 
 export const STARTER_GOAL: TeamGoal = {
   note: "",

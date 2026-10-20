@@ -1,12 +1,12 @@
-// Erik-Dashboard — reine Board-Logik (Filtern/Sortieren/Verschieben von Todos), aus der
-// UI (ErikDashboard.tsx) herausgezogen, damit sie unabhängig testbar ist (siehe
+// Mein Board — reine Board-Logik (Filtern/Sortieren/Verschieben von Todos), aus der
+// UI (MeinBoard.tsx) herausgezogen, damit sie unabhängig testbar ist (siehe
 // test/calc/todos.test.ts). Keine Legacy-Entsprechung, neues Feature.
-import type { ErikTodo, TodoCategory, TodoLane } from "@/types/dashboard"
+import type { BoardTodo, TodoCategory, TodoLane } from "@/types/dashboard"
 
 export type BoardFilter = TodoCategory | "alle"
 
 /** Todos einer Lane, optional nach Kategorie gefiltert, sortiert nach order (Tiebreak: createdAt). */
-export function todosInLane(todos: ErikTodo[], lane: TodoLane, filter: BoardFilter): ErikTodo[] {
+export function todosInLane(todos: BoardTodo[], lane: TodoLane, filter: BoardFilter): BoardTodo[] {
   return todos
     .filter((t) => t.lane === lane && (filter === "alle" || t.category === filter))
     .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
@@ -19,7 +19,7 @@ export function todosInLane(todos: ErikTodo[], lane: TodoLane, filter: BoardFilt
  * Ziel-Lane wird dabei anhand des aktuellen `order`-Werts bestimmt (nicht der Anzeige),
  * daher zuerst intern die Ziel-Lane sortieren.
  */
-export function reorderForMove(todos: ErikTodo[], id: string, lane: TodoLane, beforeId: string | null): ErikTodo[] {
+export function reorderForMove(todos: BoardTodo[], id: string, lane: TodoLane, beforeId: string | null): BoardTodo[] {
   const moving = todos.find((t) => t.id === id)
   if (!moving) return todos
 
@@ -66,4 +66,13 @@ export function dueState(dueDate: string, today: string): DueState {
   const soonUntilStr = soonUntil.toISOString().slice(0, 10)
   if (dueDate <= soonUntilStr) return "soon"
   return "none"
+}
+
+/**
+ * Gibt es ein offenes Todo, dessen Fälligkeitsdatum erreicht oder überschritten ist? (Todos in der Lane "fertig"
+ * und Todos ohne Datum zählen nicht.) `today` = "YYYY-MM-DD" in lokaler Zeit. Steuert das rote Ausrufezeichen
+ * bei "Mein Board" in der Sidebar.
+ */
+export function hasOpenDueTodos(todos: Pick<BoardTodo, "dueDate" | "lane">[], today: string): boolean {
+  return todos.some((t) => t.lane !== "fertig" && !!t.dueDate && t.dueDate <= today)
 }

@@ -38,3 +38,7 @@ export function collectPeople(tree: SbNode): Person[] {
   walk(tree, null)
   return out
 }
+
+// Spiegel von SB_LEAD_ROLES/isLeadRole() in ../../src/lib/calc/struktur.ts (Führungsstufen -> Kontorolle "lead").
+const SB_LEAD_ROLES = ["Direktor", "Regionalleiter", "Geschäftsstellenleiter", "Teamleiter"]
+export const isLeadRole = (role: string): boolean => SB_LEAD_ROLES.includes(role)

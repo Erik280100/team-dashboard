@@ -2,7 +2,8 @@
 
 | Funktion | Typ | Zweck |
 |---|---|---|
-| `inviteUser` | callable (Admin) | Konto anlegen/aktualisieren, Rolle als Custom Claim setzen, `employees/{id}.uid` verknüpfen, Link zum Passwort-Setzen zurückgeben |
+| `inviteUser` | callable (Admin) | Konto anlegen/aktualisieren (Startpasswort `start1234`, Änderungspflicht beim ersten Login), Rolle als Custom Claim setzen, `employees/{id}.uid` verknüpfen |
+| `createAccount` | callable (Admin oder Vorgesetzte) | Konto für eine Person aus dem Strukturbaum erstellen (Button „Useraccount erstellen“): Admin für alle, sonst nur Unterstruktur; Rolle aus der Stufe (lead/member), Startpasswort `start1234`, `employees/{id}.accountPending` bis zur ersten Passwortänderung |
 | `disableUser` | callable (Admin) | Konto sperren |
 | `onStructureChange` | Firestore-Trigger auf `org/structure` | `employees/{id}`: Name/Rolle/`managerId`/`ancestors` nachziehen, neue Mitarbeiter anlegen, entfernte deaktivieren, `ancestors` der Finanzierungen aktualisieren |
 | `backupNow` | callable (Admin) | Firestore-Export in den Backup-Bucket; der Client ruft das vor jedem Monatsabschluss auf (bricht bei Fehler ab) |

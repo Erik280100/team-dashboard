@@ -11,6 +11,10 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
+import { httpsCallable } from "firebase/functions"
+import { functions } from "@/lib/firebase"
+import { callableErrorText } from "@/lib/callableError"
+import type { EmployeeMeta } from "@/lib/calc/employees"
 import { computePromotionProgress, type PromotionProgress } from "@/lib/calc/befoerderung"
 import { fmt, type EmployeeRow } from "@/lib/calc/format"
 import {
@@ -138,13 +142,49 @@ function detachNode(root: SbNode, id: string): SbNode | null {
   return copy
 }
 
+/** Adresse der App (Basis-Pfad inklusive), unter der sich neue Personen das erste Mal anmelden. */
+function appLink(): string {
+  return window.location.origin + import.meta.env.BASE_URL
+}
+
+/** Anmelde-Link zum Weitergeben: Anzeige plus Button, der ihn in die Zwischenablage kopiert. */
+function RegistrationLink() {
+  const url = appLink()
+  const [copied, setCopied] = useState(false)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // Ältere Browser / kein sicherer Kontext: über ein temporäres Textfeld kopieren.
+      const ta = document.createElement("textarea")
+      ta.value = url
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand("copy") } catch { /* nichts zu tun */ }
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <Input readOnly value={url} aria-label="Anmelde-Link" onFocus={(e) => e.currentTarget.select()} className="h-8 text-xs" />
+      <Button size="sm" variant="outline" onClick={copy} className="shrink-0">
+        {copied ? "Kopiert ✓" : "Link kopieren"}
+      </Button>
+    </div>
+  )
+}
+
 export function StrukturBaum({
-  doc, rows, isEditor, isAdmin, myNodeId, saveOrgChart,
+  doc, rows, employees, isEditor, isAdmin, myNodeId, saveOrgChart,
 }: {
   doc: OrgChartDoc
   /** Leistungszahlen (Einheiten je Karriereplan) für den Beförderungs-Fortschritt,
    * siehe lib/calc/befoerderung.ts — live dashboard.rows oder ein Archiv-Snapshot. */
   rows: EmployeeRow[]
+  /** Mitarbeiter-Dokumente (Konto-Status je Knoten; Knoten-ID = Mitarbeiter-ID). */
+  employees: EmployeeMeta[]
   /** Bearbeiten grundsätzlich möglich (nicht im Archiv). Welche Knoten, regeln isAdmin/myNodeId. */
   isEditor: boolean
   /** Admin darf alles; alle anderen nur unter sich selbst (Knoten myNodeId) — der eigene Knoten bleibt read-only. */
@@ -345,6 +385,30 @@ export function StrukturBaum({
     [isEditor, isAdmin, myNodeId, underMe]
   )
   const selEditable = !!selected && canEditNode(selected.id)
+
+  // ---- Useraccount: Konto für die gewählte Person erstellen (Cloud Function createAccount) ----
+  /** Wie canEditNode: Admin überall, sonst nur unterhalb des eigenen Knotens (nie der eigene). */
+  const selAccountEmp = selected ? employees.find((e) => e.id === selected.id) ?? null : null
+  const canManageAccount = !!selected && canEditNode(selected.id) && !!functions
+  const [accountOpen, setAccountOpen] = useState(false)
+  const [accountEmail, setAccountEmail] = useState("")
+  const [accountBusy, setAccountBusy] = useState(false)
+  const [accountError, setAccountError] = useState<string | null>(null)
+  /** Konto wurde gerade erstellt: der Dialog zeigt nun den Anmelde-Link zum Weitergeben. */
+  const [accountDone, setAccountDone] = useState(false)
+
+  async function createAccount() {
+    if (!functions || !selected) return
+    setAccountBusy(true); setAccountError(null)
+    try {
+      await httpsCallable(functions, "createAccount")({ employeeId: selected.id, email: accountEmail.trim() })
+      setAccountDone(true)
+    } catch (err) {
+      setAccountError(callableErrorText(err))
+    } finally {
+      setAccountBusy(false)
+    }
+  }
 
   function persist(patch: Partial<OrgChartDoc>) {
     saveOrgChart({ ...doc, ...patch })
@@ -960,6 +1024,30 @@ export function StrukturBaum({
               </div>
             )}
 
+            {canManageAccount && (
+              <div className="mb-4 rounded-md border bg-muted/30 p-3 text-xs">
+                <div className="mb-1.5 font-semibold">Login</div>
+                {!selAccountEmp ? (
+                  <p className="text-muted-foreground">Ein Useraccount kann erstellt werden, sobald die Person gespeichert ist.</p>
+                ) : !selAccountEmp.uid ? (
+                  <Button
+                    size="sm" variant="outline"
+                    onClick={() => { setAccountEmail(selAccountEmp.email ?? ""); setAccountError(null); setAccountDone(false); setAccountOpen(true) }}
+                  >
+                    Useraccount erstellen
+                  </Button>
+                ) : selAccountEmp.accountPending ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-muted-foreground">
+                      Konto erstellt ({selAccountEmp.email}) — wartet auf die erste Anmeldung mit dem Startpasswort start1234.
+                    </p>
+                    <div className="font-medium">Anmelde-Link zum Weitergeben:</div>
+                    <RegistrationLink />
+                  </div>
+                ) : null}
+              </div>
+            )}
+
             {doc.conns.some((c) => c.from === selected.id || c.to === selected.id) && (
               <div className="mb-4">
                 <div className="mb-1.5 text-xs font-semibold">🔗 Verbindungen</div>
@@ -1061,6 +1149,47 @@ export function StrukturBaum({
             <Button variant="outline" onClick={() => setDialog(null)}>Abbrechen</Button>
             <Button onClick={submitDialog}>Hinzufügen</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Useraccount erstellen */}
+      <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+        <DialogContent>
+          {accountDone ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Useraccount erstellt</DialogTitle>
+                <DialogDescription>
+                  {selected ? `${selected.name} kann sich jetzt anmelden.` : ""} Schick dieser Person den Link unten. Anmelden mit der
+                  E-Mail-Adresse {accountEmail.trim()} und dem Startpasswort start1234 — danach muss sie sofort ein eigenes Passwort festlegen.
+                </DialogDescription>
+              </DialogHeader>
+              <RegistrationLink />
+              <DialogFooter>
+                <Button onClick={() => setAccountOpen(false)}>Fertig</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Useraccount erstellen</DialogTitle>
+                <DialogDescription>
+                  {selected ? `Login für ${selected.name}. ` : ""}
+                  Startpasswort: start1234 — die Person muss es bei der ersten Anmeldung ändern.
+                </DialogDescription>
+              </DialogHeader>
+              <Input
+                type="email" placeholder="E-Mail-Adresse der Person" aria-label="E-Mail-Adresse" autoFocus
+                value={accountEmail} onChange={(e) => setAccountEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && accountEmail.includes("@") && !accountBusy && createAccount()}
+              />
+              {accountError && <p role="alert" className="text-xs text-destructive">{accountError}</p>}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setAccountOpen(false)}>Abbrechen</Button>
+                <Button disabled={accountBusy || !accountEmail.includes("@")} onClick={createAccount}>Erstellen</Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

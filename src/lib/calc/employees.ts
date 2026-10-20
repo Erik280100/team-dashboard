@@ -11,10 +11,13 @@ export interface EmployeeMeta {
   managerId: string | null
   ancestors: string[]
   uid: string | null
+  email: string | null
+  /** Konto erstellt, aber noch keine Passwortänderung beim ersten Login (Startpasswort gilt noch). */
+  accountPending: boolean
 }
 
 /** Felder, die nie Teil einer EmployeeRow sind (gesperrt in firestore.rules). */
-const META_KEYS = ["name", "role", "managerId", "ancestors", "uid", "email", "active", "createdAt"] as const
+const META_KEYS = ["name", "role", "managerId", "ancestors", "uid", "email", "accountPending", "active", "createdAt"] as const
 
 export function employeeMetaOf(id: string, data: Record<string, unknown>): EmployeeMeta {
   return {
@@ -24,6 +27,8 @@ export function employeeMetaOf(id: string, data: Record<string, unknown>): Emplo
     managerId: typeof data.managerId === "string" ? data.managerId : null,
     ancestors: Array.isArray(data.ancestors) ? data.ancestors.map(String) : [],
     uid: typeof data.uid === "string" ? data.uid : null,
+    email: typeof data.email === "string" ? data.email : null,
+    accountPending: data.accountPending === true,
   }
 }
 

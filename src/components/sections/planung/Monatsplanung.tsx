@@ -241,9 +241,9 @@ export function Monatsplanung({
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiTile label="ATG Gesamt" value={fmt(total.atg)} sub="Monat kumuliert" />
-        <KpiTile label="AT" value={`${fmt(total.analysenZ)}/${fmt(total.analysen)}`} sub="Soll / Ist" />
-        <KpiTile label="AT-Quote" value={`${quotePct(total.analysen, total.analysenZ)}%`} sub="Erschienen von ausgemacht" />
+        <KpiTile label="Wählversuche Ist" value={fmt(total.atg)} sub="Monat kumuliert" />
+        <KpiTile label="AT Soll / Ist" value={`${fmt(total.analysenZ)}/${fmt(total.analysen)}`} sub="Monat kumuliert" />
+        <KpiTile label="AT-Quote" value={`${quotePct(total.analysen, total.analysenZ)}%`} sub="AT Ist von AT Soll" />
         <KpiTile label="Einheiten gemacht" value={fmt(total.ehGemacht)} sub="Laut Mitarbeiterseite" />
       </div>
 
@@ -274,12 +274,12 @@ export function Monatsplanung({
             <thead>
               <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                 <th className="sticky top-0 z-10 min-w-[220px] bg-muted/95 px-3 py-2 backdrop-blur">{byGroup ? "Führungskraft" : "Name"}</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ATG SOLL/IST</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT SOLL/IST</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">BT SOLL/IST</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">Wählversuche Soll / Ist</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT Soll / Ist</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">BT Soll / Ist</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT-Quote</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ST SOLL/IST</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ET SOLL/IST</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ST Soll / Ist</th>
+                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ET Soll / Ist</th>
                 <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">EH gemacht</th>
               </tr>
             </thead>

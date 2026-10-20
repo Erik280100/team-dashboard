@@ -1,6 +1,6 @@
-// "Neues Todo"-Dialog für das Erik-Dashboard — analog zu EmployeeEarningsDialog.tsx
+// "Neues Todo"-Dialog für das Mein Board — analog zu EmployeeEarningsDialog.tsx
 // (Entwurf im lokalen State, erst bei "Anlegen" übernehmen). Legt immer in Lane
-// "todo" an (siehe useErikTodosDoc.addTodo) — die Lane-Wahl ist bewusst kein Feld hier.
+// "todo" an (siehe useBoardTodosDoc.addTodo) — die Lane-Wahl ist bewusst kein Feld hier.
 import { useEffect, useState, type FormEvent } from "react"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -13,7 +13,7 @@ import {
   TODO_CATEGORIES, TODO_CATEGORY_LABELS, TODO_COLORS, TODO_COLOR_LABELS,
   type TodoCategory, type TodoColor,
 } from "@/types/dashboard"
-import { COLOR_DOT_CLASS } from "@/components/sections/erik/colors"
+import { COLOR_DOT_CLASS } from "@/components/sections/board/colors"
 
 export function NewTodoDialog({
   open, onOpenChange, defaultCategory, onCreate,
@@ -60,9 +60,9 @@ export function NewTodoDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="erik-todo-title" className="text-xs font-semibold text-muted-foreground">Titel</label>
+            <label htmlFor="board-todo-title" className="text-xs font-semibold text-muted-foreground">Titel</label>
             <Input
-              id="erik-todo-title"
+              id="board-todo-title"
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -71,9 +71,9 @@ export function NewTodoDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="erik-todo-description" className="text-xs font-semibold text-muted-foreground">Beschreibung</label>
+            <label htmlFor="board-todo-description" className="text-xs font-semibold text-muted-foreground">Beschreibung</label>
             <textarea
-              id="erik-todo-description"
+              id="board-todo-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional"
@@ -83,9 +83,9 @@ export function NewTodoDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="erik-todo-due" className="text-xs font-semibold text-muted-foreground">Fällig bis</label>
+            <label htmlFor="board-todo-due" className="text-xs font-semibold text-muted-foreground">Fällig bis</label>
             <Input
-              id="erik-todo-due"
+              id="board-todo-due"
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
@@ -93,9 +93,9 @@ export function NewTodoDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="erik-todo-category" className="text-xs font-semibold text-muted-foreground">Kategorie</label>
+            <label htmlFor="board-todo-category" className="text-xs font-semibold text-muted-foreground">Kategorie</label>
             <Select
-              id="erik-todo-category"
+              id="board-todo-category"
               value={category}
               onChange={(e) => setCategory(e.target.value as TodoCategory)}
             >

@@ -3,7 +3,8 @@
 //
 //   node scripts/publish-career-plans.mjs [--dry]
 //
-// Das bisherige Passwort wird abgefragt (nicht gespeichert, nicht ins Terminal-Log geschrieben).
+// Das bisherige Passwort wird abgefragt (nicht gespeichert, nicht ins Terminal-Log geschrieben) oder
+// aus CAREER_PLANS_PASSWORD gelesen.
 // Auth: gcloud application-default login (GOOGLE_APPLICATION_CREDENTIALS wie bei create-admin.mjs).
 import { readFileSync } from "node:fs"
 import { webcrypto } from "node:crypto"
@@ -24,7 +25,8 @@ function ask(question) {
   return new Promise((resolve) => rl.question(question, (a) => { rl.close(); resolve(a) }))
 }
 
-const password = await ask("Passwort der Karrierepläne: ")
+// Passwort: Umgebungsvariable CAREER_PLANS_PASSWORD (wenn keine Tastatureingabe möglich ist), sonst Abfrage.
+const password = process.env.CAREER_PLANS_PASSWORD || (await ask("Passwort der Karrierepläne: "))
 const subtle = webcrypto.subtle
 const b64 = (s) => Uint8Array.from(Buffer.from(s, "base64"))
 const keyMaterial = await subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"])

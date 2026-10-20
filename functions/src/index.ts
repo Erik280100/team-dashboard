@@ -1,13 +1,12 @@
 // Cloud Functions für das Team-Dashboard (Konten, Struktur-Sync, Backups).
 // Einrichtung/Berechtigungen: siehe ../README.md.
-import { randomInt } from "node:crypto"
 import { initializeApp } from "firebase-admin/app"
 import { getAuth } from "firebase-admin/auth"
 import { FieldValue, getFirestore, type WriteBatch } from "firebase-admin/firestore"
 import { HttpsError, onCall } from "firebase-functions/v2/https"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
-import { collectPeople, type SbNode } from "./structure"
+import { collectPeople, isLeadRole, type SbNode } from "./structure"
 import { exportFirestore } from "./backup"
 import { applySubtreeUpdate, SubtreeError, type OrgStructure, type SubtreeInput } from "./subtree"
 import { computeMonthStats, monthKeyFromGoal, monthWeekKeys } from "./planStats"
@@ -23,18 +22,15 @@ function requireAdmin(token: Record<string, unknown> | undefined) {
   if (token?.role !== "admin") throw new HttpsError("permission-denied", "Nur für Admins.")
 }
 
-/** Zufälliges Startpasswort (ohne verwechselbare Zeichen). Gilt nur bis zur ersten Anmeldung. */
-function tempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
-  return Array.from({ length: 14 }, () => chars[randomInt(chars.length)]).join("")
-}
+/** Festes Startpasswort für neue Konten. Gilt nur bis zur ersten Anmeldung (Claim mustChangePassword). */
+const START_PASSWORD = "start1234"
 
 /**
  * Konto für einen Mitarbeiter anlegen/aktualisieren (Admin).
- * Neues Konto: Startpasswort wird erzeugt und einmalig zurückgegeben, der Claim
+ * Neues Konto: Startpasswort (START_PASSWORD) wird gesetzt, der Claim
  * mustChangePassword erzwingt die Änderung bei der ersten Anmeldung (firestore.rules sperrt bis dahin
  * jeden Datenzugriff). Bestehendes Konto: Rolle wird aktualisiert; mit resetPassword=true gibt es
- * ein neues Startpasswort (und wieder Änderungspflicht).
+ * das Startpasswort erneut (und wieder Änderungspflicht).
  * Setzt die Custom Claims (role, employeeId) und verknüpft employees/{id}.uid.
  */
 export const inviteUser = onCall({ region: REGION }, async (req) => {
@@ -63,7 +59,7 @@ export const inviteUser = onCall({ region: REGION }, async (req) => {
     uid = user.uid
     mustChange = user.customClaims?.mustChangePassword === true
     if (resetPassword) {
-      password = tempPassword()
+      password = START_PASSWORD
       await auth.updateUser(uid, { password, disabled: false })
       mustChange = true
     }
@@ -72,17 +68,60 @@ export const inviteUser = onCall({ region: REGION }, async (req) => {
     if (existingUid) {
       throw new HttpsError("already-exists", "Dieser Mitarbeiter hat bereits ein Konto mit einer anderen E-Mail-Adresse.")
     }
-    password = tempPassword()
+    password = START_PASSWORD
     uid = (await auth.createUser({ email, password })).uid
     mustChange = true
   }
 
   await auth.setCustomUserClaims(uid, { role, employeeId, ...(mustChange ? { mustChangePassword: true } : {}) })
   await db.doc(`users/${uid}`).set({ role, employeeId, email }, { merge: true })
-  await empRef.update({ uid, email })
+  await empRef.update({ uid, email, ...(mustChange ? { accountPending: true } : {}) })
   // Bei einer Rollenänderung sollen laufende Sitzungen die neuen Claims bald übernehmen.
   await auth.revokeRefreshTokens(uid)
   return { uid, tempPassword: password }
+})
+
+/**
+ * Konto für einen Mitarbeiter aus dem Strukturbaum erstellen: Admin für jeden, sonst nur für Personen
+ * in der eigenen Unterstruktur (der Aufrufer steht in employees/{id}.ancestors). Die Rolle ergibt sich
+ * aus der Stufe (Führungsstufe -> lead, sonst member) — admin vergibt nur inviteUser. Startpasswort
+ * ist START_PASSWORD; employees/{id}.accountPending steht bis zur ersten Passwortänderung
+ * (completePasswordChange) und steuert den Button im Strukturbaum.
+ */
+export const createAccount = onCall({ region: REGION }, async (req) => {
+  const token = req.auth?.token
+  if (!token) throw new HttpsError("unauthenticated", "Bitte anmelden.")
+  if (token.mustChangePassword === true) throw new HttpsError("permission-denied", "Bitte zuerst das Passwort ändern.")
+  const { employeeId, email: rawEmail } = (req.data ?? {}) as { employeeId?: string; email?: string }
+  const email = (rawEmail ?? "").trim()
+  if (!employeeId || !email.includes("@")) {
+    throw new HttpsError("invalid-argument", "employeeId und eine gültige E-Mail-Adresse sind nötig.")
+  }
+
+  const empRef = db.doc(`employees/${employeeId}`)
+  const emp = await empRef.get()
+  if (!emp.exists) throw new HttpsError("not-found", "Mitarbeiter existiert nicht.")
+  const ancestors = (emp.get("ancestors") as string[] | undefined) ?? []
+  const allowed = token.role === "admin" || (typeof token.employeeId === "string" && ancestors.includes(token.employeeId))
+  if (!allowed) throw new HttpsError("permission-denied", "Du darfst nur für Personen deiner Unterstruktur ein Konto erstellen.")
+  if (emp.get("active") === false) throw new HttpsError("failed-precondition", "Dieser Mitarbeiter ist nicht mehr aktiv.")
+  if (emp.get("uid")) throw new HttpsError("already-exists", "Dieser Mitarbeiter hat bereits ein Konto.")
+
+  const auth = getAuth()
+  let uid: string
+  try {
+    uid = (await auth.createUser({ email, password: START_PASSWORD })).uid
+  } catch (err) {
+    const code = typeof err === "object" && err && "code" in err ? String((err as { code: unknown }).code) : ""
+    if (code.includes("email-already-exists")) throw new HttpsError("already-exists", "Diese E-Mail-Adresse ist bereits vergeben.")
+    if (code.includes("invalid-email")) throw new HttpsError("invalid-argument", "Ungültige E-Mail-Adresse.")
+    throw err
+  }
+  const role: Role = isLeadRole(String(emp.get("role") ?? "")) ? "lead" : "member"
+  await auth.setCustomUserClaims(uid, { role, employeeId, mustChangePassword: true })
+  await db.doc(`users/${uid}`).set({ role, employeeId, email }, { merge: true })
+  await empRef.update({ uid, email, accountPending: true })
+  return { uid }
 })
 
 /**
@@ -99,6 +138,9 @@ export const completePasswordChange = onCall({ region: REGION }, async (req) => 
   const user = await getAuth().getUser(uid)
   const { mustChangePassword: _drop, ...claims } = user.customClaims ?? {}
   await getAuth().setCustomUserClaims(uid, claims)
+  if (typeof claims.employeeId === "string") {
+    await db.doc(`employees/${claims.employeeId}`).update({ accountPending: FieldValue.delete() })
+  }
   return { ok: true }
 })
 
