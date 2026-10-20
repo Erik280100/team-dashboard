@@ -1,12 +1,14 @@
 // Karrierepläne — Äquivalent zu initCareerPlans() aus legacy/index.html:4039–4081.
 // Inhalte sind clientseitig AES-GCM-verschlüsselt (siehe src/lib/data/career.ts) —
-// dasselbe Passwort wie in der Legacy-App schaltet dieselben Inhalte frei.
+// dasselbe Passwort wie in der Legacy-App schaltet dieselben Inhalte frei (nur im lokalen Modus —
+// mit Cloud-Anmeldung liegen die Pläne entschlüsselt in org/careerPlans, siehe useCareerPlansDoc).
 import { useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { decryptCareerPlans, type CareerPlan } from "@/lib/data/career"
+import { useCareerPlansDoc } from "@/hooks/useCareerPlansDoc"
 
 /** Macht aus den Stufen-Karten Kacheln mit großem Tarif und Kriterien-Chips:
  * "€4,– / EH · ab 6 000 EH + Gewerbe" -> Tarif "€4,–" (/ EH) + Chips je " + "-Teil.
@@ -77,7 +79,9 @@ function enhanceTables(html: string): string {
 }
 
 export function Karriere() {
-  const [plans, setPlans] = useState<CareerPlan[] | null>(null)
+  const cloud = useCareerPlansDoc()
+  const [unlocked, setPlans] = useState<CareerPlan[] | null>(null)
+  const plans = cloud.status === "ready" ? cloud.plans : unlocked
   const [active, setActive] = useState(0)
   const [password, setPassword] = useState("")
   const [error, setError] = useState(false)
@@ -98,6 +102,22 @@ export function Karriere() {
       setPassword("")
       setSubmitting(false)
     }
+  }
+
+  if (cloud.status === "loading") {
+    return <div className="text-sm text-muted-foreground">Karrierepläne werden geladen…</div>
+  }
+  if (cloud.status === "missing" || cloud.status === "error") {
+    return (
+      <Card className="mx-auto max-w-md">
+        <CardContent className="flex flex-col gap-2 text-sm">
+          <h2 className="text-lg font-semibold">Karrierepläne</h2>
+          {cloud.status === "error"
+            ? "Die Karrierepläne konnten nicht geladen werden. Bitte Seite neu laden."
+            : "Die Karrierepläne sind noch nicht freigeschaltet. Bitte den Admin informieren."}
+        </CardContent>
+      </Card>
+    )
   }
 
   if (!plans) {
