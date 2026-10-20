@@ -130,11 +130,16 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertFails(setDoc(doc(db, "financings", "f3"), { ownerId: "m1", ancestors: ["lead", "boss", "m2"] }))
       await assertFails(setDoc(doc(db, "financings", "f4"), { ownerId: "m2", ancestors: ["lead", "boss"] }))
     })
-    it("ownerId/ancestors nicht aenderbar", async () => {
+    it("ownerId/ancestors nur konsistent aenderbar", async () => {
       const db = as("member", "m1")
       await assertSucceeds(updateDoc(doc(db, "financings", "f1"), { betrag: 5 }))
-      await assertFails(updateDoc(doc(db, "financings", "f1"), { ownerId: "m2" }))
       await assertFails(updateDoc(doc(db, "financings", "f1"), { ancestors: [] }))
+      // Betreuerwechsel auf einen Fremden: Mitarbeiter darf nicht auf "other" zugreifen
+      await assertFails(updateDoc(doc(db, "financings", "f1"), { ownerId: "other", ancestors: ["boss2"] }))
+      // Fuehrungskraft darf auf Mitarbeiter m2 umhaengen, aber nur mit passenden ancestors
+      const lead = as("lead", "lead")
+      await assertFails(updateDoc(doc(lead, "financings", "f1"), { ownerId: "m2", ancestors: [] }))
+      await assertSucceeds(updateDoc(doc(lead, "financings", "f1"), { ownerId: "m2", ancestors: ["lead", "boss"] }))
     })
   })
 

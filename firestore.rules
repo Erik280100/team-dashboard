@@ -69,9 +69,14 @@ service cloud.firestore {
       allow read: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
       allow create: if (isAdmin() || canAccessEmployee(request.resource.data.ownerId))
         && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors;
+      // Aendern: wer den Fall heute sehen darf. Betreuerwechsel (ownerId) ist erlaubt,
+      // sofern die neuen ancestors exakt zum neuen Besitzer passen und der Aendernde
+      // auf diesen Besitzer zugreifen darf.
       allow update: if (isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors))
-        && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.ancestors == resource.data.ancestors;
+        && ((request.resource.data.ownerId == resource.data.ownerId
+              && request.resource.data.ancestors == resource.data.ancestors)
+            || (canAccessEmployee(request.resource.data.ownerId)
+              && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors));
       allow delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
     }
 
