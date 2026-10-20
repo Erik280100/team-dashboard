@@ -158,9 +158,11 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertFails(setDoc(doc(as("member", "m1"), "users", "u_m1"), { role: "admin" }))
       await assertFails(setDoc(doc(as("admin"), "users", "u_m1"), { role: "admin" }))
     })
-    it("snapshots: lesbar wie employees, nie schreibbar", async () => {
+    it("snapshots: lesbar wie employees; anlegen nur Admin, danach unveraenderlich", async () => {
       await assertSucceeds(getDoc(doc(as("lead", "lead"), "snapshots", "2026-09", "employees", "m1")))
       await assertFails(getDoc(doc(as("member", "m2"), "snapshots", "2026-09", "employees", "m1")))
+      await assertFails(setDoc(doc(as("lead", "lead"), "snapshots", "2026-10", "employees", "m1"), { atIst: 0 }))
+      await assertSucceeds(setDoc(doc(as("admin"), "snapshots", "2026-10", "employees", "m1"), { atIst: 0 }))
       await assertFails(setDoc(doc(as("admin"), "snapshots", "2026-09", "employees", "m1"), { atIst: 0 }))
     })
     it("alte Sammeldokumente (finova/*) sind gesperrt", async () => {

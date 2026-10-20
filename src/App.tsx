@@ -94,7 +94,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const planung = usePlanungDoc(dashboard.employees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
   const erikTodos = useErikTodosDoc(auth.employeeId)
-  const archive = useMonthArchive(auth.isEditor)
+  const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
   const offeneFinanzierungsfaelle = finanzierungen.cases.filter((c) => !c.archived)
   const offenesFinanzierungsvolumen = offeneFinanzierungsfaelle.reduce((s, c) => s + Number(c.betrag || 0), 0)
   const offeneAnlegerwohnungen = offeneFinanzierungsfaelle.filter((c) => c.art === "anlegerwohnung").length

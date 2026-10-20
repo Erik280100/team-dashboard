@@ -1,13 +1,16 @@
-// Monats-Archiv-Sync — verwaltet finova/archive_index (Liste abgeschlossener
-// Monate + Aggregate) und lädt einzelne finova/snapshot_<month>-Dokumente lazy
-// nach. Analog zu den übrigen *DocSync-Hooks (useDashboardDoc/useOrgChartDoc),
-// aber mit zwei Unterschieden: Snapshots sind unveränderlich (getDoc statt
-// onSnapshot, Cache veraltet nie) und ein leeres Archiv erzeugt KEIN setDoc
-// (anders als bei den Live-Docs ist ein fehlendes Archiv der Normalzustand,
-// und Lesezugriffs-Nutzer dürfen nicht schreiben).
+// Monats-Archiv — Cloud-Modus:
+//   org/archiveIndex                      Liste abgeschlossener Monate + Aggregate
+//   snapshots/{YYYY-MM}                   Meta (Teamziel, Verlauf, Strukturbaum des Monats)
+//   snapshots/{YYYY-MM}/employees/{id}    eingefrorene Zahlen je Mitarbeiter (nur für Berechtigte lesbar)
+// Ein Snapshot wird beim Laden aus Meta + den für dieses Konto sichtbaren Mitarbeiter-
+// dokumenten zusammengesetzt, d. h. Führungskräfte sehen im Archiv nur ihre Unterstruktur.
+// Schreiben (Monatsabschluss) darf nur der Admin. Snapshots sind unveränderlich (getDoc,
+// Cache veraltet nie); ein leeres Archiv ist der Normalzustand (kein setDoc zum Anlegen).
+// Kein localStorage-Cache im Cloud-Modus (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
-import { getDoc, onSnapshot, setDoc } from "firebase/firestore"
-import { CLOUD_CONFIGURED, archiveIndexDocRef, snapshotDocRef } from "@/lib/firebase"
+import { collection, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch } from "firebase/firestore"
+import { CLOUD_CONFIGURED, firestore, orgDocRef } from "@/lib/firebase"
+import { employeeDocToRow, idByName, rowToEmployeeData, type EmployeeMeta } from "@/lib/calc/employees"
 import { buildIndexEntry, buildSnapshot, nextMonthGoal, resetRowsForNewMonth } from "@/lib/calc/archive"
 import type { HistoryEntry } from "@/lib/calc/format"
 import {
@@ -20,6 +23,7 @@ export type IndexStatus = "loading" | "ready" | "error"
 export type SnapshotStatus = "loading" | "ready" | "error"
 
 function loadLocalIndex(): ArchiveIndexEntry[] {
+  if (CLOUD_CONFIGURED) return []
   try {
     const raw = localStorage.getItem(ARCHIVE_INDEX_KEY)
     if (raw) {
@@ -33,6 +37,7 @@ function loadLocalIndex(): ArchiveIndexEntry[] {
 }
 
 function loadLocalSnapshot(month: MonthKey): MonthSnapshot | null {
+  if (CLOUD_CONFIGURED) return null
   try {
     const raw = localStorage.getItem(snapshotStorageKey(month))
     if (raw) return JSON.parse(raw) as MonthSnapshot
@@ -74,7 +79,9 @@ export interface UseMonthArchiveResult {
   closing: boolean
 }
 
-export function useMonthArchive(isEditor: boolean): UseMonthArchiveResult {
+export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeMeta[] = []): UseMonthArchiveResult {
+  const employeesRef = useRef(employees)
+  employeesRef.current = employees
   const [index, setIndex] = useState<ArchiveIndexEntry[]>(loadLocalIndex)
   const [indexStatus, setIndexStatus] = useState<IndexStatus>(CLOUD_CONFIGURED ? "loading" : "ready")
   const [closing, setClosing] = useState(false)
@@ -83,21 +90,23 @@ export function useMonthArchive(isEditor: boolean): UseMonthArchiveResult {
   const [, bumpCacheVersion] = useState(0)
   const indexRef = useRef(index)
   indexRef.current = index
+  const adminRef = useRef(isEditor) // App übergibt isAdmin: Monatsabschluss und Voll-Lesezugriff nur für Admin
+  adminRef.current = isEditor
 
   useEffect(() => {
-    if (!CLOUD_CONFIGURED || !archiveIndexDocRef) {
+    const indexRef0 = orgDocRef("archiveIndex")
+    if (!CLOUD_CONFIGURED || !indexRef0) {
       setIndexStatus("ready")
       return
     }
     const unsub = onSnapshot(
-      archiveIndexDocRef,
+      indexRef0,
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
         if (snap.exists()) {
           const data = snap.data() as { months?: ArchiveIndexEntry[] } | undefined
           const months = Array.isArray(data?.months) ? data!.months : []
           setIndex(months)
-          try { localStorage.setItem(ARCHIVE_INDEX_KEY, JSON.stringify({ version: 1, months })) } catch { /* noop */ }
         } else {
           // Leeres Archiv ist der Normalzustand — kein setDoc hier (anders als
           // bei den Live-Docs), ein Leser darf/soll nichts anlegen.
@@ -131,16 +140,27 @@ export function useMonthArchive(isEditor: boolean): UseMonthArchiveResult {
 
     setSnapshotStatus((s) => ({ ...s, [month]: "loading" }))
     try {
-      const ref = snapshotDocRef(month)
-      if (!ref) throw new Error("Firestore nicht verfügbar")
-      const snap = await getDoc(ref)
+      if (!firestore) throw new Error("Firestore nicht verfügbar")
+      const snap = await getDoc(doc(firestore, "snapshots", month))
       if (!snap.exists()) {
         setSnapshotStatus((s) => ({ ...s, [month]: "error" }))
         return null
       }
-      const data = snap.data() as MonthSnapshot
+      // Zeilen: Admin liest alle, alle anderen nur die sichtbaren Mitarbeiter.
+      const rowDocs: Record<string, unknown>[] = []
+      if (adminRef.current) {
+        const all = await getDocs(collection(firestore, "snapshots", month, "employees"))
+        all.forEach((d) => rowDocs.push(d.data()))
+      } else {
+        await Promise.all(employeesRef.current.map(async (e) => {
+          try {
+            const d = await getDoc(doc(firestore!, "snapshots", month, "employees", e.id))
+            if (d.exists()) rowDocs.push(d.data())
+          } catch { /* für dieses Konto nicht lesbar */ }
+        }))
+      }
+      const data = { ...(snap.data() as Omit<MonthSnapshot, "rows">), rows: rowDocs.map(employeeDocToRow) } as MonthSnapshot
       cacheRef.current.set(month, data)
-      try { localStorage.setItem(snapshotStorageKey(month), JSON.stringify(data)) } catch { /* noop */ }
       setSnapshotStatus((s) => ({ ...s, [month]: "ready" }))
       bumpCacheVersion((n) => n + 1)
       return data
@@ -178,7 +198,8 @@ export function useMonthArchive(isEditor: boolean): UseMonthArchiveResult {
       if (!isEditor) {
         return { ok: false, reason: "not-editor", message: "Nur angemeldete Editoren können einen Monat abschließen." }
       }
-      if (!CLOUD_CONFIGURED || !archiveIndexDocRef) {
+      const indexDocRef = orgDocRef("archiveIndex")
+      if (!CLOUD_CONFIGURED || !indexDocRef || !firestore) {
         return {
           ok: false, reason: "no-cloud",
           message: "Cloud-Speicherung ist nicht eingerichtet — ein nur lokales Archiv wäre für das Team nicht sichtbar.",
@@ -199,12 +220,23 @@ export function useMonthArchive(isEditor: boolean): UseMonthArchiveResult {
           closedBy: input.closedBy,
         })
 
-        const snapRef = snapshotDocRef(input.month)
-        if (!snapRef) {
-          return { ok: false, reason: "write-failed", message: "Firestore ist nicht verfügbar." }
-        }
         try {
-          await setDoc(snapRef, snapshot)
+          const { rows: snapRows, ...meta } = snapshot
+          const ids = idByName(employeesRef.current)
+          const metaById = new Map(employeesRef.current.map((e) => [e.id, e]))
+          await setDoc(doc(firestore, "snapshots", input.month), meta)
+          for (let i = 0; i < snapRows.length; i += 400) {
+            const batch = writeBatch(firestore)
+            for (const r of snapRows.slice(i, i + 400)) {
+              const id = ids.get(r.name.trim().toLowerCase())
+              const e = id ? metaById.get(id) : undefined
+              if (!id || !e) { console.warn(`Snapshot ${input.month}: kein Mitarbeiter für "${r.name}"`); continue }
+              batch.set(doc(firestore, "snapshots", input.month, "employees", id), {
+                ...rowToEmployeeData(r), name: e.name, role: e.role, ancestors: e.ancestors,
+              })
+            }
+            await batch.commit()
+          }
         } catch (err) {
           console.error("Monatsabschluss: Snapshot-Schreiben fehlgeschlagen", err)
           return {
@@ -217,7 +249,7 @@ export function useMonthArchive(isEditor: boolean): UseMonthArchiveResult {
         const nextMonths = [...indexRef.current.filter((e) => e.month !== input.month), entry]
           .sort((a, b) => a.month.localeCompare(b.month))
         try {
-          await setDoc(archiveIndexDocRef, { version: 1, months: nextMonths })
+          await setDoc(indexDocRef, { version: 1, months: nextMonths })
         } catch (err) {
           console.error("Monatsabschluss: Index-Schreiben fehlgeschlagen", err)
           return {
@@ -227,7 +259,6 @@ export function useMonthArchive(isEditor: boolean): UseMonthArchiveResult {
         }
 
         cacheRef.current.set(input.month, snapshot)
-        try { localStorage.setItem(snapshotStorageKey(input.month), JSON.stringify(snapshot)) } catch { /* noop */ }
 
         const nextGoal = nextMonthGoal(input.teamGoal)
         input.commitReset({
