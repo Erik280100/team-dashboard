@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// PLATZHALTER (Phase 1): entspricht dem heutigen Live-Stand (jeder Eingeloggte,
+// auch anonym, darf alles). NICHT deployen, bevor Phase 2 (echte Regeln) fertig
+// und getestet ist — und erst scharf schalten, wenn alle Accounts existieren.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
