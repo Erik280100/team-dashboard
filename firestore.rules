@@ -13,7 +13,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Wer sein Startpasswort noch nicht geaendert hat (Claim mustChangePassword), darf nichts lesen/schreiben.
-    function signedIn() { return request.auth != null && !request.auth.token.get('mustChangePassword', false); }
+    // Nur Konten mit gueltiger Rolle (Claims von inviteUser/createAccount) — alte anonyme Logins ohne Claims haben keinen Zugriff.
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.get('role', '') in ['admin', 'lead', 'member']
+        && !request.auth.token.get('mustChangePassword', false);
+    }
     function role() { return request.auth.token.get('role', ''); }
     function myEmp() { return request.auth.token.get('employeeId', ''); }
     function isAdmin() { return signedIn() && role() == 'admin'; }
@@ -31,7 +36,7 @@ service cloud.firestore {
     // Nur Admin/Function duerfen Struktur und Identitaet aendern.
     function lockedFieldsUntouched() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['managerId', 'ancestors', 'uid', 'role', 'name', 'email', 'active', 'createdAt', 'monthStats']);
+        .hasAny(['managerId', 'ancestors', 'uid', 'accountPending', 'role', 'name', 'email', 'active', 'createdAt', 'monthStats']);
     }
 
     match /users/{uid} {
