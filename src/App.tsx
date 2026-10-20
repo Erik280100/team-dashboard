@@ -10,7 +10,7 @@
 // useConfirm() bereits als Kind-Komponente nutzt).
 import { useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
-import { PLAN_IDS, sbRoster, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
+import { PLAN_IDS, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
@@ -56,7 +56,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   kalender: "Anwesenheitsliste",
   finanzierungen: "Finanzierungen",
   partner: "Partner",
-  erik: "Erik-Dashboard",
+  erik: "Mein Board",
 }
 
 // Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus (siehe
@@ -95,6 +95,10 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
   const erikTodos = useErikTodosDoc(auth.employeeId)
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
+  // Sichtbarkeit: Admin (und lokaler Modus) sehen den ganzen Baum, alle anderen nur den Teilbaum ab dem
+  // eigenen Knoten. Alle Listen (Team, Übersicht, Planung, Anwesenheit, Rechner ...) leiten sich daraus ab.
+  const scopeId = !CLOUD_CONFIGURED || auth.isAdmin ? null : (auth.employeeId ?? "none")
+  const scopedTree = useMemo(() => sbScopedTree(orgChart.tree, scopeId), [orgChart.tree, scopeId])
   const offeneFinanzierungsfaelle = finanzierungen.cases.filter((c) => !c.archived)
   const offenesFinanzierungsvolumen = offeneFinanzierungsfaelle.reduce((s, c) => s + Number(c.betrag || 0), 0)
   const offeneAnlegerwohnungen = offeneFinanzierungsfaelle.filter((c) => c.art === "anlegerwohnung").length
@@ -127,12 +131,12 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const view = useMemo(() => {
     const orgDoc: OrgChartDoc = snapshot
       ? {
-          tree: snapshot.orgChart.tree, notes: snapshot.orgChart.notes,
+          tree: sbScopedTree(snapshot.orgChart.tree, scopeId), notes: snapshot.orgChart.notes,
           conns: snapshot.orgChart.conns, rates: snapshot.orgChart.rates,
           planRates: snapshot.orgChart.planRates,
         }
       : {
-          tree: orgChart.tree, notes: orgChart.notes, conns: orgChart.conns,
+          tree: scopedTree, notes: orgChart.notes, conns: orgChart.conns,
           rates: orgChart.rates, planRates: orgChart.planRates,
         }
     return {
@@ -149,7 +153,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
       planRates: withDefaultPlanRates(snapshot?.orgChart.planRates ?? orgChart.planRates),
       now: snapshot ? archiveNow(snapshot.teamGoal) : undefined,
     }
-  }, [snapshot, liveRows, dashboard.teamGoal, dashboard.history, orgChart.tree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])
+  }, [snapshot, liveRows, dashboard.teamGoal, dashboard.history, scopeId, scopedTree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])
 
   // Sicherheitsnetz: im Archiv-Modus dürfen die Seiten nichts schreiben (die
   // Seiten selbst sind über isEditor={false} bereits schreibgeschützt — siehe
@@ -163,7 +167,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   // den Mitarbeiter-Dropdown im EH-Rechner ("Übernehmen"-Buchung) und die
   // Anwesenheitsliste (die dieselbe gefilterte Roster-Reihenfolge nutzt). Immer
   // live, unabhängig vom Archiv-Modus (Rechner/Kalender sind keine Archiv-Sektionen).
-  const roster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
+  const roster = useMemo(() => sbRoster(scopedTree), [scopedTree])
   const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
   const planungRows = useMemo(() => relabelRowsByRoster(roster, dashboard.rows), [roster, dashboard.rows])
   const rechnerEmployees = useMemo(
@@ -233,7 +237,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         onNavigate={navigateTo}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        isEditor={auth.isEditor}
+        isEditor={auth.isAdmin}
       />
       <main className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
         <Topbar
@@ -243,7 +247,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
           archive={archive}
           archiveMonth={archiveMonth}
           onSelectMonth={setArchiveMonth}
-          canEdit={auth.isEditor && !isArchive}
+          canEdit={auth.isAdmin && !isArchive}
           onCloseMonth={handleCloseMonth}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
           attendance={attendance.attendance}
@@ -278,7 +282,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
             </Button>
           </div>
         )}
-        {!isArchive && auth.isEditor && isMonthCloseDue(dashboard.teamGoal, archive.index) && (
+        {!isArchive && auth.isAdmin && isMonthCloseDue(dashboard.teamGoal, archive.index) && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-emerald-50 px-6 py-2 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
             <span>
               Der Umsatzmonat {monthLabel(monthKeyOf(dashboard.teamGoal))} ist beendet — jetzt abschließen und archivieren.
@@ -320,7 +324,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     teamGoal={view.teamGoal}
                     history={view.history}
                     saveGoal={isArchive ? blocked : dashboard.saveGoal}
-                    isEditor={auth.isEditor && !isArchive}
+                    isEditor={auth.isAdmin && !isArchive}
                     now={view.now}
                     offenesFinanzierungsvolumen={offenesFinanzierungsvolumen}
                     offeneAnlegerwohnungen={offeneAnlegerwohnungen}
@@ -349,7 +353,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               {section === id && id === "planung" && (
                 <Planung
                   roster={roster}
-                  orgTree={orgChart.tree}
+                  orgTree={scopedTree}
                   archive={archive}
                   planung={planung}
                   isEditor={auth.isEditor}
@@ -406,7 +410,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     key={archiveMonth ?? "live"}
                     doc={view.orgDoc}
                     rows={view.rows}
-                    isEditor={auth.isEditor && !isArchive}
+                    isEditor={auth.isAdmin && !isArchive}
                     saveOrgChart={isArchive ? blocked : orgChart.saveOrgChart}
                   />
                 )

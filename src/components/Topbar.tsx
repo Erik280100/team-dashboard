@@ -192,7 +192,7 @@ export function Topbar({
             </Button>
           </div>
         )}
-        {!isArchive && auth.isEditor && CLOUD_CONFIGURED && (
+        {!isArchive && auth.isAdmin && CLOUD_CONFIGURED && (
           <>
             <Button size="sm" variant="outline" onClick={onFullBackup}>
               Vollständiges Backup

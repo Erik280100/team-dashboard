@@ -19,7 +19,8 @@ type Result = { ok: true } | { ok: false; message: string }
 
 export interface UseAuthResult extends AccountInfo {
   user: User | null
-  /** Darf Zahlen bearbeiten (Admin/Führungskraft). Feingranular pro Mitarbeiter: canEditEmployee. */
+  /** Eingeloggt: darf die Daten bearbeiten, die ihm angezeigt werden (App.tsx beschneidet den Baum auf die eigene
+   * Unterstruktur, firestore.rules erzwingt es). Admin-Funktionen (Struktur, Monatsabschluss, Teamziel): isAdmin. */
   isEditor: boolean
   isAdmin: boolean
   /** Bekannt erst nachdem der erste Auth-State (inkl. Claims) empfangen wurde (verhindert Flackern). */
@@ -96,7 +97,7 @@ export function useAuth(): UseAuthResult {
     user,
     ...account,
     isAdmin,
-    isEditor: isAdmin || (!!user && account.role === "lead"),
+    isEditor: !!user,
     ready,
     signIn,
     resetPassword,

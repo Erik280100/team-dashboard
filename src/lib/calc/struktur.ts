@@ -361,3 +361,14 @@ export function sbEsc(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br>")
 }
+
+/**
+ * Strukturbaum auf das beschränken, was ein Konto sehen darf: der Teilbaum ab dem
+ * eigenen Knoten (= eigene Person + gesamte Unterstruktur). `scopeId === null`
+ * liefert den ganzen Baum (Admin / lokaler Modus); findet sich der Knoten nicht,
+ * bleibt ein leerer Baum (nichts sichtbar) statt versehentlich alles zu zeigen.
+ */
+export function sbScopedTree(tree: SbNode, scopeId: string | null): SbNode {
+  if (scopeId === null) return tree
+  return sbFind(tree, scopeId) ?? { id: "empty", name: "", role: "", status: "vielleicht", children: [] }
+}

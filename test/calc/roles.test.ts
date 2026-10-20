@@ -31,3 +31,26 @@ describe("canEditEmployee", () => {
     expect(canEditEmployee({ role: "member", employeeId: null }, "x", [])).toBe(false)
   })
 })
+
+import { sbScopedTree, type SbNode } from "@/lib/calc/struktur"
+
+describe("sbScopedTree", () => {
+  const tree: SbNode = {
+    id: "boss", name: "Boss", children: [
+      { id: "lead", name: "Lead", children: [{ id: "m1", name: "M1", children: [] }] },
+      { id: "other", name: "Other", children: [] },
+    ],
+  }
+  it("Admin (null) sieht alles", () => expect(sbScopedTree(tree, null)).toBe(tree))
+  it("Führungskraft sieht nur ihren Teilbaum", () => {
+    const t = sbScopedTree(tree, "lead")
+    expect(t.id).toBe("lead")
+    expect(t.children?.map((c) => c.id)).toEqual(["m1"])
+  })
+  it("Mitarbeiter sieht nur sich selbst", () => expect(sbScopedTree(tree, "m1").children).toEqual([]))
+  it("unbekannter Knoten -> leer, nicht alles", () => {
+    const t = sbScopedTree(tree, "weg")
+    expect(t.status).toBe("vielleicht")
+    expect(t.children).toEqual([])
+  })
+})

@@ -1,12 +1,11 @@
-// Erik-Dashboard — persönliches Kanban-Board. Passwortgeschützt (reiner Frontend-
-// Schutz, siehe Kommentar unten und Karriere.tsx als Vorbild), 5 fixe Swimlanes,
+// Mein Board — persönliches Kanban-Board (nur der Besitzer sieht es, erzwingt firestore.rules),
+// 5 fixe Swimlanes,
 // Drag-&-Drop per nativer HTML5-DnD (keine zusätzliche Library, siehe StrukturBaum.tsx
 // für dasselbe Prinzip bei Pointer-Events). Keine Legacy-Entsprechung — neues Feature.
-import { useLayoutEffect, useRef, useState, type DragEvent, type FormEvent } from "react"
+import { useLayoutEffect, useRef, useState, type DragEvent } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useConfirm } from "@/hooks/useConfirm"
 import { todosInLane, type BoardFilter } from "@/lib/calc/todos"
@@ -20,13 +19,6 @@ import { EuVsGmbhRechner } from "@/components/sections/rechner/EuVsGmbhRechner"
 import { HoldingImmobilienRechner } from "@/components/sections/rechner/HoldingImmobilienRechner"
 import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
 
-// Kein Verschlüsselungs-Passwort wie bei Karriere.tsx — nur ein Sichtschutz, damit
-// Kolleg:innen am selben Rechner nicht versehentlich hineinsehen. Die Todos selbst
-// liegen ungeschützt in Firestore (finova/erik_todos), wie jedes andere finova/*-
-// Dokument. Keine sensiblen Kundendaten hier ablegen, die das nicht vertragen.
-const ERIK_PASSWORD = "eriksTodos"
-const UNLOCK_KEY = "finova_erik_unlocked_v1"
-
 function beforeIdFromPoint(container: HTMLElement, clientY: number): string | null {
   const cards = Array.from(container.querySelectorAll<HTMLElement>("[data-todo-id]"))
   for (const card of cards) {
@@ -34,43 +26,6 @@ function beforeIdFromPoint(container: HTMLElement, clientY: number): string | nu
     if (clientY < rect.top + rect.height / 2) return card.dataset.todoId ?? null
   }
   return null
-}
-
-function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState(false)
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    if (password === ERIK_PASSWORD) {
-      try { sessionStorage.setItem(UNLOCK_KEY, "1") } catch { /* noop */ }
-      onUnlock()
-    } else {
-      setError(true)
-      setPassword("")
-    }
-  }
-
-  return (
-    <Card className="mx-auto max-w-md">
-      <CardContent className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Erik-Dashboard</h2>
-        <p className="text-sm text-muted-foreground">Dieser Bereich ist passwortgeschützt.</p>
-        <form onSubmit={onSubmit} className="flex gap-2">
-          <Input
-            type="password"
-            placeholder="Passwort"
-            aria-label="Passwort für Erik-Dashboard"
-            autoComplete="off"
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setError(false) }}
-          />
-          <Button type="submit">Freischalten</Button>
-        </form>
-        {error && <div role="alert" className="text-sm text-destructive">Falsches Passwort.</div>}
-      </CardContent>
-    </Card>
-  )
 }
 
 const BOARD_TABS: { id: BoardFilter; label: string }[] = [
@@ -97,9 +52,6 @@ export function ErikDashboard({
   removeTodo: (id: string) => void
 }) {
   const confirm = useConfirm()
-  const [unlocked, setUnlocked] = useState(() => {
-    try { return sessionStorage.getItem(UNLOCK_KEY) === "1" } catch { return false }
-  })
   const [view, setView] = useState<ErikView>("todos")
   const [filter, setFilter] = useState<BoardFilter>("alle")
   const [flaggedOnly, setFlaggedOnly] = useState(false)
@@ -147,16 +99,7 @@ export function ErikDashboard({
       ro.disconnect()
       window.clearInterval(poll)
     }
-  }, [unlocked, view])
-
-  function lock() {
-    try { sessionStorage.removeItem(UNLOCK_KEY) } catch { /* noop */ }
-    setUnlocked(false)
-  }
-
-  if (!unlocked) {
-    return <PasswordGate onUnlock={() => setUnlocked(true)} />
-  }
+  }, [view])
 
   function handleDragStart(e: DragEvent<HTMLDivElement>, id: string) {
     e.dataTransfer.setData("text/plain", id)
@@ -208,7 +151,6 @@ export function ErikDashboard({
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="sm" onClick={lock}>Sperren</Button>
       </div>
 
       {view === "euVsGmbh" && <EuVsGmbhRechner />}
