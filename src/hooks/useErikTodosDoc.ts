@@ -1,21 +1,21 @@
-// Erik-Dashboard-Cloud-Sync — analog zu useFinanzierungenDoc.ts. Eigenes Firestore-
-// Dokument finova/erik_todos. Der Passwortschutz (siehe ErikDashboard.tsx) ist reiner
-// Frontend-Schutz — dieses Dokument selbst ist nicht anders abgesichert als die anderen
-// finova/*-Dokumente. Keine Legacy-Entsprechung — neue Sektion.
+// "Mein Board" (persönliches Kanban) — Cloud-Modus: ein Dokument je Todo unter
+// employees/{eigeneId}/todos/{todoId}; laut firestore.rules nur für den Besitzer
+// lesbar/schreibbar (auch Vorgesetzte und Admin nicht). Kein localStorage-Cache im
+// Cloud-Modus (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
-import { onSnapshot, setDoc } from "firebase/firestore"
-import { CLOUD_CONFIGURED, erikTodosDocRef } from "@/lib/firebase"
+import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore"
+import { CLOUD_CONFIGURED, firestore } from "@/lib/firebase"
 import { reorderForMove } from "@/lib/calc/todos"
 import {
   ERIK_TODOS_KEY,
   type ErikTodo,
-  type ErikTodosDoc,
   type TodoCategory,
   type TodoColor,
   type TodoLane,
 } from "@/types/dashboard"
 
 function loadLocalTodos(): ErikTodo[] {
+  if (CLOUD_CONFIGURED) return []
   try {
     const raw = localStorage.getItem(ERIK_TODOS_KEY)
     if (raw) {
@@ -42,48 +42,46 @@ export interface UseErikTodosDocResult {
   removeTodo: (id: string) => void
 }
 
-export function useErikTodosDoc(): UseErikTodosDocResult {
+export function useErikTodosDoc(employeeId: string | null = null): UseErikTodosDocResult {
   const [todos, setTodos] = useState<ErikTodo[]>(loadLocalTodos)
   const cloudReady = useRef(false)
   const latest = useRef(todos)
   latest.current = todos
 
   useEffect(() => {
-    const docRef = erikTodosDocRef
-    if (!CLOUD_CONFIGURED || !docRef) return
-    const unsub = onSnapshot(
-      docRef,
+    if (!CLOUD_CONFIGURED || !firestore || !employeeId) return
+    cloudReady.current = false
+    return onSnapshot(
+      collection(firestore, "employees", employeeId, "todos"),
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
-        // Nur Server-Stände zählen: ein Cache-Snapshot ("Dokument fehlt"/veraltet) darf weder
-        // die Cloud mit lokalem Altstand überschreiben (setDoc) noch Schreiben freischalten.
-        if (snap.metadata.fromCache) return
-        if (snap.exists()) {
-          const data = (snap.data() || {}) as Partial<ErikTodosDoc>
-          if (Array.isArray(data.todos)) {
-            setTodos(data.todos)
-            try { localStorage.setItem(ERIK_TODOS_KEY, JSON.stringify(data.todos)) } catch { /* noop */ }
-          }
-        } else {
-          void setDoc(docRef, { todos: latest.current })
-        }
-        cloudReady.current = true
+        setTodos(snap.docs.map((d) => d.data() as ErikTodo))
+        if (!snap.metadata.fromCache) cloudReady.current = true
       },
-      (err) => console.warn("Erik-Todos: Cloud-Verbindung fehlgeschlagen", err)
+      (err) => console.warn("Mein Board: Cloud-Verbindung fehlgeschlagen", err)
     )
-    return unsub
-  }, [])
+  }, [employeeId])
 
   const commit = useCallback((next: ErikTodo[]) => {
+    const prev = latest.current
     setTodos(next)
-    try { localStorage.setItem(ERIK_TODOS_KEY, JSON.stringify(next)) } catch { /* noop */ }
-    const docRef = erikTodosDocRef
-    if (CLOUD_CONFIGURED && cloudReady.current && docRef) {
-      setDoc(docRef, { todos: next }).catch((err) =>
-        console.warn("Erik-Todos: Cloud-Speichern fehlgeschlagen", err)
-      )
+    if (!CLOUD_CONFIGURED) {
+      try { localStorage.setItem(ERIK_TODOS_KEY, JSON.stringify(next)) } catch { /* noop */ }
+      return
     }
-  }, [])
+    if (!cloudReady.current || !firestore || !employeeId) return
+    const prevById = new Map(prev.map((t) => [t.id, JSON.stringify(t)]))
+    const nextIds = new Set(next.map((t) => t.id))
+    const fail = (err: unknown) => console.warn("Mein Board: Cloud-Speichern fehlgeschlagen", err)
+    for (const t of next) {
+      if (prevById.get(t.id) !== JSON.stringify(t)) {
+        setDoc(doc(firestore, "employees", employeeId, "todos", t.id), t).catch(fail)
+      }
+    }
+    for (const t of prev) {
+      if (!nextIds.has(t.id)) deleteDoc(doc(firestore, "employees", employeeId, "todos", t.id)).catch(fail)
+    }
+  }, [employeeId])
 
   const addTodo = useCallback(
     (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => {
