@@ -156,7 +156,6 @@ export function migrateToAccounts(legacy: LegacyData, opts: MigrationOptions): M
         role: p.entry.role,
         managerId: p.managerId,
         ancestors: p.ancestors,
-        uid: null,
       },
     })
     accounts.push({ employeeId: p.id, name: p.entry.name, suggestedRole: isLeadRole(p.entry.role) ? "lead" : "member" })

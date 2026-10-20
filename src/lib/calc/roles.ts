@@ -15,16 +15,14 @@ function isRole(v: unknown): v is Role {
 }
 
 /**
- * Übergang: Die bestehenden Editor-Konten wurden vor der Rollenvergabe angelegt
- * und haben keine Claims. Sie gelten bis zur Migration (Phase 5/6) weiter als
- * Admin — sonst wären sie ausgesperrt. Nach der Migration hier auf "member"
- * (bzw. Zugriff verweigern) umstellen.
+ * Konten ohne gültige Rolle (alte Logins ohne Claims) bekommen keine Rechte: "member" ohne verknüpften
+ * Mitarbeiter. firestore.rules verweigert ihnen ohnehin jeden Datenzugriff.
  */
 export function accountFromClaims(claims: Record<string, unknown> | null | undefined): AccountInfo {
   const role = claims?.role
   const employeeId = claims?.employeeId
   return {
-    role: isRole(role) ? role : "admin",
+    role: isRole(role) ? role : "member",
     employeeId: typeof employeeId === "string" && employeeId !== "" ? employeeId : null,
     mustChangePassword: claims?.mustChangePassword === true,
   }

@@ -7,7 +7,7 @@
 // zusammengesetzt aus den Einzeldokumenten der für dieses Konto sichtbaren
 // Mitarbeiter (`employees`). Im Cloud-Modus wird nichts in localStorage gecacht
 // (mehrere Konten pro Browser). Ohne Firebase-Config: wie bisher nur localStorage.
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { fetchEmployeeDocs, fetchEmployeeRange, subscribeEmployeeDocs, writeEmployeeSubDoc } from "@/lib/employeeSubdocs"
 import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
@@ -124,7 +124,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
   // ---- Lazy-Load-Cache für Monats-/Jahresansicht ----
   const cacheRef = useRef<Map<string, PlanWeekDoc>>(new Map())
   const statusRef = useRef<Map<string, WeekDocStatus>>(new Map())
-  const [, bumpCacheVersion] = useState(0)
+  const [cacheVersion, bumpCacheVersion] = useState(0)
   // Viele Wochen laden gleichzeitig (Jahresplanung: ~53) — Re-Render gebündelt statt je Woche einmal.
   const bumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scheduleBump = useCallback(() => {
@@ -133,7 +133,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
   }, [])
   const monthCacheRef = useRef<Map<string, PlanMonthNotesDoc>>(new Map())
   const monthLoadingRef = useRef<Set<string>>(new Set())
-  const [, bumpMonthCache] = useState(0)
+  const [monthCacheVersion, bumpMonthCache] = useState(0)
 
   // Sichtbare Mitarbeiter geändert -> Caches enthalten evtl. zu wenige Personen.
   useEffect(() => {
@@ -165,6 +165,8 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     (name: string, patch: Partial<PlanWeekEntry>) => {
       const current = latestWeekDoc.current
       const nextEntry = { ...(current.entries[name] ?? emptyWeekEntry()), ...patch }
+      // Unveränderte Werte nicht schreiben: jeder Schreibvorgang löst eine Cloud Function und Lesezugriffe bei allen Nutzern aus.
+      if (current.entries[name] && sameJson(current.entries[name], nextEntry)) return
       const next: PlanWeekDoc = { week: current.week, entries: { ...current.entries, [name]: nextEntry } }
       setWeekDoc(next)
       lsSet(planWeekStorageKey(next.week), next)
@@ -258,7 +260,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
 
   const loadMany = useCallback((weeks: string[]): Promise<PlanWeekDoc[]> => {
     const missing = weeks.filter((w) => !cacheRef.current.has(w) && !inflightRef.current.has(w))
-    if (CLOUD_CONFIGURED && missing.length > 3) {
+    if (CLOUD_CONFIGURED && missing.length >= 2) {
       const done = fetchRange(missing).catch((err) => console.warn("Planungswochen konnten nicht geladen werden", err))
       missing.forEach((w) => {
         const p = done
@@ -316,6 +318,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     (name: string, patch: Partial<PlanMonthNotesEntry>) => {
       const current = latestMonthNotesDoc.current
       const nextEntry = { ...(current.entries[name] ?? emptyMonthNoteEntry()), ...patch }
+      if (current.entries[name] && sameJson(current.entries[name], nextEntry)) return
       const next: PlanMonthNotesDoc = { month: current.month, entries: { ...current.entries, [name]: nextEntry } }
       setMonthNotesDoc(next)
       monthCacheRef.current.set(next.month, next) // Mitarbeiterseite nicht veraltet lassen
@@ -432,9 +435,15 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     []
   )
 
+  const latestAnnualDocs = useRef(annualDocs)
+  latestAnnualDocs.current = annualDocs
+
   const saveAnnual = useCallback((year: number, managerName: string, doc: PlanAnnualDoc) => {
     const managerKey = planManagerKey(managerName)
     const cacheKey = annualCacheKey(year, managerKey)
+    // Nur schreiben, wenn sich gegenüber dem angezeigten Stand etwas geändert hat (siehe saveWeekEntry).
+    const shown = latestAnnualDocs.current.get(cacheKey)
+    if (sameJson(shown ?? defaultAnnual(), doc) && (shown || annualCloudReady.current.has(cacheKey))) return
     setAnnualDocs((m) => new Map(m).set(cacheKey, doc))
     lsSet(planAnnualStorageKey(year, managerKey), doc)
     // cloudReady-Gate: verhindert, dass ein Speichern kurz nach dem Öffnen den
@@ -447,10 +456,19 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     )
   }, [])
 
-  return {
+  // Stabile Identität: ändert sich nur, wenn sich Daten oder Caches (cacheVersion/monthCacheVersion) ändern.
+  return useMemo(() => ({
     activeWeek, setActiveWeek, weekDoc, saveWeekEntry,
     getWeek, loadWeeks,
     activeMonth, setActiveMonth, monthNotesDoc, saveMonthNoteEntry, getMonthNotes,
     annual, annualStatus, saveAnnual,
-  }
+  }),
+  // cacheVersion/monthCacheVersion: Caches liegen in Refs, ihre Änderung wird nur über diese Zähler sichtbar.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [activeWeek, weekDoc, saveWeekEntry, getWeek, loadWeeks, activeMonth, monthNotesDoc, saveMonthNoteEntry,
+    getMonthNotes, annual, annualStatus, saveAnnual, cacheVersion, monthCacheVersion])
+}
+
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
 }

@@ -98,3 +98,38 @@ describe("applySubtreeUpdate", () => {
     expect(out.tree.children![0].role).toBe("Teamleiter")
   })
 })
+
+describe("applySubtreeUpdate – Härtung", () => {
+  const add = (id: string, extra: Record<string, unknown> = {}) => {
+    const input = keep()
+    input.children.push({ id, name: "Neu", role: "FT1", children: [], ...extra })
+    return input
+  }
+
+  it("lehnt IDs mit Pfadzeichen oder Sonderzeichen ab", () => {
+    for (const id of ["opfer/planWeeks/2026-W41", "a.b", "a b", "", "x".repeat(65), "ä"]) {
+      expect(() => applySubtreeUpdate(current(), "lead", add(id)), id).toThrow(SubtreeError)
+    }
+    expect(() => applySubtreeUpdate(current(), "lead", add("n_1-x"))).not.toThrow()
+  })
+
+  it("lehnt eine ID ab, die als (inaktiver) Mitarbeiter schon existiert, aber nicht zur eigenen Unterstruktur gehört", () => {
+    const employeeIds = new Set(["boss", "lead", "m1", "m1a", "m2", "other", "ehemalig"])
+    expect(() => applySubtreeUpdate(current(), "lead", add("ehemalig"), employeeIds)).toThrow(SubtreeError)
+    // eigene bisherige Unterstruktur darf weiterverwendet werden
+    expect(() => applySubtreeUpdate(current(), "lead", keep(), employeeIds)).not.toThrow()
+  })
+
+  it("begrenzt Textlängen, Notizen und Verbindungen", () => {
+    expect(() => applySubtreeUpdate(current(), "lead", add("n1", { name: "x".repeat(101) }))).toThrow(SubtreeError)
+    const longNote = keep()
+    longNote.notes.m1 = [{ text: "x".repeat(2001), date: "d" }]
+    expect(() => applySubtreeUpdate(current(), "lead", longNote)).toThrow(SubtreeError)
+    const manyNotes = keep()
+    manyNotes.notes.m1 = Array.from({ length: 51 }, () => ({ text: "t", date: "d" }))
+    expect(() => applySubtreeUpdate(current(), "lead", manyNotes)).toThrow(SubtreeError)
+    const manyConns = keep()
+    manyConns.conns = Array.from({ length: 201 }, () => ({ from: "m1", to: "m2", label: "" }))
+    expect(() => applySubtreeUpdate(current(), "lead", manyConns)).toThrow(SubtreeError)
+  })
+})

@@ -8,7 +8,7 @@
 // Context nicht konsumieren, daher lebt die gesamte Logik in einer Kind-
 // Komponente von ConfirmProvider statt in App (analog dazu, wie Kalender.tsx
 // useConfirm() bereits als Kind-Komponente nutzt).
-import { useEffect, useMemo, useState } from "react"
+import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { PLAN_IDS, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { applyMonthStats, mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
@@ -35,22 +35,24 @@ import { Topbar } from "@/components/Topbar"
 import { LoginPage } from "@/components/LoginPage"
 import { Button } from "@/components/ui/button"
 import { Overview } from "@/components/sections/Overview"
-import { Team } from "@/components/sections/Team"
-import { Rechner } from "@/components/sections/Rechner"
-import { Karriere } from "@/components/sections/Karriere"
-import { Guide } from "@/components/sections/Guide"
-import { Kalender } from "@/components/sections/Kalender"
-import { Finanzierungen } from "@/components/sections/Finanzierungen"
-import { Partner } from "@/components/sections/Partner"
-import { MeinBoard } from "@/components/sections/MeinBoard"
-import { Konten } from "@/components/sections/Konten"
-import { Einstellungen } from "@/components/sections/Einstellungen"
 import { ChangePasswordPage } from "@/components/ChangePasswordPage"
-import { StrukturBaum } from "@/components/sections/struktur/StrukturBaum"
-import { Statistik } from "@/components/sections/Statistik"
-import { Planung } from "@/components/sections/Planung"
 import type { MonthKey } from "@/types/archive"
 import type { OrgChartDoc } from "@/types/dashboard"
+
+// Sektionen außer dem Dashboard werden erst beim Öffnen geladen (kleineres Start-Paket).
+const Team = lazy(() => import("@/components/sections/Team").then((m) => ({ default: m.Team })))
+const Rechner = lazy(() => import("@/components/sections/Rechner").then((m) => ({ default: m.Rechner })))
+const Karriere = lazy(() => import("@/components/sections/Karriere").then((m) => ({ default: m.Karriere })))
+const Guide = lazy(() => import("@/components/sections/Guide").then((m) => ({ default: m.Guide })))
+const Kalender = lazy(() => import("@/components/sections/Kalender").then((m) => ({ default: m.Kalender })))
+const Finanzierungen = lazy(() => import("@/components/sections/Finanzierungen").then((m) => ({ default: m.Finanzierungen })))
+const Partner = lazy(() => import("@/components/sections/Partner").then((m) => ({ default: m.Partner })))
+const MeinBoard = lazy(() => import("@/components/sections/MeinBoard").then((m) => ({ default: m.MeinBoard })))
+const Konten = lazy(() => import("@/components/sections/Konten").then((m) => ({ default: m.Konten })))
+const Einstellungen = lazy(() => import("@/components/sections/Einstellungen").then((m) => ({ default: m.Einstellungen })))
+const StrukturBaum = lazy(() => import("@/components/sections/struktur/StrukturBaum").then((m) => ({ default: m.StrukturBaum })))
+const Statistik = lazy(() => import("@/components/sections/Statistik").then((m) => ({ default: m.Statistik })))
+const Planung = lazy(() => import("@/components/sections/Planung").then((m) => ({ default: m.Planung })))
 
 const SECTION_LABELS: Record<SectionId, string> = {
   overview: "Dashboard",
@@ -385,6 +387,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         )}
 
         <div className="flex-1 p-6">
+          <Suspense fallback={<p className="p-6 text-sm text-muted-foreground" role="status">Lade …</p>}>
           {SECTION_IDS.map((id) => (
             <section
               key={id}
@@ -427,6 +430,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     orgPlanRates={view.planRates}
                     isEditor={auth.isEditor && !isArchive}
                     canEditRow={canEditRow}
+                    noBonusFor={auth.isAdmin ? undefined : myName}
                     now={view.now}
                     planung={isArchive ? undefined : planung}
                   />
@@ -508,6 +512,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               {section === id && id === "einstellungen" && <Einstellungen auth={auth} />}
             </section>
           ))}
+          </Suspense>
         </div>
       </main>
     </div>

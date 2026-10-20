@@ -27,12 +27,27 @@ export async function refreshFinancingStats(): Promise<FinancingStats> {
   const db = getFirestore()
   const snap = await db.collection("financings").get()
   const stats = computeFinancingStats(snap.docs.map((d) => d.data()))
-  await db.doc("org/financingStats").set({ ...stats, updatedAt: new Date().toISOString() })
+  const ref = db.doc("org/financingStats")
+  // Nur schreiben, wenn sich die Zahlen ändern: jede Änderung des Dokuments kostet bei allen offenen Dashboards einen Lesezugriff.
+  const current = (await ref.get()).data() as Partial<FinancingStats> | undefined
+  const same = current && current.openCount === stats.openCount && current.openVolume === stats.openVolume
+    && current.anlegerwohnungen === stats.anlegerwohnungen
+  if (!same) await ref.set({ ...stats, updatedAt: new Date().toISOString() })
   return stats
 }
 
-/** Bei jeder Änderung an einem Fall die Gesamtzahlen neu berechnen. */
+/** Nur die Felder, die in die Gesamtzahlen eingehen (siehe computeFinancingStats). */
+export function statsRelevant(data: { archived?: unknown; betrag?: unknown; art?: unknown } | undefined) {
+  return data ? { open: !data.archived, betrag: Number(data.betrag) || 0, anlegerwohnung: data.art === "anlegerwohnung" } : null
+}
+
+/** Bei relevanter Änderung an einem Fall die Gesamtzahlen neu berechnen (Häkchen, Notizen usw. ändern nichts). */
 export const onFinancingChange = onDocumentWritten(
   { document: "financings/{caseId}", region: "europe-west1" },
-  async () => { await refreshFinancingStats() },
+  async (event) => {
+    const before = JSON.stringify(statsRelevant(event.data?.before.data()))
+    const after = JSON.stringify(statsRelevant(event.data?.after.data()))
+    if (before === after) return
+    await refreshFinancingStats()
+  },
 )

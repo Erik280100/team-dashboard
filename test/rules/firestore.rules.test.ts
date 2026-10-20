@@ -39,6 +39,7 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
         await setDoc(doc(db, "employees", id), { ...e, atIst: 1 })
         await setDoc(doc(db, "employees", id, "planWeeks", "2026-W01"), { x: 1 })
         await setDoc(doc(db, "employees", id, "todos", "t1"), { title: "t" })
+        await setDoc(doc(db, "employees", id, "private", "account"), { uid: e.uid, email: `${id}@example.test`, accountPending: false })
       }
       await setDoc(doc(db, "org", "structure"), { tree: {} })
       await setDoc(doc(db, "financings", "f1"), { ownerId: "m1", ancestors: ["lead", "boss"] })
@@ -98,6 +99,27 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
         await assertSucceeds(updateDoc(doc(as("admin", "boss"), "employees", "m1"), f))
         await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), "employees", "m1"), { ...EMP.m1 }))
       }
+    })
+    it("Konto-Daten (private/account): nur self, Vorgesetzte, Admin lesen; niemand schreibt per Client", async () => {
+      await assertSucceeds(getDoc(doc(as("member", "m1"), "employees", "m1", "private", "account")))
+      await assertSucceeds(getDoc(doc(as("lead", "lead"), "employees", "m1", "private", "account")))
+      await assertSucceeds(getDoc(doc(as("admin"), "employees", "m1", "private", "account")))
+      await assertFails(getDoc(doc(as("member", "m1"), "employees", "m2", "private", "account"))) // Kollege
+      await assertFails(getDoc(doc(as("lead", "lead"), "employees", "other", "private", "account"))) // fremde Struktur
+      await assertFails(getDoc(doc(as("lead", "lead"), "employees", "boss", "private", "account"))) // Vorgesetzter
+      await assertFails(getDoc(doc(anon(), "employees", "m1", "private", "account")))
+      for (const who of [as("member", "m1"), as("lead", "lead"), as("admin")]) {
+        await assertFails(setDoc(doc(who, "employees", "m1", "private", "account"), { uid: "x", email: "x@y.z", accountPending: false }))
+        await assertFails(updateDoc(doc(who, "employees", "m1", "private", "account"), { accountPending: false }))
+      }
+    })
+    it("Bonus setzen nur Vorgesetzte/Admin, nicht die Person selbst", async () => {
+      await assertFails(updateDoc(doc(as("member", "m1"), "employees", "m1"), { bonus: 500 }))
+      await assertSucceeds(updateDoc(doc(as("member", "m1"), "employees", "m1"), { atIst: 3 }))
+      await assertSucceeds(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { bonus: 500 }))
+      await assertSucceeds(updateDoc(doc(as("admin"), "employees", "lead"), { bonus: 500 }))
+      // Fuehrungskraft darf den eigenen Bonus nicht aendern (sie ist nicht ihr eigener Vorgesetzter)
+      await assertFails(updateDoc(doc(as("lead", "lead"), "employees", "lead"), { bonus: 500 }))
     })
     it("Admin liest alles, nur Admin legt an/loescht", async () => {
       await assertSucceeds(getDoc(doc(as("admin"), "employees", "other")))

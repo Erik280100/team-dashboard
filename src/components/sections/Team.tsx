@@ -47,6 +47,7 @@ export function Team({
   orgPlanRates,
   isEditor,
   canEditRow = () => true,
+  noBonusFor,
   now,
   planung,
 }: {
@@ -59,6 +60,8 @@ export function Team({
   /** Darf der Betrachter die Daten dieser Person bearbeiten (sie selbst oder Vorgesetzte)? Alle anderen Zeilen
    * sind schreibgeschützt und zeigen AT/BT/ST/ET aus den Monatssummen statt aus der (nicht lesbaren) Planung. */
   canEditRow?: (name: string) => boolean
+  /** Person, deren Bonus der Betrachter nicht setzen darf (er selbst, ausser Admin) — firestore.rules. */
+  noBonusFor?: string
   /** Referenzzeitpunkt für monthWeekProgress — im Archiv-Modus ein Tag nach
    * periodEnd (siehe archiveNow() in lib/calc/archive.ts), damit die
    * Rot/Grün-Einfärbung gegen den vollen Monatsplan bewertet statt gegen einen
@@ -141,12 +144,13 @@ export function Team({
   const detailEntry = detailName ? merged.find((r) => r.name === detailName) ?? null : null
   const detailEarnings = detailName ? earnings.get(detailName) ?? null : null
 
-  function saveEarnings(entry: MergedRow, units: Record<PlanId, number>, bonus: number) {
+  function saveEarnings(entry: MergedRow, units: Record<PlanId, number>, bonus?: number) {
+    const bonusPart = bonus === undefined ? {} : { bonus }
     if (entry.rowIndex !== null) {
-      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...withPlanUnits(r, units), bonus } : r))
+      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...withPlanUnits(r, units), ...bonusPart } : r))
       saveRows(next)
     } else {
-      saveRows([...rows, { ...withPlanUnits(newRowFor(entry.name), units), bonus }])
+      saveRows([...rows, { ...withPlanUnits(newRowFor(entry.name), units), ...bonusPart }])
     }
   }
 
@@ -416,6 +420,7 @@ export function Team({
           earnings={detailEarnings}
           stornoreserveRate={reserveRate}
           isEditor={isEditor && canEditRow(detailEntry.name)}
+          canEditBonus={detailEntry.name !== noBonusFor}
           onSave={(units, bonus) => saveEarnings(detailEntry, units, bonus)}
         />
       )}

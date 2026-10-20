@@ -123,7 +123,8 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
     return unsub
   }, [])
 
-  const loadOne = useCallback(async (month: MonthKey): Promise<MonthSnapshot | null> => {
+
+  const loadOneUncached = useCallback(async (month: MonthKey): Promise<MonthSnapshot | null> => {
     const cached = cacheRef.current.get(month)
     if (cached) return cached
 
@@ -147,19 +148,10 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
         setSnapshotStatus((s) => ({ ...s, [month]: "error" }))
         return null
       }
-      // Zeilen: Admin liest alle, alle anderen nur die sichtbaren Mitarbeiter.
+      // Zeilen: eine Abfrage für alle (die Regeln erlauben allen Eingeloggten das Lesen der Monatssummen).
       const rowDocs: Record<string, unknown>[] = []
-      if (adminRef.current) {
-        const all = await getDocs(collection(firestore, "snapshots", month, "employees"))
-        all.forEach((d) => rowDocs.push(d.data()))
-      } else {
-        await Promise.all(employeesRef.current.map(async (e) => {
-          try {
-            const d = await getDoc(doc(firestore!, "snapshots", month, "employees", e.id))
-            if (d.exists()) rowDocs.push(d.data())
-          } catch { /* für dieses Konto nicht lesbar */ }
-        }))
-      }
+      const all = await getDocs(collection(firestore, "snapshots", month, "employees"))
+      all.forEach((d) => rowDocs.push(d.data()))
       const data = { ...(snap.data() as Omit<MonthSnapshot, "rows">), rows: rowDocs.map(employeeDocToRow) } as MonthSnapshot
       cacheRef.current.set(month, data)
       setSnapshotStatus((s) => ({ ...s, [month]: "ready" }))
@@ -171,6 +163,16 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
       return null
     }
   }, [])
+  // Gleichzeitige Anfragen für denselben Monat teilen sich einen Ladevorgang (Jahresplanung, Einheiten-Übersicht und
+  // Render-Pfad fragen dieselben Monate mehrfach an).
+  const inflightRef = useRef<Map<MonthKey, Promise<MonthSnapshot | null>>>(new Map())
+  const loadOne = useCallback((month: MonthKey): Promise<MonthSnapshot | null> => {
+    const pending = inflightRef.current.get(month)
+    if (pending) return pending
+    const p = loadOneUncached(month).finally(() => { inflightRef.current.delete(month) })
+    inflightRef.current.set(month, p)
+    return p
+  }, [loadOneUncached])
 
   const getSnapshot = useCallback(
     (month: MonthKey): MonthSnapshot | null => {

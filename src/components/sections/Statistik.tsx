@@ -51,13 +51,14 @@ export function Statistik({ archive }: { archive: UseMonthArchiveResult }) {
   const entryA = effectiveA ? index.find((e) => e.month === effectiveA) ?? null : null
   const entryB = effectiveB ? index.find((e) => e.month === effectiveB) ?? null : null
 
+  const { loadSnapshots, getSnapshot } = archive
   useEffect(() => {
-    if (rangeMonths.length > 0) void archive.loadSnapshots(rangeMonths)
-  }, [rangeMonths, archive])
+    if (rangeMonths.length > 0) void loadSnapshots(rangeMonths)
+  }, [rangeMonths, loadSnapshots])
 
-  const snapshots = rangeMonths
-    .map((m) => archive.getSnapshot(m))
-    .filter((s): s is MonthSnapshot => s !== null)
+  const snapshots = useMemo(() => rangeMonths
+    .map((m) => getSnapshot(m))
+    .filter((s): s is MonthSnapshot => s !== null), [rangeMonths, getSnapshot])
   const matrixLoading = snapshots.length < rangeMonths.length
   const matrix = useMemo(
     () => (rangeMonths.length > 0 && !matrixLoading ? employeeMatrix(snapshots) : []),

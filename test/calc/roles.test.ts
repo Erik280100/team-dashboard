@@ -5,12 +5,12 @@ describe("accountFromClaims", () => {
   it("liest Rolle und employeeId", () => {
     expect(accountFromClaims({ role: "lead", employeeId: "e1" })).toEqual({ role: "lead", employeeId: "e1", mustChangePassword: false })
   })
-  it("Konten ohne Claims gelten im Übergang als Admin", () => {
-    expect(accountFromClaims({})).toEqual({ role: "admin", employeeId: null, mustChangePassword: false })
-    expect(accountFromClaims(null)).toEqual({ role: "admin", employeeId: null, mustChangePassword: false })
+  it("Konten ohne Claims bekommen keine Rechte (member ohne Mitarbeiter)", () => {
+    expect(accountFromClaims({})).toEqual({ role: "member", employeeId: null, mustChangePassword: false })
+    expect(accountFromClaims(null)).toEqual({ role: "member", employeeId: null, mustChangePassword: false })
   })
   it("ungültige Rolle / leere ID werden nicht übernommen", () => {
-    expect(accountFromClaims({ role: "root", employeeId: "" })).toEqual({ role: "admin", employeeId: null, mustChangePassword: false })
+    expect(accountFromClaims({ role: "root", employeeId: "" })).toEqual({ role: "member", employeeId: null, mustChangePassword: false })
   })
   it("liest den Pflicht-Claim für die Passwortänderung (nur echtes true)", () => {
     expect(accountFromClaims({ role: "member", employeeId: "m", mustChangePassword: true }).mustChangePassword).toBe(true)

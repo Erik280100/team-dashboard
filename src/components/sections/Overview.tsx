@@ -4,7 +4,7 @@
 // dort durchgängig dunkel (.kpi-card/.panel-dark nutzen dieselbe Navy-Verlaufsfarbe),
 // nicht nur die Chart-Panels.
 import "@/lib/chartSetup"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Line, Pie } from "react-chartjs-2"
 import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,6 +40,18 @@ function DarkCardHeader({ title, sub }: { title: string; sub: string }) {
       <p className="text-xs text-white/50">{sub}</p>
     </CardHeader>
   )
+}
+
+/** Statisch: ein neues Options-Objekt je Render würde Chart.js bei jeder Änderung der App neu zeichnen lassen. */
+const LINE_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: "index" as const, intersect: false },
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { display: false }, ticks: { ...DARK_TICK, maxTicksLimit: 10 } },
+    y: { beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
+  },
 }
 
 export function Overview({
@@ -82,52 +94,104 @@ export function Overview({
   /** Abgeschlossene Monate aus dem Archiv, Basis der Jahreswerte. */
   archiveIndex: ArchiveIndexEntry[]
 }) {
-  const kpis = summaryKpis(rows)
-  const goal = goalProgress(rows)
-  const timeline = timelineData(teamGoal, rows, history, now ?? new Date())
-  const shares = revenueShareData(rows)
-  // Umsatzanteil-Kachel: nur Mitarbeiter mit mehr als 5 % am Gesamtumsatz
-  const shareTotal = shares.reduce((s, r) => s + r.value, 0)
-  const pieShares = shares.filter((s) => shareTotal > 0 && s.value / shareTotal > 0.05)
-  const planTotals = rows.reduce(
-    (acc, r) => {
-      const u = readPlanUnits(r)
-      acc.insurance += u.insurance
-      acc.invest += u.investment + u.investmentVb
-      acc.credit += u.credit
-      return acc
-    },
-    { insurance: 0, invest: 0, credit: 0 }
-  )
-  const planSum = planTotals.insurance + planTotals.invest + planTotals.credit
-  const yearly = yearlyPlanData(rows, teamGoal, archiveIndex)
-  const sparten = [
-    { label: "Insurance", icon: Shield, units: planTotals.insurance },
-    { label: "Invest", icon: TrendingUp, units: planTotals.invest },
-    { label: "Credit", icon: Wallet, units: planTotals.credit },
-  ].map((s) => ({ ...s, pct: planSum > 0 ? Math.round((s.units / planSum) * 100) : 0 }))
-  sparten.push({ label: "Gesamt", icon: Sigma, units: planSum, pct: planSum > 0 ? 100 : 0 })
+  // Berechnungen nur bei geänderten Eingaben (statt bei jedem Render der ganzen App).
+  const kpis = useMemo(() => summaryKpis(rows), [rows])
+  const goal = useMemo(() => goalProgress(rows), [rows])
+  const timeline = useMemo(() => timelineData(teamGoal, rows, history, now ?? new Date()), [teamGoal, rows, history, now])
+  const shares = useMemo(() => revenueShareData(rows), [rows])
+  const pieShares = useMemo(() => {
+    // Umsatzanteil-Kachel: nur Mitarbeiter mit mehr als 5 % am Gesamtumsatz
+    const shareTotal = shares.reduce((s, r) => s + r.value, 0)
+    return shares.filter((s) => shareTotal > 0 && s.value / shareTotal > 0.05)
+  }, [shares])
+  const sparten = useMemo(() => {
+    const planTotals = rows.reduce(
+      (acc, r) => {
+        const u = readPlanUnits(r)
+        acc.insurance += u.insurance
+        acc.invest += u.investment + u.investmentVb
+        acc.credit += u.credit
+        return acc
+      },
+      { insurance: 0, invest: 0, credit: 0 }
+    )
+    const planSum = planTotals.insurance + planTotals.invest + planTotals.credit
+    const list = [
+      { label: "Insurance", icon: Shield, units: planTotals.insurance },
+      { label: "Invest", icon: TrendingUp, units: planTotals.invest },
+      { label: "Credit", icon: Wallet, units: planTotals.credit },
+    ].map((s) => ({ ...s, pct: planSum > 0 ? Math.round((s.units / planSum) * 100) : 0 }))
+    list.push({ label: "Gesamt", icon: Sigma, units: planSum, pct: planSum > 0 ? 100 : 0 })
+    return list
+  }, [rows])
+  const yearly = useMemo(() => yearlyPlanData(rows, teamGoal, archiveIndex), [rows, teamGoal, archiveIndex])
 
   // Ist-AT fürs Leaderboard live aus der Wochenplanung übernehmen (Summe der
   // "analysen"-Gemacht-Werte über alle Wochen des aktuellen Umsatzmonats) —
   // dieselbe Quelle wie die "Ist"-Spalte auf der Mitarbeiterseite (Team.tsx),
   // statt des zuletzt gespeicherten, potenziell veralteten row.atIst.
-  const planWeeks = planung ? monthWeekKeys(monthKeyOf(teamGoal)) : []
+  const planWeekKey = planung ? monthWeekKeys(monthKeyOf(teamGoal)).join(",") : ""
   useEffect(() => {
-    if (!planung || planWeeks.length === 0) return
-    void planung.loadWeeks(planWeeks)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planung, planWeeks.join(",")])
-  const planByName = planung
-    ? aggregateByName(
-        planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null),
-        rows.map((r) => r.name as string)
-      )
-    : null
-  const rowsForLeaderboard = planByName
-    ? rows.map((r) => (canSeeLive(r.name as string) ? { ...r, atIst: planByName.get(r.name as string)?.analysen ?? 0 } : r))
-    : rows
-  const leaderboard = leaderboardData(rowsForLeaderboard)
+    if (!planung || !planWeekKey) return
+    void planung.loadWeeks(planWeekKey.split(","))
+  }, [planung, planWeekKey])
+  const leaderboard = useMemo(() => {
+    const planByName = planung
+      ? aggregateByName(
+          planWeekKey.split(",").filter(Boolean).map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null),
+          rows.map((r) => r.name as string)
+        )
+      : null
+    const rowsForLeaderboard = planByName
+      ? rows.map((r) => (canSeeLive(r.name as string) ? { ...r, atIst: planByName.get(r.name as string)?.analysen ?? 0 } : r))
+      : rows
+    return leaderboardData(rowsForLeaderboard)
+  }, [planung, planWeekKey, rows, canSeeLive])
+
+  const lineData = useMemo(() => ({
+    labels: timeline.points.map((p) => p.label),
+    datasets: [
+      {
+        label: "Ziel-Pfad", data: timeline.points.map((p) => p.idealPath),
+        borderColor: "#5B7C8A", borderDash: [5, 4], borderWidth: 2,
+        pointRadius: 0, tension: 0, spanGaps: true,
+      },
+      {
+        label: "Ist-Verlauf", data: timeline.points.map((p) => p.actual),
+        borderColor: "#64DDA3", backgroundColor: "rgba(100,221,163,.15)",
+        borderWidth: 3, pointRadius: 2, pointBackgroundColor: "#64DDA3",
+        fill: true, tension: 0.25, spanGaps: true,
+      },
+      {
+        label: "Prognose", data: timeline.points.map((p) => p.forecast),
+        borderColor: "#E7A94C", borderDash: [3, 3], borderWidth: 2,
+        pointRadius: 0, tension: 0.15, spanGaps: true,
+      },
+    ],
+  }), [timeline])
+  const pieData = useMemo(() => ({
+    labels: pieShares.map((s) => s.name),
+    datasets: [{
+      data: pieShares.length ? pieShares.map((s) => s.value || 1) : [1],
+      backgroundColor: pieShares.map((s) => s.color),
+      borderWidth: 0,
+    }],
+  }), [pieShares])
+  const pieOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label(item: { dataIndex: number }) {
+            const s = pieShares[item.dataIndex]
+            return `${s.name}: ${s.pct}%`
+          },
+        },
+      },
+    },
+  }), [pieShares])
 
   const [noteDraft, setNoteDraft] = useState(teamGoal.note)
 
@@ -191,37 +255,8 @@ export function Overview({
             {timeline.valid ? (
               <div className="h-[220px]">
                 <Line
-                  data={{
-                    labels: timeline.points.map((p) => p.label),
-                    datasets: [
-                      {
-                        label: "Ziel-Pfad", data: timeline.points.map((p) => p.idealPath),
-                        borderColor: "#5B7C8A", borderDash: [5, 4], borderWidth: 2,
-                        pointRadius: 0, tension: 0, spanGaps: true,
-                      },
-                      {
-                        label: "Ist-Verlauf", data: timeline.points.map((p) => p.actual),
-                        borderColor: "#64DDA3", backgroundColor: "rgba(100,221,163,.15)",
-                        borderWidth: 3, pointRadius: 2, pointBackgroundColor: "#64DDA3",
-                        fill: true, tension: 0.25, spanGaps: true,
-                      },
-                      {
-                        label: "Prognose", data: timeline.points.map((p) => p.forecast),
-                        borderColor: "#E7A94C", borderDash: [3, 3], borderWidth: 2,
-                        pointRadius: 0, tension: 0.15, spanGaps: true,
-                      },
-                    ],
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: "index", intersect: false },
-                    plugins: { legend: { display: false } },
-                    scales: {
-                      x: { grid: { display: false }, ticks: { ...DARK_TICK, maxTicksLimit: 10 } },
-                      y: { beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
-                    },
-                  }}
+                  data={lineData}
+                  options={LINE_OPTIONS}
                   aria-label="Zielverlauf und Prognose"
                   role="img"
                 />
@@ -290,29 +325,8 @@ export function Overview({
           <CardContent>
             <div className="h-[220px]">
               <Pie
-                data={{
-                  labels: pieShares.map((s) => s.name),
-                  datasets: [{
-                    data: pieShares.length ? pieShares.map((s) => s.value || 1) : [1],
-                    backgroundColor: pieShares.map((s) => s.color),
-                    borderWidth: 0,
-                  }],
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                      callbacks: {
-                        label(item) {
-                          const s = pieShares[item.dataIndex]
-                          return `${s.name}: ${s.pct}%`
-                        },
-                      },
-                    },
-                  },
-                }}
+                data={pieData}
+                options={pieOptions}
                 aria-label={"Umsatzanteil je Mitarbeiter: " + pieShares.map((s) => `${s.name} ${s.pct} Prozent`).join(", ")}
                 role="img"
               />

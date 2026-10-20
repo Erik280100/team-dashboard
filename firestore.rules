@@ -39,6 +39,12 @@ service cloud.firestore {
         .hasAny(['managerId', 'ancestors', 'uid', 'accountPending', 'role', 'name', 'email', 'active', 'createdAt', 'monthStats']);
     }
 
+    // Den Bonus (€) setzen Vorgesetzte/Admin, nicht die Person selbst.
+    function bonusUntouchedOrManager() {
+      return isAncestor(resource.data.ancestors)
+        || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['bonus']);
+    }
+
     match /users/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow write: if false;
@@ -46,11 +52,18 @@ service cloud.firestore {
 
     match /employees/{empId} {
       // Stammdaten und Monatssummen (Einheiten, AT/BT/ST/ET) sehen alle Eingeloggten;
-      // Planung, Anwesenheit und Todos (Subcollections) bleiben geschuetzt.
+      // Planung, Anwesenheit, Todos und Konto-Daten (Subcollections) bleiben geschuetzt.
       allow read: if signedIn();
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
-        || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched());
+        || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched() && bonusUntouchedOrManager());
+
+      // Konto-Daten (uid, E-Mail, "wartet auf erste Anmeldung"): nur self/Vorgesetzte/Admin lesen,
+      // geschrieben ausschliesslich von den Cloud Functions (Admin SDK umgeht die Regeln).
+      match /private/{id} {
+        allow read: if canAccessEmployee(empId);
+        allow write: if false;
+      }
 
       match /planWeeks/{id} {
         allow read, write: if canAccessEmployee(empId);

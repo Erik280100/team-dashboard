@@ -96,8 +96,9 @@ export function useAuth(): UseAuthResult {
   }
 
   async function changePassword(current: string, next: string): Promise<Result> {
-    const u = auth?.currentUser
-    if (!u || !u.email) return { ok: false, message: "Nicht angemeldet." }
+    const a = auth
+    const u = a?.currentUser
+    if (!a || !u || !u.email) return { ok: false, message: "Nicht angemeldet." }
     if (next.length < 8) return { ok: false, message: "Das neue Passwort muss mindestens 8 Zeichen haben." }
     if (next === current) return { ok: false, message: "Das neue Passwort muss sich vom alten unterscheiden." }
     try {
@@ -105,25 +106,29 @@ export function useAuth(): UseAuthResult {
     } catch {
       return { ok: false, message: "Das aktuelle Passwort ist nicht korrekt." }
     }
-    try {
-      await updatePassword(u, next)
-    } catch (err) {
-      const code = typeof err === "object" && err && "code" in err ? String((err as { code: unknown }).code) : ""
-      const weak = code.includes("weak-password")
-      return { ok: false, message: weak ? "Das neue Passwort ist zu schwach." : "Das Passwort konnte nicht geändert werden." }
-    }
     if (account.mustChangePassword) {
+      // Erstanmeldung: der Server setzt das Passwort und hebt erst dann die Sperre auf (setInitialPassword);
+      // danach sind alle Sitzungen beendet, also mit dem neuen Passwort neu anmelden.
       try {
         if (!functions) throw new Error("Functions nicht verfügbar")
-        await httpsCallable(functions, "completePasswordChange")()
+        await httpsCallable(functions, "setInitialPassword")({ newPassword: next })
+        await signInWithEmailAndPassword(a, u.email, next)
       } catch (err) {
-        console.error("Änderungspflicht konnte nicht aufgehoben werden", err)
-        return { ok: false, message: "Das Passwort wurde geändert, die Freischaltung ist aber fehlgeschlagen. Bitte neu anmelden." }
+        console.error("Erstes Passwort konnte nicht gesetzt werden", err)
+        return { ok: false, message: "Das Passwort konnte nicht geändert werden. Bitte neu anmelden und erneut versuchen." }
+      }
+    } else {
+      try {
+        await updatePassword(u, next)
+      } catch (err) {
+        const code = typeof err === "object" && err && "code" in err ? String((err as { code: unknown }).code) : ""
+        const weak = code.includes("weak-password")
+        return { ok: false, message: weak ? "Das neue Passwort ist zu schwach." : "Das Passwort konnte nicht geändert werden." }
       }
     }
     // Neue Claims (ohne Pflicht) übernehmen.
     try {
-      const token = await u.getIdTokenResult(true)
+      const token = await (a.currentUser ?? u).getIdTokenResult(true)
       setAccount(accountFromClaims(token.claims))
     } catch (err) {
       console.error("Token konnte nicht erneuert werden", err)

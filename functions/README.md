@@ -2,10 +2,11 @@
 
 | Funktion | Typ | Zweck |
 |---|---|---|
-| `inviteUser` | callable (Admin) | Konto anlegen/aktualisieren (Startpasswort `start1234`, Änderungspflicht beim ersten Login), Rolle als Custom Claim setzen, `employees/{id}.uid` verknüpfen |
-| `createAccount` | callable (Admin oder Vorgesetzte) | Konto für eine Person aus dem Strukturbaum erstellen (Button „Useraccount erstellen“): Admin für alle, sonst nur Unterstruktur; Rolle aus der Stufe (lead/member), Startpasswort `start1234`, `employees/{id}.accountPending` bis zur ersten Passwortänderung |
+| `inviteUser` | callable (Admin) | Konto anlegen/aktualisieren (zufälliges Einmal-Passwort, einmalig zurückgegeben; Änderungspflicht beim ersten Login), Rolle als Custom Claim setzen, Konto in `employees/{id}/private/account` verknüpfen |
+| `createAccount` | callable (Admin oder Vorgesetzte) | Konto für eine Person aus dem Strukturbaum erstellen (Button „Useraccount erstellen“): Admin für alle, sonst nur Unterstruktur; Rolle aus der Stufe (lead/member), zufälliges Einmal-Passwort, `accountPending` in `employees/{id}/private/account` bis zur ersten Passwortänderung |
+| `setInitialPassword` | callable (angemeldet, nur mit Claim `mustChangePassword`) | Erstes eigenes Passwort serverseitig setzen und erst danach die Änderungspflicht aufheben |
 | `disableUser` | callable (Admin) | Konto sperren |
-| `onStructureChange` | Firestore-Trigger auf `org/structure` | `employees/{id}`: Name/Rolle/`managerId`/`ancestors` nachziehen, neue Mitarbeiter anlegen, entfernte deaktivieren, `ancestors` der Finanzierungen aktualisieren |
+| `onStructureChange` | Firestore-Trigger auf `org/structure` | `employees/{id}`: Name/Rolle/`managerId`/`ancestors` nachziehen, neue Mitarbeiter anlegen, entfernte deaktivieren (und deren Login sperren), `ancestors` der Finanzierungen aktualisieren; schreibt nur tatsächliche Änderungen |
 | `backupNow` | callable (Admin) | Firestore-Export in den Backup-Bucket; der Client ruft das vor jedem Monatsabschluss auf (bricht bei Fehler ab) |
 | `weeklyBackup` | geplant (So 03:00 Wien) | Wöchentlicher Export in den Backup-Bucket |
 

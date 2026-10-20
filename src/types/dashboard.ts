@@ -258,84 +258,31 @@ const starterEmployee = (name: string, isNew: boolean): EmployeeRow => ({
   joinDate: isNew ? STARTER_JOIN_DATE : "",
 })
 
+/** Platzhalter für den lokalen Modus ohne Cloud — keine echten Personen. */
 export const STARTER_DATA: EmployeeRow[] = [
-  starterEmployee("Georg Kögerl", false),
-  starterEmployee("Elias Karner", false),
-  starterEmployee("Michael Posch", false),
-  starterEmployee("Tobias Zika", false),
-  starterEmployee("Tobias Trinker", false),
-  starterEmployee("David Lanicsek", false),
-  starterEmployee("Theresa Wagner", false),
-  starterEmployee("Isabella Zöhrer", false),
-  starterEmployee("Floria Cotirla", false),
-  starterEmployee("Delia Podlipnig", false),
-  starterEmployee("Sito Eckelhardt", false),
-  starterEmployee("Valentino Kahr", false),
-  starterEmployee("Denise Stickl", false),
-  starterEmployee("Madeleine Zugschwert", false),
-  starterEmployee("Kevin Hödl", false),
-  starterEmployee("Luis Simhandel", false),
-  starterEmployee("David Schrey", true),
-  starterEmployee("Erik Bindar", true),
-  starterEmployee("Lisa Simeon", true),
-  starterEmployee("Noah Vanek", true),
-  starterEmployee("Nico Kiem", true),
-  starterEmployee("Josef Nagel", true),
+  starterEmployee("Person A", false),
+  starterEmployee("Person B", false),
+  starterEmployee("Person C", false),
+  starterEmployee("Person D", false),
+  starterEmployee("Person E", true),
+  starterEmployee("Person F", true),
 ]
 
 export const SB_DEFAULT_TREE: SbNode = {
-  id: "koegerl",
-  name: "Kögerl",
+  id: "root",
+  name: "Person A",
   role: "Geschäftsstellenleiter",
   children: [
-    { id: "poetsn", name: "Pütün", role: "FT4", children: [] },
     {
-      id: "bindlar",
-      name: "Bindar",
-      role: "Geschäftsstellenleiter",
-      children: [
-        { id: "vanek", name: "Vanek", role: "Mitarbeiter", children: [] },
-        {
-          id: "schrey",
-          name: "Schrey",
-          role: "Mitarbeiterin",
-          children: [
-            { id: "niem", name: "Niem", role: "Mitarbeiter", children: [] },
-            { id: "nagl", name: "Nagl", role: "Mitarbeiterin", children: [] },
-          ],
-        },
-      ],
-    },
-    {
-      id: "posch",
-      name: "Posch",
+      id: "b",
+      name: "Person B",
       role: "Teamleiter",
       children: [
-        {
-          id: "hoedl",
-          name: "Hödl",
-          role: "FT 2",
-          children: [{ id: "skarget", name: "Skarget", role: "FT 1", children: [] }],
-        },
-        { id: "moser", name: "Moser", role: "FT 1", children: [] },
+        { id: "e", name: "Person E", role: "Mitarbeiter", children: [] },
+        { id: "f", name: "Person F", role: "Mitarbeiter", children: [] },
       ],
     },
-    { id: "podlipnig", name: "Podlipnig", role: "FT 3", children: [] },
-    {
-      id: "karner",
-      name: "Karner",
-      role: "Geschäftsstellenleiter",
-      children: [
-        {
-          id: "kahr",
-          name: "Kahr",
-          role: "FT 3",
-          children: [{ id: "cortirila", name: "Cortirila", role: "FT 1", children: [] }],
-        },
-        { id: "ekelhardt", name: "Ekelhardt", role: "FT 4", children: [] },
-        { id: "simion", name: "Simion", role: "FT 3", children: [] },
-        { id: "gaenser", name: "Gänser", role: "FT 4", children: [] },
-      ],
-    },
+    { id: "c", name: "Person C", role: "FT 3", children: [] },
+    { id: "d", name: "Person D", role: "FT 1", children: [] },
   ],
 }

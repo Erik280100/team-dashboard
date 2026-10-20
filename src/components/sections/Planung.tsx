@@ -168,7 +168,7 @@ export function Planung({
           people={filteredPeople}
           managerName={selectedManager}
           planung={planung}
-          isEditor
+          isEditor={isEditor}
           monthKey={unitsMonthKey}
           teamGroups={groupByLead ? filteredTeamGroups : null}
         />
@@ -180,7 +180,7 @@ export function Planung({
           unitsMonthKey={unitsMonthKey}
           people={filteredPeople}
           planung={planung}
-          isEditor
+          isEditor={isEditor}
           teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}

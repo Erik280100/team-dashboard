@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
+import { useAccountStates } from "@/hooks/useAccountStates"
 import { httpsCallable } from "firebase/functions"
 import { functions } from "@/lib/firebase"
 import { callableErrorText } from "@/lib/callableError"
@@ -394,14 +395,21 @@ export function StrukturBaum({
   const [accountEmail, setAccountEmail] = useState("")
   const [accountBusy, setAccountBusy] = useState(false)
   const [accountError, setAccountError] = useState<string | null>(null)
-  /** Konto wurde gerade erstellt: der Dialog zeigt nun den Anmelde-Link zum Weitergeben. */
+  /** Konto wurde gerade erstellt: der Dialog zeigt nun Einmal-Passwort und Anmelde-Link zum Weitergeben. */
   const [accountDone, setAccountDone] = useState(false)
+  const [accountPassword, setAccountPassword] = useState<string | null>(null)
+  // Kontodaten liegen in employees/{id}/private/account (nur Vorgesetzte/Admin lesbar) — nur für die gewählte Person laden.
+  const accountStates = useAccountStates(canManageAccount && selected ? [selected.id] : [])
+  const selAccount = selected ? accountStates[selected.id] ?? null : null
 
   async function createAccount() {
     if (!functions || !selected) return
     setAccountBusy(true); setAccountError(null)
     try {
-      await httpsCallable(functions, "createAccount")({ employeeId: selected.id, email: accountEmail.trim() })
+      const res = await httpsCallable<{ employeeId: string; email: string }, { uid: string; tempPassword: string }>(
+        functions, "createAccount",
+      )({ employeeId: selected.id, email: accountEmail.trim() })
+      setAccountPassword(res.data.tempPassword)
       setAccountDone(true)
     } catch (err) {
       setAccountError(callableErrorText(err))
@@ -1029,17 +1037,19 @@ export function StrukturBaum({
                 <div className="mb-1.5 font-semibold">Login</div>
                 {!selAccountEmp ? (
                   <p className="text-muted-foreground">Ein Useraccount kann erstellt werden, sobald die Person gespeichert ist.</p>
-                ) : !selAccountEmp.uid ? (
+                ) : !selAccount ? (
+                  <p className="text-muted-foreground">Lade …</p>
+                ) : !selAccount.uid ? (
                   <Button
                     size="sm" variant="outline"
-                    onClick={() => { setAccountEmail(selAccountEmp.email ?? ""); setAccountError(null); setAccountDone(false); setAccountOpen(true) }}
+                    onClick={() => { setAccountEmail(""); setAccountError(null); setAccountPassword(null); setAccountDone(false); setAccountOpen(true) }}
                   >
                     Useraccount erstellen
                   </Button>
-                ) : selAccountEmp.accountPending ? (
+                ) : selAccount.accountPending ? (
                   <div className="flex flex-col gap-2">
                     <p className="text-muted-foreground">
-                      Konto erstellt ({selAccountEmp.email}) — wartet auf die erste Anmeldung mit dem Startpasswort start1234.
+                      Konto erstellt ({selAccount.email}) — wartet auf die erste Anmeldung mit dem Einmal-Passwort.
                     </p>
                     <div className="font-medium">Anmelde-Link zum Weitergeben:</div>
                     <RegistrationLink />
@@ -1161,9 +1171,17 @@ export function StrukturBaum({
                 <DialogTitle>Useraccount erstellt</DialogTitle>
                 <DialogDescription>
                   {selected ? `${selected.name} kann sich jetzt anmelden.` : ""} Schick dieser Person den Link unten. Anmelden mit der
-                  E-Mail-Adresse {accountEmail.trim()} und dem Startpasswort start1234 — danach muss sie sofort ein eigenes Passwort festlegen.
+                  E-Mail-Adresse {accountEmail.trim()} und dem Einmal-Passwort — danach muss sie sofort ein eigenes Passwort festlegen.
+                  Das Einmal-Passwort wird nur jetzt angezeigt.
                 </DialogDescription>
               </DialogHeader>
+              {accountPassword && (
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Einmal-Passwort:</span>
+                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono">{accountPassword}</code>
+                  <Button size="sm" variant="outline" onClick={() => { void navigator.clipboard?.writeText(accountPassword) }}>Kopieren</Button>
+                </div>
+              )}
               <RegistrationLink />
               <DialogFooter>
                 <Button onClick={() => setAccountOpen(false)}>Fertig</Button>
@@ -1175,7 +1193,7 @@ export function StrukturBaum({
                 <DialogTitle>Useraccount erstellen</DialogTitle>
                 <DialogDescription>
                   {selected ? `Login für ${selected.name}. ` : ""}
-                  Startpasswort: start1234 — die Person muss es bei der ersten Anmeldung ändern.
+                  Es wird ein zufälliges Einmal-Passwort erzeugt — die Person muss es bei der ersten Anmeldung ändern.
                 </DialogDescription>
               </DialogHeader>
               <Input

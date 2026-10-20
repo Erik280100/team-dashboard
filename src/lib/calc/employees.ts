@@ -10,13 +10,25 @@ export interface EmployeeMeta {
   role: string
   managerId: string | null
   ancestors: string[]
+}
+
+/** Kontodaten (employees/{id}/private/account) — nur self/Vorgesetzte/Admin lesbar, daher nicht Teil von EmployeeMeta. */
+export interface AccountState {
   uid: string | null
   email: string | null
-  /** Konto erstellt, aber noch keine Passwortänderung beim ersten Login (Startpasswort gilt noch). */
+  /** Konto erstellt, aber das Einmal-Passwort wurde noch nicht durch ein eigenes ersetzt. */
   accountPending: boolean
 }
 
-/** Felder, die nie Teil einer EmployeeRow sind (gesperrt in firestore.rules). */
+export function accountStateOf(data: Record<string, unknown> | undefined): AccountState {
+  return {
+    uid: typeof data?.uid === "string" ? data.uid : null,
+    email: typeof data?.email === "string" ? data.email : null,
+    accountPending: data?.accountPending === true,
+  }
+}
+
+/** Felder, die nie Teil einer EmployeeRow sind (gesperrt in firestore.rules). uid/email/accountPending nur für Altbestand. */
 const META_KEYS = ["name", "role", "managerId", "ancestors", "uid", "email", "accountPending", "active", "createdAt"] as const
 
 export function employeeMetaOf(id: string, data: Record<string, unknown>): EmployeeMeta {
@@ -26,9 +38,6 @@ export function employeeMetaOf(id: string, data: Record<string, unknown>): Emplo
     role: String(data.role ?? ""),
     managerId: typeof data.managerId === "string" ? data.managerId : null,
     ancestors: Array.isArray(data.ancestors) ? data.ancestors.map(String) : [],
-    uid: typeof data.uid === "string" ? data.uid : null,
-    email: typeof data.email === "string" ? data.email : null,
-    accountPending: data.accountPending === true,
   }
 }
 

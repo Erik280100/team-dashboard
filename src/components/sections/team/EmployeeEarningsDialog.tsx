@@ -33,7 +33,7 @@ function draftFromEarnings(earnings: EmployeeEarnings): Record<PlanId, string> {
 }
 
 export function EmployeeEarningsDialog({
-  open, onOpenChange, name, role, earnings, isEditor, onSave, stornoreserveRate = 0,
+  open, onOpenChange, name, role, earnings, isEditor, canEditBonus = true, onSave, stornoreserveRate = 0,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -41,7 +41,9 @@ export function EmployeeEarningsDialog({
   role: string
   earnings: EmployeeEarnings
   isEditor: boolean
-  onSave: (units: Record<PlanId, number>, bonus: number) => void
+  /** false: Bonus nur anzeigen und nicht mitspeichern (die Person selbst darf ihn nicht setzen). */
+  canEditBonus?: boolean
+  onSave: (units: Record<PlanId, number>, bonus: number | undefined) => void
   /** Einbehaltener Anteil (0 = Stornoreserve aus). */
   stornoreserveRate?: number
 }) {
@@ -51,18 +53,17 @@ export function EmployeeEarningsDialog({
   // Entwurf neu aufsetzen, wenn der Dialog für eine (neue) Person geöffnet wird
   // — nicht bei jedem earnings-Update, sonst würden Tastatureingaben durch den
   // nächsten Render überschrieben.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (open) {
       setDraft(draftFromEarnings(earnings))
       setBonusDraft(String(earnings.bonus || 0))
     }
-  }, [open, name])
+  }, [open, name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSave() {
     const units = {} as Record<PlanId, number>
     PLAN_IDS.forEach((planId) => { units[planId] = Number(draft[planId]) || 0 })
-    onSave(units, Number(bonusDraft) || 0)
+    onSave(units, canEditBonus ? Number(bonusDraft) || 0 : undefined)
     onOpenChange(false)
   }
 
@@ -182,7 +183,7 @@ export function EmployeeEarningsDialog({
 
           <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
             <label htmlFor="bonus-input" className="font-medium">Bonus (manuell)</label>
-            {isEditor ? (
+            {isEditor && canEditBonus ? (
               <div className="flex items-center gap-1">
                 <input
                   id="bonus-input"
