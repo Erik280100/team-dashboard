@@ -82,6 +82,11 @@ service cloud.firestore {
     }
 
     // Monatsarchiv: Schreiben nur ueber die Cloud Function (Admin SDK).
+    // Meta-Dokument (Teamziel, Strukturbaum des Monats): alle Eingeloggten lesen.
+    match /snapshots/{month} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
     match /snapshots/{month}/employees/{empId} {
       allow read: if canAccessEmployee(empId);
       allow write: if false;

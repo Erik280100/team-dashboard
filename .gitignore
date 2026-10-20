@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Migration / Service-Account-Keys
+migration-preview.json
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
