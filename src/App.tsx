@@ -91,7 +91,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const dashboard = useDashboardDoc(auth)
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
-  const planung = usePlanungDoc()
+  const planung = usePlanungDoc(dashboard.employees)
   const finanzierungen = useFinanzierungenDoc()
   const erikTodos = useErikTodosDoc()
   const archive = useMonthArchive(auth.isEditor)
