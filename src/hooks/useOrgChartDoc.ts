@@ -2,9 +2,10 @@
 // org/structure. Lesen: alle Eingeloggten; Schreiben: nur Admin (firestore.rules).
 // Kein localStorage-Cache im Cloud-Modus (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
-import { onSnapshot, setDoc } from "firebase/firestore"
-import { CLOUD_CONFIGURED, orgDocRef } from "@/lib/firebase"
-import { withDefaultPlanRates } from "@/lib/calc/struktur"
+import { getDoc, onSnapshot, setDoc } from "firebase/firestore"
+import { httpsCallable } from "firebase/functions"
+import { CLOUD_CONFIGURED, functions, orgDocRef } from "@/lib/firebase"
+import { sbAll, sbFind, withDefaultPlanRates } from "@/lib/calc/struktur"
 import { SB_DEFAULT_TREE, SB_STORAGE_KEY, type OrgChartDoc } from "@/types/dashboard"
 
 function loadLocalOrgChart(): OrgChartDoc {
@@ -45,11 +46,40 @@ export interface UseOrgChartDocResult extends OrgChartDoc {
   saveOrgChart: (next: OrgChartDoc) => void
 }
 
-export function useOrgChartDoc(isAdmin = false): UseOrgChartDocResult {
+/** Was ein Nicht-Admin an die Cloud Function schickt: die Kinder des eigenen Knotens + deren Notizen/Verbindungen. */
+export function subtreePayload(doc: OrgChartDoc, myNodeId: string) {
+  const me = sbFind(doc.tree, myNodeId)
+  const children = JSON.parse(JSON.stringify(me?.children ?? [])) as OrgChartDoc["tree"][]
+  const ids = new Set(children.flatMap((c) => sbAll(c).map((n) => n.id)))
+  return {
+    children,
+    notes: Object.fromEntries(Object.entries(doc.notes).filter(([id]) => ids.has(id))),
+    conns: doc.conns.filter((c) => ids.has(c.from) && ids.has(c.to)),
+  }
+}
+
+/**
+ * Admin schreibt org/structure direkt; alle anderen ändern über die Cloud Function updateSubtree nur
+ * unterhalb ihres eigenen Knotens (`myNodeId` = Mitarbeiter-ID = Knoten-ID).
+ */
+export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null): UseOrgChartDocResult {
   const [doc, setDocState] = useState<OrgChartDoc>(loadLocalOrgChart)
   const cloudReady = useRef(false)
   const latest = useRef(doc)
   latest.current = doc
+
+  function applyServerData(raw: unknown) {
+    const data = (raw || {}) as Partial<OrgChartDoc>
+    if (data.tree && typeof data.tree === "object") {
+      setDocState({
+        tree: data.tree,
+        notes: data.notes || {},
+        conns: data.conns || [],
+        rates: data.rates || {},
+        planRates: withDefaultPlanRates(data.planRates),
+      })
+    }
+  }
 
   useEffect(() => {
     const docRef = orgDocRef("structure")
@@ -61,19 +91,7 @@ export function useOrgChartDoc(isAdmin = false): UseOrgChartDocResult {
         // Nur Server-Stände zählen: ein Cache-Snapshot ("Dokument fehlt"/veraltet) darf weder
         // die Cloud mit lokalem Altstand überschreiben (setDoc) noch Schreiben freischalten.
         if (snap.metadata.fromCache) return
-        if (snap.exists()) {
-          const data = (snap.data() || {}) as Partial<OrgChartDoc>
-          if (data.tree && typeof data.tree === "object") {
-            const next: OrgChartDoc = {
-              tree: data.tree,
-              notes: data.notes || {},
-              conns: data.conns || [],
-              rates: data.rates || {},
-              planRates: withDefaultPlanRates(data.planRates),
-            }
-            setDocState(next)
-          }
-        }
+        if (snap.exists()) applyServerData(snap.data())
         // Kein Anlegen bei fehlendem Dokument: org/structure erzeugt die Migration, nie ein leerer Client-Stand.
         cloudReady.current = true
       },
@@ -89,12 +107,21 @@ export function useOrgChartDoc(isAdmin = false): UseOrgChartDocResult {
       return
     }
     const docRef = orgDocRef("structure")
-    if (isAdmin && cloudReady.current && docRef) {
+    if (!cloudReady.current || !docRef) return
+    if (isAdmin) {
       setDoc(docRef, next).catch((err) =>
         console.warn("Strukturbaum: Cloud-Speichern fehlgeschlagen", err)
       )
+      return
     }
-  }, [isAdmin])
+    if (!myNodeId || !functions) return
+    httpsCallable(functions, "updateSubtree")(subtreePayload(next, myNodeId)).catch(async (err) => {
+      console.warn("Strukturbaum: Änderung abgelehnt", err)
+      alert("Die Änderung konnte nicht gespeichert werden: " + (err instanceof Error ? err.message : String(err)))
+      // Optimistische Anzeige zurücksetzen auf den Stand der Cloud.
+      try { applyServerData((await getDoc(docRef)).data()) } catch { /* noop */ }
+    })
+  }, [isAdmin, myNodeId])
 
   return { ...doc, saveOrgChart }
 }

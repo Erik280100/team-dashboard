@@ -9,6 +9,7 @@ import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
 import { collectPeople, type SbNode } from "./structure"
 import { exportFirestore } from "./backup"
+import { applySubtreeUpdate, SubtreeError, type OrgStructure, type SubtreeInput } from "./subtree"
 import { computeMonthStats, monthKeyFromGoal, monthWeekKeys } from "./planStats"
 
 initializeApp()
@@ -167,6 +168,36 @@ export const onStructureChange = onDocumentWritten({ document: "org/structure", 
   }
   batches.push(batch)
   for (const b of batches) await b.commit()
+})
+
+/**
+ * Strukturbaum ändern (jedes Konto mit verknüpftem Mitarbeiter): erlaubt sind nur Änderungen UNTERHALB des
+ * eigenen Knotens (hinzufügen, ändern, verschieben, entfernen). Der Client schickt die Kinder des eigenen
+ * Knotens samt Notizen/Verbindungen; der Rest von org/structure (andere Äste, Stufensätze) bleibt unangetastet.
+ * onStructureChange zieht danach employees/ancestors/Finanzierungen nach.
+ */
+export const updateSubtree = onCall({ region: REGION }, async (req) => {
+  const token = req.auth?.token
+  if (!token) throw new HttpsError("unauthenticated", "Bitte anmelden.")
+  if (token.mustChangePassword === true) throw new HttpsError("permission-denied", "Bitte zuerst das Passwort ändern.")
+  const employeeId = token.employeeId
+  if (typeof employeeId !== "string" || !employeeId) {
+    throw new HttpsError("permission-denied", "Dein Konto ist mit keinem Mitarbeiter verknüpft.")
+  }
+  const input = (req.data ?? {}) as SubtreeInput
+  const ref = db.doc("org/structure")
+  try {
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref)
+      if (!snap.exists) throw new SubtreeError("Strukturbaum fehlt.")
+      const next = applySubtreeUpdate(snap.data() as OrgStructure, employeeId, input)
+      tx.update(ref, { tree: next.tree, notes: next.notes, conns: next.conns })
+    })
+  } catch (err) {
+    if (err instanceof SubtreeError) throw new HttpsError("failed-precondition", err.message)
+    throw err
+  }
+  return { ok: true }
 })
 
 /**

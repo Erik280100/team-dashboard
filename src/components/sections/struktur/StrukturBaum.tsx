@@ -139,13 +139,17 @@ function detachNode(root: SbNode, id: string): SbNode | null {
 }
 
 export function StrukturBaum({
-  doc, rows, isEditor, saveOrgChart,
+  doc, rows, isEditor, isAdmin, myNodeId, saveOrgChart,
 }: {
   doc: OrgChartDoc
   /** Leistungszahlen (Einheiten je Karriereplan) für den Beförderungs-Fortschritt,
    * siehe lib/calc/befoerderung.ts — live dashboard.rows oder ein Archiv-Snapshot. */
   rows: EmployeeRow[]
+  /** Bearbeiten grundsätzlich möglich (nicht im Archiv). Welche Knoten, regeln isAdmin/myNodeId. */
   isEditor: boolean
+  /** Admin darf alles; alle anderen nur unter sich selbst (Knoten myNodeId) — der eigene Knoten bleibt read-only. */
+  isAdmin: boolean
+  myNodeId: string | null
   saveOrgChart: (next: OrgChartDoc) => void
 }) {
   const confirm = useConfirm()
@@ -323,6 +327,25 @@ export function StrukturBaum({
     }
   }
 
+  // ---- Rechte: Admin alles, sonst nur Knoten unterhalb des eigenen ----
+  const underMe = useMemo(() => {
+    const ids = new Set<string>()
+    const me = myNodeId ? sbFind(doc.tree, myNodeId) : null
+    if (me) sbAll(me).forEach((n) => { if (n.id !== me.id) ids.add(n.id) })
+    return ids
+  }, [doc.tree, myNodeId])
+  /** Ändern, löschen, verschieben, Notizen: Admin überall, sonst nur unterhalb des eigenen Knotens. */
+  const canEditNode = useCallback(
+    (id: string) => isEditor && (isAdmin || underMe.has(id)),
+    [isEditor, isAdmin, underMe]
+  )
+  /** Person hinzufügen / hierhin verschieben: zusätzlich direkt unter dem eigenen Knoten. */
+  const canAddUnder = useCallback(
+    (id: string) => isEditor && (isAdmin || id === myNodeId || underMe.has(id)),
+    [isEditor, isAdmin, myNodeId, underMe]
+  )
+  const selEditable = !!selected && canEditNode(selected.id)
+
   function persist(patch: Partial<OrgChartDoc>) {
     saveOrgChart({ ...doc, ...patch })
   }
@@ -343,11 +366,11 @@ export function StrukturBaum({
   // ---- Drag & Drop (Umgliedern) ----
   const onNodePointerDown = useCallback(
     (e: React.PointerEvent, n: SbNode) => {
-      if (!isEditor || linkMode || n.id === doc.tree.id) return
+      if (!canEditNode(n.id) || linkMode || n.id === doc.tree.id) return
       dragRef.current = { nodeId: n.id, active: false, startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY, targetId: null }
       closePanel()
     },
-    [isEditor, linkMode, doc.tree.id]
+    [canEditNode, linkMode, doc.tree.id]
   )
 
   useEffect(() => {
@@ -366,7 +389,7 @@ export function StrukturBaum({
         const nd = el?.closest<HTMLElement>("[data-sb-node]")
         if (nd) {
           const tid = nd.dataset.sbNode!
-          if (!dragDescendants.has(tid) && tid !== d.nodeId) targetId = tid
+          if (!dragDescendants.has(tid) && tid !== d.nodeId && canAddUnder(tid)) targetId = tid
         }
         d.targetId = targetId
         setDragTick((t) => t + 1)
@@ -409,12 +432,13 @@ export function StrukturBaum({
 
   // ---- Linienmodus ----
   function toggleLinkMode() {
-    if (!isEditor) return
+    if (!isEditor || (!isAdmin && underMe.size === 0)) return
     setLinkMode((v) => !v)
     setLinkSrc(null)
     closePanel()
   }
   function onLinkClick(n: SbNode) {
+    if (!canEditNode(n.id)) return // Linien nur zwischen Knoten, die man bearbeiten darf
     if (!linkSrc) {
       setLinkSrc(n.id)
     } else if (linkSrc === n.id) {
@@ -461,14 +485,15 @@ export function StrukturBaum({
   }
 
   async function deleteConn(idx: number) {
-    if (!isEditor) return
+    const conn = doc.conns[idx]
+    if (!conn || !canEditNode(conn.from) || !canEditNode(conn.to)) return
     if (!(await confirm("Verbindung löschen?"))) return
     const conns = doc.conns.filter((_, i) => i !== idx)
     persist({ conns })
   }
 
   async function deleteNode(id: string) {
-    if (!isEditor) return
+    if (!canEditNode(id)) return
     const n = sbFind(doc.tree, id)
     if (!n) return
     const cnt = sbAll(n).length - 1
@@ -485,7 +510,7 @@ export function StrukturBaum({
   // nichts davon wird beim Ändern automatisch übernommen (anders als im Original,
   // wo Farbe/Status sofort speicherten; auf Nutzerwunsch vereinheitlicht).
   function saveFields() {
-    if (!selectedId || !isEditor) return
+    if (!selectedId || !canEditNode(selectedId)) return
     const name = nameDraft.trim()
     if (!name) { alert("Name darf nicht leer sein."); return }
     const next = deepClone(doc.tree)
@@ -500,7 +525,7 @@ export function StrukturBaum({
     }
   }
   function addNote() {
-    if (!isEditor || !selectedId) return
+    if (!selectedId || !canEditNode(selectedId)) return
     const text = noteDraft.trim()
     if (!text) return
     const d = new Date()
@@ -510,7 +535,7 @@ export function StrukturBaum({
     setNoteDraft("")
   }
   function deleteNote(i: number) {
-    if (!isEditor || !selectedId) return
+    if (!selectedId || !canEditNode(selectedId)) return
     const list = [...(doc.notes[selectedId] || [])]
     list.splice(i, 1)
     persist({ notes: { ...doc.notes, [selectedId]: list } })
@@ -528,7 +553,7 @@ export function StrukturBaum({
     return draft
   }
   function openRates() {
-    if (!isEditor) return
+    if (!isEditor || !isAdmin) return
     setRatesDraft(draftFromPlanRates(withDefaultPlanRates(doc.planRates)))
     setRatesOpen(true)
   }
@@ -634,12 +659,12 @@ export function StrukturBaum({
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{totalPeople} Mitarbeiter erfasst</span>
           {totalNotes > 0 && <span>{totalNotes} Notiz{totalNotes === 1 ? "" : "en"}</span>}
-          {isEditor && (
+          {isEditor && (isAdmin || underMe.size > 0) && (
             <Button size="sm" variant={linkMode ? "default" : "ghost"} onClick={toggleLinkMode}>
               🔗 Linie hinzufügen
             </Button>
           )}
-          {isEditor && <Button size="sm" variant="ghost" onClick={openRates}>💶 Stufensätze</Button>}
+          {isEditor && isAdmin && <Button size="sm" variant="ghost" onClick={openRates}>💶 Stufensätze</Button>}
           <Button size="sm" variant="ghost" onClick={toggleFullscreen}>
             {fullscreen ? "⤢ Vollbild beenden" : "⛶ Vollbild"}
           </Button>
@@ -732,7 +757,7 @@ export function StrukturBaum({
                       {statusDef.label}
                     </span>
                   )}
-                  {isEditor && (
+                  {canAddUnder(n.id) && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openAddChild(n.id) }}
@@ -789,13 +814,13 @@ export function StrukturBaum({
 
             <label className="mb-3 flex flex-col gap-1 text-xs text-muted-foreground">
               Name
-              <Input value={nameDraft} disabled={!isEditor} onChange={(e) => setNameDraft(e.target.value)} />
+              <Input value={nameDraft} disabled={!selEditable} onChange={(e) => setNameDraft(e.target.value)} />
             </label>
             <label className="mb-3 flex flex-col gap-1 text-xs text-muted-foreground">
               Bezeichnung / Rolle
               <select
                 value={roleDraft}
-                disabled={!isEditor}
+                disabled={!selEditable}
                 onChange={(e) => setRoleDraft(e.target.value)}
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm"
               >
@@ -809,14 +834,14 @@ export function StrukturBaum({
               <div className="flex flex-wrap gap-1.5">
                 {SB_COLORS.map((c) => (
                   <button
-                    key={c.key} type="button" disabled={!isEditor} title={c.label}
+                    key={c.key} type="button" disabled={!selEditable} title={c.label}
                     onClick={() => setColorDraft(c.key)}
                     className={cn("size-6 rounded-full border-2", colorDraft === c.key ? "border-foreground" : "border-transparent")}
                     style={{ background: c.hex }}
                   />
                 ))}
                 <button
-                  type="button" disabled={!isEditor} title="Keine Farbe" onClick={() => setColorDraft(null)}
+                  type="button" disabled={!selEditable} title="Keine Farbe" onClick={() => setColorDraft(null)}
                   className={cn("flex size-6 items-center justify-center rounded-full border text-xs", !colorDraft && "border-foreground")}
                 >
                   ✕
@@ -828,14 +853,14 @@ export function StrukturBaum({
               <div className="flex flex-wrap gap-1.5">
                 {SB_COLORS.map((c) => (
                   <button
-                    key={c.key} type="button" disabled={!isEditor} title={c.label}
+                    key={c.key} type="button" disabled={!selEditable} title={c.label}
                     onClick={() => setColor2Draft(c.key)}
                     className={cn("size-6 rounded-full border-2", color2Draft === c.key ? "border-foreground" : "border-transparent")}
                     style={{ background: c.hex }}
                   />
                 ))}
                 <button
-                  type="button" disabled={!isEditor} title="Keine zweite Farbe" onClick={() => setColor2Draft(null)}
+                  type="button" disabled={!selEditable} title="Keine zweite Farbe" onClick={() => setColor2Draft(null)}
                   className={cn("flex size-6 items-center justify-center rounded-full border text-xs", !color2Draft && "border-foreground")}
                 >
                   ✕
@@ -847,7 +872,7 @@ export function StrukturBaum({
               Status
               <select
                 value={statusDraft}
-                disabled={!isEditor}
+                disabled={!selEditable}
                 onChange={(e) => setStatusDraft(e.target.value)}
                 className="h-9 rounded-md border border-input bg-background px-2 text-sm"
               >
@@ -924,12 +949,12 @@ export function StrukturBaum({
               </div>
             )}
 
-            {isEditor && <Button size="sm" onClick={saveFields} className="mb-4 w-full">Speichern</Button>}
+            {selEditable && <Button size="sm" onClick={saveFields} className="mb-4 w-full">Speichern</Button>}
 
-            {isEditor && (
+            {canAddUnder(selected.id) && (
               <div className="mb-4 flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => openAddChild(selected.id)}>+ Person hinzufügen</Button>
-                {selected.id !== doc.tree.id && (
+                {selEditable && selected.id !== doc.tree.id && (
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => deleteNode(selected.id)}>Löschen</Button>
                 )}
               </div>
@@ -950,7 +975,7 @@ export function StrukturBaum({
                           <div className="font-medium">{dir} {other}</div>
                           {c.label && <div className="text-muted-foreground">{c.label}</div>}
                         </div>
-                        {isEditor && (
+                        {canEditNode(c.from) && canEditNode(c.to) && (
                           <button type="button" onClick={() => deleteConn(i)} className="text-muted-foreground hover:text-destructive">✕</button>
                         )}
                       </div>
@@ -971,7 +996,7 @@ export function StrukturBaum({
                       <div>{nt.text}</div>
                       <div className="text-muted-foreground">{nt.date}</div>
                     </div>
-                    {isEditor && (
+                    {selEditable && (
                       <button type="button" onClick={() => deleteNote(i)} className="text-muted-foreground hover:text-destructive">✕</button>
                     )}
                   </div>
@@ -979,7 +1004,7 @@ export function StrukturBaum({
               )}
             </div>
 
-            {isEditor && (
+            {selEditable && (
               <div className="mt-auto flex flex-col gap-2 border-t pt-3">
                 <div className="text-xs font-medium">Notiz hinzufügen</div>
                 <textarea

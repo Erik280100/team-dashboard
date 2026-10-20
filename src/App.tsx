@@ -112,7 +112,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
     [accessibleNames]
   )
   const attendance = useAttendanceDoc(accessibleEmployees)
-  const orgChart = useOrgChartDoc(auth.isAdmin)
+  const orgChart = useOrgChartDoc(auth.isAdmin, auth.employeeId)
   const planung = usePlanungDoc(accessibleEmployees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
   const erikTodos = useErikTodosDoc(auth.employeeId)
@@ -447,7 +447,9 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     key={archiveMonth ?? "live"}
                     doc={view.orgDoc}
                     rows={view.rows}
-                    isEditor={auth.isAdmin && !isArchive}
+                    isEditor={auth.isEditor && !isArchive}
+                    isAdmin={auth.isAdmin}
+                    myNodeId={auth.employeeId}
                     saveOrgChart={isArchive ? blocked : orgChart.saveOrgChart}
                   />
                 )
