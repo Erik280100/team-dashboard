@@ -90,6 +90,9 @@ export function useAuth(): UseAuthResult {
   async function signOut() {
     if (!auth) return
     await firebaseSignOut(auth)
+    // Seite komplett neu laden: wirft alle Daten des bisherigen Kontos aus dem Speicher (Datenschutz) und
+    // vermeidet, dass der Firestore-Client nach dem Kontowechsel mit altem Zustand hängen bleibt.
+    window.location.reload()
   }
 
   const isAdmin = !!user && account.role === "admin"
