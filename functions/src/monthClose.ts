@@ -90,7 +90,18 @@ export async function closePastMonths(db: Firestore, now = new Date()): Promise<
     const goalData = goalSnap.data()
     if (!goalData || typeof goalData.teamGoal !== "object" || !goalData.teamGoal) return closed
     const month = shared.monthKeyOf(goalData.teamGoal as Record<string, unknown>)
-    if (!(month < viennaMonth(now))) return closed
+    const current = viennaMonth(now)
+    if (!(month < current)) return closed
+    // Nur der unmittelbare Vormonat wird automatisch abgeschlossen. Steht das Teamziel weiter zurück (z. B. nach
+    // einer Pause), wären alle übersprungenen Monate mit denselben aktuellen Zahlen archiviert — das muss der
+    // Admin bewusst von Hand klären.
+    const [cy, cm] = current.split("-").map(Number)
+    const prev = new Date(cy, cm - 2, 1)
+    const previousMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`
+    if (month < previousMonth) {
+      console.error(`Automatischer Abschluss übersprungen: offener Monat ${month} liegt mehr als einen Monat zurück (aktuell ${current}). Bitte von Hand abschließen.`)
+      return closed
+    }
     await closeOne(db, shared, month, goalData)
     closed.push(month)
   }
