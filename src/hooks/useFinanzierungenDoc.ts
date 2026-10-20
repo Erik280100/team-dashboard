@@ -55,7 +55,7 @@ function stripOwner(c: StoredCase): FinanzierungCase {
   return rest
 }
 
-export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", employeeId: null }, employees: readonly EmployeeMeta[] = []): UseFinanzierungenDocResult {
+export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", employeeId: null, mustChangePassword: false }, employees: readonly EmployeeMeta[] = []): UseFinanzierungenDocResult {
   const isAdmin = account.role === "admin"
   const myId = account.employeeId
   const [cases, setCases] = useState<FinanzierungCase[]>(loadLocalCases)

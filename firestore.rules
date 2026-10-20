@@ -12,7 +12,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function signedIn() { return request.auth != null; }
+    // Wer sein Startpasswort noch nicht geaendert hat (Claim mustChangePassword), darf nichts lesen/schreiben.
+    function signedIn() { return request.auth != null && !request.auth.token.get('mustChangePassword', false); }
     function role() { return request.auth.token.get('role', ''); }
     function myEmp() { return request.auth.token.get('employeeId', ''); }
     function isAdmin() { return signedIn() && role() == 'admin'; }

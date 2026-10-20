@@ -6,13 +6,17 @@
 // App im lokalen Modus (wie bisher), dann gibt es keinen Login.
 import { useEffect, useState } from "react"
 import {
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
+  updatePassword,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { httpsCallable } from "firebase/functions"
+import { auth, functions } from "@/lib/firebase"
 import { accountFromClaims, type AccountInfo } from "@/lib/calc/roles"
 
 type Result = { ok: true } | { ok: false; message: string }
@@ -27,10 +31,12 @@ export interface UseAuthResult extends AccountInfo {
   ready: boolean
   signIn: (email: string, password: string) => Promise<Result>
   resetPassword: (email: string) => Promise<Result>
+  /** Passwort ändern (mit Bestätigung des aktuellen). Hebt bei Erstanmeldung die Änderungspflicht auf. */
+  changePassword: (current: string, next: string) => Promise<Result>
   signOut: () => Promise<void>
 }
 
-const NO_ACCOUNT: AccountInfo = { role: "member", employeeId: null }
+const NO_ACCOUNT: AccountInfo = { role: "member", employeeId: null, mustChangePassword: false }
 
 function loginErrorMessage(err: unknown): string {
   const code = typeof err === "object" && err && "code" in err ? String((err as { code: unknown }).code) : ""
@@ -87,6 +93,42 @@ export function useAuth(): UseAuthResult {
     return { ok: true }
   }
 
+  async function changePassword(current: string, next: string): Promise<Result> {
+    const u = auth?.currentUser
+    if (!u || !u.email) return { ok: false, message: "Nicht angemeldet." }
+    if (next.length < 8) return { ok: false, message: "Das neue Passwort muss mindestens 8 Zeichen haben." }
+    if (next === current) return { ok: false, message: "Das neue Passwort muss sich vom alten unterscheiden." }
+    try {
+      await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, current))
+    } catch {
+      return { ok: false, message: "Das aktuelle Passwort ist nicht korrekt." }
+    }
+    try {
+      await updatePassword(u, next)
+    } catch (err) {
+      const code = typeof err === "object" && err && "code" in err ? String((err as { code: unknown }).code) : ""
+      const weak = code.includes("weak-password")
+      return { ok: false, message: weak ? "Das neue Passwort ist zu schwach." : "Das Passwort konnte nicht geändert werden." }
+    }
+    if (account.mustChangePassword) {
+      try {
+        if (!functions) throw new Error("Functions nicht verfügbar")
+        await httpsCallable(functions, "completePasswordChange")()
+      } catch (err) {
+        console.error("Änderungspflicht konnte nicht aufgehoben werden", err)
+        return { ok: false, message: "Das Passwort wurde geändert, die Freischaltung ist aber fehlgeschlagen. Bitte neu anmelden." }
+      }
+    }
+    // Neue Claims (ohne Pflicht) übernehmen.
+    try {
+      const token = await u.getIdTokenResult(true)
+      setAccount(accountFromClaims(token.claims))
+    } catch (err) {
+      console.error("Token konnte nicht erneuert werden", err)
+    }
+    return { ok: true }
+  }
+
   async function signOut() {
     if (!auth) return
     await firebaseSignOut(auth)
@@ -104,6 +146,7 @@ export function useAuth(): UseAuthResult {
     ready,
     signIn,
     resetPassword,
+    changePassword,
     signOut,
   }
 }

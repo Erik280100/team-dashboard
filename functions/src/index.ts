@@ -1,5 +1,6 @@
 // Cloud Functions für das Team-Dashboard (Konten, Struktur-Sync, Backups).
 // Einrichtung/Berechtigungen: siehe ../README.md.
+import { randomInt } from "node:crypto"
 import { initializeApp } from "firebase-admin/app"
 import { getAuth } from "firebase-admin/auth"
 import { FieldValue, getFirestore, type WriteBatch } from "firebase-admin/firestore"
@@ -20,15 +21,25 @@ function requireAdmin(token: Record<string, unknown> | undefined) {
   if (token?.role !== "admin") throw new HttpsError("permission-denied", "Nur für Admins.")
 }
 
+/** Zufälliges Startpasswort (ohne verwechselbare Zeichen). Gilt nur bis zur ersten Anmeldung. */
+function tempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+  return Array.from({ length: 14 }, () => chars[randomInt(chars.length)]).join("")
+}
+
 /**
  * Konto für einen Mitarbeiter anlegen/aktualisieren (Admin).
- * Setzt die Rolle als Custom Claim (role, employeeId), verknüpft employees/{id}.uid
- * und liefert einen Link zum Passwort-Setzen zurück (Firebase verschickt über das
- * Admin SDK keine E-Mail — den Link gibt der Admin weiter).
+ * Neues Konto: Startpasswort wird erzeugt und einmalig zurückgegeben, der Claim
+ * mustChangePassword erzwingt die Änderung bei der ersten Anmeldung (firestore.rules sperrt bis dahin
+ * jeden Datenzugriff). Bestehendes Konto: Rolle wird aktualisiert; mit resetPassword=true gibt es
+ * ein neues Startpasswort (und wieder Änderungspflicht).
+ * Setzt die Custom Claims (role, employeeId) und verknüpft employees/{id}.uid.
  */
 export const inviteUser = onCall({ region: REGION }, async (req) => {
   requireAdmin(req.auth?.token)
-  const { email, employeeId, role } = (req.data ?? {}) as { email?: string; employeeId?: string; role?: string }
+  const { email, employeeId, role, resetPassword } = (req.data ?? {}) as {
+    email?: string; employeeId?: string; role?: string; resetPassword?: boolean
+  }
   if (!email || !employeeId || !isRole(role)) {
     throw new HttpsError("invalid-argument", "email, employeeId und role (admin|lead|member) sind nötig.")
   }
@@ -40,25 +51,53 @@ export const inviteUser = onCall({ region: REGION }, async (req) => {
 
   const auth = getAuth()
   let uid: string
+  let mustChange = false
+  let password: string | null = null
   try {
     const user = await auth.getUserByEmail(email)
     if (existingUid && existingUid !== user.uid) {
       throw new HttpsError("already-exists", "Dieser Mitarbeiter ist bereits mit einem anderen Konto verknüpft.")
     }
     uid = user.uid
+    mustChange = user.customClaims?.mustChangePassword === true
+    if (resetPassword) {
+      password = tempPassword()
+      await auth.updateUser(uid, { password, disabled: false })
+      mustChange = true
+    }
   } catch (err) {
     if (err instanceof HttpsError) throw err
     if (existingUid) {
       throw new HttpsError("already-exists", "Dieser Mitarbeiter hat bereits ein Konto mit einer anderen E-Mail-Adresse.")
     }
-    uid = (await auth.createUser({ email })).uid
+    password = tempPassword()
+    uid = (await auth.createUser({ email, password })).uid
+    mustChange = true
   }
 
-  await auth.setCustomUserClaims(uid, { role, employeeId })
+  await auth.setCustomUserClaims(uid, { role, employeeId, ...(mustChange ? { mustChangePassword: true } : {}) })
   await db.doc(`users/${uid}`).set({ role, employeeId, email }, { merge: true })
   await empRef.update({ uid, email })
-  const resetLink = await auth.generatePasswordResetLink(email)
-  return { uid, resetLink }
+  // Bei einer Rollenänderung sollen laufende Sitzungen die neuen Claims bald übernehmen.
+  await auth.revokeRefreshTokens(uid)
+  return { uid, tempPassword: password }
+})
+
+/**
+ * Angemeldeter Nutzer hat sein Passwort geändert -> Pflicht-Claim entfernen.
+ * Prüft, dass die Anmeldung frisch ist (Passwort wurde gerade eingegeben).
+ */
+export const completePasswordChange = onCall({ region: REGION }, async (req) => {
+  const uid = req.auth?.uid
+  if (!uid) throw new HttpsError("unauthenticated", "Bitte anmelden.")
+  const authTime = Number(req.auth?.token.auth_time ?? 0)
+  if (Date.now() / 1000 - authTime > 15 * 60) {
+    throw new HttpsError("failed-precondition", "Bitte erneut anmelden und das Passwort noch einmal ändern.")
+  }
+  const user = await getAuth().getUser(uid)
+  const { mustChangePassword: _drop, ...claims } = user.customClaims ?? {}
+  await getAuth().setCustomUserClaims(uid, claims)
+  return { ok: true }
 })
 
 /** Konto sperren (Admin): Login wird deaktiviert, Daten bleiben erhalten. */

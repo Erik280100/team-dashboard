@@ -1,7 +1,7 @@
 // Hauptnavigation — Äquivalent zur .sidebar-Nav aus legacy/index.html:1571–1588.
 import {
   LayoutDashboard, Users, Network, BarChart3, CalendarRange, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
-  KanbanSquare, UserCog,
+  KanbanSquare, UserCog, Settings,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -117,6 +117,24 @@ export function Sidebar({
           >
             <KanbanSquare aria-hidden="true" className="size-4 shrink-0" />
             Mein Board
+          </button>
+          <button
+            type="button"
+            data-section="einstellungen"
+            aria-current={section === "einstellungen" ? "page" : undefined}
+            onClick={() => {
+              onNavigate("einstellungen")
+              onClose()
+            }}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
+              section === "einstellungen"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
+                : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            )}
+          >
+            <Settings aria-hidden="true" className="size-4 shrink-0" />
+            Einstellungen
           </button>
           <div className="px-2 pt-1 text-xs text-sidebar-foreground/60">
             <strong className="block text-sidebar-foreground">Grenzgasse 1</strong>

@@ -3,20 +3,24 @@ import { accountFromClaims, canEditEmployee } from "@/lib/calc/roles"
 
 describe("accountFromClaims", () => {
   it("liest Rolle und employeeId", () => {
-    expect(accountFromClaims({ role: "lead", employeeId: "e1" })).toEqual({ role: "lead", employeeId: "e1" })
+    expect(accountFromClaims({ role: "lead", employeeId: "e1" })).toEqual({ role: "lead", employeeId: "e1", mustChangePassword: false })
   })
   it("Konten ohne Claims gelten im Übergang als Admin", () => {
-    expect(accountFromClaims({})).toEqual({ role: "admin", employeeId: null })
-    expect(accountFromClaims(null)).toEqual({ role: "admin", employeeId: null })
+    expect(accountFromClaims({})).toEqual({ role: "admin", employeeId: null, mustChangePassword: false })
+    expect(accountFromClaims(null)).toEqual({ role: "admin", employeeId: null, mustChangePassword: false })
   })
   it("ungültige Rolle / leere ID werden nicht übernommen", () => {
-    expect(accountFromClaims({ role: "root", employeeId: "" })).toEqual({ role: "admin", employeeId: null })
+    expect(accountFromClaims({ role: "root", employeeId: "" })).toEqual({ role: "admin", employeeId: null, mustChangePassword: false })
+  })
+  it("liest den Pflicht-Claim für die Passwortänderung (nur echtes true)", () => {
+    expect(accountFromClaims({ role: "member", employeeId: "m", mustChangePassword: true }).mustChangePassword).toBe(true)
+    expect(accountFromClaims({ role: "member", mustChangePassword: "ja" }).mustChangePassword).toBe(false)
   })
 })
 
 describe("canEditEmployee", () => {
-  const member = { role: "member", employeeId: "m1" } as const
-  const lead = { role: "lead", employeeId: "lead" } as const
+  const member = { role: "member", employeeId: "m1", mustChangePassword: false } as const
+  const lead = { role: "lead", employeeId: "lead", mustChangePassword: false } as const
   it("Mitarbeiter nur sich selbst", () => {
     expect(canEditEmployee(member, "m1", ["lead"])).toBe(true)
     expect(canEditEmployee(member, "m2", ["lead"])).toBe(false)
@@ -27,8 +31,8 @@ describe("canEditEmployee", () => {
     expect(canEditEmployee(lead, "other", ["boss2"])).toBe(false)
   })
   it("Admin alles; Konto ohne Verknüpfung nichts", () => {
-    expect(canEditEmployee({ role: "admin", employeeId: null }, "x", [])).toBe(true)
-    expect(canEditEmployee({ role: "member", employeeId: null }, "x", [])).toBe(false)
+    expect(canEditEmployee({ role: "admin", employeeId: null, mustChangePassword: false }, "x", [])).toBe(true)
+    expect(canEditEmployee({ role: "member", employeeId: null, mustChangePassword: false }, "x", [])).toBe(false)
   })
 })
 

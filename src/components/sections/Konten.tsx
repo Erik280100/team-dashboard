@@ -1,7 +1,7 @@
 // Konten (nur Admin) — Logins für Mitarbeiter anlegen, Rolle setzen, Konten sperren.
-// Ruft die Cloud Functions inviteUser/disableUser auf (functions/src/index.ts). Firebase
-// verschickt über das Admin SDK keine E-Mail: Der Link zum Passwort-Setzen wird hier
-// angezeigt und muss vom Admin an die Person weitergegeben werden.
+// Ruft die Cloud Functions inviteUser/disableUser auf (functions/src/index.ts). Ein neues Konto
+// bekommt ein zufälliges Startpasswort, das hier EINMAL angezeigt wird und vom Admin an die Person
+// weitergegeben werden muss; bei der ersten Anmeldung muss sie es ändern (ChangePasswordPage).
 import { useState } from "react"
 import { httpsCallable } from "firebase/functions"
 import { Button } from "@/components/ui/button"
@@ -24,17 +24,20 @@ function Row({ emp }: { emp: EmployeeMeta }) {
   const [role, setRole] = useState<Role>(isLeadRole(emp.role) ? "lead" : "member")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [link, setLink] = useState<string | null>(null)
+  const [startPw, setStartPw] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  async function invite() {
+  async function invite(resetPassword = false) {
     if (!functions) return
-    setBusy(true); setError(null); setLink(null); setCopied(false)
+    setBusy(true); setError(null); setStartPw(null); setSaved(false); setCopied(false)
     try {
-      const res = await httpsCallable<{ email: string; employeeId: string; role: Role }, { uid: string; resetLink: string }>(
-        functions, "inviteUser",
-      )({ email: email.trim(), employeeId: emp.id, role })
-      setLink(res.data.resetLink)
+      const res = await httpsCallable<
+        { email: string; employeeId: string; role: Role; resetPassword: boolean },
+        { uid: string; tempPassword: string | null }
+      >(functions, "inviteUser")({ email: email.trim(), employeeId: emp.id, role, resetPassword })
+      if (res.data.tempPassword) setStartPw(res.data.tempPassword)
+      else setSaved(true)
     } catch (err) {
       setError(errorText(err))
     } finally {
@@ -55,8 +58,8 @@ function Row({ emp }: { emp: EmployeeMeta }) {
   }
 
   async function copy() {
-    if (!link) return
-    try { await navigator.clipboard.writeText(link); setCopied(true) } catch { /* noop */ }
+    if (!startPw) return
+    try { await navigator.clipboard.writeText(startPw); setCopied(true) } catch { /* noop */ }
   }
 
   return (
@@ -76,16 +79,23 @@ function Row({ emp }: { emp: EmployeeMeta }) {
           >
             {(Object.keys(ROLE_LABELS) as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
           </select>
-          <Button size="sm" disabled={busy || !email.includes("@")} onClick={invite}>
-            {emp.uid ? "Rolle/Link erneuern" : "Einladen"}
+          <Button size="sm" disabled={busy || !email.includes("@")} onClick={() => invite(false)}>
+            {emp.uid ? "Rolle speichern" : "Einladen"}
           </Button>
+          {emp.uid && (
+            <Button size="sm" variant="outline" disabled={busy || !email.includes("@")} onClick={() => invite(true)}>
+              Neues Startpasswort
+            </Button>
+          )}
           {emp.uid && <Button size="sm" variant="ghost" disabled={busy} onClick={disable}>Sperren</Button>}
         </div>
         {error && <p role="alert" className="mt-1 text-xs text-destructive">{error}</p>}
-        {link && (
-          <div className="mt-1 flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Link zum Passwort-Setzen (an {emp.name} weitergeben):</span>
-            <Button size="sm" variant="outline" onClick={copy}>{copied ? "Kopiert" : "Link kopieren"}</Button>
+        {saved && <p role="status" className="mt-1 text-xs text-emerald-600">Gespeichert.</p>}
+        {startPw && (
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Startpasswort für {emp.name} (nur jetzt sichtbar, bei der ersten Anmeldung muss es geändert werden):</span>
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">{startPw}</code>
+            <Button size="sm" variant="outline" onClick={copy}>{copied ? "Kopiert" : "Kopieren"}</Button>
           </div>
         )}
       </td>

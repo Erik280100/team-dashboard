@@ -51,6 +51,13 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
   const anon = () => env.unauthenticatedContext().firestore()
   const noClaims = () => env.authenticatedContext("anon", {}).firestore() // z. B. alter anonymer Login
 
+  it("Startpasswort noch nicht geaendert (mustChangePassword): alles gesperrt", async () => {
+    const db = env.authenticatedContext("u_m1", { role: "member", employeeId: "m1", mustChangePassword: true }).firestore()
+    await assertFails(getDoc(doc(db, "employees", "m1")))
+    await assertFails(getDoc(doc(db, "org", "structure")))
+    await assertFails(setDoc(doc(db, "employees", "m1", "todos", "x"), { title: "t" }))
+  })
+
   describe("employees", () => {
     it("anonym / ohne Rolle: alles verboten", async () => {
       await assertFails(getDoc(doc(anon(), "employees", "m1")))

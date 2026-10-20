@@ -39,6 +39,8 @@ import { Finanzierungen } from "@/components/sections/Finanzierungen"
 import { Partner } from "@/components/sections/Partner"
 import { ErikDashboard } from "@/components/sections/ErikDashboard"
 import { Konten } from "@/components/sections/Konten"
+import { Einstellungen } from "@/components/sections/Einstellungen"
+import { ChangePasswordPage } from "@/components/ChangePasswordPage"
 import { StrukturBaum } from "@/components/sections/struktur/StrukturBaum"
 import { Statistik } from "@/components/sections/Statistik"
 import { Planung } from "@/components/sections/Planung"
@@ -59,6 +61,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   partner: "Partner",
   erik: "Mein Board",
   konten: "Konten",
+  einstellungen: "Einstellungen",
 }
 
 // Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus (siehe
@@ -419,6 +422,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               )}
               {section === id && id === "statistik" && auth.isAdmin && <Statistik archive={archive} />}
               {section === id && id === "konten" && auth.isAdmin && <Konten employees={dashboard.employees} />}
+              {section === id && id === "einstellungen" && <Einstellungen auth={auth} />}
             </section>
           ))}
         </div>
@@ -437,6 +441,8 @@ function AuthGate() {
       return <div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">Lädt…</div>
     }
     if (!auth.user) return <LoginPage auth={auth} />
+    // Erste Anmeldung mit Startpasswort: erst neues Passwort festlegen (Datenzugriff ist bis dahin serverseitig gesperrt).
+    if (auth.mustChangePassword) return <ChangePasswordPage auth={auth} />
   }
   return <AppShell key={auth.user?.uid ?? "local"} auth={auth} />
 }

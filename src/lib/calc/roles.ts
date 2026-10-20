@@ -6,6 +6,8 @@ export interface AccountInfo {
   role: Role
   /** ID des verknüpften Mitarbeiters (employees/{id}); null = nicht verknüpft. */
   employeeId: string | null
+  /** Startpasswort noch nicht geändert: bis dahin sperrt firestore.rules jeden Datenzugriff. */
+  mustChangePassword: boolean
 }
 
 function isRole(v: unknown): v is Role {
@@ -24,6 +26,7 @@ export function accountFromClaims(claims: Record<string, unknown> | null | undef
   return {
     role: isRole(role) ? role : "admin",
     employeeId: typeof employeeId === "string" && employeeId !== "" ? employeeId : null,
+    mustChangePassword: claims?.mustChangePassword === true,
   }
 }
 
