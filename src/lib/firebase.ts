@@ -2,9 +2,9 @@
 // damit beide Frontends während der Migration dieselben Firestore-Dokumente
 // lesen/schreiben. Nicht verändern, ohne die Legacy-Seite entsprechend anzupassen.
 import { initializeApp, type FirebaseApp } from "firebase/app"
-import { getFirestore, doc, collection, type Firestore, type DocumentReference, type CollectionReference } from "firebase/firestore"
-import { getAuth, type Auth } from "firebase/auth"
-import { getFunctions, type Functions } from "firebase/functions"
+import { getFirestore, connectFirestoreEmulator, doc, collection, type Firestore, type DocumentReference, type CollectionReference } from "firebase/firestore"
+import { getAuth, connectAuthEmulator, type Auth } from "firebase/auth"
+import { getFunctions, connectFunctionsEmulator, type Functions } from "firebase/functions"
 
 const firebaseConfig = {
   apiKey: "AIzaSyA2ZEQF5YJdHMpk2qR-L7R4tiIf1-ln71w",
@@ -60,6 +60,12 @@ if (CLOUD_CONFIGURED) {
     erikTodosDocRef = doc(firestore, "finova", "erik_todos")
     auth = getAuth(app)
     functions = getFunctions(app, "europe-west1")
+    // Lokale Entwicklung gegen die Firebase-Emulatoren (npm run emulators): VITE_USE_EMULATORS=true.
+    if (import.meta.env.VITE_USE_EMULATORS === "true") {
+      connectFirestoreEmulator(firestore, "127.0.0.1", 8080)
+      connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true })
+      connectFunctionsEmulator(functions, "127.0.0.1", 5001)
+    }
   } catch (err) {
     console.error("Firebase-Initialisierung fehlgeschlagen", err)
   }
