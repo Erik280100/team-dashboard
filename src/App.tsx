@@ -195,6 +195,11 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const roster = useMemo(() => sbRoster(scopedTree), [scopedTree])
   const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
   const planungRows = useMemo(() => relabelRowsByRoster(roster, dashboard.rows), [roster, dashboard.rows])
+  const allRoster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
+  const myName = useMemo(
+    () => dashboard.employees.find((e) => e.id === auth.employeeId)?.name,
+    [dashboard.employees, auth.employeeId]
+  )
   const rechnerEmployees = useMemo(
     () => merged.map((m) => ({ name: m.name, role: m.role, units: readPlanUnits(m) })),
     [merged]
@@ -392,7 +397,9 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               {section === id && id === "rechner" && (
                 <Rechner
                   employees={rechnerEmployees}
-                  isEditor={auth.isEditor}
+                  abwicklerCandidates={allRoster}
+                  planRates={view.planRates}
+                  defaultEmployee={myName}
                   canBookUnits={auth.ready && !!auth.user}
                   onApplyUnits={applyUnitsToEmployee}
                 />

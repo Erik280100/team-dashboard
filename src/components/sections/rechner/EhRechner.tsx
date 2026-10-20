@@ -4,7 +4,7 @@
 // ohne echten Login — siehe canBook/useAuth.ts), das die berechneten
 // Einheiten je Sparte additiv auf einen Mitarbeiter überträgt (siehe
 // App.tsx applyUnitsToEmployee / verguetung.ts).
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { useConfirm } from "@/hooks/useConfirm"
-import { calcEh, ehAbwicklerOptions, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
+import { calcEh, ehAbwicklerOptions, ehMultForRole, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
 import { PLAN_IDS, PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
 
 // legacy/index.html:821-824 — Gruppen-Akzentfarbe (oberer Rand der Karte)
@@ -44,9 +44,12 @@ function round2(n: number): number {
 }
 
 export function EhRechner({
-  employees, canBook, onApplyUnits,
+  employees, abwicklerCandidates, planRates, defaultEmployee, canBook, onApplyUnits,
 }: {
   employees: { name: string; role: string; units: Record<PlanId, number> }[]
+  abwicklerCandidates: { name: string }[]
+  planRates: Record<PlanId, Record<string, number>>
+  defaultEmployee?: string
   /** Steuert nur die Buchen-Sektion — jeder Besucher darf hier auf sich buchen. */
   canBook: boolean
   onApplyUnits: (name: string, units: Record<PlanId, number>, abwickler?: string) => void
@@ -67,17 +70,35 @@ export function EhRechner({
   }, {} as Record<PlanId, number>)
   const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
   // Fallback auf alle Mitarbeiter, falls Georg/Sandro im Strukturbaum nicht gefunden werden.
-  const matched = ehAbwicklerOptions(employees)
-  const abwicklerOptions = matched.length > 0 ? matched : [...employees].sort((a, b) => a.name.localeCompare(b.name, "de"))
+  const matched = ehAbwicklerOptions(abwicklerCandidates)
+  const abwicklerOptions = matched.length > 0 ? matched : [...abwicklerCandidates].sort((a, b) => a.name.localeCompare(b.name, "de"))
   const needsAbwickler = bookedUnits.investmentVb > 0 && abwicklerOptions.length > 0
   const chosenAbwickler = abwicklerOptions.find((a) => a.name === abwickler) ?? abwicklerOptions[0] ?? null
+
+  /** Mitarbeiter wählen: Multiplikatoren auf die Stufensätze seiner Karrierestufe setzen (danach änderbar). */
+  function selectEmployee(name: string) {
+    setSelectedName(name)
+    const emp = employees.find((e) => e.name === name)
+    if (!emp) return
+    setMult(Object.fromEntries(EH_GROUPS.map((gr) => [gr.id, String(ehMultForRole(planRates, gr, emp.role))])) as Record<EhGroup["id"], string>)
+  }
+
+  // Der Eingeloggte ist vorausgewählt, sobald die Mitarbeiterliste geladen ist (einmalig).
+  const preselected = useRef(false)
+  useEffect(() => {
+    if (preselected.current || !defaultEmployee || !employees.some((e) => e.name === defaultEmployee)) return
+    preselected.current = true
+    selectEmployee(defaultEmployee)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultEmployee, employees])
 
   async function onReset() {
     const ok = await confirm("Alle Eingaben im EH-Rechner wirklich zurücksetzen?")
     if (!ok) return
     setG(defaultG())
     setJ(defaultJ())
-    setMult(defaultMult())
+    if (selectedEmployee) selectEmployee(selectedEmployee.name)
+    else setMult(defaultMult())
   }
 
   function onConfirmBooking() {
@@ -209,7 +230,7 @@ export function EhRechner({
               <Select
                 aria-label="Mitarbeiter für Übernahme wählen"
                 value={selectedName}
-                onChange={(e) => setSelectedName(e.target.value)}
+                onChange={(e) => selectEmployee(e.target.value)}
                 className="w-56 border-white/25 bg-white/10 text-white [&>svg]:text-white/70"
               >
                 <option value="" className="text-foreground">Mitarbeiter wählen…</option>

@@ -78,6 +78,21 @@ export const EH_GROUPS: EhGroup[] = [
   { id: "realestate", title: "Real Estate", multDefault: 2, plans: ["realestate"] },
 ]
 
+/**
+ * Multiplikator (€ / EH) einer Sparte für eine Karrierestufe: der hinterlegte Stufensatz des ersten
+ * Karriereplans der Sparte (Strukturbaum → Stufensätze); ohne Satz gilt der Standard der Sparte.
+ */
+export function ehMultForRole(
+  planRates: Partial<Record<PlanId, Record<string, number>>>,
+  group: EhGroup,
+  role: string | undefined,
+): number {
+  const rates = planRates[group.plans[0]] ?? {}
+  const r = (role ?? "").trim()
+  const v = rates[r] ?? rates[r.replace(/\s+/g, "")]
+  return typeof v === "number" && v > 0 ? v : group.multDefault
+}
+
 export const EH_ITEMS: EhItem[] = [
   {
     id: "fsp",
