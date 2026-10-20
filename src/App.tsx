@@ -15,7 +15,7 @@ import { applyMonthStats, mergeRosterWithRows, newRowFor, relabelRowsByRoster, r
 import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
-import { formatISODateDE, type EmployeeRow } from "@/lib/calc/format"
+import { formatISODateDE, toISODate, type EmployeeRow } from "@/lib/calc/format"
 import { canEditEmployee } from "@/lib/calc/roles"
 import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
@@ -26,6 +26,7 @@ import { usePlanungDoc } from "@/hooks/usePlanungDoc"
 import { useFinanzierungenDoc } from "@/hooks/useFinanzierungenDoc"
 import { useErikTodosDoc } from "@/hooks/useErikTodosDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
+import { useFinancingStats } from "@/hooks/useFinancingStats"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
@@ -121,9 +122,19 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
   const scopeId = !CLOUD_CONFIGURED || auth.isAdmin ? null : (auth.employeeId ?? "none")
   const scopedTree = useMemo(() => sbScopedTree(orgChart.tree, scopeId), [orgChart.tree, scopeId])
-  const offeneFinanzierungsfaelle = finanzierungen.cases.filter((c) => !c.archived)
-  const offenesFinanzierungsvolumen = offeneFinanzierungsfaelle.reduce((s, c) => s + Number(c.betrag || 0), 0)
-  const offeneAnlegerwohnungen = offeneFinanzierungsfaelle.filter((c) => c.art === "anlegerwohnung").length
+  const financingStats = useFinancingStats()
+
+  // Dashboard: "Gesamt" (alle Mitarbeiter) oder "Mein Team" (man selbst und alle darunter). Wer keinem Knoten
+  // zugeordnet ist (z. B. reiner Admin) kann nicht wechseln und sieht immer Gesamt.
+  const canSwitchScope = CLOUD_CONFIGURED && !!auth.employeeId
+  const [dashScope, setDashScope] = useState<"gesamt" | "team">(() => {
+    try { return localStorage.getItem("finova_dashboard_scope") === "team" ? "team" : "gesamt" } catch { return "gesamt" }
+  })
+  function changeDashScope(next: "gesamt" | "team") {
+    setDashScope(next)
+    try { localStorage.setItem("finova_dashboard_scope", next) } catch { /* nur Komfort */ }
+  }
+  const teamScope = canSwitchScope && dashScope === "team"
 
   const [archiveMonth, setArchiveMonth] = useState<MonthKey | null>(null)
   const isArchive = archiveMonth !== null
@@ -194,6 +205,37 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   // Anwesenheitsliste (die dieselbe gefilterte Roster-Reihenfolge nutzt). Immer
   // live, unabhängig vom Archiv-Modus (Rechner/Kalender sind keine Archiv-Sektionen).
   const roster = useMemo(() => sbRoster(scopedTree), [scopedTree])
+
+  // Dashboard-Ausschnitt: ganzer Baum bzw. nur der eigene Teilbaum ("Mein Team").
+  const dashTree = useMemo(
+    () => (teamScope ? sbScopedTree(view.orgTree, auth.employeeId) : view.orgTree),
+    [teamScope, view.orgTree, auth.employeeId]
+  )
+  const dashRoster = useMemo(() => sbRoster(dashTree), [dashTree])
+  const dashRows = useMemo(() => rowsMatchedToRoster(dashRoster, view.rows), [dashRoster, view.rows])
+  // Der gespeicherte Verlauf ist die Summe aller Mitarbeiter; für "Mein Team" gibt es keinen Teamverlauf —
+  // dort zählt nur der heutige Stand des Teams (Ziel-Linie und Prognose rechnen daraus).
+  const dashHistory = useMemo(() => {
+    if (!teamScope) return view.history
+    const today = toISODate(new Date())
+    const { periodStart, periodEnd } = view.teamGoal
+    const date = today > periodEnd ? periodEnd : today < periodStart ? periodStart : today
+    return [{ date, ist: dashRows.reduce((s, r) => s + (Number(r.ist) || 0), 0) }]
+  }, [teamScope, view.history, view.teamGoal, dashRows])
+  // Finanzierungen: Gesamt = Summen der Cloud Function (alle Fälle); Mein Team = sichtbare Fälle der eigenen Betreuer.
+  const dashFinance = useMemo(() => {
+    const names = new Set(dashRoster.map((r) => r.name.trim().toLowerCase()))
+    const open = finanzierungen.cases
+      .filter((c) => !c.archived)
+      .filter((c) => !teamScope || names.has((c.betreuer || "").trim().toLowerCase()))
+    if (!teamScope && financingStats) {
+      return { volume: financingStats.openVolume, anlegerwohnungen: financingStats.anlegerwohnungen }
+    }
+    return {
+      volume: open.reduce((s, c) => s + Number(c.betrag || 0), 0),
+      anlegerwohnungen: open.filter((c) => c.art === "anlegerwohnung").length,
+    }
+  }, [dashRoster, teamScope, finanzierungen.cases, financingStats])
   const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
   const planungRows = useMemo(() => relabelRowsByRoster(roster, dashboard.rows), [roster, dashboard.rows])
   const allRoster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
@@ -351,15 +393,17 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 ) : (
                   <Overview
                     key={archiveMonth ?? "live"}
-                    rows={rowsMatchedToRoster(sbRoster(view.orgTree), view.rows)}
-                    teamSize={isArchive ? undefined : roster.length}
+                    rows={dashRows}
+                    teamSize={isArchive ? undefined : dashRoster.length}
                     teamGoal={view.teamGoal}
-                    history={view.history}
+                    history={dashHistory}
+                    scope={canSwitchScope ? (teamScope ? "team" : "gesamt") : undefined}
+                    onScopeChange={changeDashScope}
                     saveGoal={isArchive ? blocked : dashboard.saveGoal}
                     isEditor={auth.isAdmin && !isArchive}
                     now={view.now}
-                    offenesFinanzierungsvolumen={offenesFinanzierungsvolumen}
-                    offeneAnlegerwohnungen={offeneAnlegerwohnungen}
+                    offenesFinanzierungsvolumen={dashFinance.volume}
+                    offeneAnlegerwohnungen={dashFinance.anlegerwohnungen}
                     archiveIndex={archive.index}
                     planung={isArchive ? undefined : planung}
                     canSeeLive={canEditRow}

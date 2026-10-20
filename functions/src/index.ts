@@ -251,6 +251,8 @@ export const backupNow = onCall({ region: REGION, timeoutSeconds: 300 }, async (
 
 /** Automatischer Monatsabschluss (täglich 00:10 Wien, schließt den Vormonat), siehe monthClose.ts. */
 export { closeMonthAuto } from "./monthClose"
+/** Gesamtzahlen der Finanzierungen für die Dashboard-Ansicht "Gesamt", siehe financingStats.ts. */
+export { onFinancingChange } from "./financingStats"
 
 /** Wöchentlicher Export in den eigenen Bucket (Lebenszyklusregel löscht nach 90 Tagen). */
 export const weeklyBackup = onSchedule(

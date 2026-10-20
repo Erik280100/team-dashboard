@@ -1,4 +1,4 @@
-// Monatssummen (employees/{id}.monthStats) für alle Mitarbeiter einmalig berechnen — danach hält die Cloud
+// Monatssummen (employees/{id}.monthStats) und Finanzierungs-Gesamtzahlen (org/financingStats) einmalig berechnen — danach hält die Cloud
 // Function onPlanWeekChange/onPlanMonthChange sie aktuell. Nötig nach dem Deploy, damit Bestandsdaten sofort
 // sichtbar sind.
 //
@@ -29,3 +29,14 @@ for (const e of emps.docs) {
   if (!dry) await e.ref.update({ monthStats: stats })
 }
 console.log(dry ? "Trockenlauf — nichts geschrieben." : "Fertig.")
+
+// Gesamtzahlen der Finanzierungen (org/financingStats) einmalig füllen — danach hält onFinancingChange sie aktuell.
+const cases = (await db.collection("financings").get()).docs.map((d) => d.data())
+const open = cases.filter((c) => !c.archived)
+const fin = {
+  openCount: open.length,
+  openVolume: open.reduce((s, c) => s + (Number(c.betrag) || 0), 0),
+  anlegerwohnungen: open.filter((c) => c.art === "anlegerwohnung").length,
+}
+console.log("Finanzierungen gesamt:", JSON.stringify(fin))
+if (!dry) await db.doc("org/financingStats").set({ ...fin, updatedAt: new Date().toISOString() })
