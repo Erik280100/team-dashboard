@@ -30,7 +30,7 @@ service cloud.firestore {
     // Nur Admin/Function duerfen Struktur und Identitaet aendern.
     function lockedFieldsUntouched() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['managerId', 'ancestors', 'uid', 'role', 'name', 'email']);
+        .hasAny(['managerId', 'ancestors', 'uid', 'role', 'name', 'email', 'active', 'createdAt']);
     }
 
     match /users/{uid} {

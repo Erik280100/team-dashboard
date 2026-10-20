@@ -9,7 +9,8 @@
 // Kein localStorage-Cache im Cloud-Modus (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { collection, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch } from "firebase/firestore"
-import { CLOUD_CONFIGURED, firestore, orgDocRef } from "@/lib/firebase"
+import { httpsCallable } from "firebase/functions"
+import { CLOUD_CONFIGURED, firestore, functions, orgDocRef } from "@/lib/firebase"
 import { employeeDocToRow, idByName, rowToEmployeeData, type EmployeeMeta } from "@/lib/calc/employees"
 import { buildIndexEntry, buildSnapshot, nextMonthGoal, resetRowsForNewMonth } from "@/lib/calc/archive"
 import type { HistoryEntry } from "@/lib/calc/format"
@@ -211,6 +212,17 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
 
       setClosing(true)
       try {
+        // Sicherung vor dem riskantesten Schritt (setzt danach die Ist-Werte zurück).
+        try {
+          if (!functions) throw new Error("Functions nicht verfügbar")
+          await httpsCallable(functions, "backupNow")()
+        } catch (err) {
+          console.error("Monatsabschluss: Sicherung fehlgeschlagen", err)
+          return {
+            ok: false, reason: "write-failed",
+            message: "Die Sicherung vor dem Abschluss ist fehlgeschlagen — der Monat wurde nicht abgeschlossen und nichts verändert.",
+          }
+        }
         const snapshot = buildSnapshot({
           month: input.month,
           rows: input.rows,

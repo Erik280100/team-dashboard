@@ -4,6 +4,7 @@
 import { initializeApp, type FirebaseApp } from "firebase/app"
 import { getFirestore, doc, collection, type Firestore, type DocumentReference, type CollectionReference } from "firebase/firestore"
 import { getAuth, type Auth } from "firebase/auth"
+import { getFunctions, type Functions } from "firebase/functions"
 
 const firebaseConfig = {
   apiKey: "AIzaSyA2ZEQF5YJdHMpk2qR-L7R4tiIf1-ln71w",
@@ -19,6 +20,8 @@ export const CLOUD_CONFIGURED = firebaseConfig.apiKey !== "YOUR_API_KEY"
 export let app: FirebaseApp | null = null
 export let firestore: Firestore | null = null
 export let auth: Auth | null = null
+/** Cloud Functions (Region muss zu functions/src/index.ts passen). */
+export let functions: Functions | null = null
 
 // Gleiche Dokumentpfade wie in der Legacy-App: finova/dashboard, finova/attendance,
 // finova/orgchart.
@@ -56,6 +59,7 @@ if (CLOUD_CONFIGURED) {
     financingsDocRef = doc(firestore, "finova", "financings")
     erikTodosDocRef = doc(firestore, "finova", "erik_todos")
     auth = getAuth(app)
+    functions = getFunctions(app, "europe-west1")
   } catch (err) {
     console.error("Firebase-Initialisierung fehlgeschlagen", err)
   }

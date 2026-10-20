@@ -38,6 +38,7 @@ import { Kalender } from "@/components/sections/Kalender"
 import { Finanzierungen } from "@/components/sections/Finanzierungen"
 import { Partner } from "@/components/sections/Partner"
 import { ErikDashboard } from "@/components/sections/ErikDashboard"
+import { Konten } from "@/components/sections/Konten"
 import { StrukturBaum } from "@/components/sections/struktur/StrukturBaum"
 import { Statistik } from "@/components/sections/Statistik"
 import { Planung } from "@/components/sections/Planung"
@@ -57,6 +58,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   finanzierungen: "Finanzierungen",
   partner: "Partner",
   erik: "Mein Board",
+  konten: "Konten",
 }
 
 // Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus (siehe
@@ -415,7 +417,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   />
                 )
               )}
-              {section === id && id === "statistik" && <Statistik archive={archive} />}
+              {section === id && id === "statistik" && auth.isAdmin && <Statistik archive={archive} />}
+              {section === id && id === "konten" && auth.isAdmin && <Konten employees={dashboard.employees} />}
             </section>
           ))}
         </div>

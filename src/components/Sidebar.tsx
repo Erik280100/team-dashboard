@@ -1,7 +1,7 @@
 // Hauptnavigation — Äquivalent zur .sidebar-Nav aus legacy/index.html:1571–1588.
 import {
   LayoutDashboard, Users, Network, BarChart3, CalendarRange, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
-  KanbanSquare,
+  KanbanSquare, UserCog,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,6 +19,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; editorOnly?: 
   { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
   { id: "finanzierungen", label: "Finanzierungen", icon: Landmark },
   { id: "partner", label: "Partner", icon: Link2 },
+  { id: "konten", label: "Konten", icon: UserCog, editorOnly: true },
 ]
 
 export function Sidebar({
@@ -33,7 +34,7 @@ export function Sidebar({
   /** Mobil: Menü eingeblendet (off-canvas). Ab md ist die Sidebar immer sichtbar. */
   open: boolean
   onClose: () => void
-  /** Nur eingeloggte Editoren sehen den Statistik-Tab. */
+  /** Nur Admins sehen Statistik und Konten. */
   isEditor: boolean
 }) {
   const navItems = NAV_ITEMS.filter((item) => !item.editorOnly || isEditor)

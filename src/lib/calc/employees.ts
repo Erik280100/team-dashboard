@@ -14,7 +14,7 @@ export interface EmployeeMeta {
 }
 
 /** Felder, die nie Teil einer EmployeeRow sind (gesperrt in firestore.rules). */
-const META_KEYS = ["name", "role", "managerId", "ancestors", "uid", "email"] as const
+const META_KEYS = ["name", "role", "managerId", "ancestors", "uid", "email", "active", "createdAt"] as const
 
 export function employeeMetaOf(id: string, data: Record<string, unknown>): EmployeeMeta {
   return {

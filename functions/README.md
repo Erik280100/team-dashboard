@@ -1,0 +1,32 @@
+# Cloud Functions
+
+| Funktion | Typ | Zweck |
+|---|---|---|
+| `inviteUser` | callable (Admin) | Konto anlegen/aktualisieren, Rolle als Custom Claim setzen, `employees/{id}.uid` verknüpfen, Link zum Passwort-Setzen zurückgeben |
+| `disableUser` | callable (Admin) | Konto sperren |
+| `onStructureChange` | Firestore-Trigger auf `org/structure` | `employees/{id}`: Name/Rolle/`managerId`/`ancestors` nachziehen, neue Mitarbeiter anlegen, entfernte deaktivieren, `ancestors` der Finanzierungen aktualisieren |
+| `backupNow` | callable (Admin) | Firestore-Export in den Backup-Bucket; der Client ruft das vor jedem Monatsabschluss auf (bricht bei Fehler ab) |
+| `weeklyBackup` | geplant (So 03:00 Wien) | Wöchentlicher Export in den Backup-Bucket |
+
+## Einrichtung (einmalig)
+
+1. Blaze-Tarif aktivieren, Budget-Alarm setzen.
+2. Backup-Bucket anlegen (siehe `scripts/backup/README.md`, Abschnitt 3). Anderer Name: Umgebungsvariable `BACKUP_BUCKET`.
+3. Berechtigungen für das Standard-Dienstkonto der Functions (`<PROJEKT-NUMMER>-compute@developer.gserviceaccount.com`):
+   - Rolle **Cloud Datastore Import Export Admin** (`roles/datastore.importExportAdmin`)
+   - Rolle **Storage Admin** auf dem Backup-Bucket (`roles/storage.admin`)
+4. Region: `europe-west1` (in `src/index.ts` und `src/lib/firebase.ts`). Muss zur Standortwahl der Datenbank passen, sonst höhere Latenz.
+5. Deploy: `cd functions && npm install && cd .. && npx firebase deploy --only functions`.
+
+## Reihenfolge beim Livegang
+
+Siehe Umbauplan: Backups einrichten → Migration (Trockenlauf, dann Staging, dann produktiv) → Functions deployen →
+Admin-Konto anlegen und Claim setzen → Konten einladen → erst dann `firebase deploy --only firestore:rules`.
+
+## Erstes Admin-Konto (Henne-Ei-Problem)
+
+`inviteUser` verlangt einen Admin. Das erste Admin-Konto wird einmalig per Skript/Konsole angelegt:
+Auth-Nutzer in der Firebase-Konsole erstellen und dann mit dem Admin SDK die Claims setzen:
+`getAuth().setCustomUserClaims(uid, { role: "admin", employeeId: "<Knoten-ID>" })`.
+(Die bestehenden Editor-Konten gelten bis dahin dank der Übergangsregel in `src/lib/calc/roles.ts` als Admin im Frontend,
+haben aber **keine** Claims — die neuen Security Rules würden sie aussperren.)
