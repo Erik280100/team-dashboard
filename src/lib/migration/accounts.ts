@@ -28,9 +28,14 @@ export interface LegacyData {
   snapshots: Record<string, MonthSnapshot>
 }
 
+/** Alter (falsch geschriebener) Name -> Name im Strukturbaum. */
+export type NameAliases = Record<string, string>
+
 export interface MigrationOptions {
   /** Mitarbeiter-ID, dem das bisherige Erik-Board gehört (Fallback-Besitzer für Finanzierungen ohne Zuordnung). */
   boardOwnerId: string
+  /** Optional: Namens-Korrekturen (siehe applyAliases). */
+  aliases?: NameAliases
 }
 
 export interface MigratedDoc {
@@ -99,7 +104,26 @@ function makeResolver(people: Person[]) {
   }
 }
 
+/** Benennt Personen in allen Altdokumenten um (Tippfehler-Zuordnung), bevor migriert wird. */
+export function applyAliases(legacy: LegacyData, aliases: NameAliases): LegacyData {
+  const map = new Map(Object.entries(aliases).map(([from, to]) => [norm(from), to]))
+  if (map.size === 0) return legacy
+  const fix = (name: string) => map.get(norm(name)) ?? name
+  const fixKeys = <T,>(rec: Record<string, T>): Record<string, T> =>
+    Object.fromEntries(Object.entries(rec).map(([k, v]) => [fix(k), v]))
+  return {
+    ...legacy,
+    dashboard: legacy.dashboard && { ...legacy.dashboard, rows: legacy.dashboard.rows.map((r) => ({ ...r, name: fix(r.name) })) },
+    attendance: legacy.attendance && { ...legacy.attendance, entries: fixKeys(legacy.attendance.entries ?? {}) },
+    financings: legacy.financings && { ...legacy.financings, cases: legacy.financings.cases.map((c) => ({ ...c, betreuer: fix(c.betreuer) })) },
+    planWeeks: Object.fromEntries(Object.entries(legacy.planWeeks).map(([k, d]) => [k, { ...d, entries: fixKeys(d.entries ?? {}) }])),
+    planMonthNotes: Object.fromEntries(Object.entries(legacy.planMonthNotes).map(([k, d]) => [k, { ...d, entries: fixKeys(d.entries ?? {}) }])),
+    snapshots: Object.fromEntries(Object.entries(legacy.snapshots).map(([k, sn]) => [k, { ...sn, rows: sn.rows.map((r) => ({ ...r, name: fix(r.name) })) }])),
+  }
+}
+
 export function migrateToAccounts(legacy: LegacyData, opts: MigrationOptions): MigrationResult {
+  legacy = applyAliases(legacy, opts.aliases ?? {})
   const docs: MigratedDoc[] = []
   const warnings: string[] = []
   const accounts: MigrationResult["accounts"] = []

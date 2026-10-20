@@ -69,3 +69,13 @@ describe("migrateToAccounts", () => {
     expect(migrateToAccounts(legacy({ orgchart: null }), { boardOwnerId: "boss" }).docs).toEqual([])
   })
 })
+
+describe("Namens-Aliase", () => {
+  it("ordnet Tippfehler-Namen über Aliase zu", () => {
+    const l = legacy({ dashboard: { rows: [row("Anna Boss", 1), row("Mia Einss", 7)], teamGoal: STARTER_GOAL, history: [] } })
+    const noAlias = migrateToAccounts(l, { boardOwnerId: "boss" })
+    expect(find(noAlias, "employees/m1")?.data.atIst).not.toBe(7)
+    const withAlias = migrateToAccounts(l, { boardOwnerId: "boss", aliases: { "Mia Einss": "Mia Eins" } })
+    expect(find(withAlias, "employees/m1")?.data.atIst).toBe(7)
+  })
+})

@@ -5,6 +5,7 @@
 //
 // --owner     Mitarbeiter-ID (Strukturbaum-Knoten), dem das bisherige Erik-Board gehört.
 // --database  Ziel-Datenbank (Default "(default)"). Zuerst gegen eine Staging-Kopie testen!
+// --alias    Namenskorrekturen "Alt=Neu;Alt2=Neu2" (Tippfehler im Altbestand), z. B. --alias="Tobias Zika=Tobias Ziika"
 // --apply     Wirklich schreiben. Ohne dieses Flag wird NICHTS in Firestore geschrieben.
 //
 // Die alten finova/*-Dokumente werden nur gelesen, nie verändert (= Backup).
@@ -57,7 +58,10 @@ async function readLegacy(): Promise<LegacyData> {
 }
 
 const legacy = await readLegacy()
-const result = migrateToAccounts(legacy, { boardOwnerId: owner })
+const aliases = Object.fromEntries(
+  (args.get("alias") ?? "").split(";").filter(Boolean).map((p) => p.split("=").map((x) => x.trim()) as [string, string]),
+)
+const result = migrateToAccounts(legacy, { boardOwnerId: owner, aliases })
 
 writeFileSync("migration-preview.json", JSON.stringify(result, null, 2))
 console.log(`${result.docs.length} Dokumente, ${result.accounts.length} Mitarbeiter, ${result.warnings.length} Warnungen`)
