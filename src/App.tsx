@@ -88,7 +88,7 @@ function ArchiveStatusCard({
 function AppShell({ auth }: { auth: UseAuthResult }) {
   const confirm = useConfirm()
   const { section, navigateTo } = useHashSection()
-  const dashboard = useDashboardDoc()
+  const dashboard = useDashboardDoc(auth)
   const attendance = useAttendanceDoc()
   const orgChart = useOrgChartDoc()
   const planung = usePlanungDoc()

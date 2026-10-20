@@ -1,11 +1,22 @@
-// Dashboard-Cloud-Sync — Äquivalent zu initCloudSync()/pushToCloud()/saveData()
-// aus legacy/index.html:2307–2355,2493–2551. Hält rows/teamGoal/history im
-// React-State, spiegelt sie nach localStorage und synchronisiert bidirektional
-// über das Firestore-Dokument finova/dashboard (identisch zur Legacy-App).
-import { useCallback, useEffect, useRef, useState } from "react"
-import { onSnapshot, setDoc } from "firebase/firestore"
-import { CLOUD_CONFIGURED, stateDocRef } from "@/lib/firebase"
+// Dashboard-Daten (rows/teamGoal/history) — Cloud-Modus liest/schreibt die
+// Mitarbeiter-Dokumente employees/{id} (siehe firestore.rules) und org/teamGoal;
+// die Schnittstelle bleibt die bisherige (rows als EmployeeRow-Liste), damit
+// Sektionen und calc/* unverändert weiterlaufen.
+//
+// Wer was sieht (erzwingen die Firestore-Regeln, hier nur die passenden Abfragen):
+//  - Admin: alle Mitarbeiter
+//  - sonst: eigenes Dokument + alle, bei denen die eigene ID in `ancestors` steht
+// Ohne Firebase-Config (lokaler Modus) bleibt es beim localStorage-Verhalten.
+// Im Cloud-Modus wird bewusst NICHTS in localStorage gecacht: Der Browser kann von
+// mehreren Konten benutzt werden, Zahlen dürfen nicht zwischen ihnen durchsickern.
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { onSnapshot, query, setDoc, where, writeBatch } from "firebase/firestore"
+import { CLOUD_CONFIGURED, employeeDocRef, employeesCollection, firestore, orgDocRef } from "@/lib/firebase"
 import { migrateRows, recordSnapshot, type HistoryEntry } from "@/lib/calc/format"
+import {
+  diffRowWrites, employeeDocToRow, employeeMetaOf, type EmployeeMeta,
+} from "@/lib/calc/employees"
+import type { AccountInfo } from "@/lib/calc/roles"
 import {
   STARTER_DATA, STARTER_GOAL, STORAGE_KEY, GOAL_KEY, HISTORY_KEY,
   type DashboardDoc, type EmployeeRow, type TeamGoal,
@@ -32,122 +43,169 @@ export type SyncStatus = "not-configured" | "connecting" | "connected" | "error"
 
 export interface UseDashboardDocResult {
   rows: EmployeeRow[]
+  /** Stammdaten (ID, Name, Vorgesetzte) aller für dieses Konto sichtbaren Mitarbeiter; leer im lokalen Modus. */
+  employees: EmployeeMeta[]
   teamGoal: TeamGoal
   history: HistoryEntry[]
   syncStatus: SyncStatus
-  /** rows ersetzen, lokal cachen, Tages-Snapshot fortschreiben, in die Cloud pushen. */
+  /** rows ersetzen: geänderte Zeilen werden in ihre Mitarbeiter-Dokumente geschrieben. */
   saveRows: (next: EmployeeRow[]) => void
-  /** teamGoal ersetzen, lokal cachen, in die Cloud pushen. */
+  /** teamGoal ersetzen (nur Admin; sonst wirkungslos). */
   saveGoal: (next: TeamGoal) => void
-  /** rows+teamGoal+history in einem Zug ersetzen (ein einzelner Cloud-Push,
-   * ohne recordSnapshot) — für den Monatsabschluss-Reset (useMonthArchive). */
+  /** rows+teamGoal+history in einem Zug ersetzen — Monatsabschluss-Reset (nur Admin). */
   saveAll: (next: DashboardDoc) => void
 }
 
-export function useDashboardDoc(): UseDashboardDocResult {
-  const [rows, setRows] = useState<EmployeeRow[]>(() =>
-    migrateRows(loadLocal(STORAGE_KEY, JSON.parse(JSON.stringify(STARTER_DATA)), isRowArray))
+interface Stored { meta: EmployeeMeta; row: EmployeeRow }
+
+export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
+  const cloud = CLOUD_CONFIGURED
+  const isAdmin = account.role === "admin"
+  const myId = account.employeeId
+
+  const [local, setLocal] = useState(() =>
+    cloud
+      ? { rows: [] as EmployeeRow[] }
+      : { rows: migrateRows(loadLocal(STORAGE_KEY, JSON.parse(JSON.stringify(STARTER_DATA)), isRowArray)) }
   )
+  const [own, setOwn] = useState<Record<string, Stored>>({})
+  const [subtree, setSubtree] = useState<Record<string, Stored>>({})
   const [teamGoal, setTeamGoal] = useState<TeamGoal>(() => ({
     ...STARTER_GOAL,
-    ...loadLocal(GOAL_KEY, {}, isGoalObj),
+    ...(cloud ? {} : loadLocal(GOAL_KEY, {}, isGoalObj)),
   }))
-  const [history, setHistory] = useState<HistoryEntry[]>(() =>
-    loadLocal(HISTORY_KEY, [], isHistoryArray)
-  )
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
-    CLOUD_CONFIGURED ? "connecting" : "not-configured"
-  )
-  const cloudReady = useRef(false)
+  const [history, setHistory] = useState<HistoryEntry[]>(() => (cloud ? [] : loadLocal(HISTORY_KEY, [], isHistoryArray)))
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(cloud ? "connecting" : "not-configured")
+  const goalReady = useRef(false)
 
-  // Aktuellste Werte für den Cloud-Push griffbereit halten, ohne den Effect erneut zu binden.
-  const latest = useRef({ rows, teamGoal, history })
-  latest.current = { rows, teamGoal, history }
-
+  // ---- Mitarbeiter lesen ----
   useEffect(() => {
-    const docRef = stateDocRef
-    if (!CLOUD_CONFIGURED || !docRef) return
-    const unsub = onSnapshot(
-      docRef,
-      (snap) => {
-        if (snap.metadata.hasPendingWrites) return // eigene, bereits lokal dargestellte Änderung
-        // Nur Server-Stände zählen: ein Cache-Snapshot ("Dokument fehlt"/veraltet) darf weder
-        // die Cloud mit lokalem Altstand überschreiben (setDoc) noch Schreiben freischalten.
-        if (snap.metadata.fromCache) return
-        if (snap.exists()) {
-          const data = (snap.data() || {}) as Partial<DashboardDoc>
-          if (Array.isArray(data.rows) && data.rows.length) {
-            const migrated = migrateRows(data.rows)
-            setRows(migrated)
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated)) } catch { /* noop */ }
-          }
-          if (data.teamGoal && typeof data.teamGoal === "object") {
-            const merged = { ...STARTER_GOAL, ...data.teamGoal }
-            setTeamGoal(merged)
-            try { localStorage.setItem(GOAL_KEY, JSON.stringify(merged)) } catch { /* noop */ }
-          }
-          if (Array.isArray(data.history)) {
-            setHistory(data.history)
-            try { localStorage.setItem(HISTORY_KEY, JSON.stringify(data.history)) } catch { /* noop */ }
-          }
-        } else {
-          void setDoc(docRef, latest.current)
-        }
-        cloudReady.current = true
-        setSyncStatus("connected")
-      },
-      (err) => {
-        console.error("Cloud-Sync Fehler", err)
-        setSyncStatus("error")
+    const col = employeesCollection()
+    if (!cloud || !col) return
+    const toMap = (docs: { id: string; data: () => Record<string, unknown> }[]) => {
+      const out: Record<string, Stored> = {}
+      for (const d of docs) {
+        const data = d.data()
+        out[d.id] = { meta: employeeMetaOf(d.id, data), row: employeeDocToRow(data) }
       }
-    )
-    return unsub
+      return out
+    }
+    const onError = (err: unknown) => { console.error("Cloud-Sync Fehler", err); setSyncStatus("error") }
+    const unsubs: (() => void)[] = []
+    if (isAdmin) {
+      unsubs.push(onSnapshot(col, (snap) => {
+        setSubtree(toMap(snap.docs)); setOwn({})
+        if (!snap.metadata.fromCache) setSyncStatus("connected")
+      }, onError))
+    } else if (myId) {
+      const selfRef = employeeDocRef(myId)
+      if (selfRef) {
+        unsubs.push(onSnapshot(selfRef, (snap) => {
+          setOwn(snap.exists() ? toMap([snap]) : {})
+          if (!snap.metadata.fromCache) setSyncStatus("connected")
+        }, onError))
+      }
+      unsubs.push(onSnapshot(query(col, where("ancestors", "array-contains", myId)), (snap) => {
+        setSubtree(toMap(snap.docs))
+      }, onError))
+    } else {
+      setSyncStatus("connected") // Konto ohne verknüpften Mitarbeiter: nichts zu laden
+    }
+    return () => unsubs.forEach((u) => u())
+  }, [cloud, isAdmin, myId])
+
+  // ---- Teamziel/Verlauf lesen (org/teamGoal, für alle Eingeloggten lesbar) ----
+  useEffect(() => {
+    const ref = orgDocRef("teamGoal")
+    if (!cloud || !ref) return
+    return onSnapshot(ref, (snap) => {
+      if (snap.metadata.fromCache) return
+      if (snap.exists()) {
+        const data = snap.data() as Partial<DashboardDoc>
+        if (data.teamGoal && typeof data.teamGoal === "object") setTeamGoal({ ...STARTER_GOAL, ...data.teamGoal })
+        if (Array.isArray(data.history)) setHistory(data.history)
+      }
+      goalReady.current = true
+    }, (err) => console.warn("Teamziel konnte nicht geladen werden", err))
+  }, [cloud])
+
+  const stored = useMemo(() => ({ ...subtree, ...own }), [subtree, own])
+  const employees = useMemo(
+    () => Object.values(stored).map((s) => s.meta).sort((a, b) => a.name.localeCompare(b.name, "de")),
+    [stored]
+  )
+  const cloudRows = useMemo(() => employees.map((m) => stored[m.id].row), [employees, stored])
+  const rows = cloud ? cloudRows : local.rows
+
+  const latest = useRef({ rows, employees, teamGoal, history })
+  latest.current = { rows, employees, teamGoal, history }
+
+  const pushGoal = useCallback((next: { teamGoal: TeamGoal; history: HistoryEntry[] }) => {
+    const ref = orgDocRef("teamGoal")
+    if (!ref || !isAdmin || !goalReady.current) return
+    setDoc(ref, next).catch((err) => { console.warn("Cloud-Speichern fehlgeschlagen", err); setSyncStatus("error") })
+  }, [isAdmin])
+
+  const writeRows = useCallback((writes: { id: string; data: Record<string, unknown> }[]) => {
+    if (!firestore || writes.length === 0) return
+    for (let i = 0; i < writes.length; i += 400) {
+      const batch = writeBatch(firestore)
+      for (const w of writes.slice(i, i + 400)) {
+        const ref = employeeDocRef(w.id)
+        if (ref) batch.update(ref, w.data)
+      }
+      batch.commit().catch((err) => { console.warn("Cloud-Speichern fehlgeschlagen", err); setSyncStatus("error") })
+    }
   }, [])
 
-  const pushToCloud = useCallback((doc: DashboardDoc) => {
-    const docRef = stateDocRef
-    if (!CLOUD_CONFIGURED || !cloudReady.current || !docRef) return
-    setDoc(docRef, doc).catch((err) => {
-      console.warn("Cloud-Speichern fehlgeschlagen", err)
-      setSyncStatus("error")
-    })
-  }, [])
-
-  const saveRows = useCallback(
-    (next: EmployeeRow[]) => {
-      setRows(next)
+  const saveRows = useCallback((next: EmployeeRow[]) => {
+    const cur = latest.current
+    if (!cloud) {
+      setLocal({ rows: next })
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch { /* noop */ }
-      const nextHistory = recordSnapshot(next, latest.current.history)
-      setHistory(nextHistory)
-      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory)) } catch { /* noop */ }
-      pushToCloud({ rows: next, teamGoal: latest.current.teamGoal, history: nextHistory })
-    },
-    [pushToCloud]
-  )
+      const h = recordSnapshot(next, cur.history)
+      setHistory(h)
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)) } catch { /* noop */ }
+      return
+    }
+    const { writes, skipped } = diffRowWrites(cur.rows, next, cur.employees)
+    if (skipped.length) console.warn("Keine Mitarbeiter-Dokumente für:", skipped.join(", "))
+    writeRows(writes)
+    // Verlauf (Team-Gesamt-Ist) kennt nur der Admin vollständig — Teilsichten dürfen ihn nicht überschreiben.
+    if (isAdmin) {
+      const h = recordSnapshot(next, cur.history)
+      setHistory(h)
+      pushGoal({ teamGoal: cur.teamGoal, history: h })
+    }
+  }, [cloud, isAdmin, pushGoal, writeRows])
 
-  const saveGoal = useCallback(
-    (next: TeamGoal) => {
-      setTeamGoal(next)
+  const saveGoal = useCallback((next: TeamGoal) => {
+    setTeamGoal(next)
+    if (!cloud) {
       try { localStorage.setItem(GOAL_KEY, JSON.stringify(next)) } catch { /* noop */ }
-      pushToCloud({ rows: latest.current.rows, teamGoal: next, history: latest.current.history })
-    },
-    [pushToCloud]
-  )
+      return
+    }
+    pushGoal({ teamGoal: next, history: latest.current.history })
+  }, [cloud, pushGoal])
 
-  const saveAll = useCallback(
-    (next: DashboardDoc) => {
-      setRows(next.rows)
-      setTeamGoal(next.teamGoal)
-      setHistory(next.history)
+  const saveAll = useCallback((next: DashboardDoc) => {
+    setTeamGoal(next.teamGoal)
+    setHistory(next.history)
+    if (!cloud) {
+      setLocal({ rows: next.rows })
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next.rows))
         localStorage.setItem(GOAL_KEY, JSON.stringify(next.teamGoal))
         localStorage.setItem(HISTORY_KEY, JSON.stringify(next.history))
       } catch { /* noop */ }
-      pushToCloud(next)
-    },
-    [pushToCloud]
-  )
+      return
+    }
+    if (!isAdmin) return
+    const cur = latest.current
+    const { writes } = diffRowWrites(cur.rows, next.rows, cur.employees)
+    writeRows(writes)
+    pushGoal({ teamGoal: next.teamGoal, history: next.history })
+  }, [cloud, isAdmin, pushGoal, writeRows])
 
-  return { rows, teamGoal, history, syncStatus, saveRows, saveGoal, saveAll }
+  return { rows, employees, teamGoal, history, syncStatus, saveRows, saveGoal, saveAll }
 }

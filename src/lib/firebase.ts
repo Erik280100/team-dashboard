@@ -2,7 +2,7 @@
 // damit beide Frontends während der Migration dieselben Firestore-Dokumente
 // lesen/schreiben. Nicht verändern, ohne die Legacy-Seite entsprechend anzupassen.
 import { initializeApp, type FirebaseApp } from "firebase/app"
-import { getFirestore, doc, type Firestore, type DocumentReference } from "firebase/firestore"
+import { getFirestore, doc, collection, type Firestore, type DocumentReference, type CollectionReference } from "firebase/firestore"
 import { getAuth, type Auth } from "firebase/auth"
 
 const firebaseConfig = {
@@ -79,4 +79,19 @@ export function planAnnualDocRef(year: number, managerKey: string): DocumentRefe
 /** Dokument-Referenz für die Monats-Notizen (AT/BT/ST-Kacheln, finova/plan_month_notes_<YYYY-MM>). */
 export function planMonthNotesDocRef(month: string): DocumentReference | null {
   return firestore ? doc(firestore, "finova", `plan_month_notes_${month}`) : null
+}
+
+// ---- Neues Datenmodell (User-Accounts, siehe firestore.rules) ----
+
+/** employees — ein Dokument je Mitarbeiter. */
+export function employeesCollection(): CollectionReference | null {
+  return firestore ? collection(firestore, "employees") : null
+}
+/** employees/{id} */
+export function employeeDocRef(id: string): DocumentReference | null {
+  return firestore ? doc(firestore, "employees", id) : null
+}
+/** org/{name}: structure | teamGoal | archiveIndex */
+export function orgDocRef(name: string): DocumentReference | null {
+  return firestore ? doc(firestore, "org", name) : null
 }
