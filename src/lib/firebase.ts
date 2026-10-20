@@ -16,6 +16,9 @@ const firebaseConfig = {
 
 export const CLOUD_CONFIGURED = firebaseConfig.apiKey !== "YOUR_API_KEY"
 
+/** Emulator-Ports (npm run emulators); abweichende Ports über VITE_EMULATOR_PORT_FIRESTORE / _AUTH / _FUNCTIONS. */
+const emulatorPort = (name: string, fallback: number) => Number(import.meta.env[`VITE_EMULATOR_PORT_${name}`]) || fallback
+
 export let app: FirebaseApp | null = null
 export let firestore: Firestore | null = null
 export let auth: Auth | null = null
@@ -30,9 +33,9 @@ if (CLOUD_CONFIGURED) {
     functions = getFunctions(app, "europe-west1")
     // Lokale Entwicklung gegen die Firebase-Emulatoren (npm run emulators): VITE_USE_EMULATORS=true.
     if (import.meta.env.VITE_USE_EMULATORS === "true") {
-      connectFirestoreEmulator(firestore, "127.0.0.1", 8080)
-      connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true })
-      connectFunctionsEmulator(functions, "127.0.0.1", 5001)
+      connectFirestoreEmulator(firestore, "127.0.0.1", emulatorPort("FIRESTORE", 8080))
+      connectAuthEmulator(auth, `http://127.0.0.1:${emulatorPort("AUTH", 9099)}`, { disableWarnings: true })
+      connectFunctionsEmulator(functions, "127.0.0.1", emulatorPort("FUNCTIONS", 5001))
     }
   } catch (err) {
     console.error("Firebase-Initialisierung fehlgeschlagen", err)

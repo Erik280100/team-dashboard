@@ -119,7 +119,7 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertSucceeds(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { bonus: 500 }))
       await assertSucceeds(updateDoc(doc(as("admin"), "employees", "lead"), { bonus: 500 }))
       // Fuehrungskraft darf den eigenen Bonus nicht aendern (sie ist nicht ihr eigener Vorgesetzter)
-      await assertFails(updateDoc(doc(as("lead", "lead"), "employees", "lead"), { bonus: 500 }))
+      await assertFails(updateDoc(doc(as("lead", "lead"), "employees", "lead"), { bonus: 600 }))
     })
     it("Admin liest alles, nur Admin legt an/loescht", async () => {
       await assertSucceeds(getDoc(doc(as("admin"), "employees", "other")))
