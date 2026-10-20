@@ -323,7 +323,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     }
     annualStatusMap.current.set(cacheKey, "loading")
     const unsub = subscribeEmployeeDocs<PlanAnnualDoc>(
-      "planAnnual", String(year), "__none__", [{ id, name: managerName, role: "", managerId: null, ancestors: [], uid: null }],
+      "planAnnual", String(year), "__none__", [{ id, name: managerName, role: "", managerId: null, ancestors: [], uid: null, email: null, accountPending: false }],
       (entries, ready) => {
         const data = entries[managerName]
         if (data) setAnnualDocs((m) => new Map(m).set(cacheKey, data))
