@@ -9,6 +9,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { decryptCareerPlans, type CareerPlan } from "@/lib/data/career"
 import { useCareerPlansDoc } from "@/hooks/useCareerPlansDoc"
+import { MeinKarrierestand } from "@/components/sections/karriere/MeinKarrierestand"
+import type { MergedRow } from "@/lib/calc/team"
+import type { PlanId } from "@/lib/calc/struktur"
 
 /** Macht aus den Stufen-Karten Kacheln mit großem Tarif und Kriterien-Chips:
  * "€4,– / EH · ab 6 000 EH + Gewerbe" -> Tarif "€4,–" (/ EH) + Chips je " + "-Teil.
@@ -78,7 +81,7 @@ function enhanceTables(html: string): string {
   return doc.getElementById("r")!.innerHTML
 }
 
-export function Karriere() {
+function KarrierePlaene() {
   const cloud = useCareerPlansDoc()
   const [unlocked, setPlans] = useState<CareerPlan[] | null>(null)
   const plans = cloud.status === "ready" ? cloud.plans : unlocked
@@ -172,6 +175,40 @@ export function Karriere() {
           />
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+interface KarriereProps {
+  merged: MergedRow[]
+  planRates: Record<PlanId, Record<string, number>>
+  myName?: string
+}
+
+/** Reiter "Mein Karrierestand" (persönlich, ohne Passwort) und die passwortgeschützten Karrierepläne. */
+export function Karriere({ merged, planRates, myName }: KarriereProps) {
+  const [tab, setTab] = useState<"me" | "plans">("me")
+  const tabs = [{ id: "me", label: "Mein Karrierestand" }, { id: "plans", label: "Karrierepläne" }] as const
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+              tab === t.id
+                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === "me" ? <MeinKarrierestand merged={merged} planRates={planRates} myName={myName} /> : <KarrierePlaene />}
     </div>
   )
 }

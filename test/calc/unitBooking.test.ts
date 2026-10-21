@@ -37,6 +37,7 @@ describe("unitBookingOps", () => {
       { path: ["ehByPlan", "insurance"], by: 2 },
       { path: ["ehByPlan", "credit"], by: 1 },
       { path: ["ist"], by: 3 },
+      { path: ["careerUnits", "credit"], by: 1 },
     ])
     expect(absolute).toEqual({})
   })

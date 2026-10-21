@@ -168,12 +168,20 @@ export const DEFAULT_PLAN_RATES: Record<PlanId, Record<string, number>> = {
     FT2: 2,
     FT1: 1,
   },
-  // Bewusst leer: froots-Abschlüsse über der EH-Rechner-Schwelle (froots VV
-  // monatlich > 500 €, einmalig > 10.000 €) laufen automatisch über einen
-  // Abwickler (VB) und werden auf diesen eigenen Plan gebucht. Die echten
-  // Stufensätze müssen im Stufensätze-Dialog (StrukturBaum.tsx) eingetragen
-  // werden — bis dahin verdient hier niemand etwas.
-  investmentVb: {},
+  // froots-Abschlüsse über der EH-Rechner-Schwelle (froots VV monatlich > 500 €,
+  // einmalig > 10.000 €) laufen automatisch über einen Abwickler (VB) und werden
+  // auf diesen eigenen Plan gebucht. Trainee-Stufen: FT1 1 €, FT2 1,50 €, FT3 2 €
+  // (jeweils 0,50 € unter dem Investment-Satz, außer FT1); Führungskräfte wie
+  // Investment, damit sie die Differenz auf den Trainee-Satz bekommen.
+  investmentVb: {
+    Direktor: 6.5,
+    Regionalleiter: 5.5,
+    Geschäftsstellenleiter: 4.5,
+    Teamleiter: 3.5,
+    FT3: 2,
+    FT2: 1.5,
+    FT1: 1,
+  },
   credit: {
     Direktor: 4,
     Regionalleiter: 4,

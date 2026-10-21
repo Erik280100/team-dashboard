@@ -5,6 +5,7 @@
 // Parameter entgegen — Verhalten sonst identisch.
 // Golden-Master-Test: test/calc/format.golden.test.ts.
 import type { PlanId } from "./struktur"
+import type { CareerUnits } from "./planStufen"
 
 /** Monatssummen aus dem Controlling (vom Server in employees/{id}.monthStats geschrieben, für alle lesbar). */
 export interface MonthStats {
@@ -30,6 +31,9 @@ export interface EmployeeRow {
    * Buchen im EH-Rechner einem bestimmten Abwickler zugewiesen wurde. Der Rest
    * (ohne Zuweisung) läuft wie bisher über die Vorgesetztenkette. */
   vbByAbwickler?: Record<string, number>
+  /** Kumulierte Einheiten je Karriereplan für die Trainee-Stufen (investment inkl. VB, credit, realestate) —
+   * wird beim Monatsabschluss NICHT zurückgesetzt, siehe planStufen.ts. */
+  careerUnits?: CareerUnits
   /** Manuell erfasster Bonusbetrag (€), wird zur Gesamtvergütung addiert. */
   bonus?: number
   isNew?: boolean

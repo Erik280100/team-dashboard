@@ -38,6 +38,8 @@
 //    separate Gruppenproduktion-Kriterium (Person + gesamter Unterbau).
 import type { MergedRow } from "./team"
 import { readPlanUnits, sumPlanUnits } from "./verguetung"
+import { PLAN_LABELS, type PlanId } from "./struktur"
+import { TRAINEE_PLAN_IDS, isTraineeRole, planLadderStage, type TraineePlanId } from "./planStufen"
 
 /** Karriereleiter aufsteigend. Kundenberater ist bewusst nicht Teil der Leiter. */
 export const CAREER_LADDER = [
@@ -361,4 +363,43 @@ export function computePromotionProgress(
   })
 
   return result
+}
+
+/** Stand eines Trainees in einem Karriereplan mit eigener Stufen-Leiter (Investment/Credit/Real Estate). */
+export interface PlanStanding {
+  planId: TraineePlanId
+  label: string
+  role: string
+  /** Nächste Stufe der Plan-Leiter, null am Ende der Leiter (danach nur noch über Teamleiter). */
+  nextRole: string | null
+  have: number
+  need: number
+  missing: number
+  fraction: number
+}
+
+/**
+ * Trainees sind in Investment, Credit und Real Estate getrennt eingestuft (Start FT1, Aufstieg über die
+ * kumulierten Einheiten im jeweiligen Plan). Führungskräfte (ab Teamleiter) haben keine Plan-Stufen — für sie
+ * gilt in allen Plänen die Strukturbaum-Rolle, daher null.
+ */
+export function computePlanStandings(
+  row: { role: string; careerUnits?: Partial<Record<TraineePlanId, number>> }
+): PlanStanding[] | null {
+  if (!isTraineeRole(row.role)) return null
+  return TRAINEE_PLAN_IDS.map((planId) => {
+    const have = Number(row.careerUnits?.[planId]) || 0
+    const { step, next } = planLadderStage(planId, have)
+    const need = next?.units ?? have
+    return {
+      planId,
+      label: PLAN_LABELS[planId as PlanId],
+      role: step.role,
+      nextRole: next?.role ?? null,
+      have,
+      need,
+      missing: Math.max(0, need - have),
+      fraction: next ? Math.min(1, have / next.units) : 1,
+    }
+  })
 }

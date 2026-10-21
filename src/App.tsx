@@ -463,7 +463,9 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   onApplyUnits={applyUnitsToEmployee}
                 />
               )}
-              {section === id && id === "karriere" && <Karriere />}
+              {section === id && id === "karriere" && (
+                <Karriere merged={merged} planRates={withDefaultPlanRates(orgChart.planRates)} myName={myName} />
+              )}
               {section === id && id === "guide" && <Guide />}
               {section === id && id === "kalender" && (
                 <Kalender

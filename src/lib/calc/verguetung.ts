@@ -28,6 +28,7 @@
 import { ehIsAbwickler } from "./eh"
 import type { EmployeeRow } from "./format"
 import { PLAN_IDS, isLeadRole, sbGetPlanRate, type PlanId } from "./struktur"
+import { TRAINEE_PLAN_IDS, careerDeltaOf, planStageOf, type CareerUnits } from "./planStufen"
 import type { MergedRow } from "./team"
 
 /** Einheiten je Plan aus einer Mitarbeiterzeile lesen. Fehlt ehByPlan (Altbestand
@@ -57,13 +58,21 @@ export function withPlanUnits(row: EmployeeRow, units: Record<PlanId, number>): 
   return { ...row, ehByPlan, ist: sumPlanUnits(units) }
 }
 
+/** Karrierezähler (Trainee-Stufen je Plan) um die Buchung erhöhen. Mutiert `row` nicht. */
+function withCareerUnits(row: EmployeeRow, delta: Partial<Record<PlanId, number>>): EmployeeRow {
+  const add = careerDeltaOf(delta)
+  const careerUnits: CareerUnits = { ...(row.careerUnits ?? {}) }
+  TRAINEE_PLAN_IDS.forEach((p) => { careerUnits[p] = (Number(careerUnits[p]) || 0) + add[p] })
+  return { ...row, careerUnits }
+}
+
 /** Buchung (EH-Rechner) auf eine Zeile anwenden: Einheiten je Plan addieren, `ist` nachziehen und
  * VB-Einheiten dem Abwickler zuschreiben. Mutiert `row` nicht. */
 export function applyUnitDelta(row: EmployeeRow, delta: Record<PlanId, number>, abwickler?: string): EmployeeRow {
   const current = readPlanUnits(row)
   const next = {} as Record<PlanId, number>
   PLAN_IDS.forEach((p) => { next[p] = (Number(current[p]) || 0) + (Number(delta[p]) || 0) })
-  const base = withPlanUnits(row, next)
+  const base = withCareerUnits(withPlanUnits(row, next), delta)
   const vbDelta = Number(delta.investmentVb) || 0
   if (!abwickler || vbDelta <= 0) return base
   const vb = { ...(row.vbByAbwickler ?? {}) }
@@ -89,11 +98,16 @@ export function unitBookingOps(row: EmployeeRow, delta: Record<PlanId, number>, 
       if (by !== 0) increments.push({ path: ["ehByPlan", p], by })
     })
     if (added !== 0) increments.push({ path: ["ist"], by: added })
+    const career = careerDeltaOf(delta)
+    TRAINEE_PLAN_IDS.forEach((p) => {
+      if (career[p] !== 0) increments.push({ path: ["careerUnits", p], by: career[p] })
+    })
   } else {
     // Altbestand: nur `ist` vorhanden -> einmal die Aufteilung als Endwert anlegen (ab dann atomar).
     const after = applyUnitDelta(row, delta)
     absolute.ehByPlan = after.ehByPlan
     absolute.ist = after.ist
+    absolute.careerUnits = after.careerUnits
   }
   const vbDelta = Number(delta.investmentVb) || 0
   if (abwickler && vbDelta > 0) increments.push({ path: ["vbByAbwickler", abwickler], by: vbDelta })
@@ -215,7 +229,7 @@ export function computeEarnings(
       const u = units[planId]
       if (u <= 0) return
 
-      const producerRate = sbGetPlanRate(planRates, producer.role, planId)
+      const producerRate = sbGetPlanRate(planRates, planStageOf(producer, planId), planId)
       credit(producer.name, planId, "eigen", u, producerRate, producer.name)
 
       // Beim Plan "investmentVb" kann ein Teil der Einheiten beim Buchen einem
@@ -269,7 +283,7 @@ export function computeEarnings(
           // der Kette, der gewählte Abwickler wird unten explizit bedient.
           const skipManager = abwickler !== null && skip.has(manager.name)
           if (isLeadRole(manager.role) && !skipManager) {
-            const rA = sbGetPlanRate(planRates, manager.role, planId)
+            const rA = sbGetPlanRate(planRates, planStageOf(manager, planId), planId)
             if (rA > c) {
               credit(manager.name, planId, "differenz", chainUnits, rA - c, fromName)
               c = rA
@@ -288,7 +302,7 @@ export function computeEarnings(
 
         if (abwickler !== null) {
           const abw = byName.get(abwickler)
-          const rAbw = abw ? sbGetPlanRate(planRates, abw.role, planId) : 0
+          const rAbw = abw ? sbGetPlanRate(planRates, planStageOf(abw, planId), planId) : 0
           if (abw && abw.name !== producer.name && rAbw > c) {
             credit(abw.name, planId, "differenz", chainUnits, rAbw - c, fromName)
           }

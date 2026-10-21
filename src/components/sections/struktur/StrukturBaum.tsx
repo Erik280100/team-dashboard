@@ -16,7 +16,8 @@ import { httpsCallable } from "firebase/functions"
 import { functions } from "@/lib/firebase"
 import { callableErrorText } from "@/lib/callableError"
 import type { EmployeeMeta } from "@/lib/calc/employees"
-import { computePromotionProgress, type PromotionProgress } from "@/lib/calc/befoerderung"
+import { computePlanStandings, computePromotionProgress, type PromotionProgress } from "@/lib/calc/befoerderung"
+import { PromotionPanel } from "@/components/sections/karriere/PromotionPanel"
 import { fmt, type EmployeeRow } from "@/lib/calc/format"
 import {
   DEFAULT_PLAN_RATES, PLAN_IDS, PLAN_LABELS,
@@ -696,6 +697,10 @@ export function StrukturBaum({
   void dragTick
 
   const selectedPromotion = selected ? promotionByName.get(selected.name) : undefined
+  const selectedPlanStandings = useMemo(() => {
+    const row = selected ? merged.find((m) => m.name === selected.name) : undefined
+    return row ? computePlanStandings(row) : null
+  }, [selected, merged])
 
   return (
     <div ref={rootRef} className="flex flex-col gap-4 bg-background p-1">
@@ -953,71 +958,12 @@ export function StrukturBaum({
               </select>
             </label>
 
-            {selectedPromotion && (
-              <div className="mb-4 rounded-md border bg-muted/30 p-3">
-                <div className="mb-2 text-xs font-semibold">
-                  {selectedPromotion.nextRole
-                    ? <>🎯 Nächste Stufe: {selectedPromotion.nextRole}</>
-                    : "🏆 Höchste Stufe erreicht"}
-                </div>
-                {selectedPromotion.criteria.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    {selectedPromotion.criteria.map((c) => {
-                      const pct = c.need > 0 ? Math.min(100, Math.round((c.have / c.need) * 100)) : 100
-                      const done = c.have >= c.need
-                      return (
-                        <div key={c.kind}>
-                          <div className="mb-0.5 flex items-center justify-between text-[11px]">
-                            <span className="text-muted-foreground">
-                              {c.label}
-                              {c.relaxed && " (erleichtert)"}
-                            </span>
-                            <span className="font-medium tabular-nums">
-                              {fmt(c.have)} / {fmt(c.need)}
-                            </span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className={cn("h-full rounded-full", done ? "bg-emerald-500" : "bg-primary")}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          {c.sources && c.sources.length > 0 && (
-                            <ul className="mt-1 flex flex-col gap-0.5 border-l pl-2">
-                              {c.sources.map((s) => (
-                                <li
-                                  key={s.name}
-                                  className={cn(
-                                    "flex items-center justify-between text-[10px]",
-                                    s.excludedReason ? "text-muted-foreground/70" : "text-muted-foreground"
-                                  )}
-                                >
-                                  <span className="truncate">
-                                    {s.name} <span className="opacity-70">({s.role})</span>
-                                    {s.excludedReason && <span className="italic"> — {s.excludedReason}</span>}
-                                  </span>
-                                  <span className="shrink-0 pl-2 tabular-nums">{s.value}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-                {selectedPromotion.ready && (
-                  <div className="mt-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                    ✓ Alle erfassten Kriterien für {selectedPromotion.nextRole} erfüllt
-                  </div>
-                )}
-                {selectedPromotion.nextRole && (
-                  <div className="mt-2 text-[10px] leading-snug text-muted-foreground">
-                    Gruppenproduktion = Person + gesamter Unterbau, alle Sparten · Ziel/Monat aus
-                    dem Quartalsziel des Karriereplans hochgerechnet. Realisierungsquote, Wartezeiten
-                    und die Bestätigung durch die Geschäftsführung sind hier nicht geprüft.
-                  </div>
-                )}
+            {selectedPromotion && <PromotionPanel promotion={selectedPromotion} className="mb-4" />}
+            {selectedPlanStandings && (
+              <div className="mb-4 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                {selectedPlanStandings.map((p) => (
+                  <span key={p.planId}>{p.label} <span className="font-medium text-foreground">{p.role}</span></span>
+                ))}
               </div>
             )}
 
