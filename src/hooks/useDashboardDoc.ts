@@ -97,7 +97,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
     // die eigenen und die darunter (firestore.rules, canEditEmployee in roles.ts).
     const unsubs: (() => void)[] = []
     if (isAdmin || myId) {
-      unsubs.push(onSnapshot(col, (snap) => {
+      unsubs.push(onSnapshot(col, { includeMetadataChanges: true }, (snap) => {
         setStored(toMap(snap.docs))
         if (!snap.metadata.fromCache) setSyncStatus("connected")
       }, onError))
@@ -111,7 +111,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
   useEffect(() => {
     const ref = orgDocRef("teamGoal")
     if (!cloud || !ref) return
-    return onSnapshot(ref, (snap) => {
+    return onSnapshot(ref, { includeMetadataChanges: true }, (snap) => {
       if (snap.metadata.fromCache) return
       if (snap.exists()) {
         const data = snap.data() as Partial<DashboardDoc>

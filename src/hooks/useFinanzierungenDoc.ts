@@ -81,12 +81,12 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
     const onError = (err: unknown) => console.warn("Finanzierungen: Cloud-Verbindung fehlgeschlagen", err)
     const unsubs: (() => void)[] = []
     if (isAdmin) {
-      unsubs.push(onSnapshot(col, (snap) => {
+      unsubs.push(onSnapshot(col, { includeMetadataChanges: true }, (snap) => {
         setByOwner(toMap(snap.docs)); setByAncestor({})
         if (!snap.metadata.fromCache) cloudReady.current = true
       }, onError))
     } else if (myId) {
-      unsubs.push(onSnapshot(query(col, where("ownerId", "==", myId)), (snap) => {
+      unsubs.push(onSnapshot(query(col, where("ownerId", "==", myId)), { includeMetadataChanges: true }, (snap) => {
         setByOwner(toMap(snap.docs))
         if (!snap.metadata.fromCache) cloudReady.current = true
       }, onError))

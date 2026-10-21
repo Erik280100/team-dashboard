@@ -172,7 +172,8 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       lsSet(planWeekStorageKey(next.week), next)
       // Cache mit aktualisieren, damit Monats-/Jahresansicht sofort den neuen Stand sehen.
       cacheRef.current.set(next.week, next)
-      if (!CLOUD_CONFIGURED || !cloudReady.current) return
+      if (!CLOUD_CONFIGURED) return
+      if (!cloudReady.current) { console.warn(`Planungswoche ${next.week}: noch keine Verbindung zur Cloud - nur lokal gespeichert`); return }
       const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
       if (!id) { console.warn(`Planungswoche: kein Mitarbeiter-Dokument für "${name}"`); return }
       writeEmployeeSubDoc(id, "planWeeks", next.week, current.entries[name] ? { week: next.week, ...patch } : { week: next.week, ...nextEntry }, !!current.entries[name]).catch((err) =>
@@ -323,7 +324,8 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       setMonthNotesDoc(next)
       monthCacheRef.current.set(next.month, next) // Mitarbeiterseite nicht veraltet lassen
       lsSet(planMonthNotesStorageKey(next.month), next)
-      if (!CLOUD_CONFIGURED || !monthCloudReady.current) return
+      if (!CLOUD_CONFIGURED) return
+      if (!monthCloudReady.current) { console.warn(`Monatsnotizen ${next.month}: noch keine Verbindung zur Cloud - nur lokal gespeichert`); return }
       const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
       if (!id) { console.warn(`Monatsnotizen: kein Mitarbeiter-Dokument für "${name}"`); return }
       writeEmployeeSubDoc(id, "planMonthNotes", next.month, current.entries[name] ? { month: next.month, ...patch } : { month: next.month, ...nextEntry }, !!current.entries[name]).catch((err) =>

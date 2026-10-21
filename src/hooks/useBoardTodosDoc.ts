@@ -53,6 +53,7 @@ export function useBoardTodosDoc(employeeId: string | null = null): UseBoardTodo
     cloudReady.current = false
     return onSnapshot(
       collection(firestore, "employees", employeeId, "todos"),
+      { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
         setTodos(snap.docs.map((d) => d.data() as BoardTodo))

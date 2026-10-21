@@ -61,7 +61,7 @@ export function subscribeEmployeeDocs<T>(
   const unsubs = employees.map((e) => {
     const ref = employeeSubDocRef(e.id, sub, key)
     if (!ref) return () => {}
-    return onSnapshot(ref, (snap) => {
+    return onSnapshot(ref, { includeMetadataChanges: true }, (snap) => {
       if (snap.metadata.hasPendingWrites) return
       if (snap.exists()) entries.set(e.id, strip<T>(snap.data(), metaKey))
       else entries.delete(e.id)

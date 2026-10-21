@@ -19,6 +19,7 @@ export function useFinancingStats(): FinancingStats | null {
     if (!CLOUD_CONFIGURED || !ref) return
     return onSnapshot(
       ref,
+      { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.fromCache) return
         const d = snap.data()
