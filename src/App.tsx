@@ -30,6 +30,9 @@ import { useFinancingStats } from "@/hooks/useFinancingStats"
 import { useToday } from "@/hooks/useToday"
 import { hasOpenDueTodos } from "@/lib/calc/todos"
 import { CLOUD_CONFIGURED } from "@/lib/firebase"
+import { announceCelebration } from "@/lib/celebrate"
+import { useCelebrations } from "@/hooks/useCelebrations"
+import { ConfettiRain } from "@/components/ConfettiRain"
 import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
 import { LoginPage } from "@/components/LoginPage"
@@ -121,6 +124,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const planung = usePlanungDoc(accessibleEmployees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
   const boardTodos = useBoardTodosDoc(auth.employeeId)
+  useCelebrations(auth.ready && !!auth.user)
   const boardAlert = hasOpenDueTodos(boardTodos.todos, useToday())
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
   // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin (und lokaler Modus) sehen den ganzen Baum,
@@ -277,6 +281,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
     } else {
       dashboard.saveRows([...dashboard.rows, withVb(newRowFor(entry.name))])
     }
+    announceCelebration(name)
   }
 
   async function handleCloseMonth() {
@@ -310,6 +315,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
 
   return (
     <div className="flex h-svh overflow-hidden bg-background text-foreground">
+      <ConfettiRain />
       <Sidebar
         section={section}
         onNavigate={navigateTo}
