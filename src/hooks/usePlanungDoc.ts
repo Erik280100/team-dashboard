@@ -134,6 +134,8 @@ export function usePlanungDoc(): UsePlanungDocResult {
   // ---- Lazy-Load-Cache für Monats-/Jahresansicht (Muster useMonthArchive.loadOne) ----
   const cacheRef = useRef<Map<string, PlanWeekDoc>>(new Map())
   const statusRef = useRef<Map<string, WeekDocStatus>>(new Map())
+  const loadedAtRef = useRef<Map<string, number>>(new Map())
+  const WEEK_CACHE_TTL_MS = 60_000
   const [, bumpCacheVersion] = useState(0)
 
   const saveWeekEntry = useCallback(
@@ -147,7 +149,9 @@ export function usePlanungDoc(): UsePlanungDocResult {
       cacheRef.current.set(next.week, next)
       const docRef = planWeekDocRef(next.week)
       if (CLOUD_CONFIGURED && cloudReady.current && docRef) {
-        setDoc(docRef, next).catch((err) =>
+        // merge: nur den Eintrag dieser Person schreiben, damit parallele Änderungen
+        // anderer Geräte/Personen in derselben Woche nicht überschrieben werden.
+        setDoc(docRef, { week: next.week, entries: { [name]: nextEntry } }, { merge: true }).catch((err) =>
           console.warn(`Planungswoche ${next.week}: Cloud-Speichern fehlgeschlagen`, err)
         )
       } else if (CLOUD_CONFIGURED) {
@@ -159,7 +163,8 @@ export function usePlanungDoc(): UsePlanungDocResult {
 
   const loadOne = useCallback(async (week: string): Promise<PlanWeekDoc> => {
     const cached = cacheRef.current.get(week)
-    if (cached) return cached
+    const fresh = Date.now() - (loadedAtRef.current.get(week) ?? 0) < WEEK_CACHE_TTL_MS
+    if (cached && (fresh || !CLOUD_CONFIGURED)) return cached
 
     // Die aktuell live gesyncte Woche ist bereits im State — direkt übernehmen.
     // Nur wenn das State-Dokument wirklich zu dieser Woche gehört: direkt nach
@@ -170,16 +175,12 @@ export function usePlanungDoc(): UsePlanungDocResult {
       return latestWeekDoc.current
     }
 
-    const local = loadLocalWeekDoc(week)
-    if (Object.keys(local.entries).length > 0) {
+    // Mit Cloud ist localStorage nur Notnagel — sonst zeigen Monats-/Team-Ansicht
+    // dauerhaft den veralteten Stand des eigenen Geräts.
+    if (!CLOUD_CONFIGURED) {
+      const local = loadLocalWeekDoc(week)
       cacheRef.current.set(week, local)
       return local
-    }
-
-    if (!CLOUD_CONFIGURED) {
-      const empty = emptyWeekDoc(week)
-      cacheRef.current.set(week, empty)
-      return empty
     }
 
     statusRef.current.set(week, "loading")
@@ -191,6 +192,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
         ? { week, entries: (snap.data() as Partial<PlanWeekDoc>).entries ?? {} }
         : emptyWeekDoc(week)
       cacheRef.current.set(week, data)
+      loadedAtRef.current.set(week, Date.now())
       try { localStorage.setItem(planWeekStorageKey(week), JSON.stringify(data)) } catch { /* noop */ }
       statusRef.current.set(week, "ready")
       bumpCacheVersion((n) => n + 1)
@@ -198,9 +200,10 @@ export function usePlanungDoc(): UsePlanungDocResult {
     } catch (err) {
       console.warn(`Planungswoche ${week} konnte nicht geladen werden`, err)
       statusRef.current.set(week, "error")
-      const empty = emptyWeekDoc(week)
-      cacheRef.current.set(week, empty)
-      return empty
+      const fallback = cached ?? loadLocalWeekDoc(week)
+      cacheRef.current.set(week, fallback)
+      loadedAtRef.current.set(week, Date.now())
+      return fallback
     }
   }, [activeWeek])
 
@@ -261,7 +264,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
       try { localStorage.setItem(planMonthNotesStorageKey(next.month), JSON.stringify(next)) } catch { /* noop */ }
       const docRef = planMonthNotesDocRef(next.month)
       if (CLOUD_CONFIGURED && monthCloudReady.current && docRef) {
-        setDoc(docRef, next).catch((err) =>
+        setDoc(docRef, { month: next.month, entries: { [name]: nextEntry } }, { merge: true }).catch((err) =>
           console.warn(`Monatsnotizen ${next.month}: Cloud-Speichern fehlgeschlagen`, err)
         )
       } else if (CLOUD_CONFIGURED) {
