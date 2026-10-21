@@ -10,13 +10,13 @@
 // useConfirm() bereits als Kind-Komponente nutzt).
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
-import { PLAN_IDS, isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
-import { applyMonthStats, mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
+import { isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
+import { applyMonthStats, mergeRosterWithRows, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import type { UmsatzDraft } from "@/lib/calc/umsatz"
-import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
+import { readPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
-import { formatISODateDE, toISODate, type EmployeeRow } from "@/lib/calc/format"
+import { formatISODateDE, toISODate } from "@/lib/calc/format"
 import { canEditEmployee } from "@/lib/calc/roles"
 import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
@@ -273,26 +273,10 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
    * "Übernehmen"-Button im EH-Rechner. Legt bei Bedarf eine neue Zeile in
    * dashboard.rows an, analog zu Team.tsx commitField/commitPlanUnits. */
   function applyUnitsToEmployee(name: string, delta: Record<PlanId, number>, abwickler?: string, sales: UmsatzDraft[] = []) {
-    const entry = merged.find((m) => m.name === name)
-    if (!entry) return
-    const current = readPlanUnits(entry)
-    const next = {} as Record<PlanId, number>
-    PLAN_IDS.forEach((p) => { next[p] = (Number(current[p]) || 0) + (Number(delta[p]) || 0) })
-    // VB-Einheiten (Plan "investmentVb") dem gewählten Abwickler zuweisen.
-    const vbDelta = Number(delta.investmentVb) || 0
-    const withVb = (row: EmployeeRow): EmployeeRow => {
-      const base = withPlanUnits(row, next)
-      if (!abwickler || vbDelta <= 0) return base
-      const vb = { ...(row.vbByAbwickler ?? {}) }
-      vb[abwickler] = (Number(vb[abwickler]) || 0) + vbDelta
-      return { ...base, vbByAbwickler: vb }
-    }
-    if (entry.rowIndex !== null) {
-      const nextRows = dashboard.rows.map((r, i) => (i === entry.rowIndex ? withVb(r) : r))
-      dashboard.saveRows(nextRows)
-    } else {
-      dashboard.saveRows([...dashboard.rows, withVb(newRowFor(entry.name))])
-    }
+    if (!merged.some((m) => m.name === name)) return
+    // VB-Einheiten (Plan "investmentVb") gehen an den gewählten Abwickler. In der Cloud wird atomar
+    // hochgezählt, damit gleichzeitige Buchungen auf dieselbe Person nicht überschrieben werden.
+    dashboard.bookUnits(name, delta, abwickler)
     umsaetze.addEntries(name, sales)
     announceCelebration(name)
   }

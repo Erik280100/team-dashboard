@@ -10,13 +10,16 @@
 // Im Cloud-Modus wird bewusst NICHTS in localStorage gecacht: Der Browser kann von
 // mehreren Konten benutzt werden, Zahlen dürfen nicht zwischen ihnen durchsickern.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { onSnapshot, setDoc, writeBatch } from "firebase/firestore"
+import { FieldPath, increment, onSnapshot, setDoc, updateDoc, writeBatch } from "firebase/firestore"
 import { CLOUD_CONFIGURED, employeeDocRef, employeesCollection, firestore, orgDocRef } from "@/lib/firebase"
 import { migrateRows, recordSnapshot, type HistoryEntry } from "@/lib/calc/format"
 import { withCalendarPeriod } from "@/lib/calc/archive"
 import {
-  diffRowWrites, employeeDocToRow, employeeMetaOf, type EmployeeMeta,
+  diffRowWrites, employeeDocToRow, employeeMetaOf, idByName, type EmployeeMeta,
 } from "@/lib/calc/employees"
+import { newRowFor } from "@/lib/calc/team"
+import { applyUnitDelta, unitBookingOps } from "@/lib/calc/verguetung"
+import type { PlanId } from "@/lib/calc/struktur"
 import type { AccountInfo } from "@/lib/calc/roles"
 import {
   STARTER_DATA, STARTER_GOAL, STORAGE_KEY, GOAL_KEY, HISTORY_KEY,
@@ -51,6 +54,9 @@ export interface UseDashboardDocResult {
   syncStatus: SyncStatus
   /** rows ersetzen: geänderte Zeilen werden in ihre Mitarbeiter-Dokumente geschrieben. */
   saveRows: (next: EmployeeRow[]) => void
+  /** Einheiten (EH-Rechner) additiv auf einen Mitarbeiter buchen. In der Cloud wird atomar hochgezählt
+   * (increment): gleichzeitige Buchungen mehrerer Personen auf dieselbe Person gehen nicht verloren. */
+  bookUnits: (name: string, delta: Record<PlanId, number>, abwickler?: string) => void
   /** teamGoal ersetzen (nur Admin; sonst wirkungslos). */
   saveGoal: (next: TeamGoal) => void
   /** rows+teamGoal+history in einem Zug ersetzen — Monatsabschluss-Reset (nur Admin). */
@@ -172,6 +178,35 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
     }
   }, [cloud, isAdmin, pushGoal, writeRows])
 
+  const bookUnits = useCallback((name: string, delta: Record<PlanId, number>, abwickler?: string) => {
+    const cur = latest.current
+    const key = name.trim().toLowerCase()
+    const idx = cur.rows.findIndex((r) => r.name.trim().toLowerCase() === key)
+    const row = idx >= 0 ? cur.rows[idx] : newRowFor(name)
+    const nextRows = idx >= 0 ? cur.rows.map((r, i) => (i === idx ? applyUnitDelta(r, delta, abwickler) : r)) : [...cur.rows, applyUnitDelta(row, delta, abwickler)]
+    if (!cloud) {
+      saveRows(nextRows)
+      return
+    }
+    const id = idByName(cur.employees).get(key)
+    const ref = id ? employeeDocRef(id) : null
+    if (!ref) { console.warn(`Einheiten buchen: kein Mitarbeiter-Dokument für "${name}"`); return }
+    const { increments, absolute } = unitBookingOps(row, delta, abwickler)
+    const args: unknown[] = []
+    for (const [k, v] of Object.entries(absolute)) args.push(k, v)
+    for (const inc of increments) args.push(new FieldPath(...inc.path), increment(inc.by))
+    if (args.length > 0) {
+      const [field, value, ...more] = args as [string | FieldPath, unknown, ...unknown[]]
+      updateDoc(ref, field, value, ...more).catch((err) => { console.warn("Cloud-Speichern fehlgeschlagen", err); setSyncStatus("error") })
+    }
+    // Verlauf (Team-Gesamt-Ist) wie in saveRows: nur der Admin kennt ihn vollständig.
+    if (isAdmin) {
+      const h = recordSnapshot(nextRows, cur.history)
+      setHistory(h)
+      if (JSON.stringify(h) !== JSON.stringify(cur.history)) pushGoal({ history: h })
+    }
+  }, [cloud, isAdmin, pushGoal, saveRows])
+
   const saveGoal = useCallback((next: TeamGoal) => {
     setTeamGoal(next)
     if (!cloud) {
@@ -200,5 +235,5 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
     pushGoal({ teamGoal: next.teamGoal, history: next.history })
   }, [cloud, isAdmin, pushGoal, writeRows])
 
-  return { rows, employees, teamGoal, history, syncStatus, saveRows, saveGoal, saveAll }
+  return { rows, employees, teamGoal, history, syncStatus, saveRows, bookUnits, saveGoal, saveAll }
 }

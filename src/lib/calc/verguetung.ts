@@ -57,6 +57,49 @@ export function withPlanUnits(row: EmployeeRow, units: Record<PlanId, number>): 
   return { ...row, ehByPlan, ist: sumPlanUnits(units) }
 }
 
+/** Buchung (EH-Rechner) auf eine Zeile anwenden: Einheiten je Plan addieren, `ist` nachziehen und
+ * VB-Einheiten dem Abwickler zuschreiben. Mutiert `row` nicht. */
+export function applyUnitDelta(row: EmployeeRow, delta: Record<PlanId, number>, abwickler?: string): EmployeeRow {
+  const current = readPlanUnits(row)
+  const next = {} as Record<PlanId, number>
+  PLAN_IDS.forEach((p) => { next[p] = (Number(current[p]) || 0) + (Number(delta[p]) || 0) })
+  const base = withPlanUnits(row, next)
+  const vbDelta = Number(delta.investmentVb) || 0
+  if (!abwickler || vbDelta <= 0) return base
+  const vb = { ...(row.vbByAbwickler ?? {}) }
+  vb[abwickler] = (Number(vb[abwickler]) || 0) + vbDelta
+  return { ...base, vbByAbwickler: vb }
+}
+
+/** Wie eine Buchung in die Cloud geschrieben wird, ohne gleichzeitige Buchungen anderer zu überschreiben:
+ * `increments` werden atomar auf dem Server addiert (Pfad im Dokument, Betrag), `absolute` sind Felder, die
+ * einmalig als Endwert gesetzt werden müssen (nur bei Altzeilen ohne ehByPlan, die erst umgestellt werden). */
+export interface UnitBookingOps {
+  increments: { path: string[]; by: number }[]
+  absolute: Record<string, unknown>
+}
+
+export function unitBookingOps(row: EmployeeRow, delta: Record<PlanId, number>, abwickler?: string): UnitBookingOps {
+  const increments: UnitBookingOps["increments"] = []
+  const absolute: Record<string, unknown> = {}
+  const added = PLAN_IDS.reduce((s, p) => s + (Number(delta[p]) || 0), 0)
+  if (row.ehByPlan) {
+    PLAN_IDS.forEach((p) => {
+      const by = Number(delta[p]) || 0
+      if (by !== 0) increments.push({ path: ["ehByPlan", p], by })
+    })
+    if (added !== 0) increments.push({ path: ["ist"], by: added })
+  } else {
+    // Altbestand: nur `ist` vorhanden -> einmal die Aufteilung als Endwert anlegen (ab dann atomar).
+    const after = applyUnitDelta(row, delta)
+    absolute.ehByPlan = after.ehByPlan
+    absolute.ist = after.ist
+  }
+  const vbDelta = Number(delta.investmentVb) || 0
+  if (abwickler && vbDelta > 0) increments.push({ path: ["vbByAbwickler", abwickler], by: vbDelta })
+  return { increments, absolute }
+}
+
 export type EarningKind = "eigen" | "differenz" | "gleichstand"
 
 export interface PlanEarning {
