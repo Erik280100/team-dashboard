@@ -90,9 +90,16 @@ export async function fetchEmployeeDocs<T>(
   return out
 }
 
-export function writeEmployeeSubDoc(employeeId: string, sub: string, key: string, data: Record<string, unknown>): Promise<void> {
+/**
+ * Dokument eines Mitarbeiters schreiben. `merge` = nur die übergebenen Felder ändern (Rest bleibt unangetastet):
+ * so überschreibt ein veralteter Browser-Stand keine Werte, die inzwischen jemand anderes geändert hat.
+ */
+export function writeEmployeeSubDoc(
+  employeeId: string, sub: string, key: string, data: Record<string, unknown>, merge = false,
+): Promise<void> {
   const ref = employeeSubDocRef(employeeId, sub, key)
-  return ref ? setDoc(ref, data) : Promise.resolve()
+  if (!ref) return Promise.resolve()
+  return merge ? setDoc(ref, data, { merge: true }) : setDoc(ref, data)
 }
 
 /**

@@ -132,10 +132,11 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
   const latest = useRef({ rows, employees, teamGoal, history })
   latest.current = { rows, employees, teamGoal, history }
 
-  const pushGoal = useCallback((next: { teamGoal: TeamGoal; history: HistoryEntry[] }) => {
+  /** Nur die übergebenen Teile von org/teamGoal schreiben (merge) — nie das ganze Dokument aus einem evtl. veralteten Stand. */
+  const pushGoal = useCallback((next: { teamGoal?: TeamGoal; history?: HistoryEntry[] }) => {
     const ref = orgDocRef("teamGoal")
     if (!ref || !isAdmin || !goalReady.current) return
-    setDoc(ref, next).catch((err) => { console.warn("Cloud-Speichern fehlgeschlagen", err); setSyncStatus("error") })
+    setDoc(ref, next, { merge: true }).catch((err) => { console.warn("Cloud-Speichern fehlgeschlagen", err); setSyncStatus("error") })
   }, [isAdmin])
 
   const writeRows = useCallback((writes: { id: string; data: Record<string, unknown> }[]) => {
@@ -167,7 +168,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
     if (isAdmin) {
       const h = recordSnapshot(next, cur.history)
       setHistory(h)
-      pushGoal({ teamGoal: cur.teamGoal, history: h })
+      if (JSON.stringify(h) !== JSON.stringify(cur.history)) pushGoal({ history: h })
     }
   }, [cloud, isAdmin, pushGoal, writeRows])
 
@@ -177,7 +178,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
       try { localStorage.setItem(GOAL_KEY, JSON.stringify(next)) } catch { /* noop */ }
       return
     }
-    pushGoal({ teamGoal: next, history: latest.current.history })
+    pushGoal({ teamGoal: next })
   }, [cloud, pushGoal])
 
   const saveAll = useCallback((next: DashboardDoc) => {

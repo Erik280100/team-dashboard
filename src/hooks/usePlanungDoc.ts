@@ -175,7 +175,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       if (!CLOUD_CONFIGURED || !cloudReady.current) return
       const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
       if (!id) { console.warn(`Planungswoche: kein Mitarbeiter-Dokument für "${name}"`); return }
-      writeEmployeeSubDoc(id, "planWeeks", next.week, { week: next.week, ...nextEntry }).catch((err) =>
+      writeEmployeeSubDoc(id, "planWeeks", next.week, current.entries[name] ? { week: next.week, ...patch } : { week: next.week, ...nextEntry }, !!current.entries[name]).catch((err) =>
         console.warn(`Planungswoche ${next.week}: Cloud-Speichern fehlgeschlagen`, err)
       )
     },
@@ -326,7 +326,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       if (!CLOUD_CONFIGURED || !monthCloudReady.current) return
       const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
       if (!id) { console.warn(`Monatsnotizen: kein Mitarbeiter-Dokument für "${name}"`); return }
-      writeEmployeeSubDoc(id, "planMonthNotes", next.month, { month: next.month, ...nextEntry }).catch((err) =>
+      writeEmployeeSubDoc(id, "planMonthNotes", next.month, current.entries[name] ? { month: next.month, ...patch } : { month: next.month, ...nextEntry }, !!current.entries[name]).catch((err) =>
         console.warn(`Monatsnotizen ${next.month}: Cloud-Speichern fehlgeschlagen`, err)
       )
     },
@@ -451,7 +451,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     if (!CLOUD_CONFIGURED || !annualCloudReady.current.has(cacheKey)) return
     const id = idByName(employeesRef.current).get(managerName.trim().toLowerCase())
     if (!id) return
-    writeEmployeeSubDoc(id, "planAnnual", String(year), { ...doc }).catch((err) =>
+    writeEmployeeSubDoc(id, "planAnnual", String(year), { ...doc }, true).catch((err) =>
       console.warn(`Jahresplanung ${year}/${managerKey}: Cloud-Speichern fehlgeschlagen`, err)
     )
   }, [])

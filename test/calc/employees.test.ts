@@ -42,3 +42,17 @@ describe("employees bridge", () => {
     })
   })
 })
+
+describe("diffRowWrites – nur geänderte Felder", () => {
+  const meta = [{ id: "m1", name: "Mia Eins", role: "FT 1", managerId: "lead", ancestors: ["lead"] }]
+  it("schreibt nur das geänderte Feld, nicht die ganze Zeile", () => {
+    const prev = employeeDocToRow(doc)
+    const next = { ...prev, soll: 99 }
+    const { writes } = diffRowWrites([prev], [next], meta)
+    expect(writes).toEqual([{ id: "m1", data: { soll: 99 } }])
+  })
+  it("unveränderte Zeilen erzeugen keinen Schreibvorgang", () => {
+    const prev = employeeDocToRow(doc)
+    expect(diffRowWrites([prev], [{ ...prev }], meta).writes).toEqual([])
+  })
+})

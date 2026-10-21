@@ -147,6 +147,17 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
     })
   })
 
+  describe("celebrations (Konfetti)", () => {
+    it("Eingeloggte melden eine Buchung und lesen mit, ändern/löschen nicht, fremde Felder verboten", async () => {
+      const db = as("member", "m1")
+      await assertSucceeds(setDoc(doc(db, "celebrations", "c1"), { name: "Mia", at: Date.now() }))
+      await assertSucceeds(getDoc(doc(as("member", "m2"), "celebrations", "c1")))
+      await assertFails(updateDoc(doc(db, "celebrations", "c1"), { name: "X" }))
+      await assertFails(setDoc(doc(db, "celebrations", "c2"), { name: "Mia", at: 1, extra: true }))
+      await assertFails(setDoc(doc(anon(), "celebrations", "c3"), { name: "Mia", at: 1 }))
+    })
+  })
+
   describe("Todos (Mein Board)", () => {
     it("nur der Besitzer — weder Vorgesetzte noch Admin", async () => {
       await assertSucceeds(getDoc(doc(as("member", "m1"), "employees", "m1", "todos", "t1")))
@@ -221,6 +232,36 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
     it("alte Sammeldokumente (finova/*) sind gesperrt", async () => {
       await assertFails(getDoc(doc(as("admin"), "finova", "dashboard")))
       await assertFails(setDoc(doc(as("admin"), "finova", "dashboard"), { rows: [] }))
+    })
+  })
+
+  describe("Schutz vor Zurückrollen (veralteter Admin-Tab)", () => {
+    beforeEach(async () => {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        const db = ctx.firestore()
+        await setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-10-01", periodEnd: "2026-10-31" }, history: [{ d: 1 }, { d: 2 }] })
+        await setDoc(doc(db, "org", "archiveIndex"), { months: [{ month: "2026-08" }, { month: "2026-09" }] })
+      })
+    })
+    it("Teamziel darf nicht auf einen früheren Monat zurück, vorwärts schon", async () => {
+      const db = as("admin")
+      await assertFails(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-09-01", periodEnd: "2026-09-30" }, history: [{ d: 1 }, { d: 2 }] }))
+      await assertFails(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-09-01" } }, { merge: true }))
+      await assertSucceeds(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-11-01", periodEnd: "2026-11-30" }, history: [{ d: 1 }, { d: 2 }, { d: 3 }] }))
+    })
+    it("Verlauf darf nicht kürzer werden, Notiz ändern geht", async () => {
+      const db = as("admin")
+      await assertFails(setDoc(doc(db, "org", "teamGoal"), { history: [{ d: 1 }] }, { merge: true }))
+      await assertSucceeds(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { note: "x" } }, { merge: true }))
+    })
+    it("Archivindex darf keine Monate verlieren", async () => {
+      const db = as("admin")
+      await assertFails(setDoc(doc(db, "org", "archiveIndex"), { months: [{ month: "2026-09" }] }))
+      await assertSucceeds(setDoc(doc(db, "org", "archiveIndex"), { months: [{ month: "2026-08" }, { month: "2026-09" }, { month: "2026-10" }] }))
+    })
+    it("Nicht-Admins schreiben org/* nie; sonstige org-Dokumente bleiben für Admin beschreibbar", async () => {
+      await assertFails(setDoc(doc(as("lead", "lead"), "org", "teamGoal"), { teamGoal: { periodStart: "2027-01-01" } }, { merge: true }))
+      await assertSucceeds(updateDoc(doc(as("admin"), "org", "structure"), { notes: {} }))
     })
   })
 })

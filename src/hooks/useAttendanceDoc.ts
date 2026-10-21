@@ -82,7 +82,7 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
     if (!CLOUD_CONFIGURED || !attendanceReady.current) return
     const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
     if (!id) { console.warn(`Anwesenheit: kein Mitarbeiter-Dokument für "${name}"`); return }
-    writeEmployeeSubDoc(id, "attendance", "current", { ...entry }).catch((err) =>
+    writeEmployeeSubDoc(id, "attendance", "current", { ...patch }, true).catch((err) =>
       console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)
     )
   }, [])

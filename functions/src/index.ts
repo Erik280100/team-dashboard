@@ -210,7 +210,7 @@ export const disableUser = onCall({ region: REGION }, async (req) => {
 
 /**
  * Strukturbaum geändert -> employees/{id} (name, role, managerId, ancestors) nachziehen,
- * fehlende Mitarbeiter anlegen, entfernte deaktivieren (Daten bleiben, Login wird gesperrt),
+ * fehlende Mitarbeiter anlegen, entfernte deaktivieren (Daten bleiben; Login sperrt nur der Admin ueber disableUser),
  * ancestors der Finanzierungsfälle aktualisieren. Geschrieben wird nur, was sich wirklich geändert hat
  * (jede Änderung an einem Mitarbeiter-Dokument kostet bei jedem offenen Dashboard einen Lesezugriff).
  */
@@ -251,10 +251,8 @@ export const onStructureChange = onDocumentWritten({ document: "org/structure", 
       )
     }
   }
-  const nowInactive: string[] = []
   for (const d of existing.docs) {
     if (byId.has(d.id)) continue
-    if (d.get("active") !== false) nowInactive.push(d.id)
     if (d.get("active") !== false || d.get("managerId") != null || (d.get("ancestors") ?? []).length > 0) {
       op((b) => b.update(d.ref, { active: false, managerId: null, ancestors: [] }))
     }
@@ -270,8 +268,6 @@ export const onStructureChange = onDocumentWritten({ document: "org/structure", 
   batches.push(batch)
   for (const b of batches) await b.commit()
 
-  // Wer aus dem Baum entfernt wurde, verliert den Login (Daten bleiben erhalten; Wiederfreischalten: inviteUser).
-  for (const id of nowInactive) await disableAccountOf(id)
 })
 
 function sameStructure(doc: DocumentSnapshot, s: { name: string; role: string; managerId: string | null; ancestors: string[]; active: boolean }) {
@@ -279,16 +275,6 @@ function sameStructure(doc: DocumentSnapshot, s: { name: string; role: string; m
     && JSON.stringify(doc.get("ancestors") ?? []) === JSON.stringify(s.ancestors) && doc.get("active") === s.active
 }
 
-async function disableAccountOf(empId: string) {
-  try {
-    const uid = (await accountRef(empId).get()).get("uid") as string | null | undefined
-    if (!uid) return
-    await getAuth().updateUser(uid, { disabled: true })
-    await getAuth().revokeRefreshTokens(uid)
-  } catch (err) {
-    console.error(`Konto von ${empId} konnte nicht gesperrt werden`, err)
-  }
-}
 
 /**
  * Strukturbaum ändern (jedes Konto mit verknüpftem Mitarbeiter): erlaubt sind nur Änderungen UNTERHALB des

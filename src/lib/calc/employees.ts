@@ -85,16 +85,23 @@ export function diffRowWrites(
   employees: readonly EmployeeMeta[],
 ): { writes: EmployeeWrite[]; skipped: string[] } {
   const ids = idByName(employees)
-  const prevByName = new Map(prev.map((r) => [norm(r.name), JSON.stringify(rowToEmployeeData(r))]))
+  const prevByName = new Map(prev.map((r) => [norm(r.name), rowToEmployeeData(r)]))
   const writes: EmployeeWrite[] = []
   const skipped: string[] = []
   for (const row of next) {
     const key = norm(row.name)
     const data = rowToEmployeeData(row)
-    if (prevByName.get(key) === JSON.stringify(data)) continue
+    const before = prevByName.get(key)
+    // Nur die tatsächlich geänderten Felder schreiben: ein veralteter Stand im Browser darf Werte, die inzwischen
+    // jemand anderes geändert hat (z. B. Einheiten per EH-Rechner), nicht mit alten Werten überschreiben.
+    const changed: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(data)) {
+      if (!before || JSON.stringify(before[k]) !== JSON.stringify(v)) changed[k] = v
+    }
+    if (before && Object.keys(changed).length === 0) continue
     const id = ids.get(key)
     if (!id) { skipped.push(row.name); continue }
-    writes.push({ id, data })
+    writes.push({ id, data: changed })
   }
   return { writes, skipped }
 }

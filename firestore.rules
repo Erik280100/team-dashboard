@@ -112,10 +112,35 @@ service cloud.firestore {
       allow delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
     }
 
+    // Konfetti bei Umsatzbuchungen: jeder Eingeloggte meldet eine Buchung (nur name + Zeitpunkt, unveraenderlich),
+    // alle lesen mit und loesen damit den Konfettiregen aus.
+    match /celebrations/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['name', 'at'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 80
+        && request.resource.data.at is number;
+      allow update, delete: if false;
+    }
+
     // Strukturbaum, Saetze, Teamziel: alle Eingeloggten lesen, nur Admin schreibt.
     match /org/{docId} {
       allow read: if signedIn();
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      // teamGoal/archiveIndex: eigene, strengere Update-Regeln unten (Regeln werden mit ODER verknuepft).
+      allow update: if isAdmin() && !(docId in ['teamGoal', 'archiveIndex']);
+    }
+    // Schutz vor "alter Stand ueberschreibt neuen" (z. B. veralteter Admin-Tab): Teamziel darf nicht auf einen
+    // frueheren Monat zurueck und der Verlauf nicht kuerzer werden; das Archiv darf keine Monate verlieren.
+    // Die Cloud Functions (Admin SDK) sind davon nicht betroffen. Spezifischere Regel, gilt zusaetzlich zu oben.
+    match /org/teamGoal {
+      allow update: if isAdmin()
+        && request.resource.data.get('teamGoal', {}).get('periodStart', '') >= resource.data.get('teamGoal', {}).get('periodStart', '')
+        && request.resource.data.get('history', []).size() >= resource.data.get('history', []).size();
+    }
+    match /org/archiveIndex {
+      allow update: if isAdmin()
+        && request.resource.data.get('months', []).size() >= resource.data.get('months', []).size();
     }
 
     // Monatsarchiv: Monatsabschluss schreibt der Admin (Client); danach unveraendert.
