@@ -86,6 +86,7 @@ export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null):
     if (!CLOUD_CONFIGURED || !docRef) return
     const unsub = onSnapshot(
       docRef,
+      { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
         // Nur Server-Stände zählen: ein Cache-Snapshot ("Dokument fehlt"/veraltet) darf weder
