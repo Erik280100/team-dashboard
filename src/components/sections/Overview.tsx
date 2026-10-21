@@ -5,7 +5,8 @@
 // nicht nur die Chart-Panels.
 import "@/lib/chartSetup"
 import { useEffect, useMemo, useState } from "react"
-import { Line, Pie } from "react-chartjs-2"
+import { Line } from "react-chartjs-2"
+import { Siegertreppchen } from "@/components/Siegertreppchen"
 import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -67,7 +68,10 @@ export function Overview({
   planung,
   archiveIndex,
   teamSize,
+  avatars,
 }: {
+  /** Profilbilder je Name (nur Personen mit Bild) — Köpfe der Figuren im Treppchen. */
+  avatars?: Record<string, { id: string; version: number }>
   /** Mitarbeiterzahl laut Strukturbaum (live); im Archiv undefined → rows.length. */
   teamSize?: number
   rows: EmployeeRow[]
@@ -99,11 +103,6 @@ export function Overview({
   const goal = useMemo(() => goalProgress(rows), [rows])
   const timeline = useMemo(() => timelineData(teamGoal, rows, history, now ?? new Date()), [teamGoal, rows, history, now])
   const shares = useMemo(() => revenueShareData(rows), [rows])
-  const pieShares = useMemo(() => {
-    // Umsatzanteil-Kachel: nur Mitarbeiter mit mehr als 5 % am Gesamtumsatz
-    const shareTotal = shares.reduce((s, r) => s + r.value, 0)
-    return shares.filter((s) => shareTotal > 0 && s.value / shareTotal > 0.05)
-  }, [shares])
   const sparten = useMemo(() => {
     const planTotals = rows.reduce(
       (acc, r) => {
@@ -169,30 +168,6 @@ export function Overview({
       },
     ],
   }), [timeline])
-  const pieData = useMemo(() => ({
-    labels: pieShares.map((s) => s.name),
-    datasets: [{
-      data: pieShares.length ? pieShares.map((s) => s.value || 1) : [1],
-      backgroundColor: pieShares.map((s) => s.color),
-      borderWidth: 0,
-    }],
-  }), [pieShares])
-  const pieOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label(item: { dataIndex: number }) {
-            const s = pieShares[item.dataIndex]
-            return `${s.name}: ${s.pct}%`
-          },
-        },
-      },
-    },
-  }), [pieShares])
-
   const [noteDraft, setNoteDraft] = useState(teamGoal.note)
 
   function commitField<K extends keyof TeamGoal>(key: K, value: TeamGoal[K]) {
@@ -321,25 +296,9 @@ export function Overview({
       {/* Umsatzanteil / Top 10 Geschäftspartner / Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className={DARK_CARD}>
-          <DarkCardHeader title="Umsatzanteil" sub="Anteil je Mitarbeiter am Gesamtumsatz" />
+          <DarkCardHeader title="Treppchen" sub="Die Top 3 nach Einheiten" />
           <CardContent>
-            <div className="h-[220px]">
-              <Pie
-                data={pieData}
-                options={pieOptions}
-                aria-label={"Umsatzanteil je Mitarbeiter: " + pieShares.map((s) => `${s.name} ${s.pct} Prozent`).join(", ")}
-                role="img"
-              />
-            </div>
-            <div className="mt-3 flex flex-col gap-1.5">
-              {pieShares.map((s) => (
-                <div key={s.name} className="flex items-center gap-2 text-xs text-white/70">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
-                  <span className="flex-1 truncate">{s.name}</span>
-                  <span className="font-medium">{s.pct}%</span>
-                </div>
-              ))}
-            </div>
+            <Siegertreppchen entries={shares} avatars={avatars} formatValue={fmt} />
           </CardContent>
         </Card>
 

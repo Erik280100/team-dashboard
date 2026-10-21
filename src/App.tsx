@@ -423,6 +423,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     key={archiveMonth ?? "live"}
                     rows={dashRows}
                     teamSize={isArchive ? undefined : dashRoster.length}
+                    avatars={avatarsByName}
                     teamGoal={view.teamGoal}
                     history={dashHistory}
                     saveGoal={isArchive ? blocked : dashboard.saveGoal}
