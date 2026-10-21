@@ -39,7 +39,7 @@ export function Topbar({
   archive,
   archiveMonth,
   onSelectMonth,
-  canEdit,
+  canExportImport,
   onCloseMonth,
   onToggleSidebar,
   attendance,
@@ -57,8 +57,8 @@ export function Topbar({
   archive: UseMonthArchiveResult
   archiveMonth: MonthKey | null
   onSelectMonth: (month: MonthKey | null) => void
-  /** Editor UND kein Archiv-Monat gewählt — steuert Export/Import/Abschluss-Button. */
-  canEdit: boolean
+  /** Export/Import sichtbar: Admin und alle ab Geschäftsstellenleiter. */
+  canExportImport: boolean
   onCloseMonth: () => void
   onToggleSidebar: () => void
   /** Für "Vollständiges Backup" — Daten, die im normalen Export (nur rows/teamGoal) fehlen. */
@@ -240,12 +240,12 @@ export function Topbar({
         <span role="status" aria-live="polite" className="text-xs text-muted-foreground">
           {SYNC_STATUS_TEXT[dashboard.syncStatus]}
         </span>
-        {!isArchive && auth.isAdmin && section === "overview" && (
+        {!isArchive && canExportImport && section === "overview" && (
           <Button size="sm" variant="ghost" onClick={onExport}>
             Export
           </Button>
         )}
-        {canEdit && (
+        {!isArchive && canExportImport && (
           <>
             <Button size="sm" variant="ghost" onClick={() => fileInputRef.current?.click()}>
               Import

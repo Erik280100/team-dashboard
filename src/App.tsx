@@ -10,7 +10,7 @@
 // useConfirm() bereits als Kind-Komponente nutzt).
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
-import { PLAN_IDS, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
+import { PLAN_IDS, isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { applyMonthStats, mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
@@ -136,6 +136,9 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   // Dashboard: "Gesamt" (alle Mitarbeiter) oder "Mein Team" (man selbst und alle darunter). Wer keinem Knoten
   // zugeordnet ist (z. B. reiner Admin) kann nicht wechseln und sieht immer Gesamt.
   const canSwitchScope = CLOUD_CONFIGURED && !!auth.employeeId
+  // Export/Import in der Kopfzeile: Admin und alle ab Geschäftsstellenleiter.
+  const myNodeRole = auth.employeeId && orgChart.tree ? sbFind(orgChart.tree, auth.employeeId)?.role : undefined
+  const canExportImport = !CLOUD_CONFIGURED || auth.isAdmin || isGstOrHigher(myNodeRole ?? "")
   const [dashScope, setDashScope] = useState<"gesamt" | "team">(() => {
     try { return localStorage.getItem("finova_dashboard_scope") === "team" ? "team" : "gesamt" } catch { return "gesamt" }
   })
@@ -333,7 +336,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
           archive={archive}
           archiveMonth={archiveMonth}
           onSelectMonth={setArchiveMonth}
-          canEdit={auth.isAdmin && !isArchive}
+          canExportImport={canExportImport}
           onCloseMonth={handleCloseMonth}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
           attendance={attendance.attendance}

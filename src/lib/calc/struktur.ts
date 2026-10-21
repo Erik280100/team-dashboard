@@ -71,6 +71,11 @@ export function isLeadRole(role: string): boolean {
   return SB_LEAD_ROLES.includes(role)
 }
 
+/** Geschäftsstellenleiter und höher (GST, Regionalleiter, Direktor). */
+export function isGstOrHigher(role: string): boolean {
+  return role === "Geschäftsstellenleiter" || role === "Regionalleiter" || role === "Direktor"
+}
+
 // Kurzform je Führungsstufe für die Schnellfilter-Chips auf der
 // Mitarbeiterseite (Team.tsx).
 export const SB_LEAD_ROLE_ABBR: Record<string, string> = {
