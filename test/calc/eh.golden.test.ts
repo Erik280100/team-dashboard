@@ -20,9 +20,9 @@ describe("eh: golden master vs. legacy", () => {
     expect(item.calc(0, 1000)).toBeCloseTo((1000 * 0.055) / 10.5)
   })
 
-  it("ableben: Gesamteinzahlung x 7% / 10,5", () => {
+  it("ableben: Prämiensumme / 1,04 x 8% x 10,5", () => {
     const item = EH_ITEMS.find((i) => i.id === "ableben")!
-    expect(item.calc(0, 1000)).toBeCloseTo((1000 * 0.07) / 10.5)
+    expect(item.calc(0, 1000)).toBeCloseTo((1000 / 1.04) * 0.08 * 10.5)
   })
 
   it("froots-vv-mtl: -15% bei mtl. Prämie <= 500 €, unverändert ab 501 €", () => {
@@ -65,7 +65,7 @@ describe("eh: golden master vs. legacy", () => {
       const b = legacy.calcEhLegacy(inputs)
       // "flv-ee" hat kein Legacy-Pendant (siehe oben) und wird beim Vergleich ausgenommen.
       // "flv" nutzt bewusst 2,11 statt des Legacy-Faktors 2,14 und wird separat verglichen.
-      // "ableben" rechnet bewusst auf Basis der Gesamteinzahlung (x 7% / 10,5) statt wie
+      // "ableben" rechnet bewusst auf Basis der Prämiensumme (/ 1,04 x 8% x 10,5) statt wie
       // Legacy auf Basis der mtl. Prämie x Laufzeit und wird deshalb ebenfalls separat
       // verglichen statt 1:1 mit Legacy.
       // "froots-vv-mtl" bekommt bewusst -15% bei mtl. Prämie <= 500 € (siehe eigener Test
@@ -76,7 +76,7 @@ describe("eh: golden master vs. legacy", () => {
       const { flv: bFlv, ableben: bAbleben, "froots-vv-mtl": bFrootsMtl, ...bPerItem } = b.perItem
       expect(aPerItem).toEqual(bPerItem)
       expect(aFlv).toBeCloseTo((bFlv / 2.14) * 2.11)
-      expect(aAbleben).toBeCloseTo(((Number(inputs.j.ableben) || 0) * 0.07) / 10.5)
+      expect(aAbleben).toBeCloseTo(((Number(inputs.j.ableben) || 0) / 1.04) * 0.08 * 10.5)
       const mtlJ = Number(inputs.j["froots-vv-mtl"]) || 0
       expect(aFrootsMtl).toBeCloseTo(mtlJ > 500 ? bFrootsMtl : bFrootsMtl * 0.85)
 

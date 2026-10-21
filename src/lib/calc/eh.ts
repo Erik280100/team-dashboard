@@ -133,8 +133,8 @@ export const EH_ITEMS: EhItem[] = [
     label: "Ableben",
     sparte: "insurance",
     payout: "einmalig",
-    jLabel: "Gesamteinzahlung (€)",
-    calc: (_g, j) => (j * 0.07) / 10.5,
+    jLabel: "Prämiensumme (€)",
+    calc: (_g, j) => ((j / 1.04) * 0.08) * 10.5,
   },
   {
     id: "bu",
