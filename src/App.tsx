@@ -164,6 +164,7 @@ function AppShell() {
   // Anwesenheitsliste (die dieselbe gefilterte Roster-Reihenfolge nutzt). Immer
   // live, unabhängig vom Archiv-Modus (Rechner/Kalender sind keine Archiv-Sektionen).
   const roster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
+  const rosterNames = useMemo(() => roster.map((r) => r.name), [roster])
   const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
   const planungRows = useMemo(() => relabelRowsByRoster(roster, dashboard.rows), [roster, dashboard.rows])
   const rechnerEmployees = useMemo(
@@ -317,6 +318,7 @@ function AppShell() {
                     key={archiveMonth ?? "live"}
                     rows={rowsMatchedToRoster(sbRoster(view.orgTree), view.rows)}
                     teamSize={isArchive ? undefined : roster.length}
+                    rosterNames={isArchive ? undefined : rosterNames}
                     teamGoal={view.teamGoal}
                     history={view.history}
                     saveGoal={isArchive ? blocked : dashboard.saveGoal}

@@ -22,6 +22,7 @@ import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekDoc } from "@/types/dashboard"
 import type { EmployeeRow, HistoryEntry, TeamGoal } from "@/types/dashboard"
+import { newRowFor } from "@/lib/calc/team"
 import { cn } from "@/lib/utils"
 
 /** Auf dem Dashboard nur ganze Zahlen. */
@@ -54,7 +55,10 @@ export function Overview({
   planung,
   archiveIndex,
   teamSize,
+  rosterNames,
 }: {
+  /** Alle Personen des Strukturbaums (live): auch Mitarbeiter ohne eigene Zeile erscheinen im Leaderboard. */
+  rosterNames?: string[]
   /** Mitarbeiterzahl laut Strukturbaum (live); im Archiv undefined → rows.length. */
   teamSize?: number
   rows: EmployeeRow[]
@@ -123,7 +127,20 @@ export function Overview({
     : null
   const rowsForLeaderboard = planByName
     ? rows.map((r) => ({ ...r, atIst: planByName.get(r.name as string)?.analysen ?? 0 }))
-    : rows
+    : [...rows]
+  // Personen im Strukturbaum, für die es noch keine Zeile gibt (z. B. neu angelegt), tauchen sonst nie im
+  // Ranking auf, obwohl ihre Analysen in der Wochenplanung stehen.
+  if (planung && rosterNames) {
+    const have = new Set(rows.map((r) => (r.name as string).trim().toLowerCase()))
+    const missing = rosterNames.filter((n) => !have.has(n.trim().toLowerCase()))
+    if (missing.length > 0) {
+      const extra = aggregateByName(
+        planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null),
+        missing
+      )
+      missing.forEach((n) => rowsForLeaderboard.push({ ...newRowFor(n), atIst: extra.get(n)?.analysen ?? 0 }))
+    }
+  }
   const leaderboard = leaderboardData(rowsForLeaderboard)
 
   const [noteDraft, setNoteDraft] = useState(teamGoal.note)

@@ -49,8 +49,8 @@ describe("overview: golden master vs. legacy", () => {
   })
 
   // leaderboardData weicht bewusst vom Legacy-Verhalten ab: nur Mitarbeiter mit
-  // atIst > 0 und maximal die Top 15 (statt aller Mitarbeiter).
-  it("leaderboardData excludes zero atIst and caps at top 15", () => {
+  // atIst > 0 und maximal die Top 10 (statt aller Mitarbeiter).
+  it("leaderboardData excludes zero atIst and caps at top 10", () => {
     expect(ts.leaderboardData(sampleRows())).toEqual([
       { name: "Bernd Beispiel", atIst: 30 },
       { name: "Anna Muster", atIst: 12 },
@@ -64,7 +64,7 @@ describe("overview: golden master vs. legacy", () => {
       isNew: false,
       atIst: i + 1,
     }))
-    expect(ts.leaderboardData(manyRows)).toHaveLength(15)
+    expect(ts.leaderboardData(manyRows)).toHaveLength(10)
     expect(ts.leaderboardData(manyRows)[0]).toEqual({ name: "Mitarbeiter 19", atIst: 20 })
   })
 

@@ -263,5 +263,5 @@ export function leaderboardData(rows: EmployeeRow[]): LeaderboardRow[] {
     .filter((r) => Number(r.atIst || 0) > 0)
     .sort((a, b) => Number(b.atIst || 0) - Number(a.atIst || 0))
     .map((r) => ({ name: r.name as string, atIst: Number(r.atIst || 0) }))
-    .slice(0, 15)
+    .slice(0, 10)
 }
