@@ -69,6 +69,7 @@ export function useDashboardDoc(): UseDashboardDocResult {
     if (!CLOUD_CONFIGURED || !docRef) return
     const unsub = onSnapshot(
       docRef,
+      { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites) return // eigene, bereits lokal dargestellte Änderung
         // Nur Server-Stände zählen: ein Cache-Snapshot ("Dokument fehlt"/veraltet) darf weder

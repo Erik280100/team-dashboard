@@ -111,6 +111,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
     if (!CLOUD_CONFIGURED || !docRef) return
     const unsub = onSnapshot(
       docRef,
+      { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
         if (snap.metadata.fromCache) return // Cache-Stand nie als "bereit" werten
@@ -149,6 +150,8 @@ export function usePlanungDoc(): UsePlanungDocResult {
         setDoc(docRef, next).catch((err) =>
           console.warn(`Planungswoche ${next.week}: Cloud-Speichern fehlgeschlagen`, err)
         )
+      } else if (CLOUD_CONFIGURED) {
+        console.warn(`Planungswoche ${next.week}: noch keine Verbindung zur Cloud - nur lokal gespeichert`)
       }
     },
     []
@@ -231,6 +234,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
     if (!CLOUD_CONFIGURED || !docRef) return
     const unsub = onSnapshot(
       docRef,
+      { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
         if (snap.metadata.fromCache) return // Cache-Stand nie als "bereit" werten
@@ -260,6 +264,8 @@ export function usePlanungDoc(): UsePlanungDocResult {
         setDoc(docRef, next).catch((err) =>
           console.warn(`Monatsnotizen ${next.month}: Cloud-Speichern fehlgeschlagen`, err)
         )
+      } else if (CLOUD_CONFIGURED) {
+        console.warn(`Monatsnotizen ${next.month}: noch keine Verbindung zur Cloud - nur lokal gespeichert`)
       }
     },
     []
@@ -320,6 +326,7 @@ export function usePlanungDoc(): UsePlanungDocResult {
     }
     const unsub = onSnapshot(
       docRef,
+      { includeMetadataChanges: true },
       (snap) => {
         if (snap.metadata.hasPendingWrites) return
         if (snap.metadata.fromCache) return // Cache-Stand nie als "bereit" werten
