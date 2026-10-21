@@ -168,6 +168,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     </ul>
 
     <h2>Beratungsprotokoll für Umsatzfreigabe</h2>
+    <p><em>Das Beratungsprotokoll braucht man nur, wenn es die Maximalwerte für eigene Abschlüsse überschreitet.</em></p>
     <p><a class="btn btn-primary btn-small" href="docs/factsheets/Beratungsprotokoll_Umsatzfreigabe.pdf" download>Beratungsprotokoll herunterladen</a></p>
   ` },
   { id: 'edelmetalle', title: 'Edelmetalle', html: `
