@@ -4,3 +4,4 @@ export {
   buildIndexEntry, buildSnapshot, monthKeyOf, nextMonthGoal, resetRowsForNewMonth,
 } from "../../src/lib/calc/archive"
 export { employeeDocToRow, rowToEmployeeData } from "../../src/lib/calc/employees"
+export { insuranceReconcile } from "../../src/lib/calc/planStufen"

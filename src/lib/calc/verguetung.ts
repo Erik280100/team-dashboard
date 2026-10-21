@@ -28,7 +28,7 @@
 import { ehIsAbwickler } from "./eh"
 import type { EmployeeRow } from "./format"
 import { PLAN_IDS, isLeadRole, sbGetPlanRate, type PlanId } from "./struktur"
-import { TRAINEE_PLAN_IDS, careerDeltaOf, planStageOf, type CareerUnits } from "./planStufen"
+import { TRAINEE_PLAN_IDS, careerDeltaOf, planStageOf, stageSegments, type CareerUnits } from "./planStufen"
 import type { MergedRow } from "./team"
 
 /** Einheiten je Plan aus einer Mitarbeiterzeile lesen. Fehlt ehByPlan (Altbestand
@@ -62,8 +62,17 @@ export function withPlanUnits(row: EmployeeRow, units: Record<PlanId, number>): 
 function withCareerUnits(row: EmployeeRow, delta: Partial<Record<PlanId, number>>): EmployeeRow {
   const add = careerDeltaOf(delta)
   const careerUnits: CareerUnits = { ...(row.careerUnits ?? {}) }
-  TRAINEE_PLAN_IDS.forEach((p) => { careerUnits[p] = (Number(careerUnits[p]) || 0) + add[p] })
+  TRAINEE_PLAN_IDS.forEach((p) => { careerUnits[p] = Math.max(0, (Number(careerUnits[p]) || 0) + add[p]) })
   return { ...row, careerUnits }
+}
+
+/** Einheiten je Plan von Hand setzen (Mitarbeiter-Dialog): der Karrierezähler bekommt dieselbe Differenz, damit
+ * Zähler und Monatseinheiten zusammenpassen (siehe stageSegments). Mutiert `row` nicht. */
+export function withUnitsAdjustingCareer(row: EmployeeRow, units: Record<PlanId, number>): EmployeeRow {
+  const current = readPlanUnits(row)
+  const delta = {} as Record<PlanId, number>
+  PLAN_IDS.forEach((p) => { delta[p] = (Number(units[p]) || 0) - (Number(current[p]) || 0) })
+  return withCareerUnits(withPlanUnits(row, units), delta)
 }
 
 /** Buchung (EH-Rechner) auf eine Zeile anwenden: Einheiten je Plan addieren, `ist` nachziehen und
@@ -118,8 +127,11 @@ export type EarningKind = "eigen" | "differenz" | "gleichstand"
 
 export interface PlanEarning {
   units: number
+  /** Satz der zuletzt gutgeschriebenen Stufe; bei Aufstieg mitten im Monat siehe `segments`. */
   rate: number
   amount: number
+  /** Einheiten je Satz, aufsteigend nach Vorkommen (mehr als ein Eintrag = Aufstieg im Monat). */
+  segments?: { units: number; rate: number }[]
 }
 
 export interface DiffSource {
@@ -201,6 +213,10 @@ export function computeEarnings(
     if (kind === "eigen") {
       earnings.own[planId].units += units
       earnings.own[planId].rate = ratePerUnit
+      const segs = (earnings.own[planId].segments ??= [])
+      const last = segs[segs.length - 1]
+      if (last && last.rate === ratePerUnit) last.units += units
+      else segs.push({ units, rate: ratePerUnit })
       earnings.own[planId].amount += amount
       earnings.ownTotal += amount
     } else {
@@ -229,8 +245,13 @@ export function computeEarnings(
       const u = units[planId]
       if (u <= 0) return
 
-      const producerRate = sbGetPlanRate(planRates, planStageOf(producer, planId), planId)
-      credit(producer.name, planId, "eigen", u, producerRate, producer.name)
+      // Aufstieg mitten im Monat: Einheiten bis zur Schwelle zum alten, danach zum neuen Satz.
+      const segments = stageSegments(producer, planId, units).map((seg) => ({
+        share: seg.units / u,
+        units: seg.units,
+        rate: sbGetPlanRate(planRates, seg.role, planId),
+      }))
+      segments.forEach((seg) => credit(producer.name, planId, "eigen", seg.units, seg.rate, producer.name))
 
       // Beim Plan "investmentVb" kann ein Teil der Einheiten beim Buchen einem
       // Abwickler zugewiesen worden sein (vbByAbwickler). Dieser Teil läuft
@@ -253,7 +274,7 @@ export function computeEarnings(
         if (ehIsAbwickler(m.name)) skip.add(m.name)
       })
 
-      const runChain = (chainUnits: number, abwickler: string | null) => {
+      const runChain = (chainUnits: number, abwickler: string | null, producerRate: number) => {
         // c: bereits durch echte Differenz abgedeckter Satz (startet beim eigenen
         // Satz des Produzenten). tieUsedAtLevel: ob auf dem aktuellen Satz-Plateau
         // bereits ein Gleichstand-Bonus vergeben wurde — wird bei jeder echten
@@ -309,8 +330,10 @@ export function computeEarnings(
         }
       }
 
-      assigned.forEach(([abw, n]) => runChain(n, abw))
-      if (u - assignedSum > 0) runChain(u - assignedSum, null)
+      segments.forEach((seg) => {
+        assigned.forEach(([abw, n]) => runChain(n * seg.share, abw, seg.rate))
+        if (u - assignedSum > 0) runChain((u - assignedSum) * seg.share, null, seg.rate)
+      })
     })
   })
 

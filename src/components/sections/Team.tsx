@@ -17,7 +17,7 @@ import {
 import { aggregateByName, monthWeekKeys } from "@/lib/calc/planung"
 import { monthKeyOf } from "@/lib/calc/archive"
 import { SB_LEAD_ROLE_ABBR, sbRoster, sbSubtreeNames, type PlanId, type SbNode } from "@/lib/calc/struktur"
-import { computeEarnings, stornoreserveAmount, withPlanUnits } from "@/lib/calc/verguetung"
+import { computeEarnings, stornoreserveAmount, withUnitsAdjustingCareer } from "@/lib/calc/verguetung"
 import { EmployeeEarningsDialog } from "@/components/sections/team/EmployeeEarningsDialog"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekDoc } from "@/types/dashboard"
@@ -151,10 +151,10 @@ export function Team({
   function saveEarnings(entry: MergedRow, units: Record<PlanId, number>, bonus?: number) {
     const bonusPart = bonus === undefined ? {} : { bonus }
     if (entry.rowIndex !== null) {
-      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...withPlanUnits(r, units), ...bonusPart } : r))
+      const next = rows.map((r, i) => (i === entry.rowIndex ? { ...withUnitsAdjustingCareer(r, units), ...bonusPart } : r))
       saveRows(next)
     } else {
-      saveRows([...rows, { ...withPlanUnits(newRowFor(entry.name), units), ...bonusPart }])
+      saveRows([...rows, { ...withUnitsAdjustingCareer(newRowFor(entry.name), units), ...bonusPart }])
     }
   }
 

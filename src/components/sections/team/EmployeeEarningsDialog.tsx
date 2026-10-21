@@ -115,7 +115,9 @@ export function EmployeeEarningsDialog({
                           )}
                         </td>
                         <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
-                          {p.rate > 0 ? fmtEur(p.rate) : "–"}
+                          {p.segments && p.segments.length > 1
+                            ? p.segments.map((g) => `${fmtEh(g.units)} × ${fmtEur(g.rate)}`).join(" + ")
+                            : p.rate > 0 ? fmtEur(p.rate) : "–"}
                         </td>
                         <td className="px-3 py-1.5 text-right font-medium tabular-nums">{fmtEur(p.amount)} €</td>
                       </tr>

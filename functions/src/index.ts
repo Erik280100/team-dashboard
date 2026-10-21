@@ -366,6 +366,8 @@ export const backupNow = onCall({ region: REGION, timeoutSeconds: 300 }, async (
 export { closeMonthAuto } from "./monthClose"
 /** Gesamtzahlen der Finanzierungen für die Dashboard-Ansicht "Gesamt", siehe financingStats.ts. */
 export { onFinancingChange } from "./financingStats"
+/** Automatische Insurance-Stufe für Trainees (Rolle im Strukturbaum) + einmaliger Abgleich, siehe careerStage.ts. */
+export { onCareerStageChange, reconcileCareerStages } from "./careerStage"
 
 /** Wöchentlicher Export in den eigenen Bucket (Lebenszyklusregel löscht nach 90 Tagen). */
 export const weeklyBackup = onSchedule(

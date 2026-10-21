@@ -39,7 +39,7 @@
 import type { MergedRow } from "./team"
 import { readPlanUnits, sumPlanUnits } from "./verguetung"
 import { PLAN_LABELS, type PlanId } from "./struktur"
-import { TRAINEE_PLAN_IDS, isTraineeRole, planLadderStage, type TraineePlanId } from "./planStufen"
+import { TRAINEE_PLAN_IDS, careerTotal, isTraineeRole, planLadderStage, type TraineePlanId } from "./planStufen"
 
 /** Karriereleiter aufsteigend. Kundenberater ist bewusst nicht Teil der Leiter. */
 export const CAREER_LADDER = [
@@ -280,7 +280,8 @@ export function computePromotionProgress(
     const criteria: Criterion[] = []
 
     if (requirement?.ownUnits) {
-      const have = eigenproduktion(person)
+      // Trainees steigen über den kumulierten Insurance-Zähler auf (siehe planStufen.ts); der Monatswert bleibt Fallback.
+      const have = Math.max(eigenproduktion(person), careerTotal(person, "insurance"))
       const need = requirement.ownUnits
       criteria.push({
         kind: "eigenproduktion",
@@ -388,7 +389,7 @@ export function computePlanStandings(
 ): PlanStanding[] | null {
   if (!isTraineeRole(row.role)) return null
   return TRAINEE_PLAN_IDS.map((planId) => {
-    const have = Number(row.careerUnits?.[planId]) || 0
+    const have = careerTotal(row, planId)
     const { step, next } = planLadderStage(planId, have)
     const need = next?.units ?? have
     return {
