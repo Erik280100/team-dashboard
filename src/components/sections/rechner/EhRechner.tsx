@@ -14,6 +14,7 @@ import {
 import { useConfirm } from "@/hooks/useConfirm"
 import { calcEh, ehAbwicklerOptions, ehMultForRole, EH_GROUPS, EH_ITEMS, ehFormatEH, ehFormatEUR, type EhGroup } from "@/lib/calc/eh"
 import { PLAN_IDS, PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
+import { umsatzDrafts, type UmsatzDraft } from "@/lib/calc/umsatz"
 
 // legacy/index.html:821-824 — Gruppen-Akzentfarbe (oberer Rand der Karte)
 const GROUP_ACCENT: Record<EhGroup["id"], string> = {
@@ -52,7 +53,7 @@ export function EhRechner({
   defaultEmployee?: string
   /** Steuert nur die Buchen-Sektion — jeder Besucher darf hier auf sich buchen. */
   canBook: boolean
-  onApplyUnits: (name: string, units: Record<PlanId, number>, abwickler?: string) => void
+  onApplyUnits: (name: string, units: Record<PlanId, number>, abwickler?: string, sales?: UmsatzDraft[]) => void
 }) {
   const [g, setG] = useState(defaultG)
   const [j, setJ] = useState(defaultJ)
@@ -68,6 +69,8 @@ export function EhRechner({
     acc[planId] = round2(result.planSums[planId] || 0)
     return acc
   }, {} as Record<PlanId, number>)
+  // Positionen mit Betrag wandern bei der Buchung in die Umsatzverfolgung (Controlling).
+  const sales = umsatzDrafts(j, result.perItem)
   const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
   // Fallback auf alle Mitarbeiter, falls Georg/Sandro im Strukturbaum nicht gefunden werden.
   const matched = ehAbwicklerOptions(abwicklerCandidates)
@@ -103,7 +106,7 @@ export function EhRechner({
 
   function onConfirmBooking() {
     if (!selectedEmployee) return
-    onApplyUnits(selectedEmployee.name, bookedUnits, needsAbwickler ? chosenAbwickler?.name : undefined)
+    onApplyUnits(selectedEmployee.name, bookedUnits, needsAbwickler ? chosenAbwickler?.name : undefined, sales)
     setLastBooked(selectedEmployee.name)
     setBookingOpen(false)
   }
@@ -291,6 +294,19 @@ export function EhRechner({
               <p className="text-sm">
                 Abwickler: <strong>{chosenAbwickler.name}</strong> (erhält die Differenz bei „Investment (mit VB)“)
               </p>
+            )}
+            {sales.length > 0 && (
+              <div className="text-sm">
+                <div className="mb-1 text-xs font-semibold text-muted-foreground">Wird in der Umsatzverfolgung erfasst:</div>
+                <ul className="flex flex-col gap-0.5">
+                  {sales.map((s) => (
+                    <li key={s.produkt} className="flex justify-between gap-3">
+                      <span>{s.produkt}</span>
+                      <span className="tabular-nums text-muted-foreground">{ehFormatEUR(s.praemie)} €</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             <div className="overflow-hidden rounded-md border">
               <table className="w-full border-collapse text-sm">

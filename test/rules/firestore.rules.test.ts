@@ -43,6 +43,10 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       }
       await setDoc(doc(db, "org", "structure"), { tree: {} })
       await setDoc(doc(db, "financings", "f1"), { ownerId: "m1", ancestors: ["lead", "boss"] })
+      await setDoc(doc(db, "sales", "s1"), {
+        ownerId: "m1", ancestors: ["lead", "boss"], mitarbeiter: "M1", produkt: "FLV", praemie: 100, einheiten: 5,
+        bookedAt: "2026-10-01T10:00:00.000Z", kunde: "", beginn: "", policiert: false, ausbezahlt: false,
+      })
       await setDoc(doc(db, "snapshots", "2026-09", "employees", "m1"), { atIst: 1 })
     })
   })
@@ -164,6 +168,34 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertSucceeds(setDoc(doc(as("member", "m1"), "employees", "m1", "todos", "t2"), { title: "n" }))
       await assertFails(getDoc(doc(as("lead", "lead"), "employees", "m1", "todos", "t1")))
       await assertFails(getDoc(doc(as("admin", "boss"), "employees", "m1", "todos", "t1")))
+    })
+  })
+
+  describe("sales (Umsatzverfolgung)", () => {
+    it("lesen: Besitzer, Vorgesetzte, Admin - nicht Kollegen oder fremde Struktur", async () => {
+      await assertSucceeds(getDoc(doc(as("member", "m1"), "sales", "s1")))
+      await assertSucceeds(getDoc(doc(as("lead", "lead"), "sales", "s1")))
+      await assertSucceeds(getDoc(doc(as("admin", "boss"), "sales", "s1")))
+      await assertFails(getDoc(doc(as("member", "m2"), "sales", "s1")))
+      await assertFails(getDoc(doc(as("lead", "other"), "sales", "s1")))
+    })
+    it("nachtraeglich aenderbar: nur Kunde, Beginn, policiert, ausbezahlt", async () => {
+      const db = as("member", "m1")
+      await assertSucceeds(updateDoc(doc(db, "sales", "s1"), { kunde: "Muster", beginn: "2026-11-01", policiert: true, ausbezahlt: true }))
+      await assertFails(updateDoc(doc(db, "sales", "s1"), { praemie: 1 }))
+      await assertFails(updateDoc(doc(db, "sales", "s1"), { ownerId: "m2", ancestors: ["lead", "boss"] }))
+      await assertFails(updateDoc(doc(as("member", "m2"), "sales", "s1"), { kunde: "x" }))
+    })
+    it("anlegen: nur fuer sich/Unterstruktur, ancestors muessen zum Besitzer passen", async () => {
+      const row = { mitarbeiter: "M1", produkt: "BU", praemie: 50, einheiten: 2, bookedAt: "2026-10-02T10:00:00.000Z", kunde: "", beginn: "", policiert: false, ausbezahlt: false }
+      await assertSucceeds(setDoc(doc(as("member", "m1"), "sales", "s2"), { ...row, ownerId: "m1", ancestors: ["lead", "boss"] }))
+      await assertSucceeds(setDoc(doc(as("lead", "lead"), "sales", "s3"), { ...row, ownerId: "m1", ancestors: ["lead", "boss"] }))
+      await assertFails(setDoc(doc(as("member", "m1"), "sales", "s4"), { ...row, ownerId: "m1", ancestors: ["lead", "boss", "m2"] }))
+      await assertFails(setDoc(doc(as("member", "m1"), "sales", "s5"), { ...row, ownerId: "m2", ancestors: ["lead", "boss"] }))
+    })
+    it("loeschen: Besitzer und Vorgesetzte, nicht Kollegen", async () => {
+      await assertFails(deleteDoc(doc(as("member", "m2"), "sales", "s1")))
+      await assertSucceeds(deleteDoc(doc(as("member", "m1"), "sales", "s1")))
     })
   })
 

@@ -3,6 +3,7 @@
 import { initializeApp, type FirebaseApp } from "firebase/app"
 import { getFirestore, connectFirestoreEmulator, doc, collection, type Firestore, type DocumentReference, type CollectionReference } from "firebase/firestore"
 import { getAuth, connectAuthEmulator, type Auth } from "firebase/auth"
+import { getStorage, connectStorageEmulator, type FirebaseStorage } from "firebase/storage"
 import { getFunctions, connectFunctionsEmulator, type Functions } from "firebase/functions"
 
 const firebaseConfig = {
@@ -24,6 +25,8 @@ export let firestore: Firestore | null = null
 export let auth: Auth | null = null
 /** Cloud Functions (Region muss zu functions/src/index.ts passen). */
 export let functions: Functions | null = null
+/** Cloud Storage (Profilbilder, siehe storage.rules). */
+export let storage: FirebaseStorage | null = null
 
 if (CLOUD_CONFIGURED) {
   try {
@@ -31,11 +34,13 @@ if (CLOUD_CONFIGURED) {
     firestore = getFirestore(app)
     auth = getAuth(app)
     functions = getFunctions(app, "europe-west1")
+    storage = getStorage(app)
     // Lokale Entwicklung gegen die Firebase-Emulatoren (npm run emulators): VITE_USE_EMULATORS=true.
     if (import.meta.env.VITE_USE_EMULATORS === "true") {
       connectFirestoreEmulator(firestore, "127.0.0.1", emulatorPort("FIRESTORE", 8080))
       connectAuthEmulator(auth, `http://127.0.0.1:${emulatorPort("AUTH", 9099)}`, { disableWarnings: true })
       connectFunctionsEmulator(functions, "127.0.0.1", emulatorPort("FUNCTIONS", 5001))
+      connectStorageEmulator(storage, "127.0.0.1", emulatorPort("STORAGE", 9299))
     }
   } catch (err) {
     console.error("Firebase-Initialisierung fehlgeschlagen", err)

@@ -8,7 +8,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
-import { fmt, fmtEur, initials, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
+import { Avatar } from "@/components/Avatar"
+import { fmt, fmtEur, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import {
   getMergedFilteredSorted, leadRosterOptions, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
@@ -50,6 +51,7 @@ export function Team({
   noBonusFor,
   now,
   planung,
+  avatars,
 }: {
   rows: EmployeeRow[]
   saveRows: (next: EmployeeRow[]) => void
@@ -60,6 +62,8 @@ export function Team({
   /** Darf der Betrachter die Daten dieser Person bearbeiten (sie selbst oder Vorgesetzte)? Alle anderen Zeilen
    * sind schreibgeschützt und zeigen AT/BT/ST/ET aus den Monatssummen statt aus der (nicht lesbaren) Planung. */
   canEditRow?: (name: string) => boolean
+  /** Profilbilder je Name (nur Personen mit Bild); alle anderen zeigen ihre Initialen. */
+  avatars?: Record<string, { id: string; version: number }>
   /** Person, deren Bonus der Betrachter nicht setzen darf (er selbst, ausser Admin) — firestore.rules. */
   noBonusFor?: string
   /** Referenzzeitpunkt für monthWeekProgress — im Archiv-Modus ein Tag nach
@@ -298,9 +302,7 @@ export function Team({
                   >
                     <td className="px-3 py-2" style={{ paddingLeft: 12 + indent }}>
                       <div className="flex items-center gap-3">
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
-                          {initials(r.name as string)}
-                        </div>
+                        <Avatar name={r.name as string} avatar={avatars?.[r.name as string]} className="size-7 text-xs" />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium">{r.name}</div>
                           {(r.role || r.managerName) && (

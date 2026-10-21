@@ -10,6 +10,8 @@ export interface EmployeeMeta {
   role: string
   managerId: string | null
   ancestors: string[]
+  /** Zeitstempel des letzten Profilbild-Uploads (storage: avatars/{id}.webp); fehlt = kein Bild. */
+  avatarVersion?: number
 }
 
 /** Kontodaten (employees/{id}/private/account) — nur self/Vorgesetzte/Admin lesbar, daher nicht Teil von EmployeeMeta. */
@@ -29,7 +31,7 @@ export function accountStateOf(data: Record<string, unknown> | undefined): Accou
 }
 
 /** Felder, die nie Teil einer EmployeeRow sind (gesperrt in firestore.rules). uid/email/accountPending nur für Altbestand. */
-const META_KEYS = ["name", "role", "managerId", "ancestors", "uid", "email", "accountPending", "active", "createdAt"] as const
+const META_KEYS = ["name", "role", "managerId", "ancestors", "uid", "email", "accountPending", "active", "createdAt", "avatarVersion"] as const
 
 export function employeeMetaOf(id: string, data: Record<string, unknown>): EmployeeMeta {
   return {
@@ -38,6 +40,7 @@ export function employeeMetaOf(id: string, data: Record<string, unknown>): Emplo
     role: String(data.role ?? ""),
     managerId: typeof data.managerId === "string" ? data.managerId : null,
     ancestors: Array.isArray(data.ancestors) ? data.ancestors.map(String) : [],
+    ...(typeof data.avatarVersion === "number" ? { avatarVersion: data.avatarVersion } : {}),
   }
 }
 

@@ -13,6 +13,7 @@ import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { PLAN_IDS, isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { applyMonthStats, mergeRosterWithRows, newRowFor, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { ehAbwicklerOptions } from "@/lib/calc/eh"
+import type { UmsatzDraft } from "@/lib/calc/umsatz"
 import { readPlanUnits, withPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, toISODate, type EmployeeRow } from "@/lib/calc/format"
@@ -23,6 +24,7 @@ import { useDashboardDoc } from "@/hooks/useDashboardDoc"
 import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
 import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
 import { usePlanungDoc } from "@/hooks/usePlanungDoc"
+import { useUmsaetzeDoc } from "@/hooks/useUmsaetzeDoc"
 import { useFinanzierungenDoc } from "@/hooks/useFinanzierungenDoc"
 import { useBoardTodosDoc } from "@/hooks/useBoardTodosDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
@@ -122,6 +124,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const attendance = useAttendanceDoc(accessibleEmployees)
   const orgChart = useOrgChartDoc(auth.isAdmin, auth.employeeId)
   const planung = usePlanungDoc(accessibleEmployees)
+  const umsaetze = useUmsaetzeDoc(auth, dashboard.employees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
   const boardTodos = useBoardTodosDoc(auth.employeeId)
   useCelebrations(auth.ready && !!auth.user)
@@ -255,6 +258,12 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
     () => dashboard.employees.find((e) => e.id === auth.employeeId)?.name,
     [dashboard.employees, auth.employeeId]
   )
+  // Profilbilder: Name -> { id, Version } für die Mitarbeiterseite (nur Personen mit hochgeladenem Bild).
+  const avatarsByName = useMemo(() => {
+    const out: Record<string, { id: string; version: number }> = {}
+    for (const e of dashboard.employees) if (e.avatarVersion) out[e.name] = { id: e.id, version: e.avatarVersion }
+    return out
+  }, [dashboard.employees])
   const rechnerEmployees = useMemo(
     () => merged.map((m) => ({ name: m.name, role: m.role, units: readPlanUnits(m) })),
     [merged]
@@ -263,7 +272,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   /** Bucht Einheiten (je Karriereplan) additiv auf einen Mitarbeiter — siehe
    * "Übernehmen"-Button im EH-Rechner. Legt bei Bedarf eine neue Zeile in
    * dashboard.rows an, analog zu Team.tsx commitField/commitPlanUnits. */
-  function applyUnitsToEmployee(name: string, delta: Record<PlanId, number>, abwickler?: string) {
+  function applyUnitsToEmployee(name: string, delta: Record<PlanId, number>, abwickler?: string, sales: UmsatzDraft[] = []) {
     const entry = merged.find((m) => m.name === name)
     if (!entry) return
     const current = readPlanUnits(entry)
@@ -284,6 +293,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
     } else {
       dashboard.saveRows([...dashboard.rows, withVb(newRowFor(entry.name))])
     }
+    umsaetze.addEntries(name, sales)
     announceCelebration(name)
   }
 
@@ -442,6 +452,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     noBonusFor={auth.isAdmin ? undefined : myName}
                     now={view.now}
                     planung={isArchive ? undefined : planung}
+                    avatars={avatarsByName}
                   />
                 )
               )}
@@ -451,6 +462,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   orgTree={scopedTree}
                   archive={archive}
                   planung={planung}
+                  umsaetze={umsaetze}
                   isEditor={auth.isEditor}
                   rows={planungRows}
                   unitsMonthKey={monthKeyOf(dashboard.teamGoal)}
@@ -518,7 +530,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               )}
               {section === id && id === "statistik" && (auth.isAdmin || auth.isLead) && <Statistik archive={archive} />}
               {section === id && id === "konten" && auth.isAdmin && <Konten employees={dashboard.employees} />}
-              {section === id && id === "einstellungen" && <Einstellungen auth={auth} />}
+              {section === id && id === "einstellungen" && <Einstellungen auth={auth} name={myName} avatarVersion={dashboard.employees.find((e) => e.id === auth.employeeId)?.avatarVersion} />}
             </section>
           ))}
           </Suspense>

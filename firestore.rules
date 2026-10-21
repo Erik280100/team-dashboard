@@ -112,6 +112,18 @@ service cloud.firestore {
       allow delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
     }
 
+    // Umsatzverfolgung (Controlling): eine Zeile je gebuchter Rechner-Position. ownerId = Mitarbeiter, auf den
+    // gebucht wurde, ancestors = dessen Vorgesetzte (muss zu employees/{ownerId}.ancestors passen).
+    // Nachtraeglich aenderbar sind nur Kunde, Beginn, policiert und ausbezahlt.
+    match /sales/{id} {
+      allow read, delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
+      allow create: if (isAdmin() || canAccessEmployee(request.resource.data.ownerId))
+        && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors;
+      allow update: if (isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors))
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['kunde', 'beginn', 'policiert', 'ausbezahlt']);
+    }
+
     // Konfetti bei Umsatzbuchungen: jeder Eingeloggte meldet eine Buchung (nur name + Zeitpunkt, unveraenderlich),
     // alle lesen mit und loesen damit den Konfettiregen aus.
     match /celebrations/{id} {

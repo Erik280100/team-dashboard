@@ -7,6 +7,7 @@ import { UmdrehRechner } from "@/components/sections/rechner/UmdrehRechner"
 import { RenditeRechner } from "@/components/sections/rechner/RenditeRechner"
 import { InvestVsWohnungRechner } from "@/components/sections/rechner/InvestVsWohnungRechner"
 import type { PlanId } from "@/lib/calc/struktur"
+import type { UmsatzDraft } from "@/lib/calc/umsatz"
 
 type RechnerTab = "eh" | "umdreh" | "rendite" | "investVsWohnung"
 
@@ -31,7 +32,7 @@ export function Rechner({
   /** Jeder (auch ohne echten Login, via automatischem anonymem Auth) darf im
    * EH-Rechner Einheiten auf sich buchen — siehe useAuth.ts. */
   canBookUnits: boolean
-  onApplyUnits: (name: string, units: Record<PlanId, number>) => void
+  onApplyUnits: (name: string, units: Record<PlanId, number>, abwickler?: string, sales?: UmsatzDraft[]) => void
 }) {
   const [tab, setTab] = useState<RechnerTab>("eh")
   const visibleTabs = TABS

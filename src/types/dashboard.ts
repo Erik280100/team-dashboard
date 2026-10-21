@@ -286,3 +286,26 @@ export const SB_DEFAULT_TREE: SbNode = {
     { id: "d", name: "Person D", role: "FT 1", children: [] },
   ],
 }
+
+// Umsatzverfolgung (Controlling): eine Zeile je Rechner-Position, die im EH-Rechner gebucht wurde.
+export const UMSATZ_KEY = "finova_umsaetze_v1"
+
+export interface UmsatzEntry {
+  id: string
+  /** ISO-Zeitpunkt der Buchung. */
+  bookedAt: string
+  /** Mitarbeiter, auf den gebucht wurde. */
+  mitarbeiter: string
+  produkt: string
+  /** Eingegebener Betrag aus dem Rechner (Prämie, Zuzahlung, Anlagebetrag …). */
+  praemie: number
+  /** Bezeichnung des Betrags, z. B. "Mtl. Prämie (€)". */
+  praemieLabel: string
+  einheiten: number
+  /** Nachträglich eingetragen. */
+  kunde: string
+  /** "YYYY-MM-DD" oder "". */
+  beginn: string
+  policiert: boolean
+  ausbezahlt: boolean
+}
