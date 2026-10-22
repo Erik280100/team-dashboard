@@ -53,7 +53,8 @@ type StoredCase = FinanzierungCase & { ownerId?: string; ancestors?: string[]; a
 
 function stripOwner(c: StoredCase): FinanzierungCase {
   const { ownerId: _o, ancestors: _a, abwicklerId: _w, ...rest } = c
-  return rest
+  // Fälle ohne Dokumenten-Liste (z. B. von Hand oder per Skript angelegt) wie leere Liste behandeln.
+  return { ...rest, docs: rest.docs ?? {} }
 }
 
 export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", employeeId: null, mustChangePassword: false }, employees: readonly EmployeeMeta[] = []): UseFinanzierungenDocResult {

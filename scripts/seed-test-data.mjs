@@ -79,8 +79,11 @@ for (const p of people) {
 for (let i = 0; i < 12; i++) {
   const owner = people[1 + rnd(people.length - 1)]
   set(`financings/f${i}`, {
-    ownerId: owner.id, ancestors: owner.ancestors, kunde: `Kunde ${i}`, betrag: 100000 + i * 5000,
-    art: i % 3 === 0 ? "anlegerwohnung" : "hauskauf", archived: false,
+    id: `f${i}`, name: `Kunde ${i}`, betrag: 100000 + i * 5000,
+    art: i % 3 === 0 ? "anlegerwohnung" : "hauskauf", beschaeftigung: "unselbststaendig", betreuer: owner.name,
+    docs: {}, aufbereitet: false, eingereicht: false, kreditvertrag: false, archived: false,
+    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+    ownerId: owner.id, ancestors: owner.ancestors,
   })
 }
 await writer.close()
