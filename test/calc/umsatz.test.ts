@@ -32,3 +32,16 @@ describe("umsatzDrafts", () => {
     expect(umsatzDrafts(i.j, calcEh(i as never).perItem)).toEqual([])
   })
 })
+
+describe("umsatzDrafts mit Kundenname", () => {
+  it("übernimmt den Namen für alle Positionen", () => {
+    const i = inputs({ flv: "100", bu: "50" })
+    const drafts = umsatzDrafts(i.j, calcEh(i as never).perItem, "  Max Muster ")
+    expect(drafts.map((d) => d.kunde)).toEqual(["Max Muster", "Max Muster"])
+  })
+
+  it("lässt den Kunden ohne Eingabe weg", () => {
+    const i = inputs({ flv: "100" })
+    expect(umsatzDrafts(i.j, calcEh(i as never).perItem, "   ")[0]).not.toHaveProperty("kunde")
+  })
+})

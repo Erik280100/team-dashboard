@@ -95,7 +95,7 @@ export function useUmsaetzeDoc(
     if (drafts.length === 0) return
     const bookedAt = new Date().toISOString()
     const created: UmsatzEntry[] = drafts.map((d) => ({
-      id: newEntryId(), bookedAt, mitarbeiter, ...d, kunde: "", beginn: "", policiert: false, ausbezahlt: false,
+      id: newEntryId(), bookedAt, mitarbeiter, kunde: "", ...d, beginn: "", policiert: false, ausbezahlt: false,
     }))
     if (!CLOUD_CONFIGURED || !firestore) {
       saveLocal([...created, ...latest.current].sort(byBookedAtDesc))

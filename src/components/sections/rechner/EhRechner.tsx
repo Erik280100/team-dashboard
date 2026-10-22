@@ -61,6 +61,7 @@ export function EhRechner({
   const [selectedName, setSelectedName] = useState("")
   const [bookingOpen, setBookingOpen] = useState(false)
   const [abwickler, setAbwickler] = useState("")
+  const [kunde, setKunde] = useState("")
   const [lastBooked, setLastBooked] = useState<string | null>(null)
   const confirm = useConfirm()
 
@@ -70,7 +71,7 @@ export function EhRechner({
     return acc
   }, {} as Record<PlanId, number>)
   // Positionen mit Betrag wandern bei der Buchung in die Umsatzverfolgung (Controlling).
-  const sales = umsatzDrafts(j, result.perItem)
+  const sales = umsatzDrafts(j, result.perItem, kunde)
   const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
   // Fallback auf alle Mitarbeiter, falls Georg/Sandro im Strukturbaum nicht gefunden werden.
   const matched = ehAbwicklerOptions(abwicklerCandidates)
@@ -108,6 +109,7 @@ export function EhRechner({
     if (!selectedEmployee) return
     onApplyUnits(selectedEmployee.name, bookedUnits, needsAbwickler ? chosenAbwickler?.name : undefined, sales)
     setLastBooked(selectedEmployee.name)
+    setKunde("")
     setBookingOpen(false)
   }
 
@@ -307,6 +309,17 @@ export function EhRechner({
                   ))}
                 </ul>
               </div>
+            )}
+            {sales.length > 0 && (
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                Name des Kunden (optional, gilt für alle Produkte)
+                <input
+                  type="text"
+                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm text-foreground"
+                  value={kunde}
+                  onChange={(e) => setKunde(e.target.value)}
+                />
+              </label>
             )}
             <div className="overflow-hidden rounded-md border">
               <table className="w-full border-collapse text-sm">
