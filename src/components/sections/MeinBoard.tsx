@@ -43,8 +43,10 @@ const VIEW_TABS: { id: BoardView; label: string }[] = [
 ]
 
 export function MeinBoard({
-  todos, addTodo, patchTodo, moveTodo, removeTodo,
+  todos, addTodo, patchTodo, moveTodo, removeTodo, isAdmin,
 }: {
+  /** Die Rechner (EU vs. GmbH, Holding & Immobilien, Zypern) sieht nur der Admin. */
+  isAdmin: boolean
   todos: BoardTodo[]
   addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: BoardTodo["color"] }) => void
   patchTodo: (id: string, patch: Partial<BoardTodo>) => void
@@ -52,7 +54,9 @@ export function MeinBoard({
   removeTodo: (id: string) => void
 }) {
   const confirm = useConfirm()
-  const [view, setView] = useState<BoardView>("todos")
+  const [viewState, setView] = useState<BoardView>("todos")
+  const visibleViewTabs = isAdmin ? VIEW_TABS : VIEW_TABS.filter((t) => t.id === "todos")
+  const view: BoardView = visibleViewTabs.some((t) => t.id === viewState) ? viewState : "todos"
   const [filter, setFilter] = useState<BoardFilter>("alle")
   const [flaggedOnly, setFlaggedOnly] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -135,7 +139,7 @@ export function MeinBoard({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {VIEW_TABS.map((t) => (
+          {visibleViewTabs.length > 1 && visibleViewTabs.map((t) => (
             <button
               key={t.id}
               type="button"

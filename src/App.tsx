@@ -497,6 +497,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   patchTodo={boardTodos.patchTodo}
                   moveTodo={boardTodos.moveTodo}
                   removeTodo={boardTodos.removeTodo}
+                  isAdmin={auth.isAdmin}
                 />
               )}
               {section === id && id === "struktur" && (
