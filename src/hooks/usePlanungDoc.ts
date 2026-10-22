@@ -124,6 +124,8 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
   // ---- Lazy-Load-Cache für Monats-/Jahresansicht ----
   const cacheRef = useRef<Map<string, PlanWeekDoc>>(new Map())
   const statusRef = useRef<Map<string, WeekDocStatus>>(new Map())
+  const loadedAtRef = useRef<Map<string, number>>(new Map())
+  const WEEK_CACHE_TTL_MS = 60_000
   const [cacheVersion, bumpCacheVersion] = useState(0)
   // Viele Wochen laden gleichzeitig (Jahresplanung: ~53) — Re-Render gebündelt statt je Woche einmal.
   const bumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -185,7 +187,8 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
 
   const fetchOne = useCallback(async (week: string): Promise<PlanWeekDoc> => {
     const cached = cacheRef.current.get(week)
-    if (cached) return cached
+    const fresh = Date.now() - (loadedAtRef.current.get(week) ?? 0) < WEEK_CACHE_TTL_MS
+    if (cached && (fresh || !CLOUD_CONFIGURED)) return cached
 
     // Die aktuell live gesyncte Woche ist bereits im State — direkt übernehmen.
     // Nur wenn das State-Dokument wirklich zu dieser Woche gehört: direkt nach
@@ -196,16 +199,12 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       return latestWeekDoc.current
     }
 
-    const local = loadLocalWeekDoc(week)
-    if (Object.keys(local.entries).length > 0) {
+    // Mit Cloud ist localStorage nur Notnagel — sonst zeigen Monats-/Team-Ansicht
+    // dauerhaft den veralteten Stand des eigenen Geräts.
+    if (!CLOUD_CONFIGURED) {
+      const local = loadLocalWeekDoc(week)
       cacheRef.current.set(week, local)
       return local
-    }
-
-    if (!CLOUD_CONFIGURED) {
-      const empty = emptyWeekDoc(week)
-      cacheRef.current.set(week, empty)
-      return empty
     }
 
     statusRef.current.set(week, "loading")
@@ -213,15 +212,18 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       const entries = await fetchEmployeeDocs<PlanWeekEntry>("planWeeks", week, "week", employeesRef.current)
       const data: PlanWeekDoc = { week, entries }
       cacheRef.current.set(week, data)
+      loadedAtRef.current.set(week, Date.now())
+      lsSet(planWeekStorageKey(week), data)
       statusRef.current.set(week, "ready")
       scheduleBump()
       return data
     } catch (err) {
       console.warn(`Planungswoche ${week} konnte nicht geladen werden`, err)
       statusRef.current.set(week, "error")
-      const empty = emptyWeekDoc(week)
-      cacheRef.current.set(week, empty)
-      return empty
+      const fallback = cached ?? loadLocalWeekDoc(week)
+      cacheRef.current.set(week, fallback)
+      loadedAtRef.current.set(week, Date.now())
+      return fallback
     }
   }, [activeWeek, scheduleBump])
 
