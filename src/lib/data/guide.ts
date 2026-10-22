@@ -234,7 +234,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     <p>Alle Unterlagen und Links, die ein neuer Mitarbeiter für den Start braucht.</p>
 
     <h3>Unterlagen</h3>
-    <p>Downloadbar im Google Drive Team-Ordner:</p>
+    <p>Downloadbar im Google Drive Team-Ordner, Ordner „01 Anmeldung neuer Mitarbeiter“:</p>
     <ul>
       <li>Warum Finova</li>
       <li>Merkblatt neuer Mitarbeiter</li>
