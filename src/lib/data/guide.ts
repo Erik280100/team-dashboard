@@ -228,5 +228,26 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <li><b>Erste ca. 3 Jahre – Aufbauphase:</b> Der Kunde bringt Eigenmittel ein, es fließen noch keine Gewinne. Dieser Betrag lässt sich aber von der Steuer absetzen – einer der wenigen Fälle, in denen sich ein Investment selbst steuerlich absetzen lässt.</li>
       <li><b>Ab ca. 15–20 Jahren – Ertragsphase:</b> Ab diesem Zeitpunkt erwirtschaftet die Immobilie einen positiven Cashflow.</li>
     </ul>
+  ` },
+  { id: 'neuemitarbeiter', title: 'Neue Mitarbeiter', html: `
+    <h2>Anmeldung neuer Mitarbeiter</h2>
+    <p>Alle Unterlagen und Links, die ein neuer Mitarbeiter für den Start braucht.</p>
+
+    <h3>Unterlagen</h3>
+    <p>Downloadbar im Google Drive Team-Ordner:</p>
+    <ul>
+      <li>Warum Finova</li>
+      <li>Merkblatt neuer Mitarbeiter</li>
+      <li>Agentenunterlagen</li>
+      <li>Agentenvertrag</li>
+      <li>Fragebogen für die Zusammenarbeit mit der FINOVA Holding GmbH</li>
+      <li>Tippgeberei-Vertrag 4money</li>
+      <li>Steuerleitfaden</li>
+    </ul>
+
+    <h3>Links</h3>
+    <p><a class="btn btn-primary btn-small" href="https://www.gisa.gv.at/at.gv.wien.fshost-gisa-at/user/formular.aspx?pid=f3cbbd2e05c54d8d889b1bddcb648fa2&amp;pn=Bebb476a7b4514f0b90abff604e4e5fda" target="_blank" rel="noopener">Gewerbe anmelden</a></p>
+    <p><a class="btn btn-primary btn-small" href="https://www.svs.at/cdscontent/?contentid=10007.846813&amp;portal=svsportal" target="_blank" rel="noopener">Ausnahme der Pflichtversicherung bei der SVS</a></p>
+    <p><a class="btn btn-primary btn-small" href="https://digitalerantrag.ksv.at/Dip/?request=auskunft-nach-art-15-dsgvo" target="_blank" rel="noopener">Gratis KSV-Auszug</a></p>
   ` }
 ];
