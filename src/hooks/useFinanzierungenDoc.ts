@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { onSnapshot, setDoc } from "firebase/firestore"
 import { CLOUD_CONFIGURED, financingsDocRef } from "@/lib/firebase"
+import { saveMerged } from "@/lib/cloudMerge"
 import {
   FINANZIERUNGEN_KEY,
   type FinanzierungArt,
@@ -51,6 +52,8 @@ export function useFinanzierungenDoc(): UseFinanzierungenDocResult {
   const cloudReady = useRef(false)
   const latest = useRef(cases)
   latest.current = cases
+  // Zuletzt von der Cloud gesehener bzw. selbst geschriebener Stand: Grundlage, um nur die eigenen Änderungen zu speichern.
+  const baseline = useRef<FinanzierungenDoc>({ cases })
 
   useEffect(() => {
     const docRef = financingsDocRef
@@ -66,6 +69,7 @@ export function useFinanzierungenDoc(): UseFinanzierungenDocResult {
         if (snap.exists()) {
           const data = (snap.data() || {}) as Partial<FinanzierungenDoc>
           if (Array.isArray(data.cases)) {
+            baseline.current = { cases: data.cases }
             setCases(data.cases)
             try { localStorage.setItem(FINANZIERUNGEN_KEY, JSON.stringify(data.cases)) } catch { /* noop */ }
           }
@@ -84,9 +88,12 @@ export function useFinanzierungenDoc(): UseFinanzierungenDocResult {
     try { localStorage.setItem(FINANZIERUNGEN_KEY, JSON.stringify(next)) } catch { /* noop */ }
     const docRef = financingsDocRef
     if (CLOUD_CONFIGURED && cloudReady.current && docRef) {
-      setDoc(docRef, { cases: next }).catch((err) =>
+      const base = baseline.current
+      baseline.current = { cases: next }
+      saveMerged(docRef, base, { cases: next }).catch((err) => {
+        baseline.current = base
         console.warn("Finanzierungen: Cloud-Speichern fehlgeschlagen", err)
-      )
+      })
     }
   }, [])
 

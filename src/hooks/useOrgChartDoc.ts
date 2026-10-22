@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { onSnapshot, setDoc } from "firebase/firestore"
 import { CLOUD_CONFIGURED, orgChartDocRef } from "@/lib/firebase"
+import { saveMerged } from "@/lib/cloudMerge"
 import { withDefaultPlanRates } from "@/lib/calc/struktur"
 import { SB_DEFAULT_TREE, SB_STORAGE_KEY, type OrgChartDoc } from "@/types/dashboard"
 
@@ -44,6 +45,8 @@ export function useOrgChartDoc(): UseOrgChartDocResult {
   const cloudReady = useRef(false)
   const latest = useRef(doc)
   latest.current = doc
+  // Zuletzt von der Cloud gesehener bzw. selbst geschriebener Stand: Grundlage, um nur die eigenen Änderungen zu speichern.
+  const baseline = useRef<OrgChartDoc>(doc)
 
   useEffect(() => {
     const docRef = orgChartDocRef
@@ -66,6 +69,7 @@ export function useOrgChartDoc(): UseOrgChartDocResult {
               rates: data.rates || {},
               planRates: withDefaultPlanRates(data.planRates),
             }
+            baseline.current = next
             setDocState(next)
             try { localStorage.setItem(SB_STORAGE_KEY, JSON.stringify(next)) } catch { /* noop */ }
           }
@@ -84,9 +88,12 @@ export function useOrgChartDoc(): UseOrgChartDocResult {
     try { localStorage.setItem(SB_STORAGE_KEY, JSON.stringify(next)) } catch { /* noop */ }
     const docRef = orgChartDocRef
     if (CLOUD_CONFIGURED && cloudReady.current && docRef) {
-      setDoc(docRef, next).catch((err) =>
+      const base = baseline.current
+      baseline.current = next
+      saveMerged(docRef, base, next).catch((err) => {
+        baseline.current = base
         console.warn("Strukturbaum: Cloud-Speichern fehlgeschlagen", err)
-      )
+      })
     }
   }, [])
 

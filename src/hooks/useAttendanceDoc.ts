@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { onSnapshot, setDoc } from "firebase/firestore"
 import { CLOUD_CONFIGURED, attendanceDocRef } from "@/lib/firebase"
+import { saveMerged } from "@/lib/cloudMerge"
 import { ATTENDANCE_KEY, type AttendanceDoc, type AttendanceEntry } from "@/types/dashboard"
 
 function loadLocalAttendance(): Record<string, AttendanceEntry> {
@@ -47,6 +48,8 @@ export function useAttendanceDoc(): UseAttendanceDocResult {
   const attendanceReady = useRef(false)
   const latest = useRef(attendance)
   latest.current = attendance
+  // Zuletzt von der Cloud gesehener bzw. selbst geschriebener Stand: Grundlage, um nur die eigenen Änderungen zu speichern.
+  const baseline = useRef<AttendanceDoc>({ entries: attendance })
 
   useEffect(() => {
     const docRef = attendanceDocRef
@@ -62,6 +65,7 @@ export function useAttendanceDoc(): UseAttendanceDocResult {
         if (snap.exists()) {
           const data = (snap.data() || {}) as Partial<AttendanceDoc>
           if (data.entries && typeof data.entries === "object") {
+            baseline.current = { entries: data.entries }
             setAttendance(data.entries)
             try { localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(data.entries)) } catch { /* noop */ }
           }
@@ -84,9 +88,12 @@ export function useAttendanceDoc(): UseAttendanceDocResult {
     try { localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(next)) } catch { /* noop */ }
     const docRef = attendanceDocRef
     if (CLOUD_CONFIGURED && attendanceReady.current && docRef) {
-      setDoc(docRef, { entries: next }).catch((err) =>
+      const base = baseline.current
+      baseline.current = { entries: next }
+      saveMerged(docRef, base, { entries: next }).catch((err) => {
+        baseline.current = base
         console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)
-      )
+      })
     }
   }, [])
 
@@ -97,9 +104,12 @@ export function useAttendanceDoc(): UseAttendanceDocResult {
     try { localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(next)) } catch { /* noop */ }
     const docRef = attendanceDocRef
     if (CLOUD_CONFIGURED && attendanceReady.current && docRef) {
-      setDoc(docRef, { entries: next }).catch((err) =>
+      const base = baseline.current
+      baseline.current = { entries: next }
+      saveMerged(docRef, base, { entries: next }).catch((err) => {
+        baseline.current = base
         console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)
-      )
+      })
     }
   }, [])
 

@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { onSnapshot, setDoc } from "firebase/firestore"
 import { CLOUD_CONFIGURED, stateDocRef } from "@/lib/firebase"
+import { saveMerged } from "@/lib/cloudMerge"
 import { migrateRows, recordSnapshot, type HistoryEntry } from "@/lib/calc/format"
 import {
   STARTER_DATA, STARTER_GOAL, STORAGE_KEY, GOAL_KEY, HISTORY_KEY,
@@ -63,6 +64,8 @@ export function useDashboardDoc(): UseDashboardDocResult {
   // Aktuellste Werte für den Cloud-Push griffbereit halten, ohne den Effect erneut zu binden.
   const latest = useRef({ rows, teamGoal, history })
   latest.current = { rows, teamGoal, history }
+  // Zuletzt von der Cloud gesehener bzw. selbst geschriebener Stand: Grundlage, um nur die eigenen Änderungen zu speichern.
+  const baseline = useRef<DashboardDoc>({ rows, teamGoal, history })
 
   useEffect(() => {
     const docRef = stateDocRef
@@ -77,6 +80,11 @@ export function useDashboardDoc(): UseDashboardDocResult {
         if (snap.metadata.fromCache) return
         if (snap.exists()) {
           const data = (snap.data() || {}) as Partial<DashboardDoc>
+          baseline.current = {
+            rows: Array.isArray(data.rows) && data.rows.length ? migrateRows(data.rows) : latest.current.rows,
+            teamGoal: data.teamGoal && typeof data.teamGoal === "object" ? { ...STARTER_GOAL, ...data.teamGoal } : latest.current.teamGoal,
+            history: Array.isArray(data.history) ? data.history : latest.current.history,
+          }
           if (Array.isArray(data.rows) && data.rows.length) {
             const migrated = migrateRows(data.rows)
             setRows(migrated)
@@ -108,7 +116,10 @@ export function useDashboardDoc(): UseDashboardDocResult {
   const pushToCloud = useCallback((doc: DashboardDoc) => {
     const docRef = stateDocRef
     if (!CLOUD_CONFIGURED || !cloudReady.current || !docRef) return
-    setDoc(docRef, doc).catch((err) => {
+    const base = baseline.current
+    baseline.current = doc
+    saveMerged(docRef, base, doc).catch((err) => {
+      baseline.current = base
       console.warn("Cloud-Speichern fehlgeschlagen", err)
       setSyncStatus("error")
     })
