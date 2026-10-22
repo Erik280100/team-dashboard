@@ -3,7 +3,8 @@
 // Sichtbar: Besitzer, dessen Vorgesetzte, Admin. Kein localStorage-Cache im
 // Cloud-Modus (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
-import { collection, deleteDoc, doc, onSnapshot, query, setDoc, where } from "firebase/firestore"
+import { collection, deleteDoc, doc, onSnapshot, query, setDoc, updateDoc, where } from "firebase/firestore"
+import { diffFields, toUpdateArgs } from "@/lib/calc/fieldDiff"
 import { CLOUD_CONFIGURED, firestore } from "@/lib/firebase"
 import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
 import type { AccountInfo } from "@/lib/calc/roles"
@@ -129,9 +130,13 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
       const owner = ownerId ? metaById.get(ownerId) : undefined
       if (!ownerId || !owner) { console.warn(`Finanzierung "${c.name}": kein Besitzer ermittelbar`); continue }
       const abwicklerId = c.abwickler ? ids.get(c.abwickler.trim().toLowerCase()) : undefined
-      setDoc(doc(firestore, "financings", c.id), {
-        ...c, ownerId, ancestors: owner.ancestors, ...(abwicklerId ? { abwicklerId } : {}),
-      }).catch(fail)
+      const data = { ...c, ownerId, ancestors: owner.ancestors, ...(abwicklerId ? { abwicklerId } : {}) }
+      const ref = doc(firestore, "financings", c.id)
+      // Bestehende Fälle: nur die geänderten Felder schreiben, damit ein veralteter Stand fremde Änderungen nicht überschreibt.
+      const args = known ? toUpdateArgs(diffFields({ ...known }, data)) : null
+      if (known && !args) continue
+      if (args) updateDoc(ref, ...args).catch(fail)
+      else setDoc(ref, data).catch(fail)
     }
     for (const c of prev) {
       if (!nextIds.has(c.id)) deleteDoc(doc(firestore, "financings", c.id)).catch(fail)

@@ -2,10 +2,11 @@
 // org/structure. Lesen: alle Eingeloggten; Schreiben: nur Admin (firestore.rules).
 // Kein localStorage-Cache im Cloud-Modus (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
-import { getDoc, onSnapshot, setDoc } from "firebase/firestore"
+import { getDoc, onSnapshot, updateDoc } from "firebase/firestore"
 import { httpsCallable } from "firebase/functions"
 import { CLOUD_CONFIGURED, functions, orgDocRef } from "@/lib/firebase"
 import { sbAll, sbFind, withDefaultPlanRates } from "@/lib/calc/struktur"
+import { diffFields, toUpdateArgs } from "@/lib/calc/fieldDiff"
 import { SB_DEFAULT_TREE, SB_STORAGE_KEY, type OrgChartDoc } from "@/types/dashboard"
 
 function loadLocalOrgChart(): OrgChartDoc {
@@ -67,10 +68,19 @@ export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null):
   const cloudReady = useRef(false)
   const latest = useRef(doc)
   latest.current = doc
+  // Zuletzt von der Cloud gesehener bzw. selbst geschriebener Stand: Grundlage für den feldgenauen Diff beim Speichern.
+  const baseline = useRef<OrgChartDoc>(doc)
 
   function applyServerData(raw: unknown) {
     const data = (raw || {}) as Partial<OrgChartDoc>
     if (data.tree && typeof data.tree === "object") {
+      baseline.current = {
+        tree: data.tree,
+        notes: data.notes || {},
+        conns: data.conns || [],
+        rates: data.rates || {},
+        planRates: withDefaultPlanRates(data.planRates),
+      }
       setDocState({
         tree: data.tree,
         notes: data.notes || {},
@@ -110,7 +120,11 @@ export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null):
     const docRef = orgDocRef("structure")
     if (!cloudReady.current || !docRef) return
     if (isAdmin) {
-      setDoc(docRef, next).catch((err) =>
+      // Nur geänderte Felder schreiben (Notizen/Sätze je Eintrag, Baum/Verbindungen als Ganzes), nie das ganze Dokument.
+      const args = toUpdateArgs(diffFields({ ...baseline.current }, { ...next }))
+      baseline.current = next
+      if (!args) return
+      updateDoc(docRef, ...args).catch((err) =>
         console.warn("Strukturbaum: Cloud-Speichern fehlgeschlagen", err)
       )
       return
