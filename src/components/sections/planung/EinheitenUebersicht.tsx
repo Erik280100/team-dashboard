@@ -9,10 +9,7 @@ import { PLAN_IDS, PLAN_LABELS, type RosterEntry } from "@/lib/calc/struktur"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { EmployeeRow } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
-
-const PILL_ACTIVE = "border-transparent bg-primary text-primary-foreground shadow-sm"
-const PILL_INACTIVE = "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-const PILL_BASE = "rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+import { DARK_CARD, DARK_TABLE, Pill } from "@/components/ui/dark"
 
 export function EinheitenUebersicht({
   managerName, people, roster, year, archive, rows, unitsMonthKey,
@@ -68,38 +65,34 @@ export function EinheitenUebersicht({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">⚡ Einheiten je Person — {year}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wide text-white/85">⚡ Einheiten je Person — {year}</h3>
         {hasTeams && (
           <div className="flex gap-2">
-            <button type="button" onClick={() => setWithTeam(false)} className={cn(PILL_BASE, !withTeam ? PILL_ACTIVE : PILL_INACTIVE)}>
-              Einzelperson
-            </button>
-            <button type="button" onClick={() => setWithTeam(true)} className={cn(PILL_BASE, withTeam ? PILL_ACTIVE : PILL_INACTIVE)}>
-              Inkl. Team
-            </button>
+            <Pill active={!withTeam} onClick={() => setWithTeam(false)} className="px-3 py-1 text-xs">Einzelperson</Pill>
+            <Pill active={withTeam} onClick={() => setWithTeam(true)} className="px-3 py-1 text-xs">Inkl. Team</Pill>
           </div>
         )}
         {loading && <span className="text-xs text-muted-foreground">Lade Archiv…</span>}
       </div>
-      <div className="overflow-auto rounded-lg border">
-        <table className="w-full min-w-[820px] border-collapse text-sm">
+      <div className={cn(DARK_TABLE.wrap, DARK_CARD)}>
+        <table className={cn("min-w-[820px]", DARK_TABLE.table)}>
           <thead>
-            <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
-              <th className="px-3 py-2">{withTeam ? "Person · Team" : "Person"}</th>
-              {PLAN_IDS.map((p) => <th key={p} className="px-3 py-2 text-right">{PLAN_LABELS[p]}</th>)}
-              <th className="px-3 py-2 text-right">Einheiten {year}</th>
-              <th className="px-3 py-2 text-right">Gesamt seit Beginn</th>
+            <tr>
+              <th className={DARK_TABLE.head}>{withTeam ? "Person · Team" : "Person"}</th>
+              {PLAN_IDS.map((p) => <th key={p} className={cn(DARK_TABLE.head, "text-right")}>{PLAN_LABELS[p]}</th>)}
+              <th className={cn(DARK_TABLE.head, "text-right")}>Einheiten {year}</th>
+              <th className={cn(DARK_TABLE.head, "text-right")}>Gesamt seit Beginn</th>
             </tr>
           </thead>
           <tbody>
             {lines.map((l) => (
-              <tr key={l.entry.name} className="border-b border-foreground/20">
+              <tr key={l.entry.name} className={DARK_TABLE.row}>
                 <td className="px-3 py-2">
-                  <div className="truncate text-sm font-medium">
+                  <div className="truncate text-sm font-semibold">
                     {l.entry.name}
-                    {l.entry.name === managerName && <span className="ml-1 text-xs font-normal text-muted-foreground">(du / Führungskraft)</span>}
+                    {l.entry.name === managerName && <span className="ml-1 text-xs font-normal text-white/75">(du / Führungskraft)</span>}
                   </div>
-                  <div className="truncate text-xs text-muted-foreground">
+                  <div className="truncate text-xs text-white/75">
                     {l.entry.role}{withTeam && l.teamSize > 1 ? ` · Team gesamt (${l.teamSize})` : ""}
                   </div>
                 </td>
@@ -109,12 +102,12 @@ export function EinheitenUebersicht({
               </tr>
             ))}
             {lines.length === 0 && (
-              <tr><td colSpan={PLAN_IDS.length + 3} className="px-3 py-6 text-center text-muted-foreground">Keine Personen.</td></tr>
+              <tr><td colSpan={PLAN_IDS.length + 3} className="px-3 py-6 text-center text-white/75">Keine Personen.</td></tr>
             )}
           </tbody>
           {!withTeam && lines.length > 1 && (
             <tfoot>
-              <tr className="bg-muted/50 font-semibold">
+              <tr className="bg-[#12372f] font-semibold">
                 <td className="px-3 py-2" colSpan={PLAN_IDS.length + 1}>Summe ({lines.length} Personen)</td>
                 <td className="px-3 py-2 text-right tabular-nums">{fmt(sumYear)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{fmt(sumTotal)}</td>

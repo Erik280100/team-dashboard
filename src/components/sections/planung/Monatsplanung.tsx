@@ -3,6 +3,8 @@
 // Lädt die betroffenen Wochendokumente lazy nach (usePlanungDoc.loadWeeks).
 import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { DARK_CARD, DARK_INPUT, DARK_TABLE } from "@/components/ui/dark"
+import { cn } from "@/lib/utils"
 import { fmt, initials } from "@/lib/calc/format"
 import {
   aggregateByGroup, aggregateByName, emptyMonthNoteEntry, monthLabel, monthWeekKeys, quotePct,
@@ -31,21 +33,21 @@ function MonthNoteCard({
   onCommitZiel: (value: number) => void
 }) {
   return (
-    <Card>
-      <CardHeader className="border-b pb-3">
+    <Card className={DARK_CARD}>
+      <CardHeader className="border-b border-white/10 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
             {initials(person.name)}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{person.name}</div>
-            <div className="truncate text-xs text-muted-foreground">{person.role}</div>
+            <div className="truncate text-sm font-semibold">{person.name}</div>
+            <div className="truncate text-xs text-white/75">{person.role}</div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-3">
         <div>
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Einheitenziel</div>
+          <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">Einheitenziel</div>
           <input
             key={`${person.name}-ehZiel-${entry.ehZiel ?? 0}`}
             type="number"
@@ -53,20 +55,20 @@ function MonthNoteCard({
             disabled={!isEditor}
             defaultValue={entry.ehZiel ?? 0}
             aria-label={`Einheitenziel – ${person.name}`}
-            className="h-8 w-28 rounded-md border border-input bg-background px-2 text-sm tabular-nums outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
+            className={cn("h-8 w-28 rounded-md border px-2 text-sm tabular-nums outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", DARK_INPUT)}
             onBlur={(e) => onCommitZiel(Number(e.target.value) || 0)}
           />
         </div>
         {NOTE_FIELDS.map((f) => (
           <div key={f.key}>
-            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{f.label}</div>
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{f.label}</div>
             <textarea
               key={`${person.name}-${f.key}-${entry[f.key]}`}
               disabled={!isEditor}
               defaultValue={entry[f.key] ?? ""}
               placeholder="Namen…"
               aria-label={`${f.label} – ${person.name}`}
-              className="min-h-24 w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
+              className={cn("min-h-24 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", DARK_INPUT)}
               onBlur={(e) => onCommit(f.key, e.target.value)}
             />
           </div>
@@ -78,10 +80,10 @@ function MonthNoteCard({
 
 function KpiTile({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="font-mono text-2xl font-medium tabular-nums">{value}</div>
-      <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
+    <div className={cn(DARK_CARD, "rounded-xl border p-4 shadow-sm")}>
+      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-white/75">{label}</div>
+      <div className="text-2xl font-extrabold tabular-nums text-[#64DDA3]">{value}</div>
+      <div className="mt-1 text-xs text-white/75">{sub}</div>
     </div>
   )
 }
@@ -93,10 +95,10 @@ type RaceLine = { key: string; label: string; color: string; soll: number; ist: 
 // über alle Kacheln gleich, damit Personen untereinander vergleichbar bleiben.
 function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: RaceLine[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="border-b bg-muted/50 px-4 py-2.5">
+    <div className={cn(DARK_CARD, "overflow-hidden rounded-xl border shadow-sm")}>
+      <div className="border-b border-white/10 bg-white/[.04] px-4 py-2.5">
         <div className="truncate text-sm font-bold">{title}</div>
-        {sub && <div className="truncate text-xs text-muted-foreground">{sub}</div>}
+        {sub && <div className="truncate text-xs text-white/75">{sub}</div>}
       </div>
       <div className="flex flex-col gap-1.5 p-3">
         {lines.map((l) => {
@@ -109,7 +111,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
               >
                 {l.label}
               </div>
-              <div className="relative h-5 flex-1 rounded-sm bg-muted/60">
+              <div className="relative h-5 flex-1 rounded-sm bg-white/10">
                 <div
                   className="h-full rounded-sm"
                   style={{ width: `${(l.ist / l.max) * 100}%`, backgroundColor: l.color, opacity: reached ? 1 : 0.6 }}
@@ -124,7 +126,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
               </div>
               <div className="w-24 shrink-0 whitespace-nowrap text-right text-xs tabular-nums">
                 <strong>{fmt(l.ist)}</strong>
-                <span className="text-muted-foreground">/{fmt(l.soll)}</span>
+                <span className="text-white/75">/{fmt(l.soll)}</span>
               </div>
             </div>
           )
@@ -235,7 +237,7 @@ export function Monatsplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="text-sm font-medium">{monthLabel(monthKey)}</div>
+        <div className="rounded-full bg-[#64DDA3]/15 px-3 py-1 text-sm font-bold text-[#64DDA3]">{monthLabel(monthKey)}</div>
         <span className="text-xs text-muted-foreground">Kumulierte Wochenpläne</span>
         {loading && <span className="ml-auto text-xs text-muted-foreground">Lade Wochendaten…</span>}
       </div>
@@ -265,36 +267,36 @@ export function Monatsplanung({
       })()}
 
       {rows.length === 0 ? (
-        <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
+        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/75")}>
           Keine Personen für diese Führungskraft im Strukturbaum.
         </div>
       ) : (
-        <div className="max-h-[65vh] overflow-auto rounded-lg border">
-          <table className="w-full min-w-[900px] border-collapse text-sm">
+        <div className={cn("max-h-[65vh]", DARK_TABLE.wrap, DARK_CARD)}>
+          <table className={cn("min-w-[900px]", DARK_TABLE.table)}>
             <thead>
-              <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
-                <th className="sticky top-0 z-10 min-w-[220px] bg-muted/95 px-3 py-2 backdrop-blur">{byGroup ? "Führungskraft" : "Name"}</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">Wählversuche Soll / Ist</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT Soll / Ist</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">BT Soll / Ist</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">AT-Quote</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ST Soll / Ist</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">ET Soll / Ist</th>
-                <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 text-right backdrop-blur">EH gemacht</th>
+              <tr>
+                <th className={cn(DARK_TABLE.head, "min-w-[220px]")}>{byGroup ? "Führungskraft" : "Name"}</th>
+                <th className={cn(DARK_TABLE.head, "text-right")}>Wählversuche Soll / Ist</th>
+                <th className={cn(DARK_TABLE.head, "text-right")}>AT Soll / Ist</th>
+                <th className={cn(DARK_TABLE.head, "text-right")}>BT Soll / Ist</th>
+                <th className={cn(DARK_TABLE.head, "text-right")}>AT-Quote</th>
+                <th className={cn(DARK_TABLE.head, "text-right")}>ST Soll / Ist</th>
+                <th className={cn(DARK_TABLE.head, "text-right")}>ET Soll / Ist</th>
+                <th className={cn(DARK_TABLE.head, "text-right")}>EH gemacht</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => {
                 const d = r.data
                 return (
-                  <tr key={r.key} className="border-b border-foreground/20 last:border-0">
+                  <tr key={r.key} className={DARK_TABLE.row}>
                     <td className="px-3 py-2">
-                      <div className="truncate text-sm font-medium">{r.label}</div>
-                      <div className="truncate text-xs text-muted-foreground">{r.sub}</div>
+                      <div className="truncate text-sm font-semibold">{r.label}</div>
+                      <div className="truncate text-xs text-white/75">{r.sub}</div>
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.atz)}/{fmt(d.atg)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-muted-foreground">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
-                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-muted-foreground">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/75">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/75">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
                     <td className="px-3 py-2 text-right tabular-nums">{quotePct(d.analysen, d.analysenZ)}%</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.stz)}/{fmt(d.stg)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.etz)}/{fmt(d.etg)}</td>
@@ -306,7 +308,7 @@ export function Monatsplanung({
             <tfoot>
               <tr className="text-sm">
                 {(() => {
-                  const cell = "sticky bottom-0 z-10 border-t-2 border-t-foreground/70 bg-[#DFF7EC] px-3 py-2.5 text-right font-bold tabular-nums"
+                  const cell = cn(DARK_TABLE.foot, "text-right")
                   return (
                     <>
                       <td className={cell.replace("text-right", "")}>Summe</td>
@@ -328,7 +330,7 @@ export function Monatsplanung({
 
       {people.length > 0 && (
         <>
-          <div className="mt-2 text-sm font-medium">Termin-Notizen · {monthLabel(monthKey)}</div>
+          <div className="mt-2 text-sm font-bold">Termin-Notizen · {monthLabel(monthKey)}</div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {people.map((p) => (
               <MonthNoteCard

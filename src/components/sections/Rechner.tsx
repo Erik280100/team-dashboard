@@ -1,7 +1,7 @@
 // Rechner-Sektion — Äquivalent zu section-rechner + initRechnerTabs() aus
 // legacy/index.html:1842–2011, 5023–5036.
 import { useState } from "react"
-import { cn } from "@/lib/utils"
+import { PillTabs } from "@/components/ui/dark"
 import { EhRechner } from "@/components/sections/rechner/EhRechner"
 import { UmdrehRechner } from "@/components/sections/rechner/UmdrehRechner"
 import { RenditeRechner } from "@/components/sections/rechner/RenditeRechner"
@@ -40,23 +40,7 @@ export function Rechner({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        {visibleTabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-              activeTab === t.id
-                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
-                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PillTabs tabs={visibleTabs} value={activeTab} onChange={setTab} />
 
       {activeTab === "eh" && (
         <EhRechner

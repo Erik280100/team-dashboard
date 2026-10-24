@@ -6,6 +6,7 @@
 import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { DARK_CARD, DARK_INPUT, DARK_TILE } from "@/components/ui/dark"
 import { fmt, initials } from "@/lib/calc/format"
 import { aggregateByGroup, isoWeekKey, monthLabel, monthWeekKeys, sumWeekEntries, weekLabel, type PlanTeamGroup } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
@@ -28,6 +29,8 @@ const FIELD_GROUPS: FieldGroup[] = [
   { label: "Aktivitäten", left: { sub: "Soll", key: "aktivitaetenSoll" }, right: { sub: "Ist", key: "aktivitaetenIst" } },
 ]
 
+const NAV_BTN = "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+
 type CommitFn = (field: keyof PlanWeekEntry, value: number | string) => void
 
 function NumField({
@@ -47,9 +50,10 @@ function NumField({
       defaultValue={value}
       aria-label={`${String(field)} – ${personName}`}
       className={cn(
-        "h-8 w-full rounded-md border border-input bg-background px-2 text-center text-sm tabular-nums shadow-xs outline-none",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        "disabled:opacity-60"
+        "h-8 w-full rounded-md border px-2 text-center text-sm tabular-nums outline-none",
+        "focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]",
+        "disabled:opacity-60",
+        DARK_INPUT
       )}
       onBlur={(e) => onCommit(field, Number(e.target.value) || 0)}
     />
@@ -66,36 +70,36 @@ function PersonCard({
   onCommit: CommitFn
 }) {
   return (
-    <Card>
-      <CardHeader className="border-b pb-3">
+    <Card className={DARK_CARD}>
+      <CardHeader className="border-b border-white/10 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
             {initials(person.name)}
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 truncate text-sm font-medium">
+            <div className="flex items-center gap-1.5 truncate text-sm font-semibold">
               {person.name}
               {isFk && (
-                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">FK</span>
+                <span className="rounded-full bg-[#E7A94C]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#E7A94C]">FK</span>
               )}
             </div>
-            <div className="truncate text-xs text-muted-foreground">{person.role}</div>
+            <div className="truncate text-xs text-white/75">{person.role}</div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-1">
         <div className="grid grid-cols-2 gap-2">
           {FIELD_GROUPS.map((g) => (
-            <div key={g.label} className="rounded-md border bg-muted/30 p-2">
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{g.label}</div>
+            <div key={g.label} className={cn(DARK_TILE, "p-2")}>
+              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.left.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/75">{g.left.sub}</span>
                   <NumField personName={person.name} field={g.left.key} value={Number(entry[g.left.key]) || 0} isEditor={isEditor} onCommit={onCommit} />
                 </div>
-                <span className="pt-3 text-muted-foreground">/</span>
+                <span className="pt-3 text-white/55">/</span>
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.right.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/75">{g.right.sub}</span>
                   <NumField personName={person.name} field={g.right.key} value={Number(entry[g.right.key]) || 0} isEditor={isEditor} onCommit={onCommit} />
                 </div>
               </div>
@@ -103,14 +107,14 @@ function PersonCard({
           ))}
         </div>
         {isEditor && (
-          <div className="rounded-md border bg-muted/30 p-2">
-            <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Notizen / Feedback</div>
+          <div className={cn(DARK_TILE, "p-2")}>
+            <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">Notizen / Feedback</div>
             <textarea
               key={`${person.name}-notes-${entry.notes}`}
               defaultValue={entry.notes}
               placeholder="Besonderheiten, offene Punkte…"
               aria-label={`Notizen – ${person.name}`}
-              className="min-h-16 w-full resize-y rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              className={cn("min-h-16 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]", DARK_INPUT)}
               onBlur={(e) => onCommit("notes", e.target.value)}
             />
           </div>
@@ -122,33 +126,33 @@ function PersonCard({
 
 function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeekEntry }) {
   return (
-    <Card>
-      <CardHeader className="border-b pb-3">
+    <Card className={DARK_CARD}>
+      <CardHeader className="border-b border-white/10 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
             {initials(group.name)}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{group.name}</div>
-            <div className="truncate text-xs text-muted-foreground">{group.role} · Team gesamt ({group.names.length})</div>
+            <div className="truncate text-sm font-semibold">{group.name}</div>
+            <div className="truncate text-xs text-white/75">{group.role} · Team gesamt ({group.names.length})</div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-1">
         <div className="grid grid-cols-2 gap-2">
           {FIELD_GROUPS.map((g) => (
-            <div key={g.label} className="rounded-md border bg-muted/30 p-2">
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{g.label}</div>
+            <div key={g.label} className={cn(DARK_TILE, "p-2")}>
+              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.left.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/75">{g.left.sub}</span>
                   <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.left.key]) || 0)}
                   </div>
                 </div>
-                <span className="pt-3 text-muted-foreground">/</span>
+                <span className="pt-3 text-white/55">/</span>
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-muted-foreground">{g.right.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/75">{g.right.sub}</span>
                   <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.right.key]) || 0)}
                   </div>
@@ -197,17 +201,17 @@ export function Wochenplanung({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="icon" disabled={weekIdx <= 0} onClick={() => setActiveWeek(weeks[weekIdx - 1])} aria-label="Vorwoche">
+      <div className={cn("flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3", DARK_CARD)}>
+        <Button type="button" variant="ghost" size="icon" className={NAV_BTN} disabled={weekIdx <= 0} onClick={() => setActiveWeek(weeks[weekIdx - 1])} aria-label="Vorwoche">
           ‹
         </Button>
-        <div className="text-sm font-medium">{weekLabel(activeWeek)}</div>
-        <Button type="button" variant="outline" size="icon" disabled={weekIdx < 0 || weekIdx >= weeks.length - 1} onClick={() => setActiveWeek(weeks[weekIdx + 1])} aria-label="Nächste Woche">
+        <div className="text-sm font-bold">{weekLabel(activeWeek)}</div>
+        <Button type="button" variant="ghost" size="icon" className={NAV_BTN} disabled={weekIdx < 0 || weekIdx >= weeks.length - 1} onClick={() => setActiveWeek(weeks[weekIdx + 1])} aria-label="Nächste Woche">
           ›
         </Button>
-        <span className="text-xs font-medium text-muted-foreground">{monthLabel(monthKey)}</span>
-        <span className="text-xs text-muted-foreground">Bitte bis Montag 10:00 Uhr abgeben</span>
-        <span className="ml-auto text-xs text-muted-foreground">
+        <span className="rounded-full bg-[#64DDA3]/15 px-2.5 py-1 text-xs font-bold text-[#64DDA3]">{monthLabel(monthKey)}</span>
+        <span className="text-xs text-white/75">Bitte bis Montag 10:00 Uhr abgeben</span>
+        <span className="ml-auto rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold">
           Σ Verträge {totals.vertraege}
         </span>
       </div>
@@ -219,7 +223,7 @@ export function Wochenplanung({
           ))}
         </div>
       ) : people.length === 0 ? (
-        <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/75", DARK_CARD)}>
           Keine Personen für {managerName ?? "diese Führungskraft"} im Strukturbaum.
         </div>
       ) : (

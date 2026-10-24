@@ -2,7 +2,7 @@
 // (ehemals alleinige Finanzierungen-Sektion, siehe finanzierungen/OffeneAbwicklungen.tsx)
 // und der hierher umgesiedelte Finanzierungsrechner (ehemals Tab in Rechner.tsx).
 import { useState } from "react"
-import { cn } from "@/lib/utils"
+import { PillTabs } from "@/components/ui/dark"
 import { OffeneAbwicklungen } from "@/components/sections/finanzierungen/OffeneAbwicklungen"
 import { KreditRechner } from "@/components/sections/rechner/KreditRechner"
 import { ImmoPortfolioRechner } from "@/components/sections/rechner/ImmoPortfolioRechner"
@@ -44,23 +44,7 @@ export function Finanzierungen({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        {visibleTabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-              activeTab === t.id
-                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
-                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PillTabs tabs={visibleTabs} value={activeTab} onChange={setTab} />
 
       {activeTab === "offen" && (
         <OffeneAbwicklungen
