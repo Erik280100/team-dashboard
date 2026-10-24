@@ -1,33 +1,15 @@
-// Finanzierungen — Cloud-Modus: ein Dokument je Fall in financings/{id} mit
+// Finanzierungen: ein Dokument je Fall in financings/{id} mit
 // ownerId (Betreuer) und ancestors (dessen Vorgesetzte), siehe firestore.rules.
-// Sichtbar: Besitzer, dessen Vorgesetzte, Admin. Kein localStorage-Cache im
-// Cloud-Modus (mehrere Konten pro Browser).
+// Sichtbar: Besitzer, dessen Vorgesetzte, Admin. Kein localStorage-Cache
+// (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { collection, deleteDoc, doc, onSnapshot, query, setDoc, updateDoc, where } from "firebase/firestore"
 import { diffFields, toUpdateArgs } from "@/lib/calc/fieldDiff"
-import { CLOUD_CONFIGURED, firestore } from "@/lib/firebase"
+import { firestore } from "@/lib/firebase"
 import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
 import type { AccountInfo } from "@/lib/calc/roles"
-import {
-  FINANZIERUNGEN_KEY,
-  type FinanzierungArt,
-  type FinanzierungCase,
-} from "@/types/dashboard"
+import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
 import type { Beschaeftigung } from "@/lib/data/finanzierung"
-
-function loadLocalCases(): FinanzierungCase[] {
-  if (CLOUD_CONFIGURED) return []
-  try {
-    const raw = localStorage.getItem(FINANZIERUNGEN_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed
-    }
-  } catch (e) {
-    console.warn("Konnte Finanzierungen nicht laden", e)
-  }
-  return []
-}
 
 function newCaseId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
@@ -60,7 +42,7 @@ function stripOwner(c: StoredCase): FinanzierungCase {
 export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", employeeId: null, mustChangePassword: false }, employees: readonly EmployeeMeta[] = []): UseFinanzierungenDocResult {
   const isAdmin = account.role === "admin"
   const myId = account.employeeId
-  const [cases, setCases] = useState<FinanzierungCase[]>(loadLocalCases)
+  const [cases, setCases] = useState<FinanzierungCase[]>([])
   const [byOwner, setByOwner] = useState<Record<string, StoredCase>>({})
   const [byAncestor, setByAncestor] = useState<Record<string, StoredCase>>({})
   const [byAbwickler, setByAbwickler] = useState<Record<string, StoredCase>>({})
@@ -72,7 +54,7 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
   employeesRef.current = employees
 
   useEffect(() => {
-    if (!CLOUD_CONFIGURED || !firestore) return
+    if (!firestore) return
     cloudReady.current = false
     const col = collection(firestore, "financings")
     const toMap = (docs: { data: () => unknown }[]) => {
@@ -104,7 +86,6 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
   }, [isAdmin, myId])
 
   useEffect(() => {
-    if (!CLOUD_CONFIGURED) return
     const merged = { ...byAbwickler, ...byAncestor, ...byOwner }
     stored.current = merged
     setCases(Object.values(merged).map(stripOwner).sort((a, b) => a.createdAt.localeCompare(b.createdAt)))
@@ -113,10 +94,6 @@ export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", emp
   const commit = useCallback((next: FinanzierungCase[]) => {
     const prev = latest.current
     setCases(next)
-    if (!CLOUD_CONFIGURED) {
-      try { localStorage.setItem(FINANZIERUNGEN_KEY, JSON.stringify(next)) } catch { /* noop */ }
-      return
-    }
     if (!cloudReady.current || !firestore) return
     const fail = (err: unknown) => console.warn("Finanzierungen: Cloud-Speichern fehlgeschlagen", err)
     const prevById = new Map(prev.map((c) => [c.id, JSON.stringify(c)]))

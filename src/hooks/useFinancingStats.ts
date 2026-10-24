@@ -2,7 +2,7 @@
 // Einzelne Fälle sieht man nur für das eigene Team; für die Gesamtansicht des Dashboards reichen diese Summen.
 import { useEffect, useState } from "react"
 import { onSnapshot } from "firebase/firestore"
-import { CLOUD_CONFIGURED, orgDocRef } from "@/lib/firebase"
+import { orgDocRef } from "@/lib/firebase"
 
 export interface FinancingStats {
   openCount: number
@@ -16,7 +16,7 @@ export function useFinancingStats(): FinancingStats | null {
 
   useEffect(() => {
     const ref = orgDocRef("financingStats")
-    if (!CLOUD_CONFIGURED || !ref) return
+    if (!ref) return
     return onSnapshot(
       ref,
       { includeMetadataChanges: true },

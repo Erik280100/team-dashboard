@@ -1,13 +1,7 @@
-// Karrierepläne — Äquivalent zu initCareerPlans() aus legacy/index.html:4039–4081.
-// Inhalte sind clientseitig AES-GCM-verschlüsselt (siehe src/lib/data/career.ts) —
-// dasselbe Passwort wie in der Legacy-App schaltet dieselben Inhalte frei (nur im lokalen Modus —
-// mit Cloud-Anmeldung liegen die Pläne entschlüsselt in org/careerPlans, siehe useCareerPlansDoc).
-import { useState, type FormEvent } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+// Karrierepläne: Die Pläne liegen in org/careerPlans (siehe useCareerPlansDoc), der Zugang ist der Login.
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { decryptCareerPlans, type CareerPlan } from "@/lib/data/career"
 import { useCareerPlansDoc } from "@/hooks/useCareerPlansDoc"
 import { MeinKarrierestand } from "@/components/sections/karriere/MeinKarrierestand"
 import type { MergedRow } from "@/lib/calc/team"
@@ -83,29 +77,7 @@ function enhanceTables(html: string): string {
 
 function KarrierePlaene() {
   const cloud = useCareerPlansDoc()
-  const [unlocked, setPlans] = useState<CareerPlan[] | null>(null)
-  const plans = cloud.status === "ready" ? cloud.plans : unlocked
   const [active, setActive] = useState(0)
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    if (!password) return
-    setSubmitting(true)
-    setError(false)
-    try {
-      const decrypted = await decryptCareerPlans(password)
-      setPlans(decrypted)
-      setActive(0)
-    } catch {
-      setError(true)
-    } finally {
-      setPassword("")
-      setSubmitting(false)
-    }
-  }
 
   if (cloud.status === "loading") {
     return <div className="text-sm text-muted-foreground">Karrierepläne werden geladen…</div>
@@ -123,29 +95,7 @@ function KarrierePlaene() {
     )
   }
 
-  if (!plans) {
-    return (
-      <Card className="mx-auto max-w-md">
-        <CardContent className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold">Karrierepläne</h2>
-          <p className="text-sm text-muted-foreground">Dieser Bereich ist passwortgeschützt.</p>
-          <form onSubmit={onSubmit} className="flex gap-2">
-            <Input
-              type="password"
-              placeholder="Passwort"
-              aria-label="Passwort für Karrierepläne"
-              autoComplete="off"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <Button type="submit" disabled={submitting}>Freischalten</Button>
-          </form>
-          {error && <div role="alert" className="text-sm text-destructive">Falsches Passwort.</div>}
-        </CardContent>
-      </Card>
-    )
-  }
-
+  const plans = cloud.plans
   const plan = plans[active]
 
   return (
@@ -185,7 +135,7 @@ interface KarriereProps {
   myName?: string
 }
 
-/** Reiter "Mein Karrierestand" (persönlich, ohne Passwort) und die passwortgeschützten Karrierepläne. */
+/** Reiter "Mein Karrierestand" (persönlich) und die Karrierepläne. */
 export function Karriere({ merged, planRates, myName }: KarriereProps) {
   const [tab, setTab] = useState<"me" | "plans">("me")
   const tabs = [{ id: "me", label: "Mein Karrierestand" }, { id: "plans", label: "Karrierepläne" }] as const

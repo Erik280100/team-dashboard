@@ -2,14 +2,14 @@
 // nichts aus: Ereignisse, die beim Start schon da waren (oder älter als 1 Minute sind), werden ignoriert.
 import { useEffect } from "react"
 import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore"
-import { CLOUD_CONFIGURED, firestore } from "@/lib/firebase"
+import { firestore } from "@/lib/firebase"
 import { celebrate } from "@/lib/celebrate"
 
 const MAX_AGE_MS = 60_000
 
 export function useCelebrations(enabled: boolean): void {
   useEffect(() => {
-    if (!enabled || !CLOUD_CONFIGURED || !firestore) return
+    if (!enabled || !firestore) return
     let first = true
     return onSnapshot(
       query(collection(firestore, "celebrations"), orderBy("at", "desc"), limit(5)),

@@ -19,10 +19,7 @@ import type {
 
 /**
  * Schalter für den "Monat abschließen"-Button (Topbar + Erinnerungs-Banner in
- * App.tsx). Firestore-Regeln geprüft (Wildcard-Regel deckt finova/archive_index
- * und finova/snapshot_<month> bereits ab wie alle anderen finova-Dokumente) —
- * siehe test/calc/archive.test.ts für die Ableitungslogik. Der erste echte
- * Monatsabschluss im Browser steht noch aus.
+ * App.tsx). Die Ableitungslogik testet test/calc/archive.test.ts.
  */
 export const MONTH_CLOSE_ENABLED = true
 

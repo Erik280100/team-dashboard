@@ -1,32 +1,17 @@
-// "Mein Board" (persönliches Kanban) — Cloud-Modus: ein Dokument je Todo unter
+// "Mein Board" (persönliches Kanban): ein Dokument je Todo unter
 // employees/{eigeneId}/todos/{todoId}; laut firestore.rules nur für den Besitzer
-// lesbar/schreibbar (auch Vorgesetzte und Admin nicht). Kein localStorage-Cache im
-// Cloud-Modus (mehrere Konten pro Browser).
+// lesbar/schreibbar (auch Vorgesetzte und Admin nicht). Kein localStorage-Cache
+// (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore"
-import { CLOUD_CONFIGURED, firestore } from "@/lib/firebase"
+import { firestore } from "@/lib/firebase"
 import { reorderForMove } from "@/lib/calc/todos"
 import {
-  BOARD_TODOS_KEY,
   type BoardTodo,
   type TodoCategory,
   type TodoColor,
   type TodoLane,
 } from "@/types/dashboard"
-
-function loadLocalTodos(): BoardTodo[] {
-  if (CLOUD_CONFIGURED) return []
-  try {
-    const raw = localStorage.getItem(BOARD_TODOS_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed
-    }
-  } catch (e) {
-    console.warn("Konnte Todos nicht laden", e)
-  }
-  return []
-}
 
 function newTodoId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
@@ -43,13 +28,13 @@ export interface UseBoardTodosDocResult {
 }
 
 export function useBoardTodosDoc(employeeId: string | null = null): UseBoardTodosDocResult {
-  const [todos, setTodos] = useState<BoardTodo[]>(loadLocalTodos)
+  const [todos, setTodos] = useState<BoardTodo[]>([])
   const cloudReady = useRef(false)
   const latest = useRef(todos)
   latest.current = todos
 
   useEffect(() => {
-    if (!CLOUD_CONFIGURED || !firestore || !employeeId) return
+    if (!firestore || !employeeId) return
     cloudReady.current = false
     return onSnapshot(
       collection(firestore, "employees", employeeId, "todos"),
@@ -66,10 +51,6 @@ export function useBoardTodosDoc(employeeId: string | null = null): UseBoardTodo
   const commit = useCallback((next: BoardTodo[]) => {
     const prev = latest.current
     setTodos(next)
-    if (!CLOUD_CONFIGURED) {
-      try { localStorage.setItem(BOARD_TODOS_KEY, JSON.stringify(next)) } catch { /* noop */ }
-      return
-    }
     if (!cloudReady.current || !firestore || !employeeId) return
     const prevById = new Map(prev.map((t) => [t.id, JSON.stringify(t)]))
     const nextIds = new Set(next.map((t) => t.id))

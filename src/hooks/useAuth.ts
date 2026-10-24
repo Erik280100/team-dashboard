@@ -2,8 +2,7 @@
 // Zugang mehr: ohne Login zeigt App.tsx nur die LoginPage.
 //
 // Rolle und Mitarbeiter-ID kommen aus den Custom Claims des ID-Tokens
-// (siehe lib/calc/roles.ts, firestore.rules). Ohne Firebase-Config bleibt die
-// App im lokalen Modus (wie bisher), dann gibt es keinen Login.
+// (siehe lib/calc/roles.ts, firestore.rules).
 import { useEffect, useState } from "react"
 import {
   EmailAuthProvider,

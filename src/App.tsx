@@ -31,7 +31,6 @@ import { useMonthArchive } from "@/hooks/useMonthArchive"
 import { useFinancingStats } from "@/hooks/useFinancingStats"
 import { useToday } from "@/hooks/useToday"
 import { hasOpenDueTodos } from "@/lib/calc/todos"
-import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { announceCelebration } from "@/lib/celebrate"
 import { useCelebrations } from "@/hooks/useCelebrations"
 import { ConfettiRain } from "@/components/ConfettiRain"
@@ -110,7 +109,6 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   // gehören aber nur der Person selbst und ihren Vorgesetzten — die Regeln erzwingen das, hier die passenden Listen.
   const accessibleEmployees = useMemo(
     () => {
-      if (!CLOUD_CONFIGURED) return dashboard.employees
       const account = { role: auth.role, employeeId: auth.employeeId, mustChangePassword: false }
       return dashboard.employees.filter((e) => canEditEmployee(account, e.id, e.ancestors))
     },
@@ -118,7 +116,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   )
   const accessibleNames = useMemo(() => new Set(accessibleEmployees.map((e) => e.name.trim().toLowerCase())), [accessibleEmployees])
   const canEditRow = useMemo(
-    () => (name: string) => !CLOUD_CONFIGURED || accessibleNames.has(name.trim().toLowerCase()),
+    () => (name: string) => accessibleNames.has(name.trim().toLowerCase()),
     [accessibleNames]
   )
   const attendance = useAttendanceDoc(accessibleEmployees)
@@ -130,18 +128,18 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   useCelebrations(auth.ready && !!auth.user)
   const boardAlert = hasOpenDueTodos(boardTodos.todos, useToday())
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
-  // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin (und lokaler Modus) sehen den ganzen Baum,
+  // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin sieht den ganzen Baum,
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
-  const scopeId = !CLOUD_CONFIGURED || auth.isAdmin ? null : (auth.employeeId ?? "none")
+  const scopeId = auth.isAdmin ? null : (auth.employeeId ?? "none")
   const scopedTree = useMemo(() => sbScopedTree(orgChart.tree, scopeId), [orgChart.tree, scopeId])
   const financingStats = useFinancingStats()
 
   // Dashboard: "Gesamt" (alle Mitarbeiter) oder "Mein Team" (man selbst und alle darunter). Wer keinem Knoten
   // zugeordnet ist (z. B. reiner Admin) kann nicht wechseln und sieht immer Gesamt.
-  const canSwitchScope = CLOUD_CONFIGURED && !!auth.employeeId
-  // Export/Import in der Kopfzeile: Admin und alle ab Geschäftsstellenleiter.
+  const canSwitchScope = !!auth.employeeId
+  // Export in der Kopfzeile: Admin und alle ab Geschäftsstellenleiter.
   const myNodeRole = auth.employeeId && orgChart.tree ? sbFind(orgChart.tree, auth.employeeId)?.role : undefined
-  const canExportImport = !CLOUD_CONFIGURED || auth.isAdmin || isGstOrHigher(myNodeRole ?? "")
+  const canExport = auth.isAdmin || isGstOrHigher(myNodeRole ?? "")
   const [dashScope, setDashScope] = useState<"gesamt" | "team">(() => {
     try { return localStorage.getItem("finova_dashboard_scope") === "team" ? "team" : "gesamt" } catch { return "gesamt" }
   })
@@ -177,7 +175,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
     const withSoll = zielDoc
       ? dashboard.rows.map((r) => (canEditRow(r.name) ? { ...r, soll: Number(zielDoc.entries[r.name]?.ehZiel) || 0 } : r))
       : dashboard.rows
-    return CLOUD_CONFIGURED ? applyMonthStats(withSoll, monthKeyOf(dashboard.teamGoal), canEditRow) : withSoll
+    return applyMonthStats(withSoll, monthKeyOf(dashboard.teamGoal), canEditRow)
   }, [dashboard.rows, dashboard.teamGoal, zielDoc, canEditRow])
 
   const view = useMemo(() => {
@@ -330,7 +328,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
           archive={archive}
           archiveMonth={archiveMonth}
           onSelectMonth={setArchiveMonth}
-          canExportImport={canExportImport}
+          canExport={canExport}
           onCloseMonth={handleCloseMonth}
           onToggleSidebar={() => setSidebarOpen((o) => !o)}
           attendance={attendance.attendance}
@@ -343,13 +341,6 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
           onScopeChange={changeDashScope}
         />
 
-        {!CLOUD_CONFIGURED && (
-          <div className="border-b bg-amber-50 px-6 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-            Cloud-Speicherung ist noch nicht eingerichtet — Änderungen werden nur in
-            diesem Browser gespeichert. Firebase-Konfiguration im Quelltext ergänzen,
-            damit alle im Team dieselben Daten sehen.
-          </div>
-        )}
         {!auth.isEditor && (
           <div className="border-b bg-muted px-6 py-2 text-sm text-muted-foreground">
             Nur Lesezugriff — für Änderungen fehlt dir die Berechtigung.
@@ -529,8 +520,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
 }
 
 // Login-Gate: ohne Anmeldung ist nichts sichtbar. Die Daten-Hooks in AppShell
-// starten erst nach dem Login (kein Firestore-Zugriff ohne Token). Ohne
-// Firebase-Config (lokaler Modus) entfällt das Gate.
+// starten erst nach dem Login (kein Firestore-Zugriff ohne Token).
 //
 // Die Login-Seite hat eine eigene Route (#login): Nicht Eingeloggte werden dorthin umgeleitet, die ursprünglich
 // angeforderte Sektion merkt sich sessionStorage und wird nach dem Login wieder angesteuert.
@@ -547,7 +537,7 @@ function AuthGate() {
   const { ready, user } = auth
 
   useEffect(() => {
-    if (!CLOUD_CONFIGURED || !ready) return
+    if (!ready) return
     const sync = () => {
       const current = location.hash.slice(1)
       if (!user) {
@@ -565,15 +555,13 @@ function AuthGate() {
     return () => window.removeEventListener("hashchange", sync)
   }, [ready, user])
 
-  if (CLOUD_CONFIGURED) {
-    if (!auth.ready) {
-      return <div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">Lädt…</div>
-    }
-    if (!auth.user) return <LoginPage auth={auth} />
-    // Erste Anmeldung mit Startpasswort: erst neues Passwort festlegen (Datenzugriff ist bis dahin serverseitig gesperrt).
-    if (auth.mustChangePassword) return <ChangePasswordPage auth={auth} />
+  if (!auth.ready) {
+    return <div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">Lädt…</div>
   }
-  return <AppShell key={auth.user?.uid ?? "local"} auth={auth} />
+  if (!auth.user) return <LoginPage auth={auth} />
+  // Erste Anmeldung mit Startpasswort: erst neues Passwort festlegen (Datenzugriff ist bis dahin serverseitig gesperrt).
+  if (auth.mustChangePassword) return <ChangePasswordPage auth={auth} />
+  return <AppShell key={auth.user.uid} auth={auth} />
 }
 
 function App() {

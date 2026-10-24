@@ -1,49 +1,21 @@
-// Strukturbaum (Baum, Notizen, Verbindungen, Sätze) — Cloud-Modus: Dokument
-// org/structure. Lesen: alle Eingeloggten; Schreiben: nur Admin (firestore.rules).
-// Kein localStorage-Cache im Cloud-Modus (mehrere Konten pro Browser).
+// Strukturbaum (Baum, Notizen, Verbindungen, Sätze): Dokument org/structure.
+// Lesen: alle Eingeloggten; Schreiben: Admin direkt, alle anderen über updateSubtree (firestore.rules).
+// Kein localStorage-Cache (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getDoc, onSnapshot, updateDoc } from "firebase/firestore"
 import { httpsCallable } from "firebase/functions"
-import { CLOUD_CONFIGURED, functions, orgDocRef } from "@/lib/firebase"
+import { functions, orgDocRef } from "@/lib/firebase"
 import { sbAll, sbFind, withDefaultPlanRates } from "@/lib/calc/struktur"
 import { diffFields, toUpdateArgs } from "@/lib/calc/fieldDiff"
-import { SB_DEFAULT_TREE, SB_STORAGE_KEY, type OrgChartDoc } from "@/types/dashboard"
+import type { OrgChartDoc } from "@/types/dashboard"
 
-function loadLocalOrgChart(): OrgChartDoc {
-  if (CLOUD_CONFIGURED) return emptyOrgChart()
-  try {
-    const raw = localStorage.getItem(SB_STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (parsed && parsed.tree) {
-        return {
-          tree: parsed.tree,
-          notes: parsed.notes || {},
-          conns: parsed.conns || [],
-          rates: parsed.rates || {},
-          planRates: withDefaultPlanRates(parsed.planRates),
-        }
-      }
-    }
-  } catch (e) {
-    console.warn("Konnte Strukturbaum nicht laden", e)
-  }
-  return {
-    tree: JSON.parse(JSON.stringify(SB_DEFAULT_TREE)),
-    notes: {},
-    conns: [],
-    rates: {},
-    planRates: withDefaultPlanRates(),
-  }
-}
-
-/** Platzhalter bis der Cloud-Stand da ist — bewusst ohne Personen (kein Default-Baum im Cloud-Modus). */
+/** Platzhalter bis der Cloud-Stand da ist — bewusst ohne Personen (kein Default-Baum). */
 function emptyOrgChart(): OrgChartDoc {
   return { tree: { id: "root", name: "", role: "", status: "vielleicht", children: [] }, notes: {}, conns: [], rates: {}, planRates: withDefaultPlanRates() }
 }
 
 export interface UseOrgChartDocResult extends OrgChartDoc {
-  /** Kompletten Strukturbaum-Zustand ersetzen, lokal cachen, in die Cloud pushen. */
+  /** Kompletten Strukturbaum-Zustand ersetzen und in die Cloud pushen. */
   saveOrgChart: (next: OrgChartDoc) => void
 }
 
@@ -64,7 +36,7 @@ export function subtreePayload(doc: OrgChartDoc, myNodeId: string) {
  * unterhalb ihres eigenen Knotens (`myNodeId` = Mitarbeiter-ID = Knoten-ID).
  */
 export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null): UseOrgChartDocResult {
-  const [doc, setDocState] = useState<OrgChartDoc>(loadLocalOrgChart)
+  const [doc, setDocState] = useState<OrgChartDoc>(emptyOrgChart)
   const cloudReady = useRef(false)
   const latest = useRef(doc)
   latest.current = doc
@@ -93,7 +65,7 @@ export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null):
 
   useEffect(() => {
     const docRef = orgDocRef("structure")
-    if (!CLOUD_CONFIGURED || !docRef) return
+    if (!docRef) return
     const unsub = onSnapshot(
       docRef,
       { includeMetadataChanges: true },
@@ -113,10 +85,6 @@ export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null):
 
   const saveOrgChart = useCallback((next: OrgChartDoc) => {
     setDocState(next)
-    if (!CLOUD_CONFIGURED) {
-      try { localStorage.setItem(SB_STORAGE_KEY, JSON.stringify(next)) } catch { /* noop */ }
-      return
-    }
     const docRef = orgDocRef("structure")
     if (!cloudReady.current || !docRef) return
     if (isAdmin) {

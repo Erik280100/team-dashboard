@@ -12,7 +12,7 @@ export interface HistoryEntry {
   ist: number
 }
 
-/** finova/dashboard */
+/** Dashboard-Daten: rows aus employees/{id}, teamGoal und history aus org/teamGoal. */
 export interface DashboardDoc {
   rows: EmployeeRow[]
   teamGoal: TeamGoal
@@ -42,7 +42,7 @@ export interface OrgChartConn {
   label?: string
 }
 
-/** finova/orgchart */
+/** org/structure */
 export interface OrgChartDoc {
   tree: SbNode
   notes: Record<string, OrgChartNote[]>
@@ -76,7 +76,7 @@ export interface FinanzierungCase {
   createdAt: string
 }
 
-/** finova/financings */
+/** financings/{id} — ein Dokument je Fall. */
 export interface FinanzierungenDoc {
   cases: FinanzierungCase[]
 }
@@ -131,7 +131,7 @@ export interface BoardTodo {
   createdAt: string
 }
 
-/** finova/erik_todos */
+/** employees/{id}/todos/{todoId} — ein Dokument je Todo. */
 export interface ErikTodosDoc {
   todos: BoardTodo[]
 }
@@ -141,7 +141,7 @@ export interface ErikTodosDoc {
 // Kennzahlen aus Finova_Controlling.html (Wochenplan/Monatsplan/Jahresplanung-
 // Panels) übernommen, dabei "Umsatz €" durch Einheiten ersetzt, damit es zum
 // Rest des Dashboards passt (Karrierepläne/Soll-Ist rechnen ebenfalls in EH).
-// Bewusst komplett getrennt von finova/dashboard (rows/AT/BT/ET) — kein
+// Bewusst komplett getrennt von den Einheiten (rows/AT/BT/ET) — kein
 // Rückschreiben, keine Berührung der Monatsabschluss-/Archiv-Logik.
 export interface PlanWeekEntry {
   atz: number
@@ -164,7 +164,7 @@ export interface PlanWeekEntry {
   submitted: boolean
 }
 
-/** finova/plan_week_<YYYY-Www> — entries je Mitarbeitername (wie roster/rows per Name verknüpft). */
+/** employees/{id}/planWeeks/{YYYY-Www} — in der App zu entries je Mitarbeitername zusammengesetzt. */
 export interface PlanWeekDoc {
   week: string
   entries: Record<string, PlanWeekEntry>
@@ -185,7 +185,7 @@ export interface PlanMonthNotesEntry {
   ehZiel?: number
 }
 
-/** finova/plan_month_notes_<YYYY-MM> — entries je Mitarbeitername. */
+/** employees/{id}/planMonthNotes/{YYYY-MM} — in der App zu entries je Mitarbeitername zusammengesetzt. */
 export interface PlanMonthNotesDoc {
   month: string
   entries: Record<string, PlanMonthNotesEntry>
@@ -208,7 +208,7 @@ export type PlanQuarter = (typeof PLAN_QUARTERS)[number]
 export type PlanQuarterData = { milestone: string } & Record<PlanTargetKey, number>
 
 /**
- * finova/plan_annual_<YYYY>_<managerKey> — je Führungskraft ein eigenes
+ * employees/{fkId}/planAnnual/{YYYY} — je Führungskraft ein eigenes
  * Dokument (planManagerKey in lib/calc/planung.ts), sonst würden sich alle
  * Führungskräfte ein gemeinsames Jahresziel teilen.
  */
@@ -217,24 +217,6 @@ export interface PlanAnnualDoc {
   quarters: Record<PlanQuarter, PlanQuarterData>
 }
 
-export function planWeekStorageKey(week: string): string {
-  return `finova_plan_week_${week}_v1`
-}
-export function planAnnualStorageKey(year: number, managerKey: string): string {
-  return `finova_plan_annual_${year}_${managerKey}_v1`
-}
-export function planMonthNotesStorageKey(month: string): string {
-  return `finova_plan_month_notes_${month}_v1`
-}
-
-export const STORAGE_KEY = "finova_dashboard_data_v1"
-export const GOAL_KEY = "finova_dashboard_goal_v1"
-export const HISTORY_KEY = "finova_dashboard_history_v1"
-export const ATTENDANCE_KEY = "finova_dashboard_attendance_v1"
-export const SB_STORAGE_KEY = "finova_orgchart_data_v1"
-export const FINANZIERUNGEN_KEY = "finova_finanzierungen_v1"
-export const BOARD_TODOS_KEY = "finova_erik_todos_v1"
-
 export const STARTER_GOAL: TeamGoal = {
   note: "",
   recruitGoal: 6,
@@ -242,54 +224,7 @@ export const STARTER_GOAL: TeamGoal = {
   ...defaultPeriod(),
 }
 
-const STARTER_JOIN_DATE = defaultPeriod().periodStart
-
-const starterEmployee = (name: string, isNew: boolean): EmployeeRow => ({
-  name,
-  isNew,
-  atPlan: 0,
-  atIst: 0,
-  btPlan: 0,
-  btIst: 0,
-  etPlan: 0,
-  etIst: 0,
-  soll: 0,
-  ist: 0,
-  joinDate: isNew ? STARTER_JOIN_DATE : "",
-})
-
-/** Platzhalter für den lokalen Modus ohne Cloud — keine echten Personen. */
-export const STARTER_DATA: EmployeeRow[] = [
-  starterEmployee("Person A", false),
-  starterEmployee("Person B", false),
-  starterEmployee("Person C", false),
-  starterEmployee("Person D", false),
-  starterEmployee("Person E", true),
-  starterEmployee("Person F", true),
-]
-
-export const SB_DEFAULT_TREE: SbNode = {
-  id: "root",
-  name: "Person A",
-  role: "Geschäftsstellenleiter",
-  children: [
-    {
-      id: "b",
-      name: "Person B",
-      role: "Teamleiter",
-      children: [
-        { id: "e", name: "Person E", role: "Mitarbeiter", children: [] },
-        { id: "f", name: "Person F", role: "Mitarbeiter", children: [] },
-      ],
-    },
-    { id: "c", name: "Person C", role: "FT 3", children: [] },
-    { id: "d", name: "Person D", role: "FT 1", children: [] },
-  ],
-}
-
 // Umsatzverfolgung (Controlling): eine Zeile je Rechner-Position, die im EH-Rechner gebucht wurde.
-export const UMSATZ_KEY = "finova_umsaetze_v1"
-
 export interface UmsatzEntry {
   id: string
   /** ISO-Zeitpunkt der Buchung. */

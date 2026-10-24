@@ -1,7 +1,6 @@
 // Ableitung von managerId/ancestors aus dem Strukturbaum (org/structure).
-// ACHTUNG: Spiegel von collectPeople() in ../../src/lib/migration/accounts.ts —
-// beide Fassungen müssen gleich bleiben (Knoten-ID = Mitarbeiter-ID, Knoten mit
-// status "vielleicht" werden übersprungen, ihre Kinder erben den nächsten sichtbaren Vorgesetzten).
+// Knoten-ID = Mitarbeiter-ID; Knoten mit status "vielleicht" werden übersprungen,
+// ihre Kinder erben den nächsten sichtbaren Vorgesetzten.
 export interface SbNode {
   id: string
   name: string

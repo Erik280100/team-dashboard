@@ -1,7 +1,7 @@
 // Konfettiregen bei Umsatzbuchungen: Die Buchung schreibt ein Ereignis nach celebrations/{id}; jeder eingeloggte
-// Client hört darauf (useCelebrations) und löst den Regen aus. Lokal (ohne Cloud) feuert nur der Buchende.
+// Client hört darauf (useCelebrations) und löst den Regen aus.
 import { addDoc, collection } from "firebase/firestore"
-import { CLOUD_CONFIGURED, firestore } from "@/lib/firebase"
+import { firestore } from "@/lib/firebase"
 
 export const CELEBRATE_EVENT = "finova:celebrate"
 
@@ -12,7 +12,7 @@ export function celebrate(name?: string): void {
 
 /** Buchung an alle melden. Fehler (z. B. Regeln noch nicht deployt) dürfen die Buchung nie stören. */
 export function announceCelebration(name: string): void {
-  if (!CLOUD_CONFIGURED || !firestore) {
+  if (!firestore) {
     celebrate(name)
     return
   }

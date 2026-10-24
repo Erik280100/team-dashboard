@@ -1,33 +1,22 @@
-// Kopfzeile — Äquivalent zu .topbar aus legacy/index.html:1591–1617 (Titel,
-// Auth-Box, Sync-Status, Export/Import). Export/Import operieren auf
-// rows/teamGoal wie exportBtn/importFile in legacy/index.html:3241–3284.
+// Kopfzeile (Titel, Auth-Box, Sync-Status, Export von rows/teamGoal).
 // Zusätzlich: globaler Monatswähler + "Monat abschließen" (Monats-Archiv,
 // siehe useMonthArchive.ts) — nur in Übersicht/Mitarbeiter/Strukturbaum sichtbar.
-import { useRef, type ChangeEvent } from "react"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import { AuthBox } from "@/components/AuthBox"
-import { useConfirm } from "@/hooks/useConfirm"
 import type { useAuth } from "@/hooks/useAuth"
 import type { UseDashboardDocResult } from "@/hooks/useDashboardDoc"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { SectionId } from "@/hooks/useHashSection"
 import { MONTH_CLOSE_ENABLED, canCloseMonth, monthLabel } from "@/lib/calc/archive"
-import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import type { MonthKey } from "@/types/archive"
-import {
-  STARTER_GOAL,
-  type AttendanceEntry,
-  type FinanzierungCase,
-  type OrgChartDoc,
-} from "@/types/dashboard"
+import type { AttendanceEntry, FinanzierungCase, OrgChartDoc } from "@/types/dashboard"
 
 const SYNC_STATUS_TEXT: Record<string, string> = {
-  "not-configured": "",
   connecting: "Verbinde mit Cloud…",
   connected: "Verbunden ✓",
-  error: "Cloud-Verbindung fehlgeschlagen — nur lokal gespeichert.",
+  error: "Cloud-Verbindung fehlgeschlagen.",
 }
 
 const ARCHIVE_SECTIONS = new Set<SectionId>(["overview", "team", "struktur"])
@@ -39,7 +28,7 @@ export function Topbar({
   archive,
   archiveMonth,
   onSelectMonth,
-  canExportImport,
+  canExport,
   onCloseMonth,
   onToggleSidebar,
   attendance,
@@ -57,8 +46,8 @@ export function Topbar({
   archive: UseMonthArchiveResult
   archiveMonth: MonthKey | null
   onSelectMonth: (month: MonthKey | null) => void
-  /** Export/Import sichtbar: Admin und alle ab Geschäftsstellenleiter. */
-  canExportImport: boolean
+  /** Export sichtbar: Admin und alle ab Geschäftsstellenleiter. */
+  canExport: boolean
   onCloseMonth: () => void
   onToggleSidebar: () => void
   /** Für "Vollständiges Backup" — Daten, die im normalen Export (nur rows/teamGoal) fehlen. */
@@ -66,8 +55,6 @@ export function Topbar({
   orgChart: OrgChartDoc
   financings: FinanzierungCase[]
 }) {
-  const confirm = useConfirm()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const isArchive = archiveMonth !== null
   const showMonthPicker = ARCHIVE_SECTIONS.has(section) && archive.index.length > 0
 
@@ -116,40 +103,6 @@ export function Topbar({
       },
       "finova_full_backup"
     )
-  }
-
-  async function onImportFile(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    try {
-      const text = await file.text()
-      const parsed = JSON.parse(text)
-      let newRows
-      let newGoal = null
-      if (Array.isArray(parsed)) {
-        newRows = parsed
-      } else if (parsed && Array.isArray(parsed.rows)) {
-        newRows = parsed.rows
-        if (parsed.teamGoal) newGoal = parsed.teamGoal
-      } else {
-        throw new Error("Ungültiges Format")
-      }
-      const ok = await confirm(
-        `Import überschreibt die aktuellen ${dashboard.rows.length} Mitarbeiter-Datensätze mit ${newRows.length} importierten Datensätzen. Fortfahren?`
-      )
-      if (!ok) {
-        e.target.value = ""
-        return
-      }
-      dashboard.saveRows(newRows)
-      if (newGoal) {
-        dashboard.saveGoal({ ...STARTER_GOAL, ...dashboard.teamGoal, ...newGoal })
-      }
-      alert(`Import erfolgreich: ${newRows.length} Mitarbeiter geladen.`)
-    } catch (err) {
-      alert("Import fehlgeschlagen: " + (err instanceof Error ? err.message : String(err)))
-    }
-    e.target.value = ""
   }
 
   return (
@@ -215,7 +168,7 @@ export function Topbar({
             </Button>
           </div>
         )}
-        {!isArchive && auth.isAdmin && CLOUD_CONFIGURED && (
+        {!isArchive && auth.isAdmin && (
           <>
             <Button size="sm" variant="outline" onClick={onFullBackup}>
               Vollständiges Backup
@@ -240,24 +193,10 @@ export function Topbar({
         <span role="status" aria-live="polite" className="text-xs text-muted-foreground">
           {SYNC_STATUS_TEXT[dashboard.syncStatus]}
         </span>
-        {!isArchive && canExportImport && section === "overview" && (
+        {!isArchive && canExport && section === "overview" && (
           <Button size="sm" variant="ghost" onClick={onExport}>
             Export
           </Button>
-        )}
-        {!isArchive && canExportImport && (
-          <>
-            <Button size="sm" variant="ghost" onClick={() => fileInputRef.current?.click()}>
-              Import
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json"
-              className="hidden"
-              onChange={onImportFile}
-            />
-          </>
         )}
       </div>
     </div>

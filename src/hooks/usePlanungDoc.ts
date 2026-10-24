@@ -1,74 +1,24 @@
-// Planung — Cloud-Modus: je Mitarbeiter eigene Dokumente
+// Planung: je Mitarbeiter eigene Dokumente
 //   employees/{id}/planWeeks/{YYYY-Www}
 //   employees/{id}/planMonthNotes/{YYYY-MM}
 //   employees/{id}/planAnnual/{YYYY}
 // (Zugriff regeln firestore.rules: selbst, Vorgesetzte, Admin). Die Schnittstelle
-// bleibt die bisherige: Wochen-/Monatsdokumente mit Einträgen je Mitarbeitername,
+// liefert Wochen-/Monatsdokumente mit Einträgen je Mitarbeitername,
 // zusammengesetzt aus den Einzeldokumenten der für dieses Konto sichtbaren
-// Mitarbeiter (`employees`). Im Cloud-Modus wird nichts in localStorage gecacht
-// (mehrere Konten pro Browser). Ohne Firebase-Config: wie bisher nur localStorage.
+// Mitarbeiter (`employees`). Es wird nichts in localStorage gecacht
+// (mehrere Konten pro Browser).
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { fetchEmployeeDocs, fetchEmployeeRange, subscribeEmployeeDocs, writeEmployeeSubDoc } from "@/lib/employeeSubdocs"
 import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
 import { currentMonthKey, defaultAnnual, emptyMonthNoteEntry, emptyWeekEntry, isoWeekKey, planManagerKey } from "@/lib/calc/planung"
-import {
-  planAnnualStorageKey, planMonthNotesStorageKey, planWeekStorageKey,
-  type PlanAnnualDoc, type PlanMonthNotesDoc, type PlanMonthNotesEntry, type PlanWeekDoc, type PlanWeekEntry,
-} from "@/types/dashboard"
-
-// localStorage nur im lokalen Modus (siehe Kopfkommentar).
-function lsGet(key: string): string | null {
-  if (CLOUD_CONFIGURED) return null
-  try { return localStorage.getItem(key) } catch { return null }
-}
-function lsSet(key: string, value: unknown): void {
-  if (CLOUD_CONFIGURED) return
-  try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* noop */ }
-}
+import type { PlanAnnualDoc, PlanMonthNotesDoc, PlanMonthNotesEntry, PlanWeekDoc, PlanWeekEntry } from "@/types/dashboard"
 
 function emptyWeekDoc(week: string): PlanWeekDoc {
   return { week, entries: {} }
 }
 
-function loadLocalWeekDoc(week: string): PlanWeekDoc {
-  try {
-    const raw = lsGet(planWeekStorageKey(week))
-    if (raw) {
-      const parsed = JSON.parse(raw) as PlanWeekDoc
-      if (parsed && typeof parsed === "object" && parsed.entries) return parsed
-    }
-  } catch (e) {
-    console.warn(`Konnte Planungswoche ${week} nicht laden`, e)
-  }
-  return emptyWeekDoc(week)
-}
-
 function emptyMonthNotesDoc(month: string): PlanMonthNotesDoc {
   return { month, entries: {} }
-}
-
-function loadLocalMonthNotesDoc(month: string): PlanMonthNotesDoc {
-  try {
-    const raw = lsGet(planMonthNotesStorageKey(month))
-    if (raw) {
-      const parsed = JSON.parse(raw) as PlanMonthNotesDoc
-      if (parsed && typeof parsed === "object" && parsed.entries) return parsed
-    }
-  } catch (e) {
-    console.warn(`Konnte Monatsnotizen ${month} nicht laden`, e)
-  }
-  return emptyMonthNotesDoc(month)
-}
-
-function loadLocalAnnualDoc(year: number, managerKey: string): PlanAnnualDoc | null {
-  try {
-    const raw = lsGet(planAnnualStorageKey(year, managerKey))
-    if (raw) return JSON.parse(raw) as PlanAnnualDoc
-  } catch (e) {
-    console.warn(`Konnte Jahresplanung ${year}/${managerKey} nicht laden`, e)
-  }
-  return null
 }
 
 /** Cache-Schlüssel für die Jahresplanung — Jahr + Führungskraft. */
@@ -116,7 +66,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
   employeesRef.current = employees
 
   const [activeWeek, setActiveWeek] = useState<string>(() => isoWeekKey(new Date()))
-  const [weekDoc, setWeekDoc] = useState<PlanWeekDoc>(() => loadLocalWeekDoc(activeWeek))
+  const [weekDoc, setWeekDoc] = useState<PlanWeekDoc>(() => emptyWeekDoc(activeWeek))
   const cloudReady = useRef(false)
   const latestWeekDoc = useRef(weekDoc)
   latestWeekDoc.current = weekDoc
@@ -148,9 +98,8 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
 
   // Live-Sync der aktuell angezeigten Woche.
   useEffect(() => {
-    setWeekDoc(loadLocalWeekDoc(activeWeek))
+    setWeekDoc(emptyWeekDoc(activeWeek))
     cloudReady.current = false
-    if (!CLOUD_CONFIGURED) return
     return subscribeEmployeeDocs<PlanWeekEntry>(
       "planWeeks", activeWeek, "week", employees,
       (entries, ready) => {
@@ -171,11 +120,9 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       if (current.entries[name] && sameJson(current.entries[name], nextEntry)) return
       const next: PlanWeekDoc = { week: current.week, entries: { ...current.entries, [name]: nextEntry } }
       setWeekDoc(next)
-      lsSet(planWeekStorageKey(next.week), next)
       // Cache mit aktualisieren, damit Monats-/Jahresansicht sofort den neuen Stand sehen.
       cacheRef.current.set(next.week, next)
-      if (!CLOUD_CONFIGURED) return
-      if (!cloudReady.current) { console.warn(`Planungswoche ${next.week}: noch keine Verbindung zur Cloud - nur lokal gespeichert`); return }
+      if (!cloudReady.current) { console.warn(`Planungswoche ${next.week}: noch keine Verbindung zur Cloud - nicht gespeichert`); return }
       const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
       if (!id) { console.warn(`Planungswoche: kein Mitarbeiter-Dokument für "${name}"`); return }
       writeEmployeeSubDoc(id, "planWeeks", next.week, current.entries[name] ? { week: next.week, ...patch } : { week: next.week, ...nextEntry }, !!current.entries[name]).catch((err) =>
@@ -188,7 +135,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
   const fetchOne = useCallback(async (week: string): Promise<PlanWeekDoc> => {
     const cached = cacheRef.current.get(week)
     const fresh = Date.now() - (loadedAtRef.current.get(week) ?? 0) < WEEK_CACHE_TTL_MS
-    if (cached && (fresh || !CLOUD_CONFIGURED)) return cached
+    if (cached && fresh) return cached
 
     // Die aktuell live gesyncte Woche ist bereits im State — direkt übernehmen.
     // Nur wenn das State-Dokument wirklich zu dieser Woche gehört: direkt nach
@@ -199,28 +146,19 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       return latestWeekDoc.current
     }
 
-    // Mit Cloud ist localStorage nur Notnagel — sonst zeigen Monats-/Team-Ansicht
-    // dauerhaft den veralteten Stand des eigenen Geräts.
-    if (!CLOUD_CONFIGURED) {
-      const local = loadLocalWeekDoc(week)
-      cacheRef.current.set(week, local)
-      return local
-    }
-
     statusRef.current.set(week, "loading")
     try {
       const entries = await fetchEmployeeDocs<PlanWeekEntry>("planWeeks", week, "week", employeesRef.current)
       const data: PlanWeekDoc = { week, entries }
       cacheRef.current.set(week, data)
       loadedAtRef.current.set(week, Date.now())
-      lsSet(planWeekStorageKey(week), data)
       statusRef.current.set(week, "ready")
       scheduleBump()
       return data
     } catch (err) {
       console.warn(`Planungswoche ${week} konnte nicht geladen werden`, err)
       statusRef.current.set(week, "error")
-      const fallback = cached ?? loadLocalWeekDoc(week)
+      const fallback = cached ?? emptyWeekDoc(week)
       cacheRef.current.set(week, fallback)
       loadedAtRef.current.set(week, Date.now())
       return fallback
@@ -253,8 +191,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       if (w === activeWeek && latestWeekDoc.current.week === w) {
         cacheRef.current.set(w, latestWeekDoc.current)
       } else {
-        const local = loadLocalWeekDoc(w)
-        cacheRef.current.set(w, Object.keys(local.entries).length > 0 ? local : { week: w, entries: perWeek.get(w) ?? {} })
+        cacheRef.current.set(w, { week: w, entries: perWeek.get(w) ?? {} })
       }
       statusRef.current.set(w, "ready")
     }
@@ -263,7 +200,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
 
   const loadMany = useCallback((weeks: string[]): Promise<PlanWeekDoc[]> => {
     const missing = weeks.filter((w) => !cacheRef.current.has(w) && !inflightRef.current.has(w))
-    if (CLOUD_CONFIGURED && missing.length >= 2) {
+    if (missing.length >= 2) {
       const done = fetchRange(missing).catch((err) => console.warn("Planungswochen konnten nicht geladen werden", err))
       missing.forEach((w) => {
         const p = done
@@ -298,15 +235,14 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
 
   // ---- Monats-Notizen (AT/BT/ST-Kacheln der Monatsplanung) ----
   const [activeMonth, setActiveMonth] = useState<string>(() => currentMonthKey())
-  const [monthNotesDoc, setMonthNotesDoc] = useState<PlanMonthNotesDoc>(() => loadLocalMonthNotesDoc(activeMonth))
+  const [monthNotesDoc, setMonthNotesDoc] = useState<PlanMonthNotesDoc>(() => emptyMonthNotesDoc(activeMonth))
   const monthCloudReady = useRef(false)
   const latestMonthNotesDoc = useRef(monthNotesDoc)
   latestMonthNotesDoc.current = monthNotesDoc
 
   useEffect(() => {
-    setMonthNotesDoc(loadLocalMonthNotesDoc(activeMonth))
+    setMonthNotesDoc(emptyMonthNotesDoc(activeMonth))
     monthCloudReady.current = false
-    if (!CLOUD_CONFIGURED) return
     return subscribeEmployeeDocs<PlanMonthNotesEntry>(
       "planMonthNotes", activeMonth, "month", employees,
       (entries, ready) => {
@@ -325,9 +261,7 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       const next: PlanMonthNotesDoc = { month: current.month, entries: { ...current.entries, [name]: nextEntry } }
       setMonthNotesDoc(next)
       monthCacheRef.current.set(next.month, next) // Mitarbeiterseite nicht veraltet lassen
-      lsSet(planMonthNotesStorageKey(next.month), next)
-      if (!CLOUD_CONFIGURED) return
-      if (!monthCloudReady.current) { console.warn(`Monatsnotizen ${next.month}: noch keine Verbindung zur Cloud - nur lokal gespeichert`); return }
+      if (!monthCloudReady.current) { console.warn(`Monatsnotizen ${next.month}: noch keine Verbindung zur Cloud - nicht gespeichert`); return }
       const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
       if (!id) { console.warn(`Monatsnotizen: kein Mitarbeiter-Dokument für "${name}"`); return }
       writeEmployeeSubDoc(id, "planMonthNotes", next.month, current.entries[name] ? { month: next.month, ...patch } : { month: next.month, ...nextEntry }, !!current.entries[name]).catch((err) =>
@@ -347,13 +281,11 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
       if (!monthLoadingRef.current.has(month)) {
         monthLoadingRef.current.add(month)
         queueMicrotask(async () => {
-          let doc = loadLocalMonthNotesDoc(month)
-          if (CLOUD_CONFIGURED) {
-            try {
-              doc = { month, entries: await fetchEmployeeDocs<PlanMonthNotesEntry>("planMonthNotes", month, "month", employeesRef.current) }
-            } catch (err) {
-              console.warn(`Monatsnotizen ${month} konnten nicht geladen werden`, err)
-            }
+          let doc = emptyMonthNotesDoc(month)
+          try {
+            doc = { month, entries: await fetchEmployeeDocs<PlanMonthNotesEntry>("planMonthNotes", month, "month", employeesRef.current) }
+          } catch (err) {
+            console.warn(`Monatsnotizen ${month} konnten nicht geladen werden`, err)
           }
           monthCacheRef.current.set(month, doc)
           bumpMonthCache((n) => n + 1)
@@ -374,13 +306,6 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     const managerKey = planManagerKey(managerName)
     const cacheKey = annualCacheKey(year, managerKey)
     if (annualUnsubs.current.has(cacheKey) || annualStatusMap.current.has(cacheKey)) return
-    const local = loadLocalAnnualDoc(year, managerKey)
-    if (local) setAnnualDocs((m) => new Map(m).set(cacheKey, local))
-
-    if (!CLOUD_CONFIGURED) {
-      annualStatusMap.current.set(cacheKey, "ready")
-      return
-    }
     // Mitarbeiterliste noch nicht geladen -> später (beim nächsten Render) erneut versuchen.
     if (employeesRef.current.length === 0) return
     const id = idByName(employeesRef.current).get(managerName.trim().toLowerCase())
@@ -449,10 +374,9 @@ export function usePlanungDoc(employeesIn: readonly EmployeeMeta[] = []): UsePla
     const shown = latestAnnualDocs.current.get(cacheKey)
     if (sameJson(shown ?? defaultAnnual(), doc) && (shown || annualCloudReady.current.has(cacheKey))) return
     setAnnualDocs((m) => new Map(m).set(cacheKey, doc))
-    lsSet(planAnnualStorageKey(year, managerKey), doc)
     // cloudReady-Gate: verhindert, dass ein Speichern kurz nach dem Öffnen den
     // vorhandenen Remote-Stand überschreibt, bevor der erste Snapshot da ist.
-    if (!CLOUD_CONFIGURED || !annualCloudReady.current.has(cacheKey)) return
+    if (!annualCloudReady.current.has(cacheKey)) return
     const id = idByName(employeesRef.current).get(managerName.trim().toLowerCase())
     if (!id) return
     writeEmployeeSubDoc(id, "planAnnual", String(year), { ...doc }, true).catch((err) =>

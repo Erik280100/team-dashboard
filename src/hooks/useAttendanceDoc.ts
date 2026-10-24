@@ -1,31 +1,11 @@
-// Anwesenheit (Seminar/Training) — Cloud-Modus: employees/{id}/attendance/current
+// Anwesenheit (Seminar/Training): employees/{id}/attendance/current
 // je sichtbarem Mitarbeiter (Zugriff: selbst, Vorgesetzte, Admin; siehe
-// firestore.rules). Schnittstelle unverändert (Einträge je Mitarbeitername).
-// Im Cloud-Modus kein localStorage-Cache (mehrere Konten pro Browser).
+// firestore.rules). Schnittstelle: Einträge je Mitarbeitername.
+// Kein localStorage-Cache (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
-import { CLOUD_CONFIGURED } from "@/lib/firebase"
 import { subscribeEmployeeDocs, writeEmployeeSubDoc } from "@/lib/employeeSubdocs"
 import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
-import { ATTENDANCE_KEY, type AttendanceEntry } from "@/types/dashboard"
-
-function loadLocalAttendance(): Record<string, AttendanceEntry> {
-  if (CLOUD_CONFIGURED) return {}
-  try {
-    const raw = localStorage.getItem(ATTENDANCE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (parsed && typeof parsed === "object") return parsed
-    }
-  } catch (e) {
-    console.warn("Konnte Anwesenheitsdaten nicht laden", e)
-  }
-  return {}
-}
-
-function saveLocalAttendance(next: Record<string, AttendanceEntry>) {
-  if (CLOUD_CONFIGURED) return
-  try { localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(next)) } catch { /* noop */ }
-}
+import type { AttendanceEntry } from "@/types/dashboard"
 
 /** Fehlende Felder eines Eintrags mit denselben Defaults wie getAttendanceEntry() füllen. */
 export function getAttendanceEntry(
@@ -54,7 +34,7 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
   if (empRef.current.key !== key) empRef.current = { key, list: employeesIn }
   const employees = empRef.current.list
 
-  const [attendance, setAttendance] = useState<Record<string, AttendanceEntry>>(loadLocalAttendance)
+  const [attendance, setAttendance] = useState<Record<string, AttendanceEntry>>({})
   const attendanceReady = useRef(false)
   const latest = useRef(attendance)
   latest.current = attendance
@@ -62,7 +42,6 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
   employeesRef.current = employees
 
   useEffect(() => {
-    if (!CLOUD_CONFIGURED) return
     attendanceReady.current = false
     return subscribeEmployeeDocs<AttendanceEntry>(
       "attendance", "current", "__none__", employees,
@@ -78,8 +57,7 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
     const entry = { ...getAttendanceEntry(latest.current, name), ...patch }
     const next = { ...latest.current, [name]: entry }
     setAttendance(next)
-    saveLocalAttendance(next)
-    if (!CLOUD_CONFIGURED || !attendanceReady.current) return
+    if (!attendanceReady.current) return
     const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
     if (!id) { console.warn(`Anwesenheit: kein Mitarbeiter-Dokument für "${name}"`); return }
     writeEmployeeSubDoc(id, "attendance", "current", { ...patch }, true).catch((err) =>
@@ -90,8 +68,7 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
   /** Setzt alle sichtbaren Anwesenheits-Einträge auf die Defaults zurück (leere Dokumente). */
   const resetAttendance = useCallback(() => {
     setAttendance({})
-    saveLocalAttendance({})
-    if (!CLOUD_CONFIGURED || !attendanceReady.current) return
+    if (!attendanceReady.current) return
     for (const e of employeesRef.current) {
       writeEmployeeSubDoc(e.id, "attendance", "current", {}).catch((err) =>
         console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)

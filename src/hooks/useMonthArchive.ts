@@ -1,4 +1,4 @@
-// Monats-Archiv — Cloud-Modus:
+// Monats-Archiv:
 //   org/archiveIndex                      Liste abgeschlossener Monate + Aggregate
 //   snapshots/{YYYY-MM}                   Meta (Teamziel, Verlauf, Strukturbaum des Monats)
 //   snapshots/{YYYY-MM}/employees/{id}    eingefrorene Zahlen je Mitarbeiter (für alle Eingeloggten lesbar)
@@ -6,47 +6,19 @@
 // dokumenten zusammengesetzt; da alle Mitarbeiter-Dokumente für alle lesbar sind, enthält er das ganze Team.
 // Schreiben (Monatsabschluss) darf nur der Admin. Snapshots sind unveränderlich (getDoc,
 // Cache veraltet nie); ein leeres Archiv ist der Normalzustand (kein setDoc zum Anlegen).
-// Kein localStorage-Cache im Cloud-Modus (mehrere Konten pro Browser).
+// Kein localStorage-Cache (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { collection, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch } from "firebase/firestore"
 import { httpsCallable } from "firebase/functions"
-import { CLOUD_CONFIGURED, firestore, functions, orgDocRef } from "@/lib/firebase"
+import { firestore, functions, orgDocRef } from "@/lib/firebase"
 import { employeeDocToRow, idByName, rowToEmployeeData, type EmployeeMeta } from "@/lib/calc/employees"
 import { buildIndexEntry, buildSnapshot, nextMonthGoal, resetRowsForNewMonth } from "@/lib/calc/archive"
 import type { HistoryEntry } from "@/lib/calc/format"
-import {
-  ARCHIVE_INDEX_KEY, snapshotStorageKey,
-  type ArchiveIndexEntry, type MonthKey, type MonthSnapshot,
-} from "@/types/archive"
+import type { ArchiveIndexEntry, MonthKey, MonthSnapshot } from "@/types/archive"
 import type { DashboardDoc, EmployeeRow, OrgChartDoc, TeamGoal } from "@/types/dashboard"
 
 export type IndexStatus = "loading" | "ready" | "error"
 export type SnapshotStatus = "loading" | "ready" | "error"
-
-function loadLocalIndex(): ArchiveIndexEntry[] {
-  if (CLOUD_CONFIGURED) return []
-  try {
-    const raw = localStorage.getItem(ARCHIVE_INDEX_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (parsed && Array.isArray(parsed.months)) return parsed.months as ArchiveIndexEntry[]
-    }
-  } catch (e) {
-    console.warn("Konnte Archiv-Index nicht laden", e)
-  }
-  return []
-}
-
-function loadLocalSnapshot(month: MonthKey): MonthSnapshot | null {
-  if (CLOUD_CONFIGURED) return null
-  try {
-    const raw = localStorage.getItem(snapshotStorageKey(month))
-    if (raw) return JSON.parse(raw) as MonthSnapshot
-  } catch (e) {
-    console.warn(`Konnte Snapshot ${month} nicht laden`, e)
-  }
-  return null
-}
 
 export interface CloseMonthInput {
   month: MonthKey
@@ -83,8 +55,8 @@ export interface UseMonthArchiveResult {
 export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeMeta[] = []): UseMonthArchiveResult {
   const employeesRef = useRef(employees)
   employeesRef.current = employees
-  const [index, setIndex] = useState<ArchiveIndexEntry[]>(loadLocalIndex)
-  const [indexStatus, setIndexStatus] = useState<IndexStatus>(CLOUD_CONFIGURED ? "loading" : "ready")
+  const [index, setIndex] = useState<ArchiveIndexEntry[]>([])
+  const [indexStatus, setIndexStatus] = useState<IndexStatus>("loading")
   const [closing, setClosing] = useState(false)
   const [snapshotStatus, setSnapshotStatus] = useState<Record<MonthKey, SnapshotStatus>>({})
   const cacheRef = useRef<Map<MonthKey, MonthSnapshot>>(new Map())
@@ -96,7 +68,7 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
 
   useEffect(() => {
     const indexRef0 = orgDocRef("archiveIndex")
-    if (!CLOUD_CONFIGURED || !indexRef0) {
+    if (!indexRef0) {
       setIndexStatus("ready")
       return
     }
@@ -127,18 +99,6 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
   const loadOneUncached = useCallback(async (month: MonthKey): Promise<MonthSnapshot | null> => {
     const cached = cacheRef.current.get(month)
     if (cached) return cached
-
-    const local = loadLocalSnapshot(month)
-    if (local) {
-      cacheRef.current.set(month, local)
-      setSnapshotStatus((s) => ({ ...s, [month]: "ready" }))
-      return local
-    }
-
-    if (!CLOUD_CONFIGURED) {
-      setSnapshotStatus((s) => ({ ...s, [month]: "error" }))
-      return null
-    }
 
     setSnapshotStatus((s) => ({ ...s, [month]: "loading" }))
     try {
@@ -180,8 +140,7 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
       if (cached) return cached
       // Nachladen auf einen Mikrotask verschieben: getSnapshot wird oft direkt aus
       // dem Render-Body aufgerufen (App.tsx/Statistik.tsx), state-Updates dürfen
-      // dort nicht synchron passieren (auch nicht im Local-Storage-Treffer-Zweig
-      // von loadOne, der ohne "await" sonst noch im selben Tick liefe).
+      // dort nicht synchron passieren.
       if (!snapshotStatus[month]) queueMicrotask(() => { void loadOne(month) })
       return null
     },
@@ -202,11 +161,8 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
         return { ok: false, reason: "not-editor", message: "Nur angemeldete Editoren können einen Monat abschließen." }
       }
       const indexDocRef = orgDocRef("archiveIndex")
-      if (!CLOUD_CONFIGURED || !indexDocRef || !firestore) {
-        return {
-          ok: false, reason: "no-cloud",
-          message: "Cloud-Speicherung ist nicht eingerichtet — ein nur lokales Archiv wäre für das Team nicht sichtbar.",
-        }
+      if (!indexDocRef || !firestore) {
+        return { ok: false, reason: "no-cloud", message: "Firestore ist nicht verfügbar." }
       }
       if (indexRef.current.some((e) => e.month === input.month)) {
         return { ok: false, reason: "already-archived", message: `Der Monat ${input.month} wurde bereits archiviert.` }
