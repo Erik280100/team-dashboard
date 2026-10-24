@@ -1,7 +1,7 @@
 // Karrierepläne: Die Pläne liegen in org/careerPlans (siehe useCareerPlansDoc), der Zugang ist der Login.
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { PillTabs } from "@/components/ui/dark"
 import { useCareerPlansDoc } from "@/hooks/useCareerPlansDoc"
 import { MeinKarrierestand } from "@/components/sections/karriere/MeinKarrierestand"
 import type { MergedRow } from "@/lib/calc/team"
@@ -100,23 +100,11 @@ function KarrierePlaene() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        {plans.map((p, i) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setActive(i)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-              active === i
-                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
-                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-            )}
-          >
-            {p.title}
-          </button>
-        ))}
-      </div>
+      <PillTabs
+        tabs={plans.map((p, i) => ({ id: String(i), label: p.title }))}
+        value={String(active)}
+        onChange={(id) => setActive(Number(id))}
+      />
       <Card>
         <CardContent>
           <div
@@ -141,23 +129,7 @@ export function Karriere({ merged, planRates, myName }: KarriereProps) {
   const tabs = [{ id: "me", label: "Mein Karrierestand" }, { id: "plans", label: "Karrierepläne" }] as const
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-              tab === t.id
-                ? "border-transparent bg-primary text-primary-foreground shadow-sm"
-                : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PillTabs tabs={[...tabs]} value={tab} onChange={setTab} />
       {tab === "me" ? <MeinKarrierestand merged={merged} planRates={planRates} myName={myName} /> : <KarrierePlaene />}
     </div>
   )

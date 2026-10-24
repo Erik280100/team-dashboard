@@ -141,6 +141,34 @@
   summary {
     cursor: pointer;
   }
+
+  /* Checkboxen im Markenstil statt Browser-Standard */
+  input[type="checkbox"] {
+    appearance: none;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--brand-grey-light);
+    border-radius: 5px;
+    background-color: transparent;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 12px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  input[type="checkbox"]:checked {
+    border-color: var(--mint-2);
+    background-color: var(--mint-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%230b1f2a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.5l2.5 2.5 4.5-5.5'/%3E%3C/svg%3E");
+  }
+  input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+  }
+  input[type="checkbox"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 /* Guide-/Karriere-Inhalte (dangerouslySetInnerHTML aus src/lib/data/guide.ts,career.ts) —

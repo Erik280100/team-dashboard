@@ -5,9 +5,12 @@
 // Einheiten je Sparte additiv auf einen Mitarbeiter überträgt (siehe
 // App.tsx applyUnitsToEmployee / verguetung.ts).
 import { useEffect, useRef, useState } from "react"
+import { Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
+import { DARK_CARD, DARK_OPTION, DARK_SELECT, DARK_TILE } from "@/components/ui/dark"
+import { cn } from "@/lib/utils"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
@@ -23,6 +26,9 @@ const GROUP_ACCENT: Record<EhGroup["id"], string> = {
   credit: "#E7A94C",
   realestate: "#B07CC6",
 }
+
+/** Eingabefelder auf den dunklen Gruppenkarten. */
+const EH_INPUT = "rounded-md border border-white/25 bg-white/10 text-white placeholder:text-white/50 [color-scheme:dark] transition-colors focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25"
 
 function defaultG(): Record<string, string> {
   const g: Record<string, string> = {}
@@ -116,14 +122,14 @@ export function EhRechner({
   function renderGroup(group: EhGroup) {
     const items = EH_ITEMS.filter((it) => it.sparte === group.id)
     return (
-      <Card key={group.id} className="border-t-[3px]" style={{ borderTopColor: GROUP_ACCENT[group.id] }}>
+      <Card key={group.id} className={cn("border-t-[3px]", DARK_CARD)} style={{ borderTopColor: GROUP_ACCENT[group.id] }}>
         <CardContent className="@container flex flex-col gap-3">
-          <h3 className="text-sm font-semibold">{group.title}</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide" style={{ color: GROUP_ACCENT[group.id] }}>{group.title}</h3>
           {items.map((it) => (
-            <div key={it.id} className="grid grid-cols-2 items-end gap-3 border-b pb-3 last:border-0 last:pb-0 @lg:grid-cols-[1fr_7rem_7rem_7rem]">
+            <div key={it.id} className={cn(DARK_TILE, "grid grid-cols-2 items-end gap-3 p-3 @lg:grid-cols-[1fr_7rem_7rem_7rem]")}>
               <div className="col-span-2 min-w-0 @lg:col-span-1">
                 <div className="text-sm font-medium">{it.label}</div>
-                <div className="text-xs text-muted-foreground">Auszahlung: {it.payout}</div>
+                <div className="text-xs text-white/75">Auszahlung: {it.payout}</div>
                 {it.planFor && (
                   <div className="text-[11px] font-medium" style={{ color: GROUP_ACCENT[group.id] }}>
                     → {PLAN_LABELS[result.perItemPlan[it.id]]}
@@ -131,11 +137,11 @@ export function EhRechner({
                 )}
               </div>
               {it.hasG ? (
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <label className="flex flex-col gap-1 text-xs text-white/75">
                   {it.gLabel} ({it.gUnit})
                   <input
                     type="number" min={0} step={1} max={it.gMax}
-                    className="h-8 w-20 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
+                    className={cn("h-8 w-20 px-2 text-sm", EH_INPUT)}
                     value={g[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setG((s) => ({ ...s, [it.id]: e.target.value }))}
@@ -145,13 +151,13 @@ export function EhRechner({
                 <div />
               )}
               {it.disabled ? (
-                <input type="text" disabled value={it.disabledNote} className="h-8 w-28 rounded-md border border-input bg-muted px-2 text-sm" />
+                <input type="text" disabled value={it.disabledNote} className="h-8 w-28 rounded-md border border-white/15 bg-white/5 px-2 text-sm text-white/70" />
               ) : (
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <label className="flex flex-col gap-1 text-xs text-white/75">
                   {it.jLabel}
                   <input
                     type="number" min={0} step={10}
-                    className="h-8 w-28 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
+                    className={cn("h-8 w-28 px-2 text-sm", EH_INPUT)}
                     value={j[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setJ((s) => ({ ...s, [it.id]: e.target.value }))}
@@ -159,19 +165,19 @@ export function EhRechner({
                 </label>
               )}
               <div className="col-span-2 text-right sm:col-span-1">
-                <div className="text-base font-bold tabular-nums text-[#155767]">{ehFormatEH(result.perItem[it.id])}</div>
-                <div className="text-xs text-muted-foreground">EH</div>
+                <div className="text-base font-bold tabular-nums text-[#64DDA3]">{ehFormatEH(result.perItem[it.id])}</div>
+                <div className="text-xs text-white/75">EH</div>
               </div>
             </div>
           ))}
-          <div className="flex items-center justify-between border-t-2 border-t-foreground/80 pt-3 text-sm">
-            <span className="font-semibold text-muted-foreground">Zwischensumme</span>
+          <div className="flex items-center justify-between border-t border-white/20 pt-3 text-sm">
+            <span className="font-semibold text-white/85">Zwischensumme</span>
             <span className="text-lg font-extrabold tabular-nums">{ehFormatEH(result.groupSums[group.id])} EH</span>
           </div>
           {group.plans.length > 1 && group.plans.filter((p) => result.planSums[p] > 0).length > 1 && (
             <div className="-mt-2 flex flex-col gap-0.5">
               {group.plans.map((p) => (
-                <div key={p} className="flex items-center justify-between text-xs text-muted-foreground">
+                <div key={p} className="flex items-center justify-between text-xs text-white/75">
                   <span>davon {PLAN_LABELS[p]}</span>
                   <span className="tabular-nums">{ehFormatEH(result.planSums[p])} EH</span>
                 </div>
@@ -179,17 +185,17 @@ export function EhRechner({
             </div>
           )}
           <div className="mt-2 flex items-center gap-1.5">
-            <label className="shrink-0 text-[11px] font-semibold text-muted-foreground">
+            <label className="shrink-0 text-[11px] font-semibold text-white/75">
               Multiplikator (€ / EH)
             </label>
             <input
               type="number" min={0} step={0.5}
-              className="ml-2 h-7 w-16 shrink-0 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-[12.5px]"
+              className={cn("ml-2 h-7 w-16 shrink-0 px-2 text-[12.5px]", EH_INPUT)}
               value={mult[group.id] ?? ""}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setMult((s) => ({ ...s, [group.id]: e.target.value }))}
             />
-            <span className="ml-auto shrink-0 whitespace-nowrap text-[13.5px] font-bold tabular-nums text-[#155767]">
+            <span className="ml-auto shrink-0 whitespace-nowrap text-[13.5px] font-bold tabular-nums text-[#64DDA3]">
               {ehFormatEUR(result.groupEur[group.id])} €
             </span>
           </div>
@@ -203,22 +209,24 @@ export function EhRechner({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-        <strong>Einheiten (EH) berechnen:</strong> Prämien eintragen, Einheiten werden automatisch berechnet und summiert.
+      <div className={cn(DARK_CARD, "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm text-white/90")}>
+        <Info className="mt-0.5 size-4 shrink-0 text-[#64DDA3]" aria-hidden="true" />
+        <div><strong className="text-white">Einheiten (EH) berechnen:</strong> Prämien eintragen, Einheiten werden automatisch berechnet und summiert.
         froots-Geschäft über 500 € mtl. bzw. 10.000 € einmalig läuft automatisch über einen Abwickler (VB) und wird
         auf „Investment (mit VB)" statt „Investment" gebucht.
+        </div>
       </div>
 
-      <Card className="border-none bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
+      <Card className="border-white/10 bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="text-xs text-white/60">Gesamt Einheiten</div>
-              <div className="text-4xl font-extrabold tabular-nums">{ehFormatEH(result.grandTotal)} EH</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">Gesamt Einheiten</div>
+              <div className="text-4xl font-extrabold tabular-nums text-[#64DDA3]">{ehFormatEH(result.grandTotal)} EH</div>
             </div>
             <div>
-              <div className="text-xs text-white/60">Gesamt in €</div>
-              <div className="text-4xl font-extrabold tabular-nums">{ehFormatEUR(result.grandTotalEur)} €</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">Gesamt in €</div>
+              <div className="text-4xl font-extrabold tabular-nums text-[#64DDA3]">{ehFormatEUR(result.grandTotalEur)} €</div>
             </div>
             <Button
               variant="ghost"
@@ -236,11 +244,11 @@ export function EhRechner({
                 aria-label="Mitarbeiter für Übernahme wählen"
                 value={selectedName}
                 onChange={(e) => selectEmployee(e.target.value)}
-                className="w-56 border-white/25 bg-white/10 text-white [&>svg]:text-white/70"
+                className={cn("w-56", DARK_SELECT)}
               >
-                <option value="" className="text-foreground">Mitarbeiter wählen…</option>
+                <option value="" className={DARK_OPTION}>Mitarbeiter wählen…</option>
                 {[...employees].sort((a, b) => a.name.localeCompare(b.name, "de")).map((emp) => (
-                  <option key={emp.name} value={emp.name} className="text-foreground">
+                  <option key={emp.name} value={emp.name} className={DARK_OPTION}>
                     {emp.name}
                   </option>
                 ))}
@@ -250,19 +258,18 @@ export function EhRechner({
                   aria-label="Abwickler wählen"
                   value={chosenAbwickler?.name ?? ""}
                   onChange={(e) => setAbwickler(e.target.value)}
-                  className="w-56 border-white/25 bg-white/10 text-white [&>svg]:text-white/70"
+                  className={cn("w-56", DARK_SELECT)}
                 >
                   {abwicklerOptions.map((a) => (
-                    <option key={a.name} value={a.name} className="text-foreground">
+                    <option key={a.name} value={a.name} className={DARK_OPTION}>
                       Abwickler: {a.name}
                     </option>
                   ))}
                 </Select>
               )}
               <Button
-                variant="ghost"
                 size="sm"
-                className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                className="border-0 bg-[linear-gradient(135deg,#64DDA3,#3FCB8E)] font-bold text-[#0b1f2a] shadow-[0_4px_14px_rgba(63,203,142,.3)] hover:opacity-90"
                 disabled={!selectedEmployee || result.grandTotal <= 0}
                 onClick={() => setBookingOpen(true)}
               >

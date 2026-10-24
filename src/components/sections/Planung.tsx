@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
+import { DARK_CARD, DARK_INPUT, Pill, SectionHero } from "@/components/ui/dark"
 import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { PlanTeamGroup } from "@/lib/calc/planung"
@@ -27,10 +28,6 @@ const EBENEN: { id: PlanEbene; label: string }[] = [
   { id: "jahr", label: "Jahresplanung" },
   { id: "umsatz", label: "Umsatzverfolgung" },
 ]
-
-const PILL_ACTIVE = "border-transparent bg-primary text-primary-foreground shadow-sm"
-const PILL_INACTIVE = "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-const PILL_BASE = "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
 
 export function Planung({
   roster, orgTree, planung, umsaetze, isEditor, rows, unitsMonthKey, archive,
@@ -101,8 +98,8 @@ export function Planung({
   if (managerOptions.length === 0) {
     return (
       <div className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Planung</h2>
-        <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
+        <SectionHero eyebrow="Controlling" title="Planung" />
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/75", DARK_CARD)}>
           Noch keine Führungskräfte im Strukturbaum erfasst (ab Teamleiter aufwärts).
         </div>
       </div>
@@ -111,65 +108,35 @@ export function Planung({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold">Planung</h2>
+      <SectionHero eyebrow="Controlling" title="Planung" badge={selectedManager ?? undefined}>
+        <div className="flex flex-wrap gap-2">
+          {managerOptions.map((m) => (
+            <Pill key={m.name} active={selectedManager === m.name} onClick={() => setManagerFilter(m.name)}>
+              {m.name}
+              <span className="ml-1 opacity-70">({SB_LEAD_ROLE_ABBR[m.role] ?? m.role})</span>
+            </Pill>
+          ))}
+        </div>
 
-      <div className="flex flex-wrap gap-2">
-        {managerOptions.map((m) => (
-          <button
-            key={m.name}
-            type="button"
-            onClick={() => setManagerFilter(m.name)}
-            className={cn(PILL_BASE, selectedManager === m.name ? PILL_ACTIVE : PILL_INACTIVE)}
-          >
-            {m.name}
-            <span className="ml-1 opacity-70">({SB_LEAD_ROLE_ABBR[m.role] ?? m.role})</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {EBENEN.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            onClick={() => setEbene(e.id)}
-            className={cn(PILL_BASE, ebene === e.id ? PILL_ACTIVE : PILL_INACTIVE)}
-          >
-            {e.label}
-          </button>
-        ))}
-        <span className="mx-1 h-5 w-px bg-border" />
-        <button
-          type="button"
-          onClick={() => setScope("alle")}
-          className={cn(PILL_BASE, scope === "alle" ? PILL_ACTIVE : PILL_INACTIVE)}
-        >
-          Alle Mitarbeiter
-        </button>
-        <button
-          type="button"
-          onClick={() => setScope("direkt")}
-          className={cn(PILL_BASE, scope === "direkt" ? PILL_ACTIVE : PILL_INACTIVE)}
-        >
-          Direkte Mitarbeiter
-        </button>
-        {leadFrontier.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setScope("fuehrung")}
-            className={cn(PILL_BASE, scope === "fuehrung" ? PILL_ACTIVE : PILL_INACTIVE)}
-          >
-            Nach Führungskräften
-          </button>
-        )}
-        <Input
-          placeholder="Name suchen…"
-          aria-label="Mitarbeiter nach Name suchen"
-          className="ml-auto w-56"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
+          {EBENEN.map((e) => (
+            <Pill key={e.id} active={ebene === e.id} onClick={() => setEbene(e.id)}>{e.label}</Pill>
+          ))}
+          <span className="mx-1 h-5 w-px bg-white/15" />
+          <Pill active={scope === "alle"} onClick={() => setScope("alle")}>Alle Mitarbeiter</Pill>
+          <Pill active={scope === "direkt"} onClick={() => setScope("direkt")}>Direkte Mitarbeiter</Pill>
+          {leadFrontier.length > 0 && (
+            <Pill active={scope === "fuehrung"} onClick={() => setScope("fuehrung")}>Nach Führungskräften</Pill>
+          )}
+          <Input
+            placeholder="Name suchen…"
+            aria-label="Mitarbeiter nach Name suchen"
+            className={cn("ml-auto w-56", DARK_INPUT)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </SectionHero>
 
       {ebene === "woche" && (
         <Wochenplanung

@@ -5,6 +5,7 @@
 // hängt an Mitarbeiter-Notizen außerhalb der drei Planungsbereiche.
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { DARK_CARD, DARK_INPUT, DARK_TABLE, DARK_TILE, MintBar } from "@/components/ui/dark"
 import { fmt } from "@/lib/calc/format"
 import {
   QUARTER_LIST, Q_MONTHS, emptyWeekEntry, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
@@ -28,10 +29,10 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  "on-track": "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
-  behind: "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300",
-  completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
-  upcoming: "bg-muted text-muted-foreground",
+  "on-track": "bg-[#64DDA3]/15 text-[#64DDA3]",
+  behind: "bg-[#e2685b]/15 text-[#f0948a]",
+  completed: "bg-[#64DDA3]/15 text-[#64DDA3]",
+  upcoming: "bg-white/10 text-white/85",
 }
 
 /** Ist-Wert einer Zielkennzahl aus einer summierten Wochenzahlen-Entry. */
@@ -41,10 +42,13 @@ function actualFor(key: PlanTargetKey, entry: PlanWeekEntry): number {
 }
 
 function barColor(pct: number): string {
-  if (pct >= 100) return "bg-emerald-500"
-  if (pct >= 60) return "bg-amber-500"
-  return "bg-red-500"
+  if (pct >= 100) return "bg-[#64DDA3]"
+  if (pct >= 60) return "bg-[#E7A94C]"
+  return "bg-[#e2685b]"
 }
+
+const NAV_BTN = "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+const INP = "rounded-md border outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60"
 
 export function Jahresplanung({
   managerName, people, roster, planung, isEditor, teamGroups, rows, unitsMonthKey, archive,
@@ -185,30 +189,30 @@ export function Jahresplanung({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="icon" onClick={() => setYear((y) => y - 1)} aria-label="Vorjahr">
+      <div className={cn("flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3", DARK_CARD)}>
+        <Button type="button" variant="ghost" size="icon" className={NAV_BTN} onClick={() => setYear((y) => y - 1)} aria-label="Vorjahr">
           ◀
         </Button>
-        <div className="min-w-11 text-center text-sm font-medium">{year}</div>
-        <Button type="button" variant="outline" size="icon" onClick={() => setYear((y) => y + 1)} aria-label="Folgejahr">
+        <div className="min-w-11 text-center text-sm font-bold">{year}</div>
+        <Button type="button" variant="ghost" size="icon" className={NAV_BTN} onClick={() => setYear((y) => y + 1)} aria-label="Folgejahr">
           ▶
         </Button>
-        {(loading || unitsLoading) && <span className="text-xs text-muted-foreground">Lade Wochendaten…</span>}
+        {(loading || unitsLoading) && <span className="text-xs text-white/75">Lade Wochendaten…</span>}
       </div>
 
-      <section className="rounded-xl border bg-card p-5 shadow-sm">
-        <h3 className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">🎯 Jahresziele — {managerName}</h3>
+      <section className={cn("rounded-xl border p-5 shadow-sm", DARK_CARD)}>
+        <h3 className="mb-4 text-xs font-bold uppercase tracking-wide text-[#64DDA3]">🎯 Jahresziele — {managerName}</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {PLAN_TARGET_KEYS.map((k) => {
             const target = draft.targets[k] || 0
             const actual = actualFor(k, yearActual)
             const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0
             return (
-              <div key={k} className="rounded-lg border bg-muted/30 p-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{PLAN_TARGET_LABELS[k]} Ist</div>
-                <div className="mt-1 font-mono text-xl font-medium tabular-nums">{fmt(actual)}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">Soll: {fmt(target)} · {pct}%</div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div key={k} className={cn(DARK_TILE, "p-3")}>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">{PLAN_TARGET_LABELS[k]} Ist</div>
+                <div className="mt-1 text-xl font-extrabold tabular-nums">{fmt(actual)}</div>
+                <div className="mt-0.5 text-xs text-white/75">Soll: {fmt(target)} · {pct}%</div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15">
                   <div className={cn("h-full rounded-full", barColor(pct))} style={{ width: `${pct}%` }} />
                 </div>
               </div>
@@ -217,7 +221,7 @@ export function Jahresplanung({
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {PLAN_TARGET_KEYS.map((k) => (
-            <label key={k} className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label key={k} className="flex flex-col gap-1 text-xs text-white/75">
               {PLAN_TARGET_LABELS[k]} Soll
               <input
                 key={`${year}-${managerName}-${k}-target`}
@@ -226,7 +230,7 @@ export function Jahresplanung({
                 disabled={!isEditor}
                 defaultValue={draft.targets[k] || 0}
                 aria-label={`${PLAN_TARGET_LABELS[k]} Soll`}
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm tabular-nums outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
+                className={cn("h-8 px-2 text-sm tabular-nums", INP, DARK_INPUT)}
                 onBlur={(e) => commitTarget(k, Number(e.target.value) || 0)}
               />
             </label>
@@ -235,7 +239,7 @@ export function Jahresplanung({
       </section>
 
       <section>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">🏁 Quartalsmeilensteine</h3>
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white/85">🏁 Quartalsmeilensteine</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {QUARTER_LIST.map((q) => {
             const qData: PlanQuarterData = draft.quarters[q]
@@ -244,9 +248,9 @@ export function Jahresplanung({
             const pct = target > 0 ? Math.min(100, Math.round((actuals.vertraege / target) * 100)) : 0
             const status = quarterStatus(q, actuals, { vertraege: target }, year)
             return (
-              <div key={q} className="rounded-xl border bg-card p-4 shadow-sm">
+              <div key={q} className={cn("rounded-xl border p-4 shadow-sm", DARK_CARD)}>
                 <div className="mb-2.5 flex items-center gap-2.5">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-extrabold text-primary-foreground">{q}</div>
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#64DDA3,#3FCB8E)] text-xs font-extrabold text-[#0b1f2a]">{q}</div>
                   <div>
                     <div className="text-xs font-semibold">{Q_MONTHS[q]}</div>
                     <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", STATUS_CLASSES[status])}>
@@ -261,12 +265,12 @@ export function Jahresplanung({
                   defaultValue={qData.milestone || ""}
                   placeholder="Meilenstein / Schwerpunkt…"
                   aria-label={`Meilenstein ${q}`}
-                  className="mb-3 h-8 w-full rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
+                  className={cn("mb-3 h-8 w-full px-2 text-sm", INP, DARK_INPUT)}
                   onBlur={(e) => commitQuarterField(q, "milestone", e.target.value)}
                 />
                 <div className="grid grid-cols-2 gap-2">
                   {(["vertraege", "einheiten", "atg", "analysen"] as PlanTargetKey[]).map((k) => (
-                    <label key={k} className="flex flex-col gap-1 rounded-md border bg-muted/30 p-2 text-[10px] font-semibold uppercase text-muted-foreground">
+                    <label key={k} className={cn(DARK_TILE, "flex flex-col gap-1 p-2 text-[10px] font-semibold uppercase text-white/75")}>
                       {PLAN_TARGET_LABELS[k]} Soll
                       <input
                         key={`${year}-${managerName}-${q}-${k}`}
@@ -275,20 +279,18 @@ export function Jahresplanung({
                         disabled={!isEditor}
                         defaultValue={qData[k] || 0}
                         aria-label={`${PLAN_TARGET_LABELS[k]} Soll ${q}`}
-                        className="h-7 rounded border border-input bg-background px-1.5 text-sm normal-case tabular-nums text-foreground outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
+                        className={cn("h-7 px-1.5 text-sm normal-case tabular-nums", INP, DARK_INPUT)}
                         onBlur={(e) => commitQuarterField(q, k, Number(e.target.value) || 0)}
                       />
                     </label>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+                <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-white/75">
                   <span>Verträge</span>
                   <span>{actuals.vertraege} / {target} ({pct}%)</span>
                 </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                </div>
-                <div className="mt-3 flex flex-wrap gap-3 border-t pt-3">
+                <MintBar pct={pct} className="mt-1" />
+                <div className="mt-3 flex flex-wrap gap-3 border-t border-white/10 pt-3">
                   {[
                     { label: "Wählversuche Ist", value: actuals.atg },
                     { label: "AT Ist", value: actuals.analysen },
@@ -296,8 +298,8 @@ export function Jahresplanung({
                     { label: "Einheiten Ist", value: actuals.ehGemacht },
                   ].map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-0.5">
-                      <div className="font-mono text-sm font-medium">{fmt(item.value)}</div>
-                      <div className="text-[9px] font-semibold uppercase text-muted-foreground">{item.label}</div>
+                      <div className="text-sm font-bold tabular-nums">{fmt(item.value)}</div>
+                      <div className="text-[9px] font-semibold uppercase text-white/75">{item.label}</div>
                     </div>
                   ))}
                 </div>
@@ -319,14 +321,14 @@ export function Jahresplanung({
 
       {groupYearActuals && (
         <section>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">👥 Jahres-Ist nach Führungskraft — {year}</h3>
-          <div className="overflow-auto rounded-lg border">
-            <table className="w-full min-w-[700px] border-collapse text-sm">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white/85">👥 Jahres-Ist nach Führungskraft — {year}</h3>
+          <div className={cn(DARK_TABLE.wrap, DARK_CARD)}>
+            <table className={cn("min-w-[700px]", DARK_TABLE.table)}>
               <thead>
-                <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
-                  <th className="px-3 py-2">Führungskraft</th>
+                <tr>
+                  <th className={DARK_TABLE.head}>Führungskraft</th>
                   {PLAN_TARGET_KEYS.map((k) => (
-                    <th key={k} className="px-3 py-2 text-right">{PLAN_TARGET_LABELS[k]}</th>
+                    <th key={k} className={cn(DARK_TABLE.head, "text-right")}>{PLAN_TARGET_LABELS[k]}</th>
                   ))}
                 </tr>
               </thead>
@@ -334,10 +336,10 @@ export function Jahresplanung({
                 {teamGroups!.map((g) => {
                   const a = groupYearActuals.get(g.name) ?? sumWeekEntries([])
                   return (
-                    <tr key={g.name} className="border-b border-foreground/20 last:border-0">
+                    <tr key={g.name} className={DARK_TABLE.row}>
                       <td className="px-3 py-2">
-                        <div className="truncate text-sm font-medium">{g.name}</div>
-                        <div className="truncate text-xs text-muted-foreground">{g.role} · Team gesamt ({g.names.length})</div>
+                        <div className="truncate text-sm font-semibold">{g.name}</div>
+                        <div className="truncate text-xs text-white/75">{g.role} · Team gesamt ({g.names.length})</div>
                       </td>
                       {PLAN_TARGET_KEYS.map((k) => (
                         <td key={k} className="px-3 py-2 text-right tabular-nums">{fmt(actualFor(k, a))}</td>

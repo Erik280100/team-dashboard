@@ -8,6 +8,9 @@
 import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import {
+  DARK_CARD, DARK_INPUT, DARK_OPTION, DARK_SELECT, DARK_TABLE, MintBar, Pill, SectionHero, Switch,
+} from "@/components/ui/dark"
 import { Avatar } from "@/components/Avatar"
 import { fmt, fmtEur, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import {
@@ -29,7 +32,7 @@ const STORNORESERVE_RATE = 0.15
 /** Read-only Anzeige für Ist AT/BT/ET — seit der Wochenplanung-Automatik (siehe
  * Team.tsx planByName unten) keine Eingabefelder mehr, damit Werte nicht
  * doppelt (händisch + Wochenplanung) erfasst werden. */
-function ComputedField({ value, title }: { value: number | undefined; title?: string; wide?: boolean; narrow?: boolean }) {
+function ComputedField({ value, title }: { value: number | undefined; title?: string }) {
   return (
     <div
       className="text-center text-sm tabular-nums"
@@ -184,116 +187,107 @@ export function Team({
     }
   }
 
+  const th = DARK_TABLE.head
+  const groupHead = "px-1 py-1.5 text-center text-[11px] font-bold uppercase leading-tight tracking-wide"
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">
-          Mitarbeiter-Übersicht{" "}
-          <span className="ml-2 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-            {list.length === merged.length ? `${merged.length} Mitarbeiter` : `${list.length} von ${merged.length} Mitarbeitern`}
-          </span>
-        </h2>
-      </div>
+      <SectionHero
+        eyebrow="Team"
+        title="Mitarbeiter-Übersicht"
+        badge={list.length === merged.length ? `${merged.length} Mitarbeiter` : `${list.length} von ${merged.length}`}
+        description={
+          <>
+            Die Liste wird aus dem Strukturbaum gespiegelt (Personen mit Status „Kommt vielleicht" werden ausgeblendet).
+            Personen fügst du im Strukturbaum hinzu oder entfernst sie dort. Ist AT/BT/ET wird automatisch aus der
+            Wochenplanung des aktuellen Monats übernommen — keine doppelte Eingabe mehr nötig.
+          </>
+        }
+      />
 
-      <p className="text-xs text-muted-foreground">
-        Die Liste wird aus dem Strukturbaum gespiegelt (Personen mit Status „Kommt vielleicht" werden ausgeblendet).
-        Personen fügst du im Strukturbaum hinzu oder entfernst sie dort. Ist AT/BT/ET wird automatisch aus der
-        Wochenplanung des aktuellen Monats übernommen — keine doppelte Eingabe mehr nötig.
-      </p>
-
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={stornoreserve}
-          onClick={() => setStornoreserve((v) => !v)}
-          className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm shadow-xs"
-          title="Zieht 15 % Stornoreserve von der Insurance-Vergütung ab (Investment, Kredit, Immobilien sind stornofrei)"
-        >
-          <span className={cn("relative inline-block h-5 w-9 rounded-full transition-colors", stornoreserve ? "bg-primary" : "bg-muted-foreground/30")}>
-            <span className={cn("absolute top-0.5 size-4 rounded-full bg-white shadow transition-all", stornoreserve ? "left-[18px]" : "left-0.5")} />
-          </span>
-          Stornoreserve (15 %)
-        </button>
-        <Input
-          placeholder="Name suchen…"
-          aria-label="Mitarbeiter nach Name suchen"
-          className="w-56"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Select aria-label="Mitarbeiter filtern" value={filter} onChange={(e) => setFilter(e.target.value as TeamFilter)} className="w-48">
-          <option value="all">Alle Mitarbeiter</option>
-          <option value="new">Nur neue MA</option>
-          <option value="existing">Nur bestehendes Team</option>
-        </Select>
-        <Select aria-label="Mitarbeiter sortieren" value={sort} onChange={(e) => setSort(e.target.value as TeamSort)} className="w-64">
-          <option value="name">Sortieren: Name (A–Z)</option>
-          <option value="manager">Nach Führungskraft (Struktur)</option>
-          <option value="progress-desc">Fortschritt (hoch → niedrig)</option>
-          <option value="progress-asc">Fortschritt (niedrig → hoch)</option>
-          <option value="einheiten-desc">Einheiten Ist (absteigend)</option>
-        </Select>
-      </div>
-
-      {managerOptions.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Schnellfilter Führungskraft:</span>
-          <button
-            type="button"
-            onClick={() => setManagerFilter(null)}
-            aria-pressed={managerFilter === null}
-            className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
-              managerFilter === null ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
-            )}
+      <div className={cn("flex flex-col gap-3 rounded-xl border p-4", DARK_CARD)}>
+        <div className="flex flex-wrap gap-3">
+          <Switch
+            checked={stornoreserve}
+            onChange={setStornoreserve}
+            title="Zieht 15 % Stornoreserve von der Insurance-Vergütung ab (Investment, Kredit, Immobilien sind stornofrei)"
           >
-            Alle
-          </button>
-          {managerOptions.map((m) => (
-            <button
-              key={m.name}
-              type="button"
-              onClick={() => setManagerFilter((cur) => (cur === m.name ? null : m.name))}
-              aria-pressed={managerFilter === m.name}
-              className={cn(
-                "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
-                managerFilter === m.name ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
-              )}
-            >
-              {m.name}
-              <span className="ml-1 opacity-70">({SB_LEAD_ROLE_ABBR[m.role] ?? m.role})</span>
-            </button>
-          ))}
+            Stornoreserve (15 %)
+          </Switch>
+          <Input
+            placeholder="Name suchen…"
+            aria-label="Mitarbeiter nach Name suchen"
+            className={cn("w-56", DARK_INPUT)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Select aria-label="Mitarbeiter filtern" value={filter} onChange={(e) => setFilter(e.target.value as TeamFilter)} className={cn("w-48", DARK_SELECT)}>
+            <option className={DARK_OPTION} value="all">Alle Mitarbeiter</option>
+            <option className={DARK_OPTION} value="new">Nur neue MA</option>
+            <option className={DARK_OPTION} value="existing">Nur bestehendes Team</option>
+          </Select>
+          <Select aria-label="Mitarbeiter sortieren" value={sort} onChange={(e) => setSort(e.target.value as TeamSort)} className={cn("w-64", DARK_SELECT)}>
+            <option className={DARK_OPTION} value="name">Sortieren: Name (A–Z)</option>
+            <option className={DARK_OPTION} value="manager">Nach Führungskraft (Struktur)</option>
+            <option className={DARK_OPTION} value="progress-desc">Fortschritt (hoch → niedrig)</option>
+            <option className={DARK_OPTION} value="progress-asc">Fortschritt (niedrig → hoch)</option>
+            <option className={DARK_OPTION} value="einheiten-desc">Einheiten Ist (absteigend)</option>
+          </Select>
         </div>
-      )}
 
-      <div className="max-h-[65vh] overflow-auto rounded-lg border">
-        <table className="w-full min-w-[900px] border-collapse text-sm">
+        {managerOptions.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-white/75">Schnellfilter Führungskraft:</span>
+            <Pill active={managerFilter === null} onClick={() => setManagerFilter(null)} className="px-3 py-1 text-xs">Alle</Pill>
+            {managerOptions.map((m) => (
+              <Pill
+                key={m.name}
+                active={managerFilter === m.name}
+                onClick={() => setManagerFilter((cur) => (cur === m.name ? null : m.name))}
+                className="px-3 py-1 text-xs"
+              >
+                {m.name}
+                <span className="ml-1 opacity-70">({SB_LEAD_ROLE_ABBR[m.role] ?? m.role})</span>
+              </Pill>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className={cn("max-h-[65vh]", DARK_TABLE.wrap, DARK_CARD)}>
+        <table className={cn("min-w-[900px]", DARK_TABLE.table)}>
           <thead>
-            <tr className="border-b bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
-              <th className="sticky top-0 z-10 min-w-[300px] bg-muted/95 px-3 py-2 backdrop-blur">Name</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Status</th>
+            <tr>
+              <th rowSpan={2} className={cn(th, "min-w-[300px]")}>Name</th>
+              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Status</th>
+              <th colSpan={4} className={cn(groupHead, "sticky top-0 z-10 border-l border-white/10 bg-[#13384a] text-sky-300")}>Plan</th>
+              <th colSpan={4} className={cn(groupHead, "sticky top-0 z-10 border-l border-white/10 bg-[#3a3320] text-amber-300")}>Ist</th>
+              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Soll</th>
+              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Ist</th>
+              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Fortschritt</th>
+            </tr>
+            <tr>
               {(["Plan", "Ist"] as const).flatMap((g) =>
-                (["AT", "BT", "ST", "ET"] as const).map((k) => (
+                (["AT", "BT", "ST", "ET"] as const).map((k, i) => (
                   <th
                     key={`${g}-${k}`}
-                    className={`sticky top-0 z-10 ${g === "Plan" ? "bg-sky-200 dark:bg-sky-900" : "bg-amber-200 dark:bg-amber-900"} px-1 py-1.5 text-center leading-tight backdrop-blur border-l border-foreground/20`}
+                    className={cn(
+                      "sticky top-[30px] z-10 px-1 py-1 text-center text-[11px] font-semibold text-white/75",
+                      g === "Plan" ? "bg-[#0f2f3e]" : "bg-[#2c2819]",
+                      i === 0 && "border-l border-white/10"
+                    )}
                     title={g === "Ist" ? "Wird automatisch aus der Wochenplanung übernommen" : undefined}
                   >
-                    {g}<br />{k}
+                    {k}
                   </th>
                 )),
               )}
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Soll</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Ist</th>
-              <th className="sticky top-0 z-10 bg-muted/95 px-3 py-2 backdrop-blur border-l border-foreground/20">Fortschritt</th>
             </tr>
           </thead>
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={13} className="px-3 py-8 text-center text-sm text-white/75">
                   {merged.length === 0 ? "Noch keine Personen im Strukturbaum erfasst." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
                 </td>
               </tr>
@@ -303,22 +297,24 @@ export function Team({
                 const highlight = rowHighlight(r, wp)
                 const rowEarnings = earnings.get(r.name)
                 const indent = sort === "manager" ? r.depth * 14 : 0
+                const tone = progressClass(pct) === "low" ? "red" : "mint"
+                const num = "px-1 py-2 text-center"
                 return (
                   <tr
                     key={`${r.rowIndex}-${r.name}`}
                     className={cn(
-                      "border-b border-foreground/20 last:border-0",
-                      highlight === "at-above" && "bg-emerald-50 dark:bg-emerald-950/30",
-                      highlight === "at-below" && "bg-red-50 dark:bg-red-950/30"
+                      DARK_TABLE.row,
+                      highlight === "at-above" && "bg-[#64DDA3]/[.06] shadow-[inset_3px_0_0_#64DDA3]",
+                      highlight === "at-below" && "bg-[#e2685b]/[.08] shadow-[inset_3px_0_0_#e2685b]"
                     )}
                   >
                     <td className="px-3 py-2" style={{ paddingLeft: 12 + indent }}>
                       <div className="flex items-center gap-3">
                         <Avatar name={r.name as string} avatar={avatars?.[r.name as string]} zoomable className="size-7 text-xs" />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{r.name}</div>
+                          <div className="truncate text-sm font-semibold">{r.name}</div>
                           {(r.role || r.managerName) && (
-                            <div className="truncate text-xs text-muted-foreground">
+                            <div className="truncate text-xs text-white/75">
                               {r.role}
                               {r.managerName ? ` · unter ${r.managerName}` : ""}
                             </div>
@@ -329,16 +325,16 @@ export function Team({
                             type="button"
                             onClick={() => setDetailName(r.name)}
                             aria-label={`Verdienst-Details – ${r.name}`}
-                            className="shrink-0 whitespace-nowrap text-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 hover:text-foreground"
+                            className="shrink-0 whitespace-nowrap rounded-full bg-[#64DDA3]/10 px-2.5 py-1 text-sm font-bold tabular-nums text-[#64DDA3] transition-colors hover:bg-[#64DDA3]/20"
                           >
                             {fmtEur(rowEarnings.total - stornoreserveAmount(rowEarnings, reserveRate))} €
                           </button>
                         ) : (
-                          <span className="shrink-0 text-muted-foreground">—</span>
+                          <span className="shrink-0 text-white/55">—</span>
                         )}
                       </div>
                     </td>
-                    <td className="border-l border-foreground/20 px-3 py-2">
+                    <td className="border-l border-white/10 px-3 py-2">
                       <button
                         type="button"
                         disabled={!isEditor || !canEditRow(r.name as string)}
@@ -346,44 +342,36 @@ export function Team({
                         aria-pressed={!!r.isNew}
                         aria-label={`Status ${r.name}: ${r.isNew ? "Neu" : "Bestand"}, umschalten`}
                         className={cn(
-                          "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-60",
-                          r.isNew ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                          "rounded-full px-2.5 py-1 text-xs font-bold transition-colors disabled:opacity-60",
+                          r.isNew ? "bg-[#64DDA3]/15 text-[#64DDA3]" : "bg-white/10 text-white/85"
                         )}
                       >
                         {r.isNew ? "NEU" : "Bestand"}
                       </button>
                     </td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.atPlan} /></td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.btPlan} /></td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.stPlan} /></td>
-                    <td className="bg-sky-100 dark:bg-sky-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.etPlan} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.atIst} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.btIst} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.stIst} /></td>
-                    <td className="bg-amber-100 dark:bg-amber-950 border-l border-foreground/20 px-1 py-2 text-center"><ComputedField narrow value={r.etIst} /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2"><ComputedField value={r.soll} title="Einheitenziel aus der Monatsplanung" /></td>
-                    <td className="border-l border-foreground/20 px-2 py-2">
+                    <td className={cn(num, "border-l border-white/10 bg-sky-400/[.06]")}><ComputedField value={r.atPlan} /></td>
+                    <td className={cn(num, "bg-sky-400/[.06]")}><ComputedField value={r.btPlan} /></td>
+                    <td className={cn(num, "bg-sky-400/[.06]")}><ComputedField value={r.stPlan} /></td>
+                    <td className={cn(num, "bg-sky-400/[.06]")}><ComputedField value={r.etPlan} /></td>
+                    <td className={cn(num, "border-l border-white/10 bg-amber-400/[.06]")}><ComputedField value={r.atIst} /></td>
+                    <td className={cn(num, "bg-amber-400/[.06]")}><ComputedField value={r.btIst} /></td>
+                    <td className={cn(num, "bg-amber-400/[.06]")}><ComputedField value={r.stIst} /></td>
+                    <td className={cn(num, "bg-amber-400/[.06]")}><ComputedField value={r.etIst} /></td>
+                    <td className="border-l border-white/10 px-2 py-2"><ComputedField value={r.soll} title="Einheitenziel aus der Monatsplanung" /></td>
+                    <td className="border-l border-white/10 px-2 py-2">
                       <button
                         type="button"
                         onClick={() => setDetailName(r.name)}
                         aria-label={`Einheiten-Details – ${r.name}`}
-                        className="h-8 w-20 rounded-md border border-transparent px-2 text-right text-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 hover:border-input hover:bg-muted"
+                        className="h-8 w-20 rounded-md border border-transparent px-2 text-right text-sm font-bold tabular-nums transition-colors hover:border-white/20 hover:bg-white/10"
                       >
                         {fmt(r.ist)}
                       </button>
                     </td>
-                    <td className="border-l border-foreground/20 px-3 py-2">
+                    <td className="border-l border-white/10 px-3 py-2">
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={cn(
-                              "h-full rounded-full",
-                              progressClass(pct) === "low" ? "bg-red-500" : progressClass(pct) === "high" ? "bg-emerald-500" : "bg-primary"
-                            )}
-                            style={{ width: `${Math.min(pct, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-medium tabular-nums">{pct}%</span>
+                        <MintBar pct={pct} tone={tone} className="w-16" />
+                        <span className="text-xs font-semibold tabular-nums">{pct}%</span>
                       </div>
                     </td>
                   </tr>
@@ -395,27 +383,27 @@ export function Team({
             <tfoot>
               <tr className="text-sm">
                 {(() => {
-                  const cell = "sticky bottom-0 z-10 border-t-2 border-t-foreground/70 bg-[#DFF7EC] px-2 py-2.5 font-bold tabular-nums"
+                  const cell = DARK_TABLE.foot
                   return (
                     <>
-                      <td className={cn(cell, "px-3")}>
+                      <td className={cell}>
                         <div className="flex items-center justify-between gap-3">
                           <span>Summe</span>
-                          <span className="whitespace-nowrap">{fmtEur(grandTotalEur)} €</span>
+                          <span className="whitespace-nowrap text-[#64DDA3]">{fmtEur(grandTotalEur)} €</span>
                         </div>
                       </td>
-                      <td className={cn(cell, "border-l border-foreground/20")} />
-                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.atPlan)}</td>
-                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.btPlan)}</td>
-                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.stPlan)}</td>
-                      <td className={cn(cell, "bg-sky-100 dark:bg-sky-950 text-center border-l border-foreground/20")}>{fmt(totals.etPlan)}</td>
-                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.atIst)}</td>
-                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.btIst)}</td>
-                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.stIst)}</td>
-                      <td className={cn(cell, "bg-amber-100 dark:bg-amber-950 text-center border-l border-foreground/20")}>{fmt(totals.etIst)}</td>
-                      <td className={cn(cell, "border-l border-foreground/20")}>{fmt(totals.soll)}</td>
-                      <td className={cn(cell, "border-l border-foreground/20")}>{fmt(totals.ist)}</td>
-                      <td className={cn(cell, "border-l border-foreground/20")} />
+                      <td className={cn(cell, "border-l border-white/10")} />
+                      <td className={cn(cell, "border-l border-white/10 text-center")}>{fmt(totals.atPlan)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.btPlan)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.stPlan)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.etPlan)}</td>
+                      <td className={cn(cell, "border-l border-white/10 text-center")}>{fmt(totals.atIst)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.btIst)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.stIst)}</td>
+                      <td className={cn(cell, "text-center")}>{fmt(totals.etIst)}</td>
+                      <td className={cn(cell, "border-l border-white/10")}>{fmt(totals.soll)}</td>
+                      <td className={cn(cell, "border-l border-white/10")}>{fmt(totals.ist)}</td>
+                      <td className={cn(cell, "border-l border-white/10")} />
                     </>
                   )
                 })()}

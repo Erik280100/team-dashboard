@@ -4,11 +4,12 @@
 // lib/data/finanzierung.ts. Dumme/kontrollierte Sektion: Firestore-Zugriff läuft
 // ausschließlich über useFinanzierungenDoc() in App.tsx.
 import { Fragment, useState } from "react"
-import { Archive, ArchiveRestore, ChevronDown, ChevronRight, Trash2 } from "lucide-react"
+import { Archive, ArchiveRestore, Check, ChevronDown, ChevronRight, FileText, Landmark, Trash2, Layers } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { DARK_CARD, DARK_INPUT, DARK_OPTION, DARK_SELECT, DARK_TABLE, KpiTile, MintBar, SectionHero } from "@/components/ui/dark"
 import { initials } from "@/lib/calc/format"
 import { relevantGroups, relevantItemIds, type Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
@@ -39,6 +40,32 @@ const SORT_LABEL: Record<SortKey, string> = {
 
 const SORT_OPTIONS: SortKey[] = ["standard", "betreuer-asc", "offen-asc", "offen-desc"]
 
+const GHOST_DARK = "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+
+/** Status-Häkchen als Pill statt Browser-Checkbox. */
+function StatusPill({
+  checked, onChange, disabled, label,
+}: { checked: boolean; onChange: (next: boolean) => void; disabled: boolean; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "inline-flex size-7 items-center justify-center rounded-full border transition-colors disabled:opacity-60",
+        checked
+          ? "border-transparent bg-[#3FCB8E] text-[#0b1f2a]"
+          : "border-white/20 bg-white/5 text-transparent hover:border-[#64DDA3]/50"
+      )}
+    >
+      <Check className="size-4" aria-hidden="true" />
+    </button>
+  )
+}
+
 function fmtEur(n: number): string {
   return Number(n || 0).toLocaleString("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
 }
@@ -68,25 +95,25 @@ function NewCaseForm({
   }
 
   return (
-    <Card>
+    <Card className={DARK_CARD}>
       <CardHeader>
-        <CardTitle>Neuer Kreditfall</CardTitle>
+        <CardTitle className="text-white">Neuer Kreditfall</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-name">Person</label>
+            <label className="text-xs font-medium text-white/75" htmlFor="fin-name">Person</label>
             <Input
               id="fin-name"
               placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={!canWrite}
-              className="w-48"
+              className={cn("w-48", DARK_INPUT)}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-betrag">Kreditsumme</label>
+            <label className="text-xs font-medium text-white/75" htmlFor="fin-betrag">Kreditsumme</label>
             <Input
               id="fin-betrag"
               type="number"
@@ -94,52 +121,56 @@ function NewCaseForm({
               value={betrag}
               onChange={(e) => setBetrag(e.target.value)}
               disabled={!canWrite}
-              className="w-36"
+              className={cn("w-36", DARK_INPUT)}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-art">Art</label>
+            <label className="text-xs font-medium text-white/75" htmlFor="fin-art">Art</label>
             <Select
               id="fin-art"
               value={art}
               onChange={(e) => setArt(e.target.value as FinanzierungArt)}
               disabled={!canWrite}
-              className="w-40"
+              className={cn("w-40", DARK_SELECT)}
             >
               {ART_OPTIONS.map((a) => (
-                <option key={a} value={a}>{ART_LABEL[a]}</option>
+                <option className={DARK_OPTION} key={a} value={a}>{ART_LABEL[a]}</option>
               ))}
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-beschaeftigung">Beschäftigung</label>
+            <label className="text-xs font-medium text-white/75" htmlFor="fin-beschaeftigung">Beschäftigung</label>
             <Select
               id="fin-beschaeftigung"
               value={beschaeftigung}
               onChange={(e) => setBeschaeftigung(e.target.value as Beschaeftigung)}
               disabled={!canWrite}
-              className="w-40"
+              className={cn("w-40", DARK_SELECT)}
             >
-              <option value="unselbststaendig">Unselbstständig</option>
-              <option value="selbststaendig">Selbstständig</option>
+              <option className={DARK_OPTION} value="unselbststaendig">Unselbstständig</option>
+              <option className={DARK_OPTION} value="selbststaendig">Selbstständig</option>
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-betreuer">Zuständiger Mitarbeiter</label>
+            <label className="text-xs font-medium text-white/75" htmlFor="fin-betreuer">Zuständiger Mitarbeiter</label>
             <Select
               id="fin-betreuer"
               value={betreuer}
               onChange={(e) => setBetreuer(e.target.value)}
               disabled={!canWrite}
-              className="w-48"
+              className={cn("w-48", DARK_SELECT)}
             >
-              <option value="">– auswählen –</option>
+              <option className={DARK_OPTION} value="">– auswählen –</option>
               {employeeNames.map((n) => (
-                <option key={n} value={n}>{n}</option>
+                <option className={DARK_OPTION} key={n} value={n}>{n}</option>
               ))}
             </Select>
           </div>
-          <Button onClick={submit} disabled={!canWrite || !name.trim()}>
+          <Button
+            onClick={submit}
+            disabled={!canWrite || !name.trim()}
+            className="border-0 bg-[linear-gradient(135deg,#64DDA3,#3FCB8E)] font-bold text-[#0b1f2a] shadow-[0_4px_14px_rgba(63,203,142,.3)] hover:opacity-90"
+          >
             Anlegen
           </Button>
         </div>
@@ -161,7 +192,7 @@ function ChecklistGrid({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((g) => (
           <div key={g.id} className="flex flex-col gap-1.5">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.title}</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-[#64DDA3]">{g.title}</div>
             {g.items.map((item) => (
               <label key={item.id} className="flex items-start gap-2 text-sm">
                 <input
@@ -170,18 +201,18 @@ function ChecklistGrid({
                   onChange={(e) => onToggleDoc(item.id, e.target.checked)}
                   disabled={!canWrite}
                   aria-label={`${item.label} – ${fc.name}`}
-                  className="mt-0.5 size-4 shrink-0"
+                  className="mt-0.5"
                 />
                 <span>
                   {item.label}
-                  {item.hint && <span className="ml-1 text-xs text-muted-foreground">({item.hint})</span>}
+                  {item.hint && <span className="ml-1 text-xs text-white/75">({item.hint})</span>}
                 </span>
               </label>
             ))}
           </div>
         ))}
       </div>
-      <p className="text-xs font-bold text-muted-foreground">Wichtig: alle Dateien in ein separates PDF.</p>
+      <p className="text-xs font-bold text-[#E7A94C]">Wichtig: alle Dateien in ein separates PDF.</p>
     </div>
   )
 }
@@ -237,30 +268,44 @@ export function OffeneAbwicklungen({
     return 0
   })
 
+  const offeneUnterlagen = decoratedCases.reduce((sum, d) => sum + d.offen, 0)
+
   return (
     <div className="flex flex-col gap-6">
+      <SectionHero
+        eyebrow="Finanzierungen"
+        title={showArchived ? "Archivierte Abwicklungen" : "Offene Abwicklungen"}
+        badge={`${visibleCases.length} Fälle`}
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <KpiTile icon={Layers} label="Kreditfälle" value={visibleCases.length} sub={showArchived ? "im Archiv" : "in Bearbeitung"} />
+          <KpiTile icon={Landmark} label="Kreditvolumen" value={fmtEur(totalBetrag)} sub="Summe der Kreditsummen" />
+          <KpiTile icon={FileText} label="Offene Unterlagen" value={offeneUnterlagen} sub="über alle angezeigten Fälle" />
+        </div>
+      </SectionHero>
+
       <NewCaseForm onAdd={addCase} canWrite={canWrite} employeeNames={employeeNames} />
 
-      <Card>
+      <Card className={DARK_CARD}>
         <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle>{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle className="text-white">{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-muted-foreground" htmlFor="fin-sort">Sortierung</label>
+              <label className="text-xs font-medium text-white/75" htmlFor="fin-sort">Sortierung</label>
               <Select
                 id="fin-sort"
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className="w-56"
+                className={cn("w-56", DARK_SELECT)}
               >
                 {SORT_OPTIONS.map((k) => (
-                  <option key={k} value={k}>{SORT_LABEL[k]}</option>
+                  <option className={DARK_OPTION} key={k} value={k}>{SORT_LABEL[k]}</option>
                 ))}
               </Select>
-              <Button variant="outline" size="sm" onClick={() => setShowArchived((s) => !s)}>
+              <Button variant="ghost" size="sm" className={GHOST_DARK} onClick={() => setShowArchived((s) => !s)}>
                 {showArchived ? "Zurück zu aktiven Fällen" : `Archiv anzeigen (${archivedCount})`}
               </Button>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+              <span className="rounded-full bg-[#64DDA3]/15 px-2.5 py-1 text-xs font-bold text-[#64DDA3]">
                 {visibleCases.length} Fälle
               </span>
             </div>
@@ -268,14 +313,14 @@ export function OffeneAbwicklungen({
         </CardHeader>
         <CardContent>
           {visibleCases.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
+            <div className="py-6 text-center text-sm text-white/75">
               {showArchived ? "Keine archivierten Kreditfälle." : "Noch keine Kreditfälle angelegt."}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[900px] border-collapse text-sm">
+            <div className={DARK_TABLE.wrap}>
+              <table className={cn("min-w-[900px]", DARK_TABLE.table)}>
                 <thead>
-                  <tr className="border-b bg-muted/95 text-left text-xs font-semibold text-muted-foreground backdrop-blur">
+                  <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/75">
                     <th className="w-8 px-2 py-2" />
                     <th className="px-2 py-2">Person</th>
                     <th className="px-2 py-2">Betreuer</th>
@@ -293,88 +338,82 @@ export function OffeneAbwicklungen({
                     return (
                       <Fragment key={fc.id}>
                         <tr
-                          className={cn("border-b last:border-0", fc.eingereicht && "opacity-60")}
+                          className={cn(DARK_TABLE.row, fc.eingereicht && "opacity-60")}
                         >
                           <td className="px-2 py-2">
                             <button
                               type="button"
                               onClick={() => setExpanded(isOpen ? null : fc.id)}
                               aria-label={isOpen ? `Checkliste ${fc.name} einklappen` : `Checkliste ${fc.name} aufklappen`}
-                              className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                              className="flex size-6 items-center justify-center rounded-md text-white/85 hover:bg-white/10 hover:text-white"
                             >
                               {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                             </button>
                           </td>
                           <td className="px-2 py-2">
                             <div className="flex items-center gap-2">
-                              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold">
+                              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
                                 {initials(fc.name)}
                               </div>
-                              {fc.name}
+                              <span className="font-semibold">{fc.name}</span>
                             </div>
                           </td>
-                          <td className="px-2 py-2 text-muted-foreground">
+                          <td className="px-2 py-2 text-white/85">
                             {fc.betreuer || "—"}
                             {fc.abwickler && <div className="text-xs">Abwickler: {fc.abwickler}</div>}
                           </td>
                           <td className="px-2 py-2">
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-xs font-semibold",
+                                fc.art === "anlegerwohnung" ? "bg-[#E7A94C]/15 text-[#E7A94C]" : "bg-white/10 text-white/90"
+                              )}
+                            >
                               {ART_LABEL[fc.art]}
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-right font-medium tabular-nums">{fmtEur(fc.betrag)}</td>
+                          <td className="px-3 py-2 text-right font-bold tabular-nums">{fmtEur(fc.betrag)}</td>
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-2">
-                              <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
-                                <div
-                                  className="h-full rounded-full bg-primary"
-                                  style={{ width: `${relevant.length ? (done / relevant.length) * 100 : 0}%` }}
-                                />
-                              </div>
-                              <span className="text-xs tabular-nums text-muted-foreground">
+                              <MintBar pct={relevant.length ? (done / relevant.length) * 100 : 0} className="w-24" />
+                              <span className="text-xs tabular-nums text-white/75">
                                 {done}/{relevant.length}
                               </span>
                             </div>
                           </td>
                           <td className="px-2 py-2 text-center">
-                            <input
-                              type="checkbox"
+                            <StatusPill
                               checked={fc.aufbereitet}
-                              onChange={(e) => patchCase(fc.id, { aufbereitet: e.target.checked })}
+                              onChange={(next) => patchCase(fc.id, { aufbereitet: next })}
                               disabled={!canWrite}
-                              aria-label={`Daten aufbereitet (MA) – ${fc.name}`}
-                              className="size-4"
+                              label={`Daten aufbereitet (MA) – ${fc.name}`}
                             />
                           </td>
                           <td className="px-2 py-2 text-center">
-                            <input
-                              type="checkbox"
+                            <StatusPill
                               checked={fc.eingereicht}
-                              onChange={(e) => patchCase(fc.id, { eingereicht: e.target.checked })}
+                              onChange={(next) => patchCase(fc.id, { eingereicht: next })}
                               disabled={!canWrite}
-                              aria-label={`Eingereicht (VB) – ${fc.name}`}
-                              className="size-4"
+                              label={`Eingereicht (VB) – ${fc.name}`}
                             />
                           </td>
                           <td className="px-2 py-2 text-center">
-                            <input
-                              type="checkbox"
+                            <StatusPill
                               checked={fc.kreditvertrag}
-                              onChange={(e) => patchCase(fc.id, { kreditvertrag: e.target.checked })}
+                              onChange={(next) => patchCase(fc.id, { kreditvertrag: next })}
                               disabled={!canWrite}
-                              aria-label={`Kreditvertrag bekommen – ${fc.name}`}
-                              className="size-4"
+                              label={`Kreditvertrag bekommen – ${fc.name}`}
                             />
                           </td>
                         </tr>
                         {isOpen && (
-                          <tr className="border-b bg-muted/30 last:border-0">
+                          <tr className="border-b border-white/5 bg-white/[.03] last:border-0">
                             <td className="px-2 py-2" />
                             <td colSpan={8} className="px-3 py-3">
                               <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
                                 <div className="flex flex-wrap items-end gap-3">
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
+                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
                                   <Input
                                     id={`fin-edit-name-${fc.id}`}
                                     key={`name-${fc.id}-${fc.name}`}
@@ -384,11 +423,11 @@ export function OffeneAbwicklungen({
                                       if (v && v !== fc.name) patchCase(fc.id, { name: v })
                                     }}
                                     disabled={!isEditor}
-                                    className="w-48"
+                                    className={cn("w-48", DARK_INPUT)}
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-betrag-${fc.id}`}>Kreditsumme</label>
+                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-betrag-${fc.id}`}>Kreditsumme</label>
                                   <Input
                                     id={`fin-edit-betrag-${fc.id}`}
                                     key={`betrag-${fc.id}-${fc.betrag}`}
@@ -396,63 +435,63 @@ export function OffeneAbwicklungen({
                                     defaultValue={fc.betrag}
                                     onBlur={(e) => patchCase(fc.id, { betrag: Number(e.target.value) || 0 })}
                                     disabled={!isEditor}
-                                    className="w-36"
+                                    className={cn("w-36", DARK_INPUT)}
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-art-${fc.id}`}>Art</label>
+                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-art-${fc.id}`}>Art</label>
                                   <Select
                                     id={`fin-edit-art-${fc.id}`}
                                     value={fc.art}
                                     onChange={(e) => patchCase(fc.id, { art: e.target.value as FinanzierungArt })}
                                     disabled={!isEditor}
-                                    className="w-40"
+                                    className={cn("w-40", DARK_SELECT)}
                                   >
                                     {ART_OPTIONS.map((a) => (
-                                      <option key={a} value={a}>{ART_LABEL[a]}</option>
+                                      <option className={DARK_OPTION} key={a} value={a}>{ART_LABEL[a]}</option>
                                     ))}
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-beschaeftigung-${fc.id}`}>Beschäftigung</label>
+                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-beschaeftigung-${fc.id}`}>Beschäftigung</label>
                                   <Select
                                     id={`fin-edit-beschaeftigung-${fc.id}`}
                                     value={fc.beschaeftigung}
                                     onChange={(e) => patchCase(fc.id, { beschaeftigung: e.target.value as Beschaeftigung })}
                                     disabled={!isEditor}
-                                    className="w-40"
+                                    className={cn("w-40", DARK_SELECT)}
                                   >
-                                    <option value="unselbststaendig">Unselbstständig</option>
-                                    <option value="selbststaendig">Selbstständig</option>
+                                    <option className={DARK_OPTION} value="unselbststaendig">Unselbstständig</option>
+                                    <option className={DARK_OPTION} value="selbststaendig">Selbstständig</option>
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-betreuer-${fc.id}`}>Zuständiger Mitarbeiter</label>
+                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-betreuer-${fc.id}`}>Zuständiger Mitarbeiter</label>
                                   <Select
                                     id={`fin-edit-betreuer-${fc.id}`}
                                     value={fc.betreuer || ""}
                                     onChange={(e) => patchCase(fc.id, { betreuer: e.target.value })}
                                     disabled={!isEditor}
-                                    className="w-48"
+                                    className={cn("w-48", DARK_SELECT)}
                                   >
-                                    <option value="">– auswählen –</option>
+                                    <option className={DARK_OPTION} value="">– auswählen –</option>
                                     {[...new Set([...employeeNames, ...(fc.betreuer ? [fc.betreuer] : [])])].map((n) => (
-                                      <option key={n} value={n}>{n}</option>
+                                      <option className={DARK_OPTION} key={n} value={n}>{n}</option>
                                     ))}
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-muted-foreground" htmlFor={`fin-edit-abwickler-${fc.id}`}>Abwickler</label>
+                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-abwickler-${fc.id}`}>Abwickler</label>
                                   <Select
                                     id={`fin-edit-abwickler-${fc.id}`}
                                     value={fc.abwickler || ""}
                                     onChange={(e) => patchCase(fc.id, { abwickler: e.target.value })}
                                     disabled={!isEditor}
-                                    className="w-48"
+                                    className={cn("w-48", DARK_SELECT)}
                                   >
-                                    <option value="">– keiner –</option>
+                                    <option className={DARK_OPTION} value="">– keiner –</option>
                                     {abwicklerNames.map((n) => (
-                                      <option key={n} value={n}>{n}</option>
+                                      <option className={DARK_OPTION} key={n} value={n}>{n}</option>
                                     ))}
                                   </Select>
                                 </div>
@@ -461,8 +500,9 @@ export function OffeneAbwicklungen({
                                   <div className="flex items-center gap-1">
                                     {fc.archived ? (
                                       <Button
-                                        variant="outline"
+                                        variant="ghost"
                                         size="sm"
+                                        className={GHOST_DARK}
                                         onClick={() => patchCase(fc.id, { archived: false })}
                                         aria-label={`Kreditfall ${fc.name} wiederherstellen`}
                                       >
@@ -471,8 +511,9 @@ export function OffeneAbwicklungen({
                                       </Button>
                                     ) : (
                                       <Button
-                                        variant="outline"
+                                        variant="ghost"
                                         size="sm"
+                                        className={GHOST_DARK}
                                         onClick={() => onArchive(fc)}
                                         aria-label={`Kreditfall ${fc.name} archivieren`}
                                       >
@@ -481,8 +522,9 @@ export function OffeneAbwicklungen({
                                       </Button>
                                     )}
                                     <Button
-                                      variant="outline"
+                                      variant="ghost"
                                       size="sm"
+                                      className={GHOST_DARK}
                                       onClick={() => onRemove(fc)}
                                       aria-label={`Kreditfall ${fc.name} löschen`}
                                     >
@@ -505,7 +547,7 @@ export function OffeneAbwicklungen({
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t font-semibold">
+                  <tr className="border-t border-white/15 bg-[#12372f] font-semibold">
                     <td className="px-2 py-2" />
                     <td className="px-2 py-2">Gesamt</td>
                     <td className="px-2 py-2" />

@@ -6,14 +6,18 @@
 import { useState } from "react"
 import { Archive, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { DARK_CARD, DARK_INPUT } from "@/components/ui/dark"
+import { cn } from "@/lib/utils"
 import { useConfirm } from "@/hooks/useConfirm"
 import type { UseUmsaetzeDocResult } from "@/hooks/useUmsaetzeDoc"
 import { ehFormatEH, ehFormatEUR } from "@/lib/calc/eh"
 import { formatISODateDE } from "@/lib/calc/format"
 import type { UmsatzEntry } from "@/types/dashboard"
 
-const CELL_INPUT =
-  "h-8 w-full rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:opacity-60"
+const CELL_INPUT = cn(
+  "h-8 w-full rounded-md border px-2 text-sm focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25 disabled:opacity-60",
+  DARK_INPUT
+)
 
 /** Freitext: lokal tippen, erst beim Verlassen des Feldes speichern (kein Schreibvorgang je Tastendruck). */
 function KundeInput({ entry, disabled, onSave }: { entry: UmsatzEntry; disabled: boolean; onSave: (v: string) => void }) {
@@ -69,7 +73,7 @@ export function Umsatzverfolgung({
     return (
       <div className="flex flex-col gap-3">
         {toggle}
-        <div className="rounded-xl border bg-card p-12 text-center text-sm text-muted-foreground">
+        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/75")}>
           {showArchive
             ? "Das Archiv ist leer."
             : allEntries.length > 0
@@ -83,10 +87,10 @@ export function Umsatzverfolgung({
   return (
     <div className="flex flex-col gap-3">
     {toggle}
-    <div className="overflow-x-auto rounded-xl border bg-card">
-      <table className="w-full min-w-[60rem] border-collapse text-sm">
+    <div className={cn(DARK_CARD, "overflow-x-auto rounded-xl border")}>
+      <table className="w-full min-w-[60rem] border-collapse text-sm text-white">
         <thead>
-          <tr className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
+          <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/75">
             <th className="px-3 py-2">Gebucht am</th>
             <th className="px-3 py-2">Mitarbeiter</th>
             <th className="px-3 py-2">Produkt</th>
@@ -101,7 +105,7 @@ export function Umsatzverfolgung({
         </thead>
         <tbody>
           {entries.map((e) => (
-            <tr key={e.id} className="border-t">
+            <tr key={e.id} className="border-t border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]">
               <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{formatISODateDE(e.bookedAt.slice(0, 10))}</td>
               <td className="px-3 py-1.5">{e.mitarbeiter}</td>
               <td className="px-3 py-1.5">{e.produkt}</td>
@@ -124,7 +128,6 @@ export function Umsatzverfolgung({
                 <input
                   type="checkbox"
                   aria-label="Policiert"
-                  className="size-4 accent-primary"
                   checked={e.policiert}
                   disabled={!isEditor}
                   onChange={(ev) => patchEntry(e.id, { policiert: ev.target.checked })}
@@ -134,7 +137,6 @@ export function Umsatzverfolgung({
                 <input
                   type="checkbox"
                   aria-label="Ausbezahlt"
-                  className="size-4 accent-primary"
                   checked={e.ausbezahlt}
                   disabled={!isEditor}
                   onChange={(ev) => patchEntry(e.id, { ausbezahlt: ev.target.checked })}
@@ -142,7 +144,7 @@ export function Umsatzverfolgung({
               </td>
               <td className="px-3 py-1.5 text-right">
                 {isEditor && (
-                  <Button size="sm" variant="ghost" aria-label="Umsatz löschen" onClick={() => onRemove(e)}>
+                  <Button size="sm" variant="ghost" className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white" aria-label="Umsatz löschen" onClick={() => onRemove(e)}>
                     <Trash2 className="size-4" />
                   </Button>
                 )}
