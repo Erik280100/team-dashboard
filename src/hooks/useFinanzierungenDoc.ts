@@ -40,8 +40,10 @@ function stripOwner(c: StoredCase): FinanzierungCase {
 }
 
 export function useFinanzierungenDoc(account: AccountInfo = { role: "admin", employeeId: null, mustChangePassword: false }, employees: readonly EmployeeMeta[] = []): UseFinanzierungenDocResult {
-  const isAdmin = account.role === "admin"
   const myId = account.employeeId
+  // Admin mit eigenem Mitarbeiter-Knoten sieht wie alle nur die eigenen Fälle (und die seines Teams);
+  // nur ein reiner Admin ohne Knoten bekommt alle.
+  const isAdmin = account.role === "admin" && !myId
   const [cases, setCases] = useState<FinanzierungCase[]>([])
   const [byOwner, setByOwner] = useState<Record<string, StoredCase>>({})
   const [byAncestor, setByAncestor] = useState<Record<string, StoredCase>>({})

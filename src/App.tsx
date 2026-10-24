@@ -133,6 +133,12 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const scopeId = auth.isAdmin ? null : (auth.employeeId ?? "none")
   const scopedTree = useMemo(() => sbScopedTree(orgChart.tree, scopeId), [orgChart.tree, scopeId])
   const financingStats = useFinancingStats()
+  // Controlling: auch der Admin sieht nur den eigenen Teilbaum (sofern er einen Knoten hat).
+  const controllingTree = useMemo(
+    () => sbScopedTree(orgChart.tree, auth.employeeId ?? (auth.isAdmin ? null : "none")),
+    [orgChart.tree, auth.employeeId, auth.isAdmin]
+  )
+  const controllingRoster = useMemo(() => sbRoster(controllingTree), [controllingTree])
 
   // Dashboard: "Gesamt" (alle Mitarbeiter) oder "Mein Team" (man selbst und alle darunter). Wer keinem Knoten
   // zugeordnet ist (z. B. reiner Admin) kann nicht wechseln und sieht immer Gesamt.
@@ -460,8 +466,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               )}
               {section === id && id === "planung" && (
                 <Planung
-                  roster={roster}
-                  orgTree={scopedTree}
+                  roster={controllingRoster}
+                  orgTree={controllingTree}
                   archive={archive}
                   planung={planung}
                   umsaetze={umsaetze}
@@ -499,7 +505,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   addCase={finanzierungen.addCase}
                   patchCase={finanzierungen.patchCase}
                   toggleDoc={finanzierungen.toggleDoc}
-                  employeeRoster={roster}
+                  employeeRoster={controllingRoster}
                   abwicklerNames={ehAbwicklerOptions(allRoster).map((r) => r.name)}
                   removeCase={finanzierungen.removeCase}
                   isEditor={auth.isEditor}
