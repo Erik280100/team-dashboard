@@ -314,7 +314,7 @@ export function Team({
                   >
                     <td className="px-3 py-2" style={{ paddingLeft: 12 + indent }}>
                       <div className="flex items-center gap-3">
-                        <Avatar name={r.name as string} avatar={avatars?.[r.name as string]} className="size-7 text-xs" />
+                        <Avatar name={r.name as string} avatar={avatars?.[r.name as string]} zoomable className="size-7 text-xs" />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium">{r.name}</div>
                           {(r.role || r.managerName) && (

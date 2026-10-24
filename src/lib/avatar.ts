@@ -15,11 +15,19 @@ export function squareCrop(w: number, h: number): { sx: number; sy: number; size
   return { sx: Math.round((w - size) / 2), sy: Math.round((h - size) / 2), size }
 }
 
-export async function resizeToAvatar(file: File): Promise<Blob> {
+export type Crop = { sx: number; sy: number; size: number }
+
+/** Quadratischer Ausschnitt bei Zoom ≥ 1 (1 = ganze kurze Seite), so verschoben, dass er im w×h-Bild bleibt. */
+export function cropAt(w: number, h: number, zoom: number, sx: number, sy: number): Crop {
+  const size = Math.min(w, h) / Math.max(1, zoom)
+  return { sx: Math.min(Math.max(0, sx), w - size), sy: Math.min(Math.max(0, sy), h - size), size }
+}
+
+export async function resizeToAvatar(file: File, crop?: Crop): Promise<Blob> {
   if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei wählen.")
   const bitmap = await createImageBitmap(file)
   try {
-    const { sx, sy, size } = squareCrop(bitmap.width, bitmap.height)
+    const { sx, sy, size } = crop ?? squareCrop(bitmap.width, bitmap.height)
     const canvas = document.createElement("canvas")
     canvas.width = canvas.height = AVATAR_SIZE
     const ctx = canvas.getContext("2d")

@@ -53,6 +53,7 @@ function Hero({ rank, name, avatar }: { rank: 0 | 1 | 2; name: string; avatar?: 
       <Avatar
         name={name}
         avatar={avatar}
+        zoomable
         className="absolute left-1/2 top-0 size-10 -translate-x-1/2 border-2 text-xs text-white"
         style={{ borderColor: suit }}
       />
