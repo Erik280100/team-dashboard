@@ -426,6 +426,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     isEditor={auth.isEditor && !isArchive}
                     canEditRow={canEditRow}
                     noBonusFor={auth.isAdmin ? undefined : myName}
+                    myName={myName}
                     now={view.now}
                     planung={isArchive ? undefined : planung}
                     avatars={avatarsByName}

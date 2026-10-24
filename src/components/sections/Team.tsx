@@ -52,7 +52,10 @@ export function Team({
   now,
   planung,
   avatars,
+  myName,
 }: {
+  /** Name des eingeloggten Nutzers — Führungskräfte werden darauf vorgefiltert. */
+  myName?: string
   rows: EmployeeRow[]
   saveRows: (next: EmployeeRow[]) => void
   teamGoal: TeamGoal
@@ -127,6 +130,15 @@ export function Team({
       })
     : rosterMerged
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
+  // Führungskräfte landen direkt auf ihrem eigenen Filter; Trainees (und alle
+  // anderen) sehen "Alle". Einmalig, sobald Name und Strukturbaum geladen sind,
+  // damit eine spätere manuelle Auswahl nicht überschrieben wird.
+  const [defaultFilterApplied, setDefaultFilterApplied] = useState(false)
+  useEffect(() => {
+    if (defaultFilterApplied || !myName || managerOptions.length === 0) return
+    setDefaultFilterApplied(true)
+    if (managerOptions.some((m) => m.name === myName)) setManagerFilter(myName)
+  }, [defaultFilterApplied, myName, managerOptions])
   const managerNames = useMemo(
     () => (managerFilter ? sbSubtreeNames(orgTree, managerFilter) : null),
     [managerFilter, orgTree]
