@@ -18,8 +18,9 @@ import { migrateToAccounts, type LegacyData } from "../src/lib/migration/account
 
 const args = new Map(
   process.argv.slice(2).map((a) => {
-    const [k, v] = a.replace(/^--/, "").split("=")
-    return [k, v ?? "true"] as const
+    const s = a.replace(/^--/, "")
+    const i = s.indexOf("=")
+    return (i < 0 ? [s, "true"] : [s.slice(0, i), s.slice(i + 1)]) as [string, string]
   }),
 )
 const owner = args.get("owner")

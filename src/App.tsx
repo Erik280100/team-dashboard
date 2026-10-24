@@ -531,8 +531,40 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
 // Login-Gate: ohne Anmeldung ist nichts sichtbar. Die Daten-Hooks in AppShell
 // starten erst nach dem Login (kein Firestore-Zugriff ohne Token). Ohne
 // Firebase-Config (lokaler Modus) entfällt das Gate.
+//
+// Die Login-Seite hat eine eigene Route (#login): Nicht Eingeloggte werden dorthin umgeleitet, die ursprünglich
+// angeforderte Sektion merkt sich sessionStorage und wird nach dem Login wieder angesteuert.
+const LOGIN_HASH = "login"
+const RETURN_KEY = "finova_return_section"
+
+function setHash(hash: string) {
+  history.replaceState(null, "", `#${hash}`)
+  window.dispatchEvent(new HashChangeEvent("hashchange"))
+}
+
 function AuthGate() {
   const auth = useAuth()
+  const { ready, user } = auth
+
+  useEffect(() => {
+    if (!CLOUD_CONFIGURED || !ready) return
+    const sync = () => {
+      const current = location.hash.slice(1)
+      if (!user) {
+        if (current === LOGIN_HASH) return
+        try { if (current) sessionStorage.setItem(RETURN_KEY, current) } catch { /* nur Komfort */ }
+        setHash(LOGIN_HASH)
+      } else if (current === LOGIN_HASH) {
+        let back: string | null = null
+        try { back = sessionStorage.getItem(RETURN_KEY); sessionStorage.removeItem(RETURN_KEY) } catch { /* nur Komfort */ }
+        setHash(back && back !== LOGIN_HASH ? back : "overview")
+      }
+    }
+    sync()
+    window.addEventListener("hashchange", sync)
+    return () => window.removeEventListener("hashchange", sync)
+  }, [ready, user])
+
   if (CLOUD_CONFIGURED) {
     if (!auth.ready) {
       return <div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">Lädt…</div>
