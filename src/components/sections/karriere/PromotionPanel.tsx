@@ -9,7 +9,7 @@ export function PromotionPanel({
   promotion, className, variant = "light",
 }: { promotion: PromotionProgress; className?: string; variant?: "light" | "dark" }) {
   const dark = variant === "dark"
-  const muted = dark ? "text-white/75" : "text-muted-foreground"
+  const muted = dark ? "text-white/90" : "text-muted-foreground"
   return (
     <div className={cn(dark ? cn("rounded-xl border p-4", DARK_CARD) : "rounded-md border bg-muted/30 p-3", className)}>
       <div className={cn("mb-2 font-semibold", dark ? "text-sm" : "text-xs")}>
@@ -50,7 +50,7 @@ export function PromotionPanel({
                         key={s.name}
                         className={cn(
                           "flex items-center justify-between text-[10px]",
-                          s.excludedReason ? (dark ? "text-white/55" : "text-muted-foreground/70") : muted
+                          s.excludedReason ? (dark ? "text-white/70" : "text-muted-foreground/70") : muted
                         )}
                       >
                         <span className="truncate">

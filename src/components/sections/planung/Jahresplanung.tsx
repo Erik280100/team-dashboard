@@ -197,7 +197,7 @@ export function Jahresplanung({
         <Button type="button" variant="ghost" size="icon" className={NAV_BTN} onClick={() => setYear((y) => y + 1)} aria-label="Folgejahr">
           ▶
         </Button>
-        {(loading || unitsLoading) && <span className="text-xs text-white/75">Lade Wochendaten…</span>}
+        {(loading || unitsLoading) && <span className="text-xs text-white/90">Lade Wochendaten…</span>}
       </div>
 
       <section className={cn("rounded-xl border p-5 shadow-sm", DARK_CARD)}>
@@ -209,9 +209,9 @@ export function Jahresplanung({
             const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0
             return (
               <div key={k} className={cn(DARK_TILE, "p-3")}>
-                <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">{PLAN_TARGET_LABELS[k]} Ist</div>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-white/90">{PLAN_TARGET_LABELS[k]} Ist</div>
                 <div className="mt-1 text-xl font-extrabold tabular-nums">{fmt(actual)}</div>
-                <div className="mt-0.5 text-xs text-white/75">Soll: {fmt(target)} · {pct}%</div>
+                <div className="mt-0.5 text-xs text-white/90">Soll: {fmt(target)} · {pct}%</div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15">
                   <div className={cn("h-full rounded-full", barColor(pct))} style={{ width: `${pct}%` }} />
                 </div>
@@ -221,7 +221,7 @@ export function Jahresplanung({
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {PLAN_TARGET_KEYS.map((k) => (
-            <label key={k} className="flex flex-col gap-1 text-xs text-white/75">
+            <label key={k} className="flex flex-col gap-1 text-xs text-white/90">
               {PLAN_TARGET_LABELS[k]} Soll
               <input
                 key={`${year}-${managerName}-${k}-target`}
@@ -270,7 +270,7 @@ export function Jahresplanung({
                 />
                 <div className="grid grid-cols-2 gap-2">
                   {(["vertraege", "einheiten", "atg", "analysen"] as PlanTargetKey[]).map((k) => (
-                    <label key={k} className={cn(DARK_TILE, "flex flex-col gap-1 p-2 text-[10px] font-semibold uppercase text-white/75")}>
+                    <label key={k} className={cn(DARK_TILE, "flex flex-col gap-1 p-2 text-[10px] font-semibold uppercase text-white/90")}>
                       {PLAN_TARGET_LABELS[k]} Soll
                       <input
                         key={`${year}-${managerName}-${q}-${k}`}
@@ -285,7 +285,7 @@ export function Jahresplanung({
                     </label>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-white/75">
+                <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-white/90">
                   <span>Verträge</span>
                   <span>{actuals.vertraege} / {target} ({pct}%)</span>
                 </div>
@@ -299,7 +299,7 @@ export function Jahresplanung({
                   ].map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-0.5">
                       <div className="text-sm font-bold tabular-nums">{fmt(item.value)}</div>
-                      <div className="text-[9px] font-semibold uppercase text-white/75">{item.label}</div>
+                      <div className="text-[9px] font-semibold uppercase text-white/90">{item.label}</div>
                     </div>
                   ))}
                 </div>
@@ -339,7 +339,7 @@ export function Jahresplanung({
                     <tr key={g.name} className={DARK_TABLE.row}>
                       <td className="px-3 py-2">
                         <div className="truncate text-sm font-semibold">{g.name}</div>
-                        <div className="truncate text-xs text-white/75">{g.role} · Team gesamt ({g.names.length})</div>
+                        <div className="truncate text-xs text-white/90">{g.role} · Team gesamt ({g.names.length})</div>
                       </td>
                       {PLAN_TARGET_KEYS.map((k) => (
                         <td key={k} className="px-3 py-2 text-right tabular-nums">{fmt(actualFor(k, a))}</td>

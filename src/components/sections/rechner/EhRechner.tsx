@@ -28,7 +28,7 @@ const GROUP_ACCENT: Record<EhGroup["id"], string> = {
 }
 
 /** Eingabefelder auf den dunklen Gruppenkarten. */
-const EH_INPUT = "rounded-md border border-white/25 bg-white/10 text-white placeholder:text-white/50 [color-scheme:dark] transition-colors focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25"
+const EH_INPUT = "rounded-md border border-white/35 bg-white/[.12] text-white placeholder:text-white/65 [color-scheme:dark] transition-colors focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25"
 
 function defaultG(): Record<string, string> {
   const g: Record<string, string> = {}
@@ -129,7 +129,7 @@ export function EhRechner({
             <div key={it.id} className={cn(DARK_TILE, "grid grid-cols-2 items-end gap-3 p-3 @lg:grid-cols-[1fr_7rem_7rem_7rem]")}>
               <div className="col-span-2 min-w-0 @lg:col-span-1">
                 <div className="text-sm font-medium">{it.label}</div>
-                <div className="text-xs text-white/75">Auszahlung: {it.payout}</div>
+                <div className="text-xs text-white/90">Auszahlung: {it.payout}</div>
                 {it.planFor && (
                   <div className="text-[11px] font-medium" style={{ color: GROUP_ACCENT[group.id] }}>
                     → {PLAN_LABELS[result.perItemPlan[it.id]]}
@@ -137,7 +137,7 @@ export function EhRechner({
                 )}
               </div>
               {it.hasG ? (
-                <label className="flex flex-col gap-1 text-xs text-white/75">
+                <label className="flex flex-col gap-1 text-xs text-white/90">
                   {it.gLabel} ({it.gUnit})
                   <input
                     type="number" min={0} step={1} max={it.gMax}
@@ -153,7 +153,7 @@ export function EhRechner({
               {it.disabled ? (
                 <input type="text" disabled value={it.disabledNote} className="h-8 w-28 rounded-md border border-white/15 bg-white/5 px-2 text-sm text-white/70" />
               ) : (
-                <label className="flex flex-col gap-1 text-xs text-white/75">
+                <label className="flex flex-col gap-1 text-xs text-white/90">
                   {it.jLabel}
                   <input
                     type="number" min={0} step={10}
@@ -166,7 +166,7 @@ export function EhRechner({
               )}
               <div className="col-span-2 text-right sm:col-span-1">
                 <div className="text-base font-bold tabular-nums text-[#64DDA3]">{ehFormatEH(result.perItem[it.id])}</div>
-                <div className="text-xs text-white/75">EH</div>
+                <div className="text-xs text-white/90">EH</div>
               </div>
             </div>
           ))}
@@ -177,7 +177,7 @@ export function EhRechner({
           {group.plans.length > 1 && group.plans.filter((p) => result.planSums[p] > 0).length > 1 && (
             <div className="-mt-2 flex flex-col gap-0.5">
               {group.plans.map((p) => (
-                <div key={p} className="flex items-center justify-between text-xs text-white/75">
+                <div key={p} className="flex items-center justify-between text-xs text-white/90">
                   <span>davon {PLAN_LABELS[p]}</span>
                   <span className="tabular-nums">{ehFormatEH(result.planSums[p])} EH</span>
                 </div>
@@ -185,7 +185,7 @@ export function EhRechner({
             </div>
           )}
           <div className="mt-2 flex items-center gap-1.5">
-            <label className="shrink-0 text-[11px] font-semibold text-white/75">
+            <label className="shrink-0 text-[11px] font-semibold text-white/90">
               Multiplikator (€ / EH)
             </label>
             <input
@@ -221,11 +221,11 @@ export function EhRechner({
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">Gesamt Einheiten</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-white/90">Gesamt Einheiten</div>
               <div className="text-4xl font-extrabold tabular-nums text-[#64DDA3]">{ehFormatEH(result.grandTotal)} EH</div>
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">Gesamt in €</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-white/90">Gesamt in €</div>
               <div className="text-4xl font-extrabold tabular-nums text-[#64DDA3]">{ehFormatEUR(result.grandTotalEur)} €</div>
             </div>
             <Button

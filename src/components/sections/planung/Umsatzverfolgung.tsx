@@ -73,7 +73,7 @@ export function Umsatzverfolgung({
     return (
       <div className="flex flex-col gap-3">
         {toggle}
-        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/75")}>
+        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
           {showArchive
             ? "Das Archiv ist leer."
             : allEntries.length > 0
@@ -90,7 +90,7 @@ export function Umsatzverfolgung({
     <div className={cn(DARK_CARD, "overflow-x-auto rounded-xl border")}>
       <table className="w-full min-w-[60rem] border-collapse text-sm text-white">
         <thead>
-          <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/75">
+          <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
             <th className="px-3 py-2">Gebucht am</th>
             <th className="px-3 py-2">Mitarbeiter</th>
             <th className="px-3 py-2">Produkt</th>

@@ -41,7 +41,7 @@ function MonthNoteCard({
           </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{person.name}</div>
-            <div className="truncate text-xs text-white/75">{person.role}</div>
+            <div className="truncate text-xs text-white/90">{person.role}</div>
           </div>
         </div>
       </CardHeader>
@@ -81,9 +81,9 @@ function MonthNoteCard({
 function KpiTile({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className={cn(DARK_CARD, "rounded-xl border p-4 shadow-sm")}>
-      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-white/75">{label}</div>
+      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-white/90">{label}</div>
       <div className="text-2xl font-extrabold tabular-nums text-[#64DDA3]">{value}</div>
-      <div className="mt-1 text-xs text-white/75">{sub}</div>
+      <div className="mt-1 text-xs text-white/90">{sub}</div>
     </div>
   )
 }
@@ -98,7 +98,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
     <div className={cn(DARK_CARD, "overflow-hidden rounded-xl border shadow-sm")}>
       <div className="border-b border-white/10 bg-white/[.04] px-4 py-2.5">
         <div className="truncate text-sm font-bold">{title}</div>
-        {sub && <div className="truncate text-xs text-white/75">{sub}</div>}
+        {sub && <div className="truncate text-xs text-white/90">{sub}</div>}
       </div>
       <div className="flex flex-col gap-1.5 p-3">
         {lines.map((l) => {
@@ -126,7 +126,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
               </div>
               <div className="w-24 shrink-0 whitespace-nowrap text-right text-xs tabular-nums">
                 <strong>{fmt(l.ist)}</strong>
-                <span className="text-white/75">/{fmt(l.soll)}</span>
+                <span className="text-white/90">/{fmt(l.soll)}</span>
               </div>
             </div>
           )
@@ -267,7 +267,7 @@ export function Monatsplanung({
       })()}
 
       {rows.length === 0 ? (
-        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/75")}>
+        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
           Keine Personen für diese Führungskraft im Strukturbaum.
         </div>
       ) : (
@@ -292,11 +292,11 @@ export function Monatsplanung({
                   <tr key={r.key} className={DARK_TABLE.row}>
                     <td className="px-3 py-2">
                       <div className="truncate text-sm font-semibold">{r.label}</div>
-                      <div className="truncate text-xs text-white/75">{r.sub}</div>
+                      <div className="truncate text-xs text-white/90">{r.sub}</div>
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.atz)}/{fmt(d.atg)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/75">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
-                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/75">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/90">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/90">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
                     <td className="px-3 py-2 text-right tabular-nums">{quotePct(d.analysen, d.analysenZ)}%</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.stz)}/{fmt(d.stg)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.etz)}/{fmt(d.etg)}</td>

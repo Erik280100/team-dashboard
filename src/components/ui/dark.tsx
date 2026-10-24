@@ -2,12 +2,15 @@
 // dieselbe Optik wie Overview.tsx und die Karriere-Kacheln, damit alle Seiten einheitlich wirken.
 import type { ReactNode } from "react"
 import { Check, X, type LucideIcon } from "lucide-react"
-import { DARK_CARD, DARK_INPUT } from "@/lib/chartSetup"
+import { DARK_CARD } from "@/lib/chartSetup"
 import { cn } from "@/lib/utils"
 
-export { DARK_CARD, DARK_INPUT }
+export { DARK_CARD }
 
-export const DARK_SELECT = "border-white/20 bg-white/10 text-white [&>svg]:text-white/70"
+/** Eingabefelder auf dunklem Grund: deutlicher Rand, hellere Füllung, gut lesbare Platzhalter. */
+export const DARK_INPUT = "border-white/35 bg-white/[.12] text-white placeholder:text-white/65 [color-scheme:dark]"
+
+export const DARK_SELECT = "border-white/35 bg-white/[.12] text-white [&>svg]:text-white/80"
 /** Option-Elemente bleiben auf hellem Popup-Hintergrund lesbar. */
 export const DARK_OPTION = "text-foreground"
 export const DARK_TILE = "rounded-[12px] border border-white/10 bg-white/[.04]"
@@ -15,7 +18,7 @@ export const DARK_TILE = "rounded-[12px] border border-white/10 bg-white/[.04]"
 export const DARK_TABLE = {
   wrap: "overflow-auto rounded-xl border border-white/10",
   table: "w-full border-collapse text-sm text-white",
-  head: "sticky top-0 z-10 border-b-2 border-white/25 bg-[#0f2633] px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-white/75",
+  head: "sticky top-0 z-10 border-b-2 border-white/25 bg-[#0f2633] px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide text-white/90",
   row: "border-b border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]",
   foot: "sticky bottom-0 z-10 border-t border-white/15 bg-[#12372f] px-3 py-2.5 font-bold tabular-nums",
 }
@@ -66,9 +69,9 @@ export function KpiTile({
         <Icon className="size-4 text-[#64DDA3]" aria-hidden="true" />
       </div>
       <div className="min-w-0">
-        <div className="truncate text-[11px] font-bold uppercase tracking-wide text-white/75">{label}</div>
+        <div className="truncate text-[11px] font-bold uppercase tracking-wide text-white/90">{label}</div>
         <div className="truncate text-2xl font-extrabold tabular-nums">{value}</div>
-        {sub && <div className="truncate text-xs text-white/75">{sub}</div>}
+        {sub && <div className="truncate text-xs text-white/90">{sub}</div>}
       </div>
     </div>
   )
@@ -97,7 +100,7 @@ export function SectionHero({
               <span className="rounded-full bg-[#64DDA3]/15 px-2.5 py-1 text-xs font-bold text-[#64DDA3]">{badge}</span>
             )}
           </h2>
-          {description && <p className="mt-1 max-w-3xl text-xs text-white/75">{description}</p>}
+          {description && <p className="mt-1 max-w-3xl text-xs text-white/90">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
@@ -137,14 +140,14 @@ export function PresenceToggle({
       <button
         type="button" role="radio" aria-checked={present} disabled={disabled}
         onClick={() => onChange(true)}
-        className={cn(seg, present ? "bg-[#3FCB8E] text-[#0b1f2a]" : "text-white/75 hover:text-white")}
+        className={cn(seg, present ? "bg-[#3FCB8E] text-[#0b1f2a]" : "text-white/90 hover:text-white")}
       >
         <Check className="size-3.5" aria-hidden="true" /> Anwesend
       </button>
       <button
         type="button" role="radio" aria-checked={!present} disabled={disabled}
         onClick={() => onChange(false)}
-        className={cn(seg, !present ? "bg-[#e2685b] text-white" : "text-white/75 hover:text-white")}
+        className={cn(seg, !present ? "bg-[#e2685b] text-white" : "text-white/90 hover:text-white")}
       >
         <X className="size-3.5" aria-hidden="true" /> Abwesend
       </button>

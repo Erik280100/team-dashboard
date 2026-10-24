@@ -102,7 +102,7 @@ function NewCaseForm({
       <CardContent>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-white/75" htmlFor="fin-name">Person</label>
+            <label className="text-xs font-semibold text-white" htmlFor="fin-name">Person</label>
             <Input
               id="fin-name"
               placeholder="Name"
@@ -113,7 +113,7 @@ function NewCaseForm({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-white/75" htmlFor="fin-betrag">Kreditsumme</label>
+            <label className="text-xs font-semibold text-white" htmlFor="fin-betrag">Kreditsumme</label>
             <Input
               id="fin-betrag"
               type="number"
@@ -125,7 +125,7 @@ function NewCaseForm({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-white/75" htmlFor="fin-art">Art</label>
+            <label className="text-xs font-semibold text-white" htmlFor="fin-art">Art</label>
             <Select
               id="fin-art"
               value={art}
@@ -139,7 +139,7 @@ function NewCaseForm({
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-white/75" htmlFor="fin-beschaeftigung">Beschäftigung</label>
+            <label className="text-xs font-semibold text-white" htmlFor="fin-beschaeftigung">Beschäftigung</label>
             <Select
               id="fin-beschaeftigung"
               value={beschaeftigung}
@@ -152,7 +152,7 @@ function NewCaseForm({
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-white/75" htmlFor="fin-betreuer">Zuständiger Mitarbeiter</label>
+            <label className="text-xs font-semibold text-white" htmlFor="fin-betreuer">Zuständiger Mitarbeiter</label>
             <Select
               id="fin-betreuer"
               value={betreuer}
@@ -205,7 +205,7 @@ function ChecklistGrid({
                 />
                 <span>
                   {item.label}
-                  {item.hint && <span className="ml-1 text-xs text-white/75">({item.hint})</span>}
+                  {item.hint && <span className="ml-1 text-xs text-white/90">({item.hint})</span>}
                 </span>
               </label>
             ))}
@@ -291,7 +291,7 @@ export function OffeneAbwicklungen({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-white">{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-white/75" htmlFor="fin-sort">Sortierung</label>
+              <label className="text-xs font-semibold text-white" htmlFor="fin-sort">Sortierung</label>
               <Select
                 id="fin-sort"
                 value={sortKey}
@@ -313,14 +313,14 @@ export function OffeneAbwicklungen({
         </CardHeader>
         <CardContent>
           {visibleCases.length === 0 ? (
-            <div className="py-6 text-center text-sm text-white/75">
+            <div className="py-6 text-center text-sm text-white/90">
               {showArchived ? "Keine archivierten Kreditfälle." : "Noch keine Kreditfälle angelegt."}
             </div>
           ) : (
             <div className={DARK_TABLE.wrap}>
               <table className={cn("min-w-[900px]", DARK_TABLE.table)}>
                 <thead>
-                  <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/75">
+                  <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
                     <th className="w-8 px-2 py-2" />
                     <th className="px-2 py-2">Person</th>
                     <th className="px-2 py-2">Betreuer</th>
@@ -376,7 +376,7 @@ export function OffeneAbwicklungen({
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-2">
                               <MintBar pct={relevant.length ? (done / relevant.length) * 100 : 0} className="w-24" />
-                              <span className="text-xs tabular-nums text-white/75">
+                              <span className="text-xs tabular-nums text-white/90">
                                 {done}/{relevant.length}
                               </span>
                             </div>
@@ -413,7 +413,7 @@ export function OffeneAbwicklungen({
                               <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
                                 <div className="flex flex-wrap items-end gap-3">
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
+                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
                                   <Input
                                     id={`fin-edit-name-${fc.id}`}
                                     key={`name-${fc.id}-${fc.name}`}
@@ -427,7 +427,7 @@ export function OffeneAbwicklungen({
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-betrag-${fc.id}`}>Kreditsumme</label>
+                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-betrag-${fc.id}`}>Kreditsumme</label>
                                   <Input
                                     id={`fin-edit-betrag-${fc.id}`}
                                     key={`betrag-${fc.id}-${fc.betrag}`}
@@ -439,7 +439,7 @@ export function OffeneAbwicklungen({
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-art-${fc.id}`}>Art</label>
+                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-art-${fc.id}`}>Art</label>
                                   <Select
                                     id={`fin-edit-art-${fc.id}`}
                                     value={fc.art}
@@ -453,7 +453,7 @@ export function OffeneAbwicklungen({
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-beschaeftigung-${fc.id}`}>Beschäftigung</label>
+                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-beschaeftigung-${fc.id}`}>Beschäftigung</label>
                                   <Select
                                     id={`fin-edit-beschaeftigung-${fc.id}`}
                                     value={fc.beschaeftigung}
@@ -466,7 +466,7 @@ export function OffeneAbwicklungen({
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-betreuer-${fc.id}`}>Zuständiger Mitarbeiter</label>
+                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-betreuer-${fc.id}`}>Zuständiger Mitarbeiter</label>
                                   <Select
                                     id={`fin-edit-betreuer-${fc.id}`}
                                     value={fc.betreuer || ""}
@@ -481,7 +481,7 @@ export function OffeneAbwicklungen({
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-medium text-white/75" htmlFor={`fin-edit-abwickler-${fc.id}`}>Abwickler</label>
+                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-abwickler-${fc.id}`}>Abwickler</label>
                                   <Select
                                     id={`fin-edit-abwickler-${fc.id}`}
                                     value={fc.abwickler || ""}

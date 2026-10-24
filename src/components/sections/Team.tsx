@@ -237,7 +237,7 @@ export function Team({
 
         {managerOptions.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-white/75">Schnellfilter Führungskraft:</span>
+            <span className="text-xs font-medium text-white/90">Schnellfilter Führungskraft:</span>
             <Pill active={managerFilter === null} onClick={() => setManagerFilter(null)} className="px-3 py-1 text-xs">Alle</Pill>
             {managerOptions.map((m) => (
               <Pill
@@ -272,7 +272,7 @@ export function Team({
                   <th
                     key={`${g}-${k}`}
                     className={cn(
-                      "sticky top-[30px] z-10 px-1 py-1 text-center text-[11px] font-semibold text-white/75",
+                      "sticky top-[30px] z-10 px-1 py-1 text-center text-[11px] font-semibold text-white/90",
                       g === "Plan" ? "bg-[#0f2f3e]" : "bg-[#2c2819]",
                       i === 0 && "border-l border-white/10"
                     )}
@@ -287,7 +287,7 @@ export function Team({
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-3 py-8 text-center text-sm text-white/75">
+                <td colSpan={13} className="px-3 py-8 text-center text-sm text-white/90">
                   {merged.length === 0 ? "Noch keine Personen im Strukturbaum erfasst." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
                 </td>
               </tr>
@@ -314,7 +314,7 @@ export function Team({
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-semibold">{r.name}</div>
                           {(r.role || r.managerName) && (
-                            <div className="truncate text-xs text-white/75">
+                            <div className="truncate text-xs text-white/90">
                               {r.role}
                               {r.managerName ? ` · unter ${r.managerName}` : ""}
                             </div>
@@ -330,7 +330,7 @@ export function Team({
                             {fmtEur(rowEarnings.total - stornoreserveAmount(rowEarnings, reserveRate))} €
                           </button>
                         ) : (
-                          <span className="shrink-0 text-white/55">—</span>
+                          <span className="shrink-0 text-white/70">—</span>
                         )}
                       </div>
                     </td>

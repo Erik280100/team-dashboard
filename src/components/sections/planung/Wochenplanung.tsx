@@ -83,7 +83,7 @@ function PersonCard({
                 <span className="rounded-full bg-[#E7A94C]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#E7A94C]">FK</span>
               )}
             </div>
-            <div className="truncate text-xs text-white/75">{person.role}</div>
+            <div className="truncate text-xs text-white/90">{person.role}</div>
           </div>
         </div>
       </CardHeader>
@@ -94,12 +94,12 @@ function PersonCard({
               <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/75">{g.left.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/90">{g.left.sub}</span>
                   <NumField personName={person.name} field={g.left.key} value={Number(entry[g.left.key]) || 0} isEditor={isEditor} onCommit={onCommit} />
                 </div>
-                <span className="pt-3 text-white/55">/</span>
+                <span className="pt-3 text-white/70">/</span>
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/75">{g.right.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/90">{g.right.sub}</span>
                   <NumField personName={person.name} field={g.right.key} value={Number(entry[g.right.key]) || 0} isEditor={isEditor} onCommit={onCommit} />
                 </div>
               </div>
@@ -134,7 +134,7 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
           </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{group.name}</div>
-            <div className="truncate text-xs text-white/75">{group.role} · Team gesamt ({group.names.length})</div>
+            <div className="truncate text-xs text-white/90">{group.role} · Team gesamt ({group.names.length})</div>
           </div>
         </div>
       </CardHeader>
@@ -145,14 +145,14 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
               <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/75">{g.left.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/90">{g.left.sub}</span>
                   <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.left.key]) || 0)}
                   </div>
                 </div>
-                <span className="pt-3 text-white/55">/</span>
+                <span className="pt-3 text-white/70">/</span>
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/75">{g.right.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-white/90">{g.right.sub}</span>
                   <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.right.key]) || 0)}
                   </div>
@@ -210,7 +210,7 @@ export function Wochenplanung({
           ›
         </Button>
         <span className="rounded-full bg-[#64DDA3]/15 px-2.5 py-1 text-xs font-bold text-[#64DDA3]">{monthLabel(monthKey)}</span>
-        <span className="text-xs text-white/75">Bitte bis Montag 10:00 Uhr abgeben</span>
+        <span className="text-xs text-white/90">Bitte bis Montag 10:00 Uhr abgeben</span>
         <span className="ml-auto rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold">
           Σ Verträge {totals.vertraege}
         </span>
@@ -223,7 +223,7 @@ export function Wochenplanung({
           ))}
         </div>
       ) : people.length === 0 ? (
-        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/75", DARK_CARD)}>
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", DARK_CARD)}>
           Keine Personen für {managerName ?? "diese Führungskraft"} im Strukturbaum.
         </div>
       ) : (

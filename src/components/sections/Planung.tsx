@@ -99,7 +99,7 @@ export function Planung({
     return (
       <div className="flex flex-col gap-4">
         <SectionHero eyebrow="Controlling" title="Planung" />
-        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/75", DARK_CARD)}>
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", DARK_CARD)}>
           Noch keine Führungskräfte im Strukturbaum erfasst (ab Teamleiter aufwärts).
         </div>
       </div>

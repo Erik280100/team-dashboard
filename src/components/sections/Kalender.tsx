@@ -133,12 +133,12 @@ export function Kalender({
 
       <div className={cn("rounded-xl border", DARK_CARD)}>
         {total === 0 ? (
-          <div className="py-8 text-center text-sm text-white/75">Noch keine Mitarbeiter angelegt.</div>
+          <div className="py-8 text-center text-sm text-white/90">Noch keine Mitarbeiter angelegt.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
-                <tr className="border-b-2 border-white/25 text-left text-[11px] font-bold uppercase tracking-wide text-white/75">
+                <tr className="border-b-2 border-white/25 text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
                   <th className="px-4 py-3">Mitarbeiter</th>
                   <th className="px-4 py-3">Seminar</th>
                   <th className="px-4 py-3">Training</th>
