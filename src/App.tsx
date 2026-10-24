@@ -235,6 +235,31 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
     const date = today > periodEnd ? periodEnd : today < periodStart ? periodStart : today
     return [{ date, ist: dashRows.reduce((s, r) => s + (Number(r.ist) || 0), 0) }]
   }, [teamScope, view.history, view.teamGoal, dashRows])
+  // Die Jahreswerte im Dashboard stammen aus den archivierten Monatssummen (alle Mitarbeiter). Für "Mein Team" werden
+  // sie aus den Monats-Snapshots nur über die Teammitglieder neu gerechnet.
+  const archiveMonths = useMemo(() => archive.index.map((e) => e.month), [archive.index])
+  useEffect(() => {
+    if (teamScope && archiveMonths.length > 0) void archive.loadSnapshots(archiveMonths)
+    // archive ist je Render ein neues Objekt — nur bei Änderung von Scope/Monatsliste nachladen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamScope, archiveMonths])
+  const dashArchiveIndex = useMemo(() => {
+    if (!teamScope) return archive.index
+    return archive.index.map((e) => {
+      const rows = archive.getSnapshot(e.month)?.rows
+      const ehByPlan = { ...e.totals.ehByPlan }
+      for (const p of Object.keys(ehByPlan) as (keyof typeof ehByPlan)[]) ehByPlan[p] = 0
+      if (rows) {
+        for (const r of rowsMatchedToRoster(dashRoster, rows)) {
+          const u = readPlanUnits(r)
+          for (const p of Object.keys(u) as (keyof typeof u)[]) ehByPlan[p] = (ehByPlan[p] || 0) + u[p]
+        }
+      }
+      return { ...e, totals: { ...e.totals, ehByPlan } }
+    })
+    // getSnapshot ändert sich mit jedem geladenen Snapshot-Status.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamScope, archive.index, archive.getSnapshot, dashRoster])
   // Finanzierungen: Gesamt = Summen der Cloud Function (alle Fälle); Mein Team = sichtbare Fälle der eigenen Betreuer.
   const dashFinance = useMemo(() => {
     const names = new Set(dashRoster.map((r) => r.name.trim().toLowerCase()))
@@ -406,7 +431,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     now={view.now}
                     offenesFinanzierungsvolumen={dashFinance.volume}
                     offeneAnlegerwohnungen={dashFinance.anlegerwohnungen}
-                    archiveIndex={archive.index}
+                    archiveIndex={dashArchiveIndex}
                     planung={isArchive ? undefined : planung}
                     canSeeLive={canEditRow}
                   />
