@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { dueState, reorderForMove, todosInLane } from "../../src/lib/calc/todos"
+import { dueState, reorderForMove, seedOrderByDue, todosInLane } from "../../src/lib/calc/todos"
 import type { BoardTodo } from "../../src/types/dashboard"
 
 function makeTodo(overrides: Partial<BoardTodo> & Pick<BoardTodo, "id">): BoardTodo {
@@ -42,6 +42,23 @@ describe("todosInLane", () => {
       makeTodo({ id: "b", lane: "todo", order: 0, createdAt: "2026-01-01T00:00:00.000Z" }),
     ]
     expect(todosInLane(todos, "todo", "alle").map((t) => t.id)).toEqual(["b", "a"])
+  })
+})
+
+describe("Sortierung nach Fälligkeit", () => {
+  const todos = [
+    makeTodo({ id: "ohne", order: 0 }),
+    makeTodo({ id: "spaet", order: 1, dueDate: "2026-12-01" }),
+    makeTodo({ id: "frueh", order: 2, dueDate: "2026-11-01" }),
+  ]
+
+  it("sortiert aufsteigend nach Datum, ohne Datum zuletzt", () => {
+    expect(todosInLane(todos, "todo", "alle", "faellig").map((t) => t.id)).toEqual(["frueh", "spaet", "ohne"])
+  })
+
+  it("seedOrderByDue übernimmt die Fälligkeits-Reihenfolge als order", () => {
+    const seeded = seedOrderByDue(todos, "todo")
+    expect(todosInLane(seeded, "todo", "alle").map((t) => t.id)).toEqual(["frueh", "spaet", "ohne"])
   })
 })
 

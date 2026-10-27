@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
-import { reorderForMove } from "@/lib/calc/todos"
+import { reorderForMove, seedOrderByDue } from "@/lib/calc/todos"
 import {
   type BoardTodo,
   type TodoCategory,
@@ -23,7 +23,8 @@ export interface UseBoardTodosDocResult {
   todos: BoardTodo[]
   addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
   patchTodo: (id: string, patch: Partial<BoardTodo>) => void
-  moveTodo: (id: string, lane: TodoLane, beforeId: string | null) => void
+  /** `seedByDue`: vorher die Fälligkeits-Reihenfolge der Ziel-Lane als eigene Reihenfolge übernehmen. */
+  moveTodo: (id: string, lane: TodoLane, beforeId: string | null, seedByDue?: boolean) => void
   removeTodo: (id: string) => void
 }
 
@@ -94,8 +95,9 @@ export function useBoardTodosDoc(employeeId: string | null = null): UseBoardTodo
   )
 
   const moveTodo = useCallback(
-    (id: string, lane: TodoLane, beforeId: string | null) => {
-      commit(reorderForMove(latest.current, id, lane, beforeId))
+    (id: string, lane: TodoLane, beforeId: string | null, seedByDue = false) => {
+      const base = seedByDue ? seedOrderByDue(latest.current, lane) : latest.current
+      commit(reorderForMove(base, id, lane, beforeId))
     },
     [commit]
   )

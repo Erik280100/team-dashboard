@@ -5,11 +5,32 @@ import type { BoardTodo, TodoCategory, TodoLane } from "@/types/dashboard"
 
 export type BoardFilter = TodoCategory | "alle"
 
-/** Todos einer Lane, optional nach Kategorie gefiltert, sortiert nach order (Tiebreak: createdAt). */
-export function todosInLane(todos: BoardTodo[], lane: TodoLane, filter: BoardFilter): BoardTodo[] {
+/** Sortierung einer Lane: nach Fälligkeitsdatum (Standard) oder eigene Reihenfolge per Drag & Drop. */
+export type LaneSort = "faellig" | "manuell"
+
+/** Aufsteigend nach Fälligkeitsdatum, Todos ohne Datum zuletzt (Tiebreak: createdAt). */
+function compareByDue(a: BoardTodo, b: BoardTodo): number {
+  if (!a.dueDate !== !b.dueDate) return a.dueDate ? -1 : 1
+  return (a.dueDate ?? "").localeCompare(b.dueDate ?? "") || a.createdAt.localeCompare(b.createdAt)
+}
+
+/**
+ * Todos einer Lane, optional nach Kategorie gefiltert. `sort` "manuell" (Standard hier) = nach order
+ * (Tiebreak: createdAt), "faellig" = nach Fälligkeitsdatum.
+ */
+export function todosInLane(todos: BoardTodo[], lane: TodoLane, filter: BoardFilter, sort: LaneSort = "manuell"): BoardTodo[] {
   return todos
     .filter((t) => t.lane === lane && (filter === "alle" || t.category === filter))
-    .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+    .sort(sort === "faellig" ? compareByDue : (a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+}
+
+/**
+ * Übernimmt die Fälligkeits-Reihenfolge einer Lane in `order`, damit eine anschließende manuelle
+ * Sortierung genau dort startet, wo die Anzeige vorher stand.
+ */
+export function seedOrderByDue(todos: BoardTodo[], lane: TodoLane): BoardTodo[] {
+  const ranks = new Map(todosInLane(todos, lane, "alle", "faellig").map((t, i) => [t.id, i * 10]))
+  return todos.map((t) => (ranks.has(t.id) ? { ...t, order: ranks.get(t.id)! } : t))
 }
 
 /**

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useConfirm } from "@/hooks/useConfirm"
-import { todosInLane, type BoardFilter } from "@/lib/calc/todos"
+import { todosInLane, type BoardFilter, type LaneSort } from "@/lib/calc/todos"
 import {
   TODO_CATEGORIES, TODO_CATEGORY_LABELS, TODO_LANES, TODO_LANE_LABELS,
   type BoardTodo, type TodoCategory, type TodoLane,
@@ -18,6 +18,8 @@ import { TodoCard } from "@/components/sections/board/TodoCard"
 import { EuVsGmbhRechner } from "@/components/sections/rechner/EuVsGmbhRechner"
 import { HoldingImmobilienRechner } from "@/components/sections/rechner/HoldingImmobilienRechner"
 import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
+
+const LANE_SORT_KEY = "meinBoard.laneSort"
 
 function beforeIdFromPoint(container: HTMLElement, clientY: number): string | null {
   const cards = Array.from(container.querySelectorAll<HTMLElement>("[data-todo-id]"))
@@ -50,7 +52,7 @@ export function MeinBoard({
   todos: BoardTodo[]
   addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: BoardTodo["color"] }) => void
   patchTodo: (id: string, patch: Partial<BoardTodo>) => void
-  moveTodo: (id: string, lane: TodoLane, beforeId: string | null) => void
+  moveTodo: (id: string, lane: TodoLane, beforeId: string | null, seedByDue?: boolean) => void
   removeTodo: (id: string) => void
 }) {
   const confirm = useConfirm()
@@ -105,6 +107,25 @@ export function MeinBoard({
     }
   }, [view])
 
+  // Sortierung je Lane: nur "faellig" (Standard) oder "manuell"; pro Browser gemerkt.
+  const [laneSorts, setLaneSorts] = useState<Partial<Record<TodoLane, LaneSort>>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(LANE_SORT_KEY) ?? "{}")
+    } catch {
+      return {}
+    }
+  })
+  const laneSort = (lane: TodoLane): LaneSort => (laneSorts[lane] === "manuell" ? "manuell" : "faellig")
+  function setLaneSort(lane: TodoLane, sort: LaneSort) {
+    setLaneSorts((prev) => {
+      const next = { ...prev, [lane]: sort }
+      try {
+        localStorage.setItem(LANE_SORT_KEY, JSON.stringify(next))
+      } catch { /* Speicher gesperrt — Sortierung gilt dann nur für diese Sitzung */ }
+      return next
+    })
+  }
+
   function handleDragStart(e: DragEvent<HTMLDivElement>, id: string) {
     e.dataTransfer.setData("text/plain", id)
     e.dataTransfer.effectAllowed = "move"
@@ -119,7 +140,12 @@ export function MeinBoard({
     const id = e.dataTransfer.getData("text/plain")
     if (!id) return
     const beforeId = beforeIdFromPoint(e.currentTarget, e.clientY)
-    moveTodo(id, lane, beforeId)
+    // Umsortieren innerhalb einer nach Fälligkeit sortierten Lane = Wechsel auf eigene Sortierung,
+    // die dort startet, wo die Anzeige gerade stand. Aus einer anderen Lane landet die Karte einfach
+    // an ihrer Fälligkeits-Position.
+    const reorderingInDueLane = laneSort(lane) === "faellig" && todos.find((t) => t.id === id)?.lane === lane
+    if (reorderingInDueLane) setLaneSort(lane, "manuell")
+    moveTodo(id, lane, beforeId, reorderingInDueLane)
   }
 
   async function handleDelete(todo: BoardTodo) {
@@ -213,14 +239,28 @@ export function MeinBoard({
             style={boardHeight !== null ? { height: boardHeight } : undefined}
           >
             {TODO_LANES.map((lane) => {
-              const laneTodos = todosInLane(visibleTodos, lane, filter)
+              const sort = laneSort(lane)
+              const laneTodos = todosInLane(visibleTodos, lane, filter, sort)
               return (
                 <div key={lane} className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden rounded-xl border bg-card p-3">
-                  <div className="flex items-center justify-between px-1">
-                    <h3 className="text-sm font-semibold">{TODO_LANE_LABELS[lane]}</h3>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {laneTodos.length}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 px-1">
+                    <h3 className="truncate text-sm font-semibold">{TODO_LANE_LABELS[lane]}</h3>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={sort === "faellig"}
+                        onClick={() => setLaneSort(lane, "faellig")}
+                        title={sort === "faellig"
+                          ? "Sortiert nach Fälligkeit — per Drag & Drop wechselt die Lane auf eigene Sortierung"
+                          : "Eigene Sortierung — klicken, um wieder nach Fälligkeit zu sortieren"}
+                        className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground"
+                      >
+                        {sort === "faellig" ? "Fälligkeit" : "Eigene ↺"}
+                      </button>
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        {laneTodos.length}
+                      </span>
+                    </div>
                   </div>
                   <div
                     onDragOver={handleDragOver}
