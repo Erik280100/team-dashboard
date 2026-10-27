@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // Rollenmodell (siehe Umbauplan "User-Accounts"):
-//  - Custom Claims am Auth-Token: role ("admin"|"lead"|"member"), employeeId.
+//  - Custom Claims am Auth-Token: role ("admin"|"lead"|"member"|"viewer"), employeeId.
+//    "viewer" = reiner Lesemodus: liest alles ausser dem persoenlichen Board (todos), schreibt nirgends.
 //    Gesetzt ausschliesslich von der Cloud Function inviteUser (Admin SDK).
 //  - employees/{id}.ancestors enthaelt die IDs aller Vorgesetzten (von
 //    onStructureChange berechnet). Zugriff: selbst, Vorgesetzter (ancestor) oder Admin.
@@ -16,12 +17,13 @@ service cloud.firestore {
     // Nur Konten mit gueltiger Rolle (Claims von inviteUser/createAccount) — alte anonyme Logins ohne Claims haben keinen Zugriff.
     function signedIn() {
       return request.auth != null
-        && request.auth.token.get('role', '') in ['admin', 'lead', 'member']
+        && request.auth.token.get('role', '') in ['admin', 'lead', 'member', 'viewer']
         && !request.auth.token.get('mustChangePassword', false);
     }
     function role() { return request.auth.token.get('role', ''); }
     function myEmp() { return request.auth.token.get('employeeId', ''); }
     function isAdmin() { return signedIn() && role() == 'admin'; }
+    function isViewer() { return signedIn() && role() == 'viewer'; }
     function isSelf(empId) { return signedIn() && myEmp() != '' && myEmp() == empId; }
     function isAncestor(ancestors) { return signedIn() && myEmp() != '' && myEmp() in ancestors; }
 
@@ -31,6 +33,11 @@ service cloud.firestore {
     // Zugriff auf Daten, die einem Mitarbeiter gehoeren (self / Vorgesetzte / Admin).
     function canAccessEmployee(empId) {
       return isAdmin() || isSelf(empId) || isAncestor(empDoc(empId).data.ancestors);
+    }
+
+    // Lesen darf zusaetzlich der Lesemodus; Schreiben bleibt bei canAccessEmployee.
+    function canReadEmployee(empId) {
+      return isViewer() || canAccessEmployee(empId);
     }
 
     // Nur Admin/Function duerfen Struktur und Identitaet aendern.
@@ -61,21 +68,25 @@ service cloud.firestore {
       // Konto-Daten (uid, E-Mail, "wartet auf erste Anmeldung"): nur self/Vorgesetzte/Admin lesen,
       // geschrieben ausschliesslich von den Cloud Functions (Admin SDK umgeht die Regeln).
       match /private/{id} {
-        allow read: if canAccessEmployee(empId);
+        allow read: if canReadEmployee(empId);
         allow write: if false;
       }
 
       match /planWeeks/{id} {
-        allow read, write: if canAccessEmployee(empId);
+        allow read: if canReadEmployee(empId);
+        allow write: if canAccessEmployee(empId);
       }
       match /planMonthNotes/{id} {
-        allow read, write: if canAccessEmployee(empId);
+        allow read: if canReadEmployee(empId);
+        allow write: if canAccessEmployee(empId);
       }
       match /planAnnual/{id} {
-        allow read, write: if canAccessEmployee(empId);
+        allow read: if canReadEmployee(empId);
+        allow write: if canAccessEmployee(empId);
       }
       match /attendance/{id} {
-        allow read, write: if canAccessEmployee(empId);
+        allow read: if canReadEmployee(empId);
+        allow write: if canAccessEmployee(empId);
       }
       // Persoenliches Board: nur der Besitzer (auch Vorgesetzte und Admin nicht).
       match /todos/{id} {
@@ -91,7 +102,7 @@ service cloud.firestore {
       // koennen aber weder Betreuer noch Abwickler noch ancestors aendern.
       function isAbwickler(data) { return isSelf(data.get('abwicklerId', '')); }
       function abwicklerOk(data) { return !('abwicklerId' in data) || data.abwicklerId is string; }
-      allow read: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors)
+      allow read: if isViewer() || isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors)
         || isAbwickler(resource.data);
       allow create: if (isAdmin() || canAccessEmployee(request.resource.data.ownerId))
         && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors
@@ -116,7 +127,8 @@ service cloud.firestore {
     // gebucht wurde, ancestors = dessen Vorgesetzte (muss zu employees/{ownerId}.ancestors passen).
     // Nachtraeglich aenderbar sind nur Kunde, Beginn, policiert und ausbezahlt.
     match /sales/{id} {
-      allow read, delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
+      allow read: if isViewer() || isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
+      allow delete: if isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors);
       allow create: if (isAdmin() || canAccessEmployee(request.resource.data.ownerId))
         && request.resource.data.ancestors == empDoc(request.resource.data.ownerId).data.ancestors;
       allow update: if (isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors))
@@ -128,7 +140,7 @@ service cloud.firestore {
     // alle lesen mit und loesen damit den Konfettiregen aus.
     match /celebrations/{id} {
       allow read: if signedIn();
-      allow create: if signedIn()
+      allow create: if signedIn() && !isViewer()
         && request.resource.data.keys().hasOnly(['name', 'at'])
         && request.resource.data.name is string && request.resource.data.name.size() <= 80
         && request.resource.data.at is number;

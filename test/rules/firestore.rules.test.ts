@@ -151,6 +151,36 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
     })
   })
 
+  describe("Lesemodus (viewer)", () => {
+    const viewer = () => as("viewer")
+
+    it("liest alles ausser dem persönlichen Board", async () => {
+      const db = viewer()
+      await assertSucceeds(getDoc(doc(db, "employees", "m1")))
+      await assertSucceeds(getDoc(doc(db, "employees", "m1", "planWeeks", "2026-W01")))
+      await assertSucceeds(getDoc(doc(db, "employees", "m1", "private", "account")))
+      await assertSucceeds(getDoc(doc(db, "financings", "f1")))
+      await assertSucceeds(getDoc(doc(db, "sales", "s1")))
+      await assertSucceeds(getDoc(doc(db, "org", "structure")))
+      await assertSucceeds(getDoc(doc(db, "snapshots", "2026-09", "employees", "m1")))
+      await assertFails(getDoc(doc(db, "employees", "m1", "todos", "t1")))
+    })
+
+    it("schreibt nirgends", async () => {
+      const db = viewer()
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { atIst: 2 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "planWeeks", "2026-W02"), { x: 1 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "planWeeks", "2026-W01"), { x: 2 }))
+      await assertFails(updateDoc(doc(db, "financings", "f1"), { ownerId: "m1" }))
+      await assertFails(deleteDoc(doc(db, "financings", "f1")))
+      await assertFails(updateDoc(doc(db, "sales", "s1"), { kunde: "x" }))
+      await assertFails(deleteDoc(doc(db, "sales", "s1")))
+      await assertFails(updateDoc(doc(db, "org", "structure"), { tree: {} }))
+      await assertFails(setDoc(doc(db, "celebrations", "c1"), { name: "X", at: 1 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "todos", "t2"), { title: "x" }))
+    })
+  })
+
   describe("celebrations (Konfetti)", () => {
     it("Eingeloggte melden eine Buchung und lesen mit, ändern/löschen nicht, fremde Felder verboten", async () => {
       const db = as("member", "m1")

@@ -18,7 +18,7 @@ import {
 import { newRowFor } from "@/lib/calc/team"
 import { applyUnitDelta, unitBookingOps } from "@/lib/calc/verguetung"
 import type { PlanId } from "@/lib/calc/struktur"
-import type { AccountInfo } from "@/lib/calc/roles"
+import { canReadAll, type AccountInfo } from "@/lib/calc/roles"
 import { STARTER_GOAL, type DashboardDoc, type EmployeeRow, type TeamGoal } from "@/types/dashboard"
 
 export type SyncStatus = "connecting" | "connected" | "error"
@@ -45,6 +45,7 @@ interface Stored { meta: EmployeeMeta; row: EmployeeRow }
 
 export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
   const isAdmin = account.role === "admin"
+  const readsAll = canReadAll(account.role)
   const myId = account.employeeId
 
   const [stored, setStored] = useState<Record<string, Stored>>({})
@@ -71,7 +72,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
     // Alle Eingeloggten sehen alle Mitarbeiter (Dashboard/Mitarbeiterseite); bearbeiten duerfen sie nur
     // die eigenen und die darunter (firestore.rules, canEditEmployee in roles.ts).
     const unsubs: (() => void)[] = []
-    if (isAdmin || myId) {
+    if (readsAll || myId) {
       unsubs.push(onSnapshot(col, { includeMetadataChanges: true }, (snap) => {
         setStored(toMap(snap.docs))
         if (!snap.metadata.fromCache) setSyncStatus("connected")
@@ -80,7 +81,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
       setSyncStatus("connected") // Konto ohne verknüpften Mitarbeiter: nichts zu laden
     }
     return () => unsubs.forEach((u) => u())
-  }, [isAdmin, myId])
+  }, [readsAll, myId])
 
   // ---- Teamziel/Verlauf lesen (org/teamGoal, für alle Eingeloggten lesbar) ----
   useEffect(() => {

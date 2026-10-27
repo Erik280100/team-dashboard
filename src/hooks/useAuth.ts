@@ -28,6 +28,8 @@ export interface UseAuthResult extends AccountInfo {
   isAdmin: boolean
   /** Führungskraft (Claim role "lead"): sieht zusätzlich die Statistik. */
   isLead: boolean
+  /** Lesemodus (Claim role "viewer"): sieht alles, ändert nichts. */
+  isViewer: boolean
   /** Bekannt erst nachdem der erste Auth-State (inkl. Claims) empfangen wurde (verhindert Flackern). */
   ready: boolean
   signIn: (email: string, password: string) => Promise<Result>
@@ -145,11 +147,13 @@ export function useAuth(): UseAuthResult {
 
   const isAdmin = !!user && account.role === "admin"
   const isLead = !!user && account.role === "lead"
+  const isViewer = !!user && account.role === "viewer"
   return {
     user,
     ...account,
     isAdmin,
     isLead,
+    isViewer,
     isEditor: !!user,
     ready,
     signIn,

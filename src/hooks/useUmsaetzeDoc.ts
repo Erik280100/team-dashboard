@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { collection, deleteDoc, doc, onSnapshot, query, setDoc, updateDoc, where } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
 import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
-import type { AccountInfo } from "@/lib/calc/roles"
+import { canReadAll, type AccountInfo } from "@/lib/calc/roles"
 import type { UmsatzDraft } from "@/lib/calc/umsatz"
 import type { UmsatzEntry } from "@/types/dashboard"
 
@@ -38,7 +38,7 @@ export function useUmsaetzeDoc(
   account: AccountInfo = { role: "admin", employeeId: null, mustChangePassword: false },
   employees: readonly EmployeeMeta[] = [],
 ): UseUmsaetzeDocResult {
-  const isAdmin = account.role === "admin"
+  const isAdmin = canReadAll(account.role) // liest alle Buchungen (Lesemodus eingeschlossen; geschrieben wird nur per Regeln erlaubt)
   const myId = account.employeeId
   const [entries, setEntries] = useState<UmsatzEntry[]>([])
   const [byOwner, setByOwner] = useState<Record<string, StoredEntry>>({})

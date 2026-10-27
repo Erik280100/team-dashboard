@@ -17,7 +17,7 @@ import type { UmsatzDraft } from "@/lib/calc/umsatz"
 import { readPlanUnits } from "@/lib/calc/verguetung"
 import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, toISODate } from "@/lib/calc/format"
-import { canEditEmployee } from "@/lib/calc/roles"
+import { canViewEmployee } from "@/lib/calc/roles"
 import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
@@ -110,7 +110,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const accessibleEmployees = useMemo(
     () => {
       const account = { role: auth.role, employeeId: auth.employeeId, mustChangePassword: false }
-      return dashboard.employees.filter((e) => canEditEmployee(account, e.id, e.ancestors))
+      return dashboard.employees.filter((e) => canViewEmployee(account, e.id, e.ancestors))
     },
     [auth.role, auth.employeeId, dashboard.employees]
   )
@@ -130,13 +130,14 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
   // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin sieht den ganzen Baum,
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
-  const scopeId = auth.isAdmin ? null : (auth.employeeId ?? "none")
+  const seesAll = auth.isAdmin || auth.isViewer // Lesemodus sieht wie der Admin den ganzen Baum (schreiben darf nur der Admin)
+  const scopeId = seesAll ? null : (auth.employeeId ?? "none")
   const scopedTree = useMemo(() => sbScopedTree(orgChart.tree, scopeId), [orgChart.tree, scopeId])
   const financingStats = useFinancingStats()
   // Controlling: auch der Admin sieht nur den eigenen Teilbaum (sofern er einen Knoten hat).
   const controllingTree = useMemo(
-    () => sbScopedTree(orgChart.tree, auth.employeeId ?? (auth.isAdmin ? null : "none")),
-    [orgChart.tree, auth.employeeId, auth.isAdmin]
+    () => sbScopedTree(orgChart.tree, auth.employeeId ?? (seesAll ? null : "none")),
+    [orgChart.tree, auth.employeeId, seesAll]
   )
   const controllingRoster = useMemo(() => sbRoster(controllingTree), [controllingTree])
 
@@ -347,7 +348,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         onNavigate={navigateTo}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        isAdmin={auth.isAdmin}
+        isAdmin={seesAll}
         isLead={auth.isLead}
         boardAlert={boardAlert}
       />
@@ -520,7 +521,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   patchTodo={boardTodos.patchTodo}
                   moveTodo={boardTodos.moveTodo}
                   removeTodo={boardTodos.removeTodo}
-                  isAdmin={auth.isAdmin}
+                  isAdmin={seesAll}
                 />
               )}
               {section === id && id === "struktur" && (
@@ -539,8 +540,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   />
                 )
               )}
-              {section === id && id === "statistik" && (auth.isAdmin || auth.isLead) && <Statistik archive={archive} />}
-              {section === id && id === "konten" && auth.isAdmin && <Konten employees={dashboard.employees} />}
+              {section === id && id === "statistik" && (seesAll || auth.isLead) && <Statistik archive={archive} />}
+              {section === id && id === "konten" && seesAll &&<Konten employees={dashboard.employees} />}
               {section === id && id === "einstellungen" && <Einstellungen auth={auth} name={myName} avatarVersion={dashboard.employees.find((e) => e.id === auth.employeeId)?.avatarVersion} />}
             </section>
           ))}

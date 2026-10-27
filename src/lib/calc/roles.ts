@@ -1,6 +1,7 @@
 // Rollen aus den Custom Claims des Auth-Tokens (gesetzt von der Cloud Function
 // inviteUser, siehe firestore.rules). Reine Funktionen, damit testbar.
-export type Role = "admin" | "lead" | "member"
+/** "viewer" = reiner Lesemodus: sieht alle Daten und Seiten, darf nichts ändern (firestore.rules). */
+export type Role = "admin" | "lead" | "member" | "viewer"
 
 export interface AccountInfo {
   role: Role
@@ -11,7 +12,7 @@ export interface AccountInfo {
 }
 
 function isRole(v: unknown): v is Role {
-  return v === "admin" || v === "lead" || v === "member"
+  return v === "admin" || v === "lead" || v === "member" || v === "viewer"
 }
 
 /**
@@ -26,6 +27,16 @@ export function accountFromClaims(claims: Record<string, unknown> | null | undef
     employeeId: typeof employeeId === "string" && employeeId !== "" ? employeeId : null,
     mustChangePassword: claims?.mustChangePassword === true,
   }
+}
+
+/** Liest der Account alle Daten (Admin und Lesemodus)? Das Schreiben bleibt dem Admin vorbehalten. */
+export function canReadAll(role: Role): boolean {
+  return role === "admin" || role === "viewer"
+}
+
+/** Darf der Account Daten des Mitarbeiters `employeeId` sehen? (Lesemodus: alle.) */
+export function canViewEmployee(account: AccountInfo, employeeId: string, ancestors: readonly string[]): boolean {
+  return account.role === "viewer" || canEditEmployee(account, employeeId, ancestors)
 }
 
 /** Darf der Account Daten des Mitarbeiters `employeeId` bearbeiten? ancestors = IDs aller Vorgesetzten von employeeId. */

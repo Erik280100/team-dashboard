@@ -14,8 +14,9 @@ import type { AccountState, EmployeeMeta } from "@/lib/calc/employees"
 import { useAccountStates } from "@/hooks/useAccountStates"
 import type { Role } from "@/lib/calc/roles"
 
-const ROLE_LABELS: Record<Role, string> = { admin: "Admin", lead: "Führungskraft", member: "Mitarbeiter" }
-
+const ROLE_LABELS: Record<Role, string> = { admin: "Admin", lead: "Führungskraft", member: "Mitarbeiter", viewer: "Nur Lesen" }
+/** Der Lesemodus wird nicht über die Oberfläche vergeben, sondern per scripts/create-account.mjs. */
+const INVITABLE_ROLES = (Object.keys(ROLE_LABELS) as Role[]).filter((r) => r !== "viewer")
 
 function Row({ emp, account }: { emp: EmployeeMeta; account: AccountState }) {
   const [email, setEmail] = useState("")
@@ -75,7 +76,7 @@ function Row({ emp, account }: { emp: EmployeeMeta; account: AccountState }) {
             aria-label={`Rolle für ${emp.name}`} value={role} onChange={(e) => setRole(e.target.value as Role)}
             className="h-8 rounded-md border bg-background px-2 text-sm"
           >
-            {(Object.keys(ROLE_LABELS) as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+            {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
           </select>
           <Button size="sm" disabled={busy || !email.includes("@")} onClick={() => invite(false)}>
             {account.uid ? "Rolle speichern" : "Einladen"}

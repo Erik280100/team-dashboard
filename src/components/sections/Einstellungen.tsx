@@ -4,7 +4,7 @@ import type { UseAuthResult } from "@/hooks/useAuth"
 import { PasswordForm } from "@/components/sections/PasswordForm"
 import { ProfilbildCard } from "@/components/sections/ProfilbildCard"
 
-const ROLE_LABELS = { admin: "Admin", lead: "Führungskraft", member: "Mitarbeiter" } as const
+const ROLE_LABELS = { admin: "Admin", lead: "Führungskraft", member: "Mitarbeiter", viewer: "Nur Lesen" } as const
 
 export function Einstellungen({ auth, name, avatarVersion }: { auth: UseAuthResult; name?: string; avatarVersion?: number }) {
   return (
