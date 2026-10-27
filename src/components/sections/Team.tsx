@@ -89,6 +89,7 @@ export function Team({
   const [stornoreserve, setStornoreserve] = useState(false)
   const reserveRate = stornoreserve ? STORNORESERVE_RATE : 0
   const [managerFilter, setManagerFilter] = useState<string | null>(null)
+  const [directOnly, setDirectOnly] = useState(false)
 
   const roster = useMemo(() => sbRoster(orgTree), [orgTree])
   const rosterMerged = useMemo(() => mergeRosterWithRows(roster, rows), [roster, rows])
@@ -148,8 +149,11 @@ export function Team({
   )
   const list = useMemo(() => {
     const base = getMergedFilteredSorted(merged, search, filter, sort)
-    return managerNames ? base.filter((r) => managerNames.has(r.name)) : base
-  }, [merged, search, filter, sort, managerNames])
+    if (!managerNames) return base
+    // "Direkte Mitarbeiter": nur die Personen, die der gewählten Führungskraft unmittelbar unterstellt sind.
+    if (directOnly) return base.filter((r) => r.managerName === managerFilter)
+    return base.filter((r) => managerNames.has(r.name))
+  }, [merged, search, filter, sort, managerNames, directOnly, managerFilter])
   const wp = monthWeekProgress(teamGoal, now ?? new Date())
   const totals = teamTotals(list)
   const earnings = useMemo(() => computeEarnings(merged, orgPlanRates), [merged, orgPlanRates])
@@ -250,6 +254,11 @@ export function Team({
                 <span className="ml-1 opacity-70">({SB_LEAD_ROLE_ABBR[m.role] ?? m.role})</span>
               </Pill>
             ))}
+            {managerFilter !== null && (
+              <Pill active={directOnly} onClick={() => setDirectOnly((cur) => !cur)} className="ml-2 px-3 py-1 text-xs">
+                Direkte Mitarbeiter
+              </Pill>
+            )}
           </div>
         )}
       </div>
