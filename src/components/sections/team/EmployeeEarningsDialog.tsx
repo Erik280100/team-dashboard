@@ -9,13 +9,11 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { fmtEur } from "@/lib/calc/format"
 import { PLAN_IDS, PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
 import { stornoreserveAmount, type EmployeeEarnings } from "@/lib/calc/verguetung"
 import { cn } from "@/lib/utils"
 
-function fmtEur(n: number): string {
-  return n.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
 function fmtEh(n: number): string {
   return n.toLocaleString("de-AT", { maximumFractionDigits: 2 })
 }

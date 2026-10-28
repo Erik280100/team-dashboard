@@ -7,6 +7,7 @@ import { httpsCallable } from "firebase/functions"
 import { functions, orgDocRef } from "@/lib/firebase"
 import { sbAll, sbFind, withDefaultPlanRates } from "@/lib/calc/struktur"
 import { diffFields, toUpdateArgs } from "@/lib/calc/fieldDiff"
+import { useConfirm } from "@/hooks/useConfirm"
 import type { OrgChartDoc } from "@/types/dashboard"
 
 /** Platzhalter bis der Cloud-Stand da ist — bewusst ohne Personen (kein Default-Baum). */
@@ -36,6 +37,7 @@ export function subtreePayload(doc: OrgChartDoc, myNodeId: string) {
  * unterhalb ihres eigenen Knotens (`myNodeId` = Mitarbeiter-ID = Knoten-ID).
  */
 export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null): UseOrgChartDocResult {
+  const confirm = useConfirm()
   const [doc, setDocState] = useState<OrgChartDoc>(emptyOrgChart)
   const cloudReady = useRef(false)
   const latest = useRef(doc)
@@ -100,11 +102,11 @@ export function useOrgChartDoc(isAdmin = false, myNodeId: string | null = null):
     if (!myNodeId || !functions) return
     httpsCallable(functions, "updateSubtree")(subtreePayload(next, myNodeId)).catch(async (err) => {
       console.warn("Strukturbaum: Änderung abgelehnt", err)
-      alert("Die Änderung konnte nicht gespeichert werden: " + (err instanceof Error ? err.message : String(err)))
+      void confirm("Die Änderung konnte nicht gespeichert werden: " + (err instanceof Error ? err.message : String(err)), { info: true })
       // Optimistische Anzeige zurücksetzen auf den Stand der Cloud.
       try { applyServerData((await getDoc(docRef)).data()) } catch { /* noop */ }
     })
-  }, [isAdmin, myNodeId])
+  }, [isAdmin, myNodeId, confirm])
 
   return { ...doc, saveOrgChart }
 }

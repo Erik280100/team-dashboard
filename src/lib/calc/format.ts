@@ -71,6 +71,11 @@ export function fmtEur(n: number | undefined | null): string {
   return Number(n || 0).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+/** Euro-Betrag mit Währungszeichen, ohne Nachkommastellen (de-AT), z. B. für Kreditsummen. */
+export function fmtEurRound(n: number | undefined | null): string {
+  return Number(n || 0).toLocaleString("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
+}
+
 export function pctOf(r: Pick<EmployeeRow, "soll" | "ist">): number {
   return r.soll > 0 ? Math.round((r.ist / r.soll) * 100) : 0
 }

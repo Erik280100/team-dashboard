@@ -540,8 +540,8 @@ export function StrukturBaum({
     if (!dialog) return
     if (dialog.kind === "add-child") {
       const name = dlgName.trim()
-      if (!name) { alert("Bitte einen Namen eingeben."); return }
-      if (!dlgStatus) { alert("Bitte einen Status wählen."); return }
+      if (!name) { void confirm("Bitte einen Namen eingeben.", { info: true }); return }
+      if (!dlgStatus) { void confirm("Bitte einen Status wählen.", { info: true }); return }
       const next = deepClone(doc.tree)
       const parent = sbFind(next, dialog.parentId)
       if (parent) {
@@ -585,7 +585,7 @@ export function StrukturBaum({
   function saveFields() {
     if (!selectedId || !canEditNode(selectedId)) return
     const name = nameDraft.trim()
-    if (!name) { alert("Name darf nicht leer sein."); return }
+    if (!name) { void confirm("Name darf nicht leer sein.", { info: true }); return }
     const next = deepClone(doc.tree)
     const n = sbFind(next, selectedId)
     if (n) {
@@ -798,8 +798,15 @@ export function StrukturBaum({
                   title={promotionTooltip(promotion)}
                   onPointerDown={(e) => onNodePointerDown(e, n)}
                   onClick={() => onNodeClick(n)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${n.name}${n.role ? `, ${n.role}` : ""}`}
+                  onKeyDown={(e) => {
+                    // Nur der Knoten selbst, nicht die Schaltflächen darin (z. B. Ein-/Ausklappen).
+                    if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onNodeClick(n) }
+                  }}
                   className={cn(
-                    "absolute flex cursor-pointer select-none flex-col items-center justify-center rounded-lg border px-2 text-center shadow-sm transition-shadow hover:shadow-md",
+                    "absolute flex cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-ring flex-col items-center justify-center rounded-lg border px-2 text-center shadow-sm transition-shadow hover:shadow-md",
                     isDragging && "opacity-40",
                     isDropTarget && "ring-2 ring-primary",
                     linkMode && linkSrc === n.id && "ring-2 ring-amber-500"

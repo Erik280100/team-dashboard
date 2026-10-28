@@ -21,32 +21,8 @@ import {
   CY_KOEST_SATZ_OPTIONEN, DEFAULTS_ZYPERN, berechneDreiWegeSchwellenreihe, berechneZypernGruendungsVergleich,
   berechneZypernLtd, type ZypernSpezifischeEingabe,
 } from "@/lib/calc/zypernLtd"
-import { Feld, Regler, ZeilePos, INPUT_CLASS } from "@/components/sections/rechner/fields"
+import { Feld, Regler, ZeilePos, INPUT_CLASS, PillGroup } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
-
-function PillGroup<T extends string>({
-  options, value, onChange,
-}: {
-  options: { value: T; label: string }[]
-  value: T
-  onChange: (v: T) => void
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button key={o.value} type="button" onClick={() => onChange(o.value)}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs font-bold transition-colors",
-            value === o.value
-              ? "border-transparent bg-primary text-primary-foreground"
-              : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-          )}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 const MIETE_PRESETS: { value: string; label: string }[] = [
   { value: "750", label: "Nikosia" },

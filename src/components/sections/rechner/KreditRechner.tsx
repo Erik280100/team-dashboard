@@ -13,33 +13,10 @@ import {
   berechneTilgungsplan, effektivzinsPct, kreditFormatEUR, kreditFormatPct, type KreditSaetze,
 } from "@/lib/calc/kredit"
 import { berechneTilgungstraeger } from "@/lib/calc/tilgungstraeger"
+import { PillGroup } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 const PERF_PRESETS = [3, 6, 9]
-
-function PillGroup<T extends string>({
-  options, value, onChange,
-}: {
-  options: { value: T; label: string }[]
-  value: T
-  onChange: (v: T) => void
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button key={o.value} type="button" onClick={() => onChange(o.value)}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs font-bold transition-colors",
-            value === o.value
-              ? "border-transparent bg-primary text-primary-foreground"
-              : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-          )}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
 

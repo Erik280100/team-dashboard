@@ -10,35 +10,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { KAUFPREIS_MINDESTGRENZE, simuliereImmoPortfolio, type ImmoPortfolioEingabe } from "@/lib/calc/immoPortfolio"
+import { PillGroup } from "@/components/sections/rechner/fields"
 
 const WERTZUWACHS_PRESETS = [2, 3, 4]
 const UMSCHULDUNG_PRESETS = [3, 5, 7]
 const LAUFZEIT_PRESETS = [25, 30, 35]
 const GRENZSTEUER_PRESETS = [30, 40, 48]
-
-function PillGroup<T extends string>({
-  options, value, onChange,
-}: {
-  options: { value: T; label: string }[]
-  value: T
-  onChange: (v: T) => void
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button key={o.value} type="button" onClick={() => onChange(o.value)}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs font-bold transition-colors",
-            value === o.value
-              ? "border-transparent bg-primary text-primary-foreground"
-              : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-          )}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
 

@@ -9,37 +9,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { berechneInvestVsWohnung, type InvestVsWohnungEingabe } from "@/lib/calc/investVsWohnung"
-import { Feld, ZeilePos, INPUT_CLASS } from "@/components/sections/rechner/fields"
+import { Feld, ZeilePos, INPUT_CLASS, PillGroup } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 const DEPOT_RENDITE_PRESETS = [5, 6, 7]
 const WERTSTEIGERUNG_PRESETS = [2, 3, 4]
 const LAUFZEIT_PRESETS = [25, 30, 35]
 const GRENZSTEUER_PRESETS = [30, 40, 48]
-
-function PillGroup<T extends string>({
-  options, value, onChange,
-}: {
-  options: { value: T; label: string }[]
-  value: T
-  onChange: (v: T) => void
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {options.map((o) => (
-        <button key={o.value} type="button" onClick={() => onChange(o.value)}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs font-bold transition-colors",
-            value === o.value
-              ? "border-transparent bg-primary text-primary-foreground"
-              : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-          )}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 export function InvestVsWohnungRechner() {
   // Eigenmittel & Zeitraum

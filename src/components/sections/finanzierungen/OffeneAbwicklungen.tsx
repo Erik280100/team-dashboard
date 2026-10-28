@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { DARK_CARD, DARK_INPUT, DARK_OPTION, DARK_SELECT, DARK_TABLE, KpiTile, MintBar, SectionHero } from "@/components/ui/dark"
-import { initials } from "@/lib/calc/format"
+import { fmtEurRound as fmtEur, initials } from "@/lib/calc/format"
 import { relevantGroups, relevantItemIds, type Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
 import type { RosterEntry } from "@/lib/calc/struktur"
@@ -64,10 +64,6 @@ function StatusPill({
       <Check className="size-4" aria-hidden="true" />
     </button>
   )
-}
-
-function fmtEur(n: number): string {
-  return Number(n || 0).toLocaleString("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
 }
 
 function NewCaseForm({

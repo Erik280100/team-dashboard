@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { callableErrorText } from "../../src/lib/callableError"
 import { statsRelevant } from "../../functions/src/financingStats"
 import { isValidId } from "../../functions/src/subtree"
+import { fmtEurRound } from "../../src/lib/calc/format"
 
 describe("callableErrorText", () => {
   it("nimmt die Meldung des Fehlers", () => {
@@ -37,5 +38,19 @@ describe("statsRelevant", () => {
   it("reduziert einen Fall auf die Felder der Gesamtzahlen", () => {
     expect(statsRelevant({ archived: false, betrag: "1500", art: "anlegerwohnung" })).toEqual({ open: true, betrag: 1500, anlegerwohnung: true })
     expect(statsRelevant({ archived: true, betrag: "kein Betrag" })).toEqual({ open: false, betrag: 0, anlegerwohnung: false })
+  })
+})
+
+describe("fmtEurRound", () => {
+  it("formatiert Euro ohne Nachkommastellen im österreichischen Format", () => {
+    const s = fmtEurRound(1500.4)
+    expect(s).toContain("€")
+    expect(s).toContain("1.500")
+    expect(s).not.toContain(",")
+  })
+
+  it("macht aus leeren Werten 0", () => {
+    expect(fmtEurRound(null)).toContain("0")
+    expect(fmtEurRound(undefined)).toContain("0")
   })
 })

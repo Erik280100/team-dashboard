@@ -1,4 +1,4 @@
-// Bestätigungsdialog — Äquivalent zu confirmDialog() aus der früheren Einzeldatei-App
+// Bestätigungs- und Hinweisdialog
 // (Promise-basiert: await confirm("Text …") -> boolean). Fokus-Trap, Escape-to-cancel
 // und Klick-außerhalb-schließt-Verhalten übernimmt Radix' AlertDialog von selbst.
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react"
@@ -7,16 +7,19 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-type ConfirmFn = (message: string) => Promise<boolean>
+/** `info: true` zeigt nur einen Hinweis mit OK (ersetzt alert()); das Ergebnis ist dann immer true. */
+type ConfirmFn = (message: string, options?: { info?: boolean }) => Promise<boolean>
 
 const ConfirmContext = createContext<ConfirmFn | null>(null)
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState<string | null>(null)
+  const [info, setInfo] = useState(false)
   const resolveRef = useRef<((v: boolean) => void) | null>(null)
 
-  const confirm = useCallback<ConfirmFn>((msg) => {
+  const confirm = useCallback<ConfirmFn>((msg, options) => {
     setMessage(msg)
+    setInfo(options?.info === true)
     return new Promise<boolean>((resolve) => {
       resolveRef.current = resolve
     })
@@ -34,12 +37,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       <AlertDialog open={message !== null} onOpenChange={(open) => { if (!open) settle(false) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Bestätigung erforderlich</AlertDialogTitle>
+            <AlertDialogTitle>{info ? "Hinweis" : "Bestätigung erforderlich"}</AlertDialogTitle>
             <AlertDialogDescription>{message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => settle(false)}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={() => settle(true)}>Bestätigen</AlertDialogAction>
+            {!info && <AlertDialogCancel onClick={() => settle(false)}>Abbrechen</AlertDialogCancel>}
+            <AlertDialogAction onClick={() => settle(true)}>{info ? "OK" : "Bestätigen"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -47,7 +50,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   )
 }
 
-/** await confirm("Text …") -> true/false, wie die Legacy-confirmDialog(). */
+/** await confirm("Text …") -> true/false; confirm("Text", { info: true }) zeigt nur einen Hinweis. */
 export function useConfirm(): ConfirmFn {
   const ctx = useContext(ConfirmContext)
   if (!ctx) throw new Error("useConfirm muss innerhalb von <ConfirmProvider> verwendet werden.")

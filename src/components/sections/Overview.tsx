@@ -11,7 +11,7 @@ import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "l
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_TICK } from "@/lib/chartSetup"
-import { fmt as fmtDecimal, formatISODateDE, toISODate } from "@/lib/calc/format"
+import { fmt as fmtDecimal, fmtEurRound as fmtEur, formatISODateDE, toISODate } from "@/lib/calc/format"
 import { readPlanUnits } from "@/lib/calc/verguetung"
 import { monthKeyOf, monthLabel } from "@/lib/calc/archive"
 import type { ArchiveIndexEntry } from "@/types/archive"
@@ -28,10 +28,6 @@ import { cn } from "@/lib/utils"
 /** Auf dem Dashboard nur ganze Zahlen. */
 function fmt(n: number | undefined | null): string {
   return fmtDecimal(Math.round(Number(n) || 0))
-}
-
-function fmtEur(n: number): string {
-  return Number(n || 0).toLocaleString("de-AT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
 }
 
 function DarkCardHeader({ title, sub }: { title: string; sub: string }) {

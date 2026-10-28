@@ -339,7 +339,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
       closedBy: auth.user?.email ?? null,
       commitReset: dashboard.saveAll,
     })
-    if (!result.ok) alert(result.message)
+    if (!result.ok) void confirm(result.message, { info: true })
   }
 
   return (
