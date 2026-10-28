@@ -181,6 +181,115 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
     })
   })
 
+  describe("Lesemodus mit verknüpftem Mitarbeiter", () => {
+    const linked = () => as("viewer", "m1")
+
+    it("hat keine eigene Identität: schreibt weder Stammdaten noch Planung, Todos, Finanzierungen oder Umsätze", async () => {
+      const db = linked()
+      await assertSucceeds(getDoc(doc(db, "employees", "m2")))
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { atIst: 9 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "planWeeks", "2026-W09"), { x: 1 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "planMonthNotes", "2026-10"), { x: 1 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "planAnnual", "2026"), { x: 1 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "attendance", "2026-10"), { x: 1 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "todos", "t9"), { title: "x" }))
+      await assertFails(setDoc(doc(db, "financings", "f9"), { ownerId: "m1", ancestors: ["lead", "boss"] }))
+      await assertFails(setDoc(doc(db, "sales", "s9"), { ownerId: "m1", ancestors: ["lead", "boss"] }))
+    })
+    it("ein Viewer mit Mitarbeiter, der Vorgesetzter wäre, schreibt ebenfalls nicht", async () => {
+      const db = as("viewer", "lead")
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { atIst: 9 }))
+      await assertFails(setDoc(doc(db, "employees", "m1", "planWeeks", "2026-W09"), { x: 1 }))
+      await assertFails(deleteDoc(doc(db, "financings", "f1")))
+    })
+  })
+
+  describe("Mitarbeiter-Zahlen und Karrierezähler", () => {
+    const seed = (data: Record<string, unknown>) =>
+      env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), "employees", "m1"), { ...EMP.m1, ...data }))
+
+    it("Zahlenfelder müssen Zahlen in plausiblem Bereich sein", async () => {
+      const db = as("member", "m1")
+      await assertSucceeds(updateDoc(doc(db, "employees", "m1"), { ist: 12, atIst: 3, ehByPlan: { insurance: 12 } }))
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { ist: "viel" }))
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { atIst: 1e12 }))
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { ehByPlan: { insurance: "x" } }))
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { ehByPlan: { unbekannt: 1 } }))
+      await assertFails(updateDoc(doc(db, "employees", "m1"), { careerUnits: { insurance: 1, extra: 2 } }))
+    })
+    it("die Person selbst kann den Karrierezähler nur erhöhen, Vorgesetzte und Admin auch senken", async () => {
+      await seed({ careerUnits: { insurance: 500, credit: 100 } })
+      const self = as("member", "m1")
+      await assertSucceeds(updateDoc(doc(self, "employees", "m1"), { careerUnits: { insurance: 600, credit: 100 } }))
+      await assertFails(updateDoc(doc(self, "employees", "m1"), { careerUnits: { insurance: 100, credit: 100 } }))
+      await assertFails(updateDoc(doc(self, "employees", "m1"), { careerUnits: { insurance: 600 } })) // credit würde auf 0 fallen
+      await assertSucceeds(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { careerUnits: { insurance: 100, credit: 100 } }))
+      await assertSucceeds(updateDoc(doc(as("admin"), "employees", "m1"), { careerUnits: { insurance: 0 } }))
+    })
+  })
+
+  describe("entfernte Mitarbeiter (active=false)", () => {
+    it("verlieren trotz gültigem Token jeden Zugriff", async () => {
+      await env.withSecurityRulesDisabled(async (c) =>
+        setDoc(doc(c.firestore(), "employees", "m2"), { ...EMP.m2, active: false, managerId: null, ancestors: [] }))
+      const db = as("member", "m2")
+      await assertFails(getDoc(doc(db, "employees", "m1")))
+      await assertFails(getDoc(doc(db, "org", "structure")))
+      await assertFails(updateDoc(doc(db, "employees", "m2"), { atIst: 5 }))
+      await assertFails(setDoc(doc(db, "celebrations", "cx"), { name: "M2", at: 1 }))
+    })
+    it("ein Admin ohne Mitarbeiter-Verknüpfung ist davon nicht betroffen", async () => {
+      await assertSucceeds(getDoc(doc(as("admin"), "org", "structure")))
+    })
+  })
+
+  describe("celebrations (Konfetti)", () => {
+    it("Name höchstens 80 Zeichen, Zeitpunkt muss eine Zahl sein", async () => {
+      const db = as("member", "m1")
+      await assertSucceeds(setDoc(doc(db, "celebrations", "c80"), { name: "x".repeat(80), at: 1 }))
+      await assertFails(setDoc(doc(db, "celebrations", "c81"), { name: "x".repeat(81), at: 1 }))
+      await assertFails(setDoc(doc(db, "celebrations", "cs"), { name: "Mia", at: "heute" }))
+    })
+  })
+
+  describe("org/teamGoal und archiveIndex", () => {
+    it("lassen sich nicht löschen und neu anlegen (Umgehung der Rückschritt-Sperre)", async () => {
+      await env.withSecurityRulesDisabled(async (c) => {
+        await setDoc(doc(c.firestore(), "org", "teamGoal"), { teamGoal: { periodStart: "2026-10-01" }, history: [1, 2] })
+        await setDoc(doc(c.firestore(), "org", "archiveIndex"), { months: ["2026-09"] })
+      })
+      const admin = as("admin")
+      await assertFails(deleteDoc(doc(admin, "org", "teamGoal")))
+      await assertFails(deleteDoc(doc(admin, "org", "archiveIndex")))
+    })
+  })
+
+  describe("Finanzierungen: Abwickler", () => {
+    it("abwicklerId muss leer oder ein vorhandener Mitarbeiter sein", async () => {
+      const db = as("lead", "lead")
+      await assertSucceeds(updateDoc(doc(db, "financings", "f1"), { abwicklerId: "m2" }))
+      await assertSucceeds(updateDoc(doc(db, "financings", "f1"), { abwicklerId: "" }))
+      await assertFails(updateDoc(doc(db, "financings", "f1"), { abwicklerId: "gibt-es-nicht" }))
+      await assertFails(updateDoc(doc(db, "financings", "f1"), { abwicklerId: "a/b" }))
+      await assertFails(updateDoc(doc(db, "financings", "f1"), { abwicklerId: 42 }))
+    })
+  })
+
+  describe("planMonthNotes, planAnnual, attendance", () => {
+    it("Person und Vorgesetzte lesen und schreiben, Kollegen und Fremde nicht", async () => {
+      for (const sub of ["planMonthNotes", "planAnnual", "attendance"]) {
+        await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), "employees", "m1", sub, "d1"), { x: 1 }))
+        await assertSucceeds(getDoc(doc(as("member", "m1"), "employees", "m1", sub, "d1")))
+        await assertSucceeds(setDoc(doc(as("member", "m1"), "employees", "m1", sub, "d2"), { x: 2 }))
+        await assertSucceeds(setDoc(doc(as("lead", "lead"), "employees", "m1", sub, "d3"), { x: 3 }))
+        await assertSucceeds(getDoc(doc(as("viewer"), "employees", "m1", sub, "d1")))
+        await assertFails(getDoc(doc(as("member", "m2"), "employees", "m1", sub, "d1")))
+        await assertFails(setDoc(doc(as("member", "m2"), "employees", "m1", sub, "d4"), { x: 4 }))
+        await assertFails(setDoc(doc(as("viewer"), "employees", "m1", sub, "d5"), { x: 5 }))
+      }
+    })
+  })
+
   describe("celebrations (Konfetti)", () => {
     it("Eingeloggte melden eine Buchung und lesen mit, ändern/löschen nicht, fremde Felder verboten", async () => {
       const db = as("member", "m1")

@@ -25,6 +25,7 @@ const fixedPassword = args.password && args.password !== "true" ? args.password 
 const PASSWORD = fixedPassword ?? Array.from({ length: 12 }, () => CHARS[randomInt(CHARS.length)]).join("") // wie generatePassword in functions/src/index.ts
 const email = (args.email ?? "").trim()
 if (!email.includes("@")) { console.error("Fehlt: --email=<mail>"); process.exit(1) }
+if (args.employee && args.role === "viewer") { console.error("Der Lesemodus (viewer) bekommt keine Mitarbeiter-Verknüpfung: --employee weglassen."); process.exit(1) }
 if (!args.employee && args.role !== "admin" && args.role !== "viewer") { console.error("Fehlt: --employee=<knoten-id> (oder --role=admin|viewer ohne Verknüpfung)"); process.exit(1) }
 
 initializeApp({ credential: applicationDefault(), projectId: "finova-team-dashboard" })

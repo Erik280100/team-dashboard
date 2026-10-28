@@ -4,6 +4,7 @@ import { randomInt } from "node:crypto"
 import { initializeApp } from "firebase-admin/app"
 import { getAuth, type UserRecord } from "firebase-admin/auth"
 import { FieldValue, getFirestore, type DocumentSnapshot, type WriteBatch } from "firebase-admin/firestore"
+import { setGlobalOptions } from "firebase-functions/v2"
 import { HttpsError, onCall } from "firebase-functions/v2/https"
 import { onDocumentWritten } from "firebase-functions/v2/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
@@ -16,11 +17,20 @@ initializeApp()
 const db = getFirestore()
 const REGION = "europe-west1" // muss zur Client-Konfiguration passen (src/lib/firebase.ts)
 
-type Role = "admin" | "lead" | "member"
-const isRole = (v: unknown): v is Role => v === "admin" || v === "lead" || v === "member"
+// Ohne Obergrenze skaliert ein Ansturm auf die Callables unbegrenzt (und jeder updateSubtree-Aufruf liest alle Mitarbeiter).
+setGlobalOptions({ region: REGION, maxInstances: 10 })
+
+type Role = "admin" | "lead" | "member" | "viewer"
+const isRole = (v: unknown): v is Role => v === "admin" || v === "lead" || v === "member" || v === "viewer"
 
 function requireAdmin(token: Record<string, unknown> | undefined) {
   if (token?.role !== "admin") throw new HttpsError("permission-denied", "Nur für Admins.")
+  if (token.mustChangePassword === true) throw new HttpsError("permission-denied", "Bitte zuerst das Passwort ändern.")
+}
+
+/** Der Lesemodus darf nichts ändern: Konten- und Strukturfunktionen sind ihm auch mit verknüpftem Mitarbeiter verschlossen. */
+function requireWriter(token: Record<string, unknown>) {
+  if (token.role === "viewer") throw new HttpsError("permission-denied", "Im Lesemodus sind keine Änderungen möglich.")
 }
 
 /** IDs landen in Dokumentpfaden (employees/{id}) — nur das erlaubte Muster zulassen (verhindert Pfad-Einschleusung). */
@@ -70,7 +80,7 @@ export const inviteUser = onCall({ region: REGION }, async (req) => {
   }
   const email = (rawEmail ?? "").trim()
   if (!email.includes("@") || !rawId || !isRole(role)) {
-    throw new HttpsError("invalid-argument", "email, employeeId und role (admin|lead|member) sind nötig.")
+    throw new HttpsError("invalid-argument", "email, employeeId und role (admin|lead|member|viewer) sind nötig.")
   }
   const employeeId = requireValidId(rawId)
 
@@ -133,6 +143,7 @@ export const createAccount = onCall({ region: REGION }, async (req) => {
   const token = req.auth?.token
   if (!token) throw new HttpsError("unauthenticated", "Bitte anmelden.")
   if (token.mustChangePassword === true) throw new HttpsError("permission-denied", "Bitte zuerst das Passwort ändern.")
+  requireWriter(token)
   const { employeeId: rawId, email: rawEmail } = (req.data ?? {}) as { employeeId?: string; email?: string }
   const email = (rawEmail ?? "").trim()
   if (!rawId || !email.includes("@")) {
@@ -197,20 +208,26 @@ export const setInitialPassword = onCall({ region: REGION }, async (req) => {
   return { ok: true }
 })
 
-/** Konto sperren (Admin): Login wird deaktiviert, Daten bleiben erhalten. */
-export const disableUser = onCall({ region: REGION }, async (req) => {
-  requireAdmin(req.auth?.token)
-  const employeeId = requireValidId((req.data as { employeeId?: unknown } | undefined)?.employeeId)
+/** Login sperren und laufende Sitzungen beenden; false, wenn kein Konto verknüpft ist. Daten bleiben erhalten. */
+async function disableAccount(employeeId: string): Promise<boolean> {
   const uid = (await accountRef(employeeId).get()).get("uid") as string | null | undefined
-  if (!uid) throw new HttpsError("not-found", "Kein Konto verknüpft.")
+  if (!uid) return false
   await getAuth().updateUser(uid, { disabled: true })
   await getAuth().revokeRefreshTokens(uid)
+  return true
+}
+
+/** Konto sperren (Admin). */
+export const disableUser = onCall(async (req) => {
+  requireAdmin(req.auth?.token)
+  const employeeId = requireValidId((req.data as { employeeId?: unknown } | undefined)?.employeeId)
+  if (!(await disableAccount(employeeId))) throw new HttpsError("not-found", "Kein Konto verknüpft.")
   return { ok: true }
 })
 
 /**
  * Strukturbaum geändert -> employees/{id} (name, role, managerId, ancestors) nachziehen,
- * fehlende Mitarbeiter anlegen, entfernte deaktivieren (Daten bleiben; Login sperrt nur der Admin ueber disableUser),
+ * fehlende Mitarbeiter anlegen, entfernte deaktivieren (Daten bleiben, der Login wird gesperrt; Wiederfreigabe: inviteUser mit resetPassword),
  * ancestors der Finanzierungsfälle aktualisieren. Geschrieben wird nur, was sich wirklich geändert hat
  * (jede Änderung an einem Mitarbeiter-Dokument kostet bei jedem offenen Dashboard einen Lesezugriff).
  */
@@ -251,8 +268,10 @@ export const onStructureChange = onDocumentWritten({ document: "org/structure", 
       )
     }
   }
+  const removed: string[] = []
   for (const d of existing.docs) {
     if (byId.has(d.id)) continue
+    if (d.get("active") !== false) removed.push(d.id)
     if (d.get("active") !== false || d.get("managerId") != null || (d.get("ancestors") ?? []).length > 0) {
       op((b) => b.update(d.ref, { active: false, managerId: null, ancestors: [] }))
     }
@@ -268,6 +287,17 @@ export const onStructureChange = onDocumentWritten({ document: "org/structure", 
   batches.push(batch)
   for (const b of batches) await b.commit()
 
+  // Entfernte Personen verlieren auch den Login (die Regeln sperren sie über active=false ohnehin sofort).
+  // Admin-Konten bleiben unberührt, damit ein versehentliches Umhängen im Baum nicht alle aussperrt.
+  for (const id of removed) {
+    try {
+      const uid = (await accountRef(id).get()).get("uid") as string | undefined
+      if (uid && (await getAuth().getUser(uid)).customClaims?.role === "admin") continue
+      await disableAccount(id)
+    } catch (err) {
+      console.error(`Login von ${id} konnte nicht gesperrt werden`, err)
+    }
+  }
 })
 
 function sameStructure(doc: DocumentSnapshot, s: { name: string; role: string; managerId: string | null; ancestors: string[]; active: boolean }) {
@@ -286,6 +316,7 @@ export const updateSubtree = onCall({ region: REGION }, async (req) => {
   const token = req.auth?.token
   if (!token) throw new HttpsError("unauthenticated", "Bitte anmelden.")
   if (token.mustChangePassword === true) throw new HttpsError("permission-denied", "Bitte zuerst das Passwort ändern.")
+  requireWriter(token)
   const employeeId = token.employeeId
   if (typeof employeeId !== "string" || !employeeId) {
     throw new HttpsError("permission-denied", "Dein Konto ist mit keinem Mitarbeiter verknüpft.")

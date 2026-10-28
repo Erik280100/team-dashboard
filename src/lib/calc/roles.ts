@@ -42,6 +42,6 @@ export function canViewEmployee(account: AccountInfo, employeeId: string, ancest
 /** Darf der Account Daten des Mitarbeiters `employeeId` bearbeiten? ancestors = IDs aller Vorgesetzten von employeeId. */
 export function canEditEmployee(account: AccountInfo, employeeId: string, ancestors: readonly string[]): boolean {
   if (account.role === "admin") return true
-  if (!account.employeeId) return false
+  if (account.role === "viewer" || !account.employeeId) return false
   return account.employeeId === employeeId || ancestors.includes(account.employeeId)
 }

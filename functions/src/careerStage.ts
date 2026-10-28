@@ -43,7 +43,8 @@ export const onCareerStageChange = onDocumentWritten({ document: "employees/{id}
 
 /** Einmaliger Abgleich aller Trainees (Admin), z. B. beim Ausrollen: setzt Zähler und Rollen nach (nur aufwärts). */
 export const reconcileCareerStages = onCall({ region: REGION, timeoutSeconds: 300 }, async (req) => {
-  if (req.auth?.token?.role !== "admin") throw new HttpsError("permission-denied", "Nur für Admins.")
+  const token = req.auth?.token
+  if (token?.role !== "admin" || token.mustChangePassword === true) throw new HttpsError("permission-denied", "Nur für Admins.")
   const db = getFirestore()
   const shared = loadShared()
   const docs = (await db.collection("employees").get()).docs

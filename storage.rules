@@ -1,16 +1,20 @@
 rules_version = '2';
 
 // Profilbilder: avatars/{employeeId}.webp. Lesen duerfen alle Eingeloggten (Rolle per Claim, wie in firestore.rules),
-// schreiben nur die Person selbst (Claim employeeId) oder ein Admin; klein (< 200 KB) und nur Bilder.
+// schreiben nur die Person selbst (Claim employeeId) oder ein Admin; klein (< 200 KB) und nur WebP
+// (der Client wandelt immer in image/webp um; SVG & Co. waeren beim direkten Aufruf ein XSS-Risiko).
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() {
       return request.auth != null
-        && request.auth.token.get('role', '') in ['admin', 'lead', 'member']
+        && request.auth.token.get('role', '') in ['admin', 'lead', 'member', 'viewer']
         && !request.auth.token.get('mustChangePassword', false);
     }
+    // Nur Konten mit eigener Identitaet (nicht der Lesemodus) und nur unter dem eigenen Dateinamen; auch Admins nur {id}.webp.
     function mayWrite(file) {
       return signedIn()
+        && request.auth.token.role != 'viewer'
+        && file.matches('[A-Za-z0-9_-]{1,64}[.]webp')
         && (request.auth.token.role == 'admin'
             || (request.auth.token.get('employeeId', '') != '' && file == request.auth.token.employeeId + '.webp'));
     }
@@ -19,7 +23,7 @@ service firebase.storage {
       allow read: if signedIn();
       allow create, update: if mayWrite(file)
         && request.resource.size < 200 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && request.resource.contentType == 'image/webp';
       allow delete: if mayWrite(file);
     }
   }

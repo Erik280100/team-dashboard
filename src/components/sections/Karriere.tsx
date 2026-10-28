@@ -1,5 +1,6 @@
 // Karrierepläne: Die Pläne liegen in org/careerPlans (siehe useCareerPlansDoc), der Zugang ist der Login.
 import { useState } from "react"
+import DOMPurify from "dompurify"
 import { Card, CardContent } from "@/components/ui/card"
 import { PillTabs } from "@/components/ui/dark"
 import { useCareerPlansDoc } from "@/hooks/useCareerPlansDoc"
@@ -109,7 +110,7 @@ function KarrierePlaene() {
         <CardContent>
           <div
             className="career-plan career-tiles"
-            dangerouslySetInnerHTML={{ __html: enhanceTables(enhanceStages(plan.html)) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(enhanceTables(enhanceStages(plan.html))) }}
           />
         </CardContent>
       </Card>

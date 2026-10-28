@@ -61,6 +61,42 @@ service cloud.firestore {
         || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['bonus']);
     }
 
+    // Plausibilitaet der Zahlen, die Mitarbeiter und Vorgesetzte selbst schreiben (Admin und Functions sind frei).
+    function num(v) { return v is number && v > -10000000 && v < 10000000; }
+    function numOrAbsent(d, k) { return !(k in d) || num(d[k]); }
+    function validCareerUnits(d) {
+      return !('careerUnits' in d) || (d.careerUnits is map
+        && d.careerUnits.keys().hasOnly(['insurance', 'investment', 'credit', 'realestate'])
+        && num(d.careerUnits.get('insurance', 0)) && num(d.careerUnits.get('investment', 0))
+        && num(d.careerUnits.get('credit', 0)) && num(d.careerUnits.get('realestate', 0)));
+    }
+    function validEhByPlan(d) {
+      return !('ehByPlan' in d) || (d.ehByPlan is map
+        && d.ehByPlan.keys().hasOnly(['insurance', 'investment', 'investmentVb', 'credit', 'realestate'])
+        && num(d.ehByPlan.get('insurance', 0)) && num(d.ehByPlan.get('investment', 0)) && num(d.ehByPlan.get('investmentVb', 0))
+        && num(d.ehByPlan.get('credit', 0)) && num(d.ehByPlan.get('realestate', 0)));
+    }
+    function validEmployeeData(d) {
+      return numOrAbsent(d, 'soll') && numOrAbsent(d, 'ist')
+        && numOrAbsent(d, 'at') && numOrAbsent(d, 'bt') && numOrAbsent(d, 'et')
+        && numOrAbsent(d, 'atPlan') && numOrAbsent(d, 'atIst') && numOrAbsent(d, 'btPlan') && numOrAbsent(d, 'btIst')
+        && numOrAbsent(d, 'stPlan') && numOrAbsent(d, 'stIst') && numOrAbsent(d, 'etPlan') && numOrAbsent(d, 'etIst')
+        && numOrAbsent(d, 'bonus')
+        && validCareerUnits(d) && validEhByPlan(d)
+        && (!('vbByAbwickler' in d) || d.vbByAbwickler is map)
+        && (!('joinDate' in d) || (d.joinDate is string && d.joinDate.size() <= 10))
+        && (!('isNew' in d) || d.isNew is bool);
+    }
+    // Der Karrierezaehler (loest Stufenaufstiege und damit hoehere Saetze aus) darf bei der Person selbst nur steigen;
+    // zuruecksetzen koennen ihn Vorgesetzte und Admin (Storno/Korrektur).
+    function careerNotLoweredBySelf(empId) {
+      return !isSelf(empId)
+        || (request.resource.data.get('careerUnits', {}).get('insurance', 0) >= resource.data.get('careerUnits', {}).get('insurance', 0)
+          && request.resource.data.get('careerUnits', {}).get('investment', 0) >= resource.data.get('careerUnits', {}).get('investment', 0)
+          && request.resource.data.get('careerUnits', {}).get('credit', 0) >= resource.data.get('careerUnits', {}).get('credit', 0)
+          && request.resource.data.get('careerUnits', {}).get('realestate', 0) >= resource.data.get('careerUnits', {}).get('realestate', 0));
+    }
+
     match /users/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow write: if false;
@@ -72,9 +108,10 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
-        || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched() && bonusUntouchedOrManager());
+        || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched() && bonusUntouchedOrManager()
+          && validEmployeeData(request.resource.data) && careerNotLoweredBySelf(empId));
 
-      // Konto-Daten (uid, E-Mail, "wartet auf erste Anmeldung"): nur self/Vorgesetzte/Admin lesen,
+      // Konto-Daten (uid, E-Mail, "wartet auf erste Anmeldung"): nur self/Vorgesetzte/Admin und der Lesemodus lesen,
       // geschrieben ausschliesslich von den Cloud Functions (Admin SDK umgeht die Regeln).
       match /private/{id} {
         allow read: if canReadEmployee(empId);
@@ -110,7 +147,13 @@ service cloud.firestore {
       // Abwickler (abwicklerId) sehen und bearbeiten die ihnen zugewiesenen Faelle,
       // koennen aber weder Betreuer noch Abwickler noch ancestors aendern.
       function isAbwickler(data) { return isSelf(data.get('abwicklerId', '')); }
-      function abwicklerOk(data) { return !('abwicklerId' in data) || data.abwicklerId is string; }
+      // abwicklerId: leer oder die ID eines vorhandenen Mitarbeiters (sonst koennte der Betreuer Fremden beliebige IDs freigeben).
+      function abwicklerOk(data) {
+        return !('abwicklerId' in data) || (data.abwicklerId is string
+          && (data.abwicklerId == ''
+            || (data.abwicklerId.matches('[A-Za-z0-9_-]{1,64}')
+              && exists(/databases/$(database)/documents/employees/$(data.abwicklerId)))));
+      }
       allow read: if isViewer() || isAdmin() || isSelf(resource.data.ownerId) || isAncestor(resource.data.ancestors)
         || isAbwickler(resource.data);
       allow create: if (isAdmin() || canAccessEmployee(request.resource.data.ownerId))
@@ -159,7 +202,9 @@ service cloud.firestore {
     // Strukturbaum, Saetze, Teamziel: alle Eingeloggten lesen, nur Admin schreibt.
     match /org/{docId} {
       allow read: if signedIn();
-      allow create, delete: if isAdmin();
+      allow create: if isAdmin();
+      // Loeschen + Neuanlegen wuerde die Rueckschritt-Sperren unten umgehen.
+      allow delete: if isAdmin() && !(docId in ['teamGoal', 'archiveIndex']);
       // teamGoal/archiveIndex: eigene, strengere Update-Regeln unten (Regeln werden mit ODER verknuepft).
       allow update: if isAdmin() && !(docId in ['teamGoal', 'archiveIndex']);
     }
