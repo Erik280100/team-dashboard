@@ -1,4 +1,4 @@
-// Renditerechner — Äquivalent zu initRenditeRechner() aus legacy/index.html:3744–3978.
+// Renditerechner — Äquivalent zu initRenditeRechner() aus der früheren Einzeldatei-App.
 import "@/lib/chartSetup"
 import { useMemo, useRef, useState, type CSSProperties } from "react"
 import { Line } from "react-chartjs-2"
@@ -230,7 +230,7 @@ export function RenditeRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <strong>Renditerechner:</strong> Vergleicht vier Anlageprodukte über die gewählte Laufzeit inklusive Kosten und KESt.
         {" "}Bei aktivierter Entnahmephase ist die Monatsentnahme netto in der Hand gemeint — beim Depot wird die KESt auf
         den Gewinnanteil dafür zusätzlich aus dem Depot entnommen (Brutto-Hochrechnung), die FLV ist KESt-frei. Das

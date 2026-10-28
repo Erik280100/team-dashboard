@@ -1,5 +1,5 @@
 // Strukturbaum (Org-Chart-Editor) — Äquivalent zu initOrgChart()/sbRender()/
-// Drag&Drop/Linienmodus/Seitenpanel/Dialogen aus legacy/index.html:4113–4785.
+// Drag&Drop/Linienmodus/Seitenpanel/Dialogen aus der früheren Einzeldatei-App.
 // Layout- und Traversierungs-Logik (sbLayout/sbAll/sbFind/sbLine/sbEsc) kommt
 // aus src/lib/calc/struktur.ts (golden-master-getestet); die interaktiven
 // Mutationen (Drag&Drop-Umgliedern, Notizen, Verbindungen, Farben/Status)
@@ -642,8 +642,7 @@ export function StrukturBaum({
         if (v > 0) planRates[planId][r] = v
       })
     })
-    // Legacy-Spiegel: das alte `rates`-Feld (nur Insurance) bleibt für
-    // legacy/index.html gepflegt, siehe OrgChartDoc.rates-Kommentar.
+    // Das Altfeld `rates` (nur Insurance) wird weiter mitgeschrieben, siehe OrgChartDoc.rates.
     persist({ rates: planRates.insurance, planRates })
     setRatesOpen(false)
   }

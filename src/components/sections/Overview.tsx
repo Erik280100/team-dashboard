@@ -1,4 +1,4 @@
-// Übersicht-Sektion — Äquivalent zu section-overview aus legacy/index.html:1623–1718.
+// Übersicht-Sektion — Äquivalent zu section-overview aus der früheren Einzeldatei-App.
 // Datenlogik 1:1 aus src/lib/calc/overview.ts (golden-master-getestet gegen die
 // Legacy-App). Farben 1:1 aus dem Original übernommen: die komplette Übersicht ist
 // dort durchgängig dunkel (.kpi-card/.panel-dark nutzen dieselbe Navy-Verlaufsfarbe),

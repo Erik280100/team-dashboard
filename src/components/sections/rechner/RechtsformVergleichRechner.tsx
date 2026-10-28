@@ -21,30 +21,8 @@ import {
   CY_KOEST_SATZ_OPTIONEN, DEFAULTS_ZYPERN, berechneDreiWegeSchwellenreihe, berechneZypernGruendungsVergleich,
   berechneZypernLtd, type ZypernSpezifischeEingabe,
 } from "@/lib/calc/zypernLtd"
-
-const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
-
-function Feld({
-  label, value, onChange, suffix, step = 1, min, className,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  suffix?: string
-  step?: number
-  min?: number
-  className?: string
-}) {
-  return (
-    <label className={cn("flex flex-col gap-1 text-xs text-muted-foreground", className)}>
-      {label}
-      <div className="flex items-center gap-1.5">
-        <input type="number" min={min} step={step} value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_CLASS} />
-        {suffix && <span className="text-xs">{suffix}</span>}
-      </div>
-    </label>
-  )
-}
+import { Feld, Regler, ZeilePos, INPUT_CLASS } from "@/components/sections/rechner/fields"
+import { n } from "@/components/sections/rechner/numbers"
 
 function PillGroup<T extends string>({
   options, value, onChange,
@@ -68,40 +46,6 @@ function PillGroup<T extends string>({
       ))}
     </div>
   )
-}
-
-function Regler({
-  label, value, onChange, hint,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  hint?: string
-}) {
-  const num = Math.min(100, Math.max(0, Number(value) || 0))
-  return (
-    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-      <div className="flex items-center justify-between">
-        <span>{label}</span>
-        <span className="tabular-nums text-sm font-semibold text-foreground">{num.toFixed(0)} %</span>
-      </div>
-      <input type="range" min={0} max={100} step={5} value={num} onChange={(e) => onChange(e.target.value)} className="w-full accent-primary" />
-      {hint && <span className="text-[11px]">{hint}</span>}
-    </label>
-  )
-}
-
-function ZeilePos({ label, value, muted, bold }: { label: string; value: string; muted?: boolean; bold?: boolean }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span className={muted ? "text-muted-foreground" : undefined}>{label}</span>
-      <span className={cn("tabular-nums", bold && "font-semibold")}>{value}</span>
-    </div>
-  )
-}
-
-function n(v: string): number {
-  return Number(v) || 0
 }
 
 const MIETE_PRESETS: { value: string; label: string }[] = [
@@ -214,7 +158,7 @@ export function RechtsformVergleichRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <strong>Einzelunternehmer vs. GmbH vs. Zypern-Ltd:</strong> Vergleicht das tatsächlich verfügbare
         Nettoeinkommen — inklusive GSVG/GmbH-Lohnnebenkosten, Mindestkörperschaftsteuer, StB-Mehrkosten,
         und für Zypern die dortige KöSt, Sozialversicherung/GESY, Non-Dom-Dividendenbesteuerung sowie
@@ -382,7 +326,7 @@ export function RechtsformVergleichRechner() {
       {warnungen.length > 0 && (
         <div className="flex flex-col gap-2">
           {warnungen.map((w) => (
-            <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               {w}
             </div>
           ))}

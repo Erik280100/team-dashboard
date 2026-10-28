@@ -1,5 +1,5 @@
 // Section-Routing über location.hash — Äquivalent zu activateSection()/
-// navigateToSection() aus legacy/index.html:5063–5097. Gleiche section-ids,
+// navigateToSection() aus der früheren Einzeldatei-App. Gleiche section-ids,
 // gleicher Default ("overview"), gleiches hashchange-Verhalten.
 import { useCallback, useEffect, useState } from "react"
 

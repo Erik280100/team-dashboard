@@ -322,7 +322,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <strong>Anlegerwohnungs-Portfolio-Rechner{istGmbh ? " (GmbH)" : ""}:</strong> Simuliert, wie ein Wohnungsportfolio über die Zeit wächst und sich weitere Wohnungen von selbst finanzieren.{" "}
         {istGmbh
           ? "Steuerliche Betrachtung als Kapitalgesellschaft: 23 % KöSt statt Grenzsteuersatz/ImmoESt, Verlustvortrag statt Sofortgutschrift, KESt erst bei einer Ausschüttung — siehe die Gegenüberstellung mit dem Einzelunternehmen weiter unten."
@@ -408,20 +408,20 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
             </label>
           </div>
           {kaufpreisZuNiedrig && (
-            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               Kaufpreis unter {kreditFormatEUR(KAUFPREIS_MINDESTGRENZE)} — es finden keine neuen Käufe mehr statt
               (Sparen, Guthabenzinsen und ein etwaiger Bestand laufen normal weiter), bis ein realistischer
               Kaufpreis eingegeben ist.
             </div>
           )}
           {ltvClamped > 80 && (
-            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               Beleihung beim Kauf über 80 % ist die von dir gewählte Modellannahme — seit Auslaufen der KIM-V zum
               30.6.2025 erwartet die FMA als Aufsichtsrahmen weiterhin ≥ 20 % Eigenmittel inkl. Nebenkosten.
             </div>
           )}
           {laufzeitClamped > 35 && (
-            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               Eine Laufzeit über 35 Jahre liegt über dem von der FMA erwarteten Rahmen.
             </div>
           )}
@@ -509,7 +509,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
             )}
           </div>
           {beleihungClamped > 80 && (
-            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               Beleihung bei Umschuldung über 80 % ist die von dir gewählte Modellannahme — Banken beleihen in der
               Praxis meist nur bis 70–80 % des Verkehrswerts.
             </div>
@@ -545,7 +545,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
             </div>
           )}
           {bestandOffen && n(bestandAnschaffungskosten) === 0 && n(bestandWert) > 0 && (
-            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               Ohne historische Anschaffungskosten wird für den Bestand keine AfA angesetzt und die ImmoESt-Basis
               überschätzt. Falls unbekannt, ersatzweise den Verkehrswert eintragen.
             </div>
@@ -830,7 +830,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
                       <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(k.afaJahr1)}</td>
                       <td className="py-1 text-right">
                         {k.istGratis
-                          ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">100 % gratis</span>
+                          ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">100 % gratis</span>
                           : k.gratisAnteilPct < 0.1
                             ? <span className="text-xs text-muted-foreground">eigene Mittel</span>
                             : <span className="text-xs text-muted-foreground">{kreditFormatPct(k.gratisAnteilPct, 0)} Umschuldung</span>}
@@ -1041,7 +1041,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
           <CardContent className="flex flex-col gap-2">
             <h3 className="text-sm font-semibold">Warnhinweise</h3>
             {warnungen.map((w) => (
-              <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
                 {w}
               </div>
             ))}

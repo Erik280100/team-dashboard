@@ -1,4 +1,4 @@
-// Guide-Inhalte — 1:1 aus legacy/index.html:4797-5021 übernommen.
+// Guide-Inhalte — 1:1 aus der früheren Einzeldatei-App übernommen.
 export interface GuideSection {
   id: string
   title: string

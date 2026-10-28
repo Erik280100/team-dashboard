@@ -1,4 +1,4 @@
-// Partnerportale-Kacheln — Äquivalent zu initPartnerPortals() aus legacy/index.html:4786–4795.
+// Partnerportale-Kacheln — Äquivalent zu initPartnerPortals() aus der früheren Einzeldatei-App.
 // Verschoben aus Partner.tsx (siehe dort), unverändert.
 import { PARTNER_PORTALS } from "@/lib/data/partners"
 

@@ -68,7 +68,7 @@ export function PromotionPanel({
         </div>
       )}
       {promotion.ready && (
-        <div className={cn("mt-2 text-[11px] font-medium", dark ? "text-[#64DDA3]" : "text-emerald-600 dark:text-emerald-400")}>
+        <div className={cn("mt-2 text-[11px] font-medium", dark ? "text-[#64DDA3]" : "text-emerald-600")}>
           ✓ Alle erfassten Kriterien für {promotion.nextRole} erfüllt
         </div>
       )}

@@ -1,4 +1,4 @@
-// Hauptnavigation — Äquivalent zur .sidebar-Nav aus legacy/index.html:1571–1588.
+// Hauptnavigation — Äquivalent zur .sidebar-Nav aus der früheren Einzeldatei-App.
 import {
   LayoutDashboard, Users, Network, BarChart3, CalendarRange, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
   KanbanSquare, UserCog, Settings, FilePlus2, ExternalLink,

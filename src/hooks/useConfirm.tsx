@@ -1,4 +1,4 @@
-// Bestätigungsdialog — Äquivalent zu confirmDialog() aus legacy/index.html:5099–5138
+// Bestätigungsdialog — Äquivalent zu confirmDialog() aus der früheren Einzeldatei-App
 // (Promise-basiert: await confirm("Text …") -> boolean). Fokus-Trap, Escape-to-cancel
 // und Klick-außerhalb-schließt-Verhalten übernimmt Radix' AlertDialog von selbst.
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react"

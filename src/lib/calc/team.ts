@@ -1,5 +1,5 @@
 // Mitarbeiter-Tabelle — reine Ableitungsfunktionen, 1:1 portiert aus
-// legacy/index.html:2636–2772 (getFilteredSorted, renderTable: Zeilen-Highlight
+// der früheren Einzeldatei-App (getFilteredSorted, renderTable: Zeilen-Highlight
 // und Summenzeile). Golden-Master-Test: test/calc/team.golden.test.ts.
 import { pctOf, type EmployeeRow, type MonthWeekProgress } from "@/lib/calc/format"
 import { isLeadRole, SB_LEAD_ROLES, type RosterEntry } from "@/lib/calc/struktur"

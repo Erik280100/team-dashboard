@@ -1,4 +1,4 @@
-// Mitarbeiter-Sektion — Äquivalent zu section-team aus legacy/index.html:1721–1764.
+// Mitarbeiter-Sektion — Äquivalent zu section-team aus der früheren Einzeldatei-App.
 // Die Personenliste wird seit dem Strukturbaum-Umbau vollständig aus dem
 // Strukturbaum gespiegelt (analog zur Anwesenheitsliste, die sbAll(orgTree)
 // nutzt) — Anlegen/Entfernen von Personen passiert nur noch im Strukturbaum.

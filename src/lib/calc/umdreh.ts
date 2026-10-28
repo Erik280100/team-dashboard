@@ -1,4 +1,4 @@
-// Umdrehrechner — 1:1 portiert aus legacy/index.html:3458–3527 (nur die Rechenlogik
+// Umdrehrechner — 1:1 portiert aus der früheren Einzeldatei-App (nur die Rechenlogik
 // aus recalc(), ohne DOM-Zugriffe). Golden-Master-Test: test/calc/umdreh.golden.test.ts.
 
 export const UM_EH_ALT = 2.3

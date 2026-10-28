@@ -1225,7 +1225,7 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
       "Ein Teil der ausstehenden Kredite stammt aus Umschuldungs-Cash-out (die gesamte Restschuld übersteigt die "
       + "gesamten Anschaffungskosten) — die Simulation zieht die Zinsen darauf dennoch voll steuerlich ab; in der "
       + "Praxis ist der Zinsenabzug nur für den der Vermietung dienenden Kreditanteil zulässig, ein Cash-out-Anteil "
-      + "kann vom Finanzamt anteilig aberkannt werden (B1)."
+      + "kann vom Finanzamt anteilig aberkannt werden."
     )
   }
   if (
@@ -1253,7 +1253,7 @@ export function simuliereImmoPortfolio(eingabe: ImmoPortfolioEingabe): ImmoPortf
     warnungen.push(
       `Ab einer zweistelligen Anzahl an Objekten (hier: ${letztesJahr.anzahlObjekte}) rückt bei einem späteren `
       + "Verkauf die Einstufung als gewerblicher Grundstückshandel näher — dann entfällt der 30-%-ImmoESt-Satz "
-      + "zugunsten des Tarifs plus Sozialversicherungspflicht (E9)."
+      + "zugunsten des Tarifs plus Sozialversicherungspflicht."
     )
   }
   if (letztesJahr && letztesJahr.cashflowNetto < 0) {

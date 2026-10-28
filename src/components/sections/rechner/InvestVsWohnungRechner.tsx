@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { berechneInvestVsWohnung, type InvestVsWohnungEingabe } from "@/lib/calc/investVsWohnung"
+import { Feld, ZeilePos, INPUT_CLASS } from "@/components/sections/rechner/fields"
+import { n } from "@/components/sections/rechner/numbers"
 
 const DEPOT_RENDITE_PRESETS = [5, 6, 7]
 const WERTSTEIGERUNG_PRESETS = [2, 3, 4]
@@ -37,43 +39,6 @@ function PillGroup<T extends string>({
       ))}
     </div>
   )
-}
-
-const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
-
-function Feld({
-  label, value, onChange, suffix, step = 1, min, className,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  suffix?: string
-  step?: number
-  min?: number
-  className?: string
-}) {
-  return (
-    <label className={cn("flex flex-col gap-1 text-xs text-muted-foreground", className)}>
-      {label}
-      <div className="flex items-center gap-1.5">
-        <input type="number" min={min} step={step} value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_CLASS} />
-        {suffix && <span className="text-xs">{suffix}</span>}
-      </div>
-    </label>
-  )
-}
-
-function ZeilePos({ label, value, muted, bold }: { label: string; value: string; muted?: boolean; bold?: boolean }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span className={muted ? "text-muted-foreground" : undefined}>{label}</span>
-      <span className={cn("tabular-nums", bold && "font-semibold")}>{value}</span>
-    </div>
-  )
-}
-
-function n(v: string): number {
-  return Number(v) || 0
 }
 
 export function InvestVsWohnungRechner() {
@@ -141,7 +106,7 @@ export function InvestVsWohnungRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <strong>Invest vs. Anlegerwohnung:</strong> Vergleicht dieselben Eigenmittel im Depot mit einer fremdfinanzierten Anlegerwohnung über denselben Zeitraum.
       </div>
 
@@ -413,7 +378,7 @@ export function InvestVsWohnungRechner() {
       {warnungen.length > 0 && (
         <div className="flex flex-col gap-2">
           {warnungen.map((w) => (
-            <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               {w}
             </div>
           ))}

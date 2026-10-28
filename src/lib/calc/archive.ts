@@ -18,12 +18,6 @@ import type {
 } from "@/types/archive"
 
 /**
- * Schalter für den "Monat abschließen"-Button (Topbar + Erinnerungs-Banner in
- * App.tsx). Die Ableitungslogik testet test/calc/archive.test.ts.
- */
-export const MONTH_CLOSE_ENABLED = true
-
-/**
  * Setzt die Ist-Werte einer Mitarbeiterzeile für den neuen Monat zurück
  * (Einheiten je Plan, AT/BT/ET-Ist, manueller Bonus) — Soll/Plan-Werte, Name,
  * isNew und joinDate bleiben unangetastet. Der Bonus wird mitzurückgesetzt,

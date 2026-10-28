@@ -1,12 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
   --radius: 0.625rem;
 
-  /* Marken-Palette 1:1 aus legacy/index.html:15-28 übernommen */
+  /* Marken-Palette 1:1 aus der früheren Einzeldatei-App übernommen */
   --navy: #0b1f2a;
   --navy-2: #122c3a;
   --teal: #155767;
@@ -49,40 +47,6 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: var(--mint);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @theme inline {
@@ -129,7 +93,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* legacy/index.html:31-32 — dieselbe Schriftfamilie wie im Original */
+    /* der früheren Einzeldatei-App — dieselbe Schriftfamilie wie im Original */
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
@@ -172,7 +136,7 @@
 }
 
 /* Guide-/Karriere-Inhalte (dangerouslySetInnerHTML aus src/lib/data/guide.ts,career.ts) —
-   1:1 aus legacy/index.html:1138-1166 übernommen, damit Überschriften-Farben,
+   1:1 aus der früheren Einzeldatei-App übernommen, damit Überschriften-Farben,
    Tabellen und Download-Buttons wie im Original aussehen statt generischem Prose-Stil. */
 .career-plan {
   line-height: 1.6;
@@ -241,7 +205,7 @@
   }
 }
 
-/* legacy/index.html:165-187 — Buttons, u.a. die Download-Links in Guide-Inhalten */
+/* der früheren Einzeldatei-App — Buttons, u.a. die Download-Links in Guide-Inhalten */
 .btn {
   display: inline-block;
   border: none;
@@ -268,7 +232,7 @@
   border-radius: 8px;
 }
 
-/* Karriere-Kacheln (Stufen-Karten) — Basis aus legacy/index.html:1167-1189, hier um
+/* Karriere-Kacheln (Stufen-Karten) — Basis aus der früheren Einzeldatei-App, hier um
    Tarif (groß) und Kriterien-Chips erweitert (siehe enhanceStages() in Karriere.tsx). */
 .career-stage-grid {
   display: grid;

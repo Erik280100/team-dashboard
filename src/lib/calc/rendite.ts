@@ -1,4 +1,4 @@
-// Renditerechner — 1:1 portiert aus legacy/index.html:3532–3740.
+// Renditerechner — 1:1 portiert aus der früheren Einzeldatei-App.
 // Reine Funktionen, keine DOM-Zugriffe. Bei jeder Änderung: Golden-Master-Test
 // in test/calc/rendite.golden.test.ts muss weiterhin grün bleiben (gilt nicht für
 // den Merkur-Prämientopf in simulateFLV, für simulateFondssparer/simulateFondssparerProviderVerlauf

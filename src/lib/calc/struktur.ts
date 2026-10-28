@@ -1,5 +1,5 @@
 // Strukturbaum (Org-Chart) — reine Baum-Traversierungs- und Layout-Helfer,
-// 1:1 portiert aus legacy/index.html:4113–4334 (sb*-Funktionsfamilie).
+// 1:1 portiert aus der früheren Einzeldatei-App (sb*-Funktionsfamilie).
 // sbGetRoleForName/sbGetRateForRole nahmen im Original die Module-globalen
 // sbTree/sbRoleRates implizit entgegen — hier explizit parametrisiert, sonst
 // identisches Verhalten. Golden-Master-Test: test/calc/struktur.golden.test.ts.
@@ -20,7 +20,7 @@ export interface SbNode {
   d?: number
 }
 
-// ---- Layout-Konstanten (legacy/index.html:4120) ----
+// ---- Layout-Konstanten (der früheren Einzeldatei-App) ----
 export const SB_NW = 138
 export const SB_NH = 52
 export const SB_HG = 32
@@ -52,7 +52,7 @@ export const SB_STATUS: Record<string, { label: string; color: string }> = {
   vielleicht: { label: "Kommt vielleicht", color: "#64748B" },
 }
 
-// Feste Karrierestufen zur Auswahl bei "Bezeichnung / Rolle" (legacy/index.html:4141)
+// Feste Karrierestufen zur Auswahl bei "Bezeichnung / Rolle" (der früheren Einzeldatei-App)
 export const SB_ROLES = [
   "Direktor",
   "Regionalleiter",

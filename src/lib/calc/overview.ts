@@ -1,5 +1,5 @@
 // Übersicht — reine Ableitungsfunktionen für KPIs, Goal-/Recruit-Fortschritt,
-// Zielverlauf-Prognose und Chart-Datensätze. 1:1 portiert aus legacy/index.html
+// Zielverlauf-Prognose und Chart-Datensätze. 1:1 portiert aus der früheren Einzeldatei-App
 // (renderSummary, renderCharts, renderTimeline, renderGoalProgress,
 // renderRecruitPanel: :2587–2634, 2853–2973, 3006–3130, 3187–3222).
 // Golden-Master-Test: test/calc/overview.golden.test.ts.

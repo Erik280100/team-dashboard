@@ -1,4 +1,4 @@
-// Allgemeine Formatter/Helfer — 1:1 portiert aus legacy/index.html (fmt, pctOf,
+// Allgemeine Formatter/Helfer — 1:1 portiert aus der früheren Einzeldatei-App (fmt, pctOf,
 // teamTarget, progressClass, initials, recruitActualValue, monthWeekProgress,
 // migrateRow/migrateRows, Datums-Helfer). Funktionen, die im Original auf
 // Modul-globalen `rows`/`teamGoal` operierten, nehmen diese hier explizit als

@@ -1,4 +1,4 @@
-// EH-Rechner — Äquivalent zu initEHRechner() aus legacy/index.html:3356–3456.
+// EH-Rechner — Äquivalent zu initEHRechner() aus der früheren Einzeldatei-App.
 // Reine Client-Berechnung, nichts wird gespeichert (wie im Original) — außer
 // beim expliziten "Auf Mitarbeiter buchen" (jeder Besucher darf das, auch
 // ohne echten Login — siehe canBook/useAuth.ts), das die berechneten
@@ -19,7 +19,7 @@ import { calcEh, ehAbwicklerOptions, ehMultForRole, EH_GROUPS, EH_ITEMS, ehForma
 import { PLAN_IDS, PLAN_LABELS, type PlanId } from "@/lib/calc/struktur"
 import { umsatzDrafts, type UmsatzDraft } from "@/lib/calc/umsatz"
 
-// legacy/index.html:821-824 — Gruppen-Akzentfarbe (oberer Rand der Karte)
+// der früheren Einzeldatei-App — Gruppen-Akzentfarbe (oberer Rand der Karte)
 const GROUP_ACCENT: Record<EhGroup["id"], string> = {
   insurance: "#3FCB8E",
   investment: "#5B9BD5",

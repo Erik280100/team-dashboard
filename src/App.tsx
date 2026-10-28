@@ -1,6 +1,4 @@
-// App-Shell — Äquivalent zum <div class="app"> Grundgerüst aus legacy/index.html
-// (Sidebar-Nav, Topbar, Banner, Section-Routing). Section-Inhalte selbst folgen
-// in Phase 3; hier steht Navigation, Auth und die Datenschicht-Verdrahtung.
+// App-Shell: Sidebar-Navigation, Topbar, Banner, Section-Routing, Auth und die Verdrahtung der Datenschicht.
 //
 // AppShell ist von App abgespalten, weil handleCloseMonth einen Bestätigungs-
 // Dialog braucht (useConfirm) — der Context dafür wird von ConfirmProvider
@@ -9,13 +7,14 @@
 // Komponente von ConfirmProvider statt in App (analog dazu, wie Kalender.tsx
 // useConfirm() bereits als Kind-Komponente nutzt).
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
+import { AlarmClock } from "lucide-react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { applyMonthStats, mergeRosterWithRows, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import type { UmsatzDraft } from "@/lib/calc/umsatz"
 import { readPlanUnits } from "@/lib/calc/verguetung"
-import { MONTH_CLOSE_ENABLED, archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
+import { archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, toISODate } from "@/lib/calc/format"
 import { canViewEmployee } from "@/lib/calc/roles"
 import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
@@ -77,8 +76,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   einstellungen: "Einstellungen",
 }
 
-// Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus (siehe
-// Plan "neues-feature-es-soll-jaunty-cascade"). Statistik zeigt Archiv-Daten
+// Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus. Statistik zeigt Archiv-Daten
 // über einen eigenen Zeitraum-Picker, nicht über den globalen Monatswähler.
 const ARCHIVE_SECTIONS = new Set<SectionId>(["overview", "team", "struktur"])
 
@@ -324,7 +322,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
       `• Alle Ist-Werte (Einheiten, AT/BT/ET) werden auf 0 gesetzt — Plan- und Soll-Werte bleiben erhalten.\n` +
       `• "NEU"-Markierungen bleiben bestehen und werden nicht automatisch entfernt.\n` +
       `• Der laufende Monat springt auf ${monthLabel(monthKeyOf(nextGoal))}.\n` +
-      `• Bitte andere offene Tabs (auch die alte Dashboard-Seite) vorher schließen.\n\n` +
+      `• Bitte andere offene Tabs vorher schließen.\n\n` +
       `Das lässt sich nicht rückgängig machen.`
     )
     if (!ok) return
@@ -383,7 +381,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
           </div>
         )}
         {isArchive && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-amber-100 px-6 py-2 text-sm font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-amber-100 px-6 py-2 text-sm font-medium text-amber-900">
             <span>
               📁 Archiv-Ansicht: {monthLabel(archiveMonth!)}
               {snapshot ? ` — abgeschlossen am ${new Date(snapshot.closedAt).toLocaleDateString("de-AT")}` : ""}
@@ -395,21 +393,15 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
           </div>
         )}
         {!isArchive && auth.isAdmin && isMonthCloseDue(dashboard.teamGoal, archive.index) && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-emerald-50 px-6 py-2 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-emerald-50 px-6 py-2 text-sm text-emerald-900">
             <span>
               Der Monat {monthLabel(monthKeyOf(dashboard.teamGoal))} ist beendet und wurde noch nicht automatisch abgeschlossen — jetzt von Hand abschließen.
             </span>
             <Button
               size="sm"
               onClick={handleCloseMonth}
-              disabled={archive.closing || !MONTH_CLOSE_ENABLED || !canCloseMonth(dashboard.teamGoal)}
-              title={
-                !MONTH_CLOSE_ENABLED
-                  ? "Vorübergehend deaktiviert"
-                  : !canCloseMonth(dashboard.teamGoal)
-                  ? "Erst nach Monatsende möglich"
-                  : undefined
-              }
+              disabled={archive.closing || !canCloseMonth(dashboard.teamGoal)}
+              title={!canCloseMonth(dashboard.teamGoal) ? "Erst nach Monatsende möglich" : undefined}
             >
               Monat abschließen
             </Button>
@@ -417,41 +409,56 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         )}
 
         {section === "overview" && !isArchive && dueSoon.length > 0 && (
-          <div
-            role="status"
-            className={cn(
-              "border-b px-6 py-3 text-sm",
-              dueSoon.some((t) => dueState(t.dueDate, today) === "red")
-                ? "bg-rose-50 text-rose-900 dark:bg-rose-950 dark:text-rose-200"
-                : "bg-orange-50 text-orange-900 dark:bg-orange-950 dark:text-orange-200"
-            )}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="font-medium">
-                Folgende Todos haben ihre Fälligkeit bald erreicht ({dueSoon.length}):
-              </span>
-              <Button size="sm" variant="ghost" onClick={() => navigateTo("board")}>
-                Zu Mein Board
-              </Button>
+          <div className="px-6 pt-6">
+            <div
+              role="status"
+              className={cn(
+                "rounded-2xl border p-5 shadow-sm",
+                dueSoon.some((t) => dueState(t.dueDate, today) === "red")
+                  ? "border-rose-200 bg-rose-50 text-rose-950"
+                  : "border-orange-200 bg-orange-50 text-orange-950"
+              )}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <AlarmClock className="size-4" aria-hidden="true" />
+                  Bald fällige Todos ({dueSoon.length})
+                </span>
+                <Button size="sm" variant="outline" onClick={() => navigateTo("board")}>
+                  Zu Mein Board
+                </Button>
+              </div>
+              <ul className="mt-3 flex flex-col gap-1.5">
+                {dueSoon.map((t) => {
+                  const red = dueState(t.dueDate, today) === "red"
+                  const days = daysUntil(t.dueDate, today)
+                  return (
+                    <li
+                      key={t.id}
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-white/70 px-3 py-2 text-sm"
+                    >
+                      <span
+                        className={cn(
+                          "min-w-24 tabular-nums font-semibold",
+                          red ? "text-rose-600" : "text-orange-600"
+                        )}
+                      >
+                        {new Date(t.dueDate).toLocaleDateString("de-AT")}
+                      </span>
+                      <span className="flex-1 font-medium">{t.title}</span>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-medium",
+                          red ? "bg-rose-100 text-rose-700" : "bg-orange-100 text-orange-700"
+                        )}
+                      >
+                        {days < 0 ? `${-days} Tage überfällig` : `in ${days} Tagen`}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
-            <ul className="mt-1 flex flex-col gap-0.5">
-              {dueSoon.map((t) => (
-                <li key={t.id} className="flex flex-wrap items-baseline gap-x-2">
-                  <span
-                    className={cn(
-                      "tabular-nums font-medium",
-                      dueState(t.dueDate, today) === "red" ? "text-destructive" : "text-orange-600 dark:text-orange-400"
-                    )}
-                  >
-                    {new Date(t.dueDate).toLocaleDateString("de-AT")}
-                  </span>
-                  <span>{t.title}</span>
-                  <span className="text-xs opacity-70">
-                    {daysUntil(t.dueDate, today) < 0 ? `${-daysUntil(t.dueDate, today)} Tage überfällig` : `in ${daysUntil(t.dueDate, today)} Tagen`}
-                  </span>
-                </li>
-              ))}
-            </ul>
           </div>
         )}
 

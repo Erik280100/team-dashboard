@@ -1,4 +1,4 @@
-// Partnerportale — 1:1 aus legacy/index.html:4083-4111 übernommen (inkl. Icon-Daten).
+// Partnerportale — 1:1 aus der früheren Einzeldatei-App übernommen (inkl. Icon-Daten).
 export interface PartnerPortal {
   name: string
   url: string

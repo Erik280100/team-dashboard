@@ -1,4 +1,4 @@
-// EH-Rechner — 1:1 portiert aus legacy/index.html:3292–3354.
+// EH-Rechner — 1:1 portiert aus der früheren Einzeldatei-App.
 // Reine Datentabelle + Formatter, keine DOM-Zugriffe. Golden-Master-Test:
 // test/calc/eh.golden.test.ts.
 import { PLAN_IDS, type PlanId } from "@/lib/calc/struktur"

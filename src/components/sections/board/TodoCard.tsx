@@ -19,7 +19,7 @@ const CARD_BORDER_CLASS: Record<BoardTodo["color"], string> = {
 
 const DUE_TEXT_CLASS: Record<ReturnType<typeof dueState>, string> = {
   red: "text-destructive font-medium",
-  orange: "text-orange-600 dark:text-orange-400 font-medium",
+  orange: "text-orange-600 font-medium",
   none: "text-muted-foreground",
 }
 
@@ -79,7 +79,7 @@ export function TodoCard({
       onDragStart={onDragStart}
       className={cn(
         "flex cursor-grab flex-col gap-2 rounded-md border border-l-4 p-3 text-sm shadow-sm active:cursor-grabbing",
-        state === "red" ? "bg-rose-50 dark:bg-rose-950/40" : state === "orange" ? "bg-orange-50 dark:bg-orange-950/40" : "bg-background",
+        state === "red" ? "bg-rose-50" : state === "orange" ? "bg-orange-50" : "bg-background",
         CARD_BORDER_CLASS[todo.color]
       )}
     >

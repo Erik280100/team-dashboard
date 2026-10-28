@@ -1,5 +1,5 @@
 // Anwesenheitsliste (früher Kalender/Anwesenheitsliste) — Äquivalent zu section-kalender aus
-// legacy/index.html:2035–2112 (Fixtermine-Wochenkalender: statisch;
+// der früheren Einzeldatei-App (Fixtermine-Wochenkalender: statisch;
 // Anwesenheitsliste: renderAttendance()/attendanceCell()/onAttendanceToggle()/
 // onAttendanceReasonChange() aus :2419–2491). Anwesenheit ist für alle
 // bearbeitbar (kein isEditor-Gate), identisch zum Original. Der

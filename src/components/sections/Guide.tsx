@@ -1,4 +1,4 @@
-// Guide-Sektion — Äquivalent zu initGuide() aus legacy/index.html:5038–5061.
+// Guide-Sektion — Äquivalent zu initGuide() aus der früheren Einzeldatei-App.
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { GUIDE_SECTIONS } from "@/lib/data/guide"

@@ -186,7 +186,7 @@ export function KreditRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <strong>Finanzierungsrechner:</strong> Ermittelt Kauf- und Kreditnebenkosten sowie den Annuitätentilgungsplan.
       </div>
 
@@ -288,7 +288,7 @@ export function KreditRechner() {
           {sparrateNum > 0 && (
             <>
               {(sparrateNum > 500 || sparrateNum < 50) && (
-                <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                <div className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
                   Die Sparprämien-Quote ist auf echte Merkur-Angebote im Bereich 50–500 €/Monat
                   gestützt und wird außerhalb davon am Rand fortgeschrieben — die Werte gelten
                   daher nur als grobe Näherung.
@@ -355,7 +355,7 @@ export function KreditRechner() {
           {warnungen.length > 0 && (
             <div className="flex flex-col gap-1">
               {warnungen.map((w) => (
-                <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
                   {w}
                 </div>
               ))}

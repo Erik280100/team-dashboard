@@ -1,5 +1,5 @@
 // Firestore-Dokumentformen + Startdaten — 1:1 aus der Legacy-App übernommen
-// (legacy/index.html:2248–2283, 4151–4177), damit neue und alte App exakt
+// (der früheren Einzeldatei-App), damit neue und alte App exakt
 // dieselben Datenstrukturen lesen/schreiben.
 import { defaultPeriod, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import type { PlanId, SbNode } from "@/lib/calc/struktur"
@@ -47,8 +47,7 @@ export interface OrgChartDoc {
   tree: SbNode
   notes: Record<string, OrgChartNote[]>
   conns: OrgChartConn[]
-  /** Legacy-Feld: Insurance-Sätze je Stufe (Spiegel von planRates.insurance, siehe
-   * useOrgChartDoc.saveOrgChart), damit legacy/index.html weiter funktioniert. */
+  /** Altfeld: Insurance-Sätze je Stufe (Spiegel von planRates.insurance); bleibt für ältere Archiv-Snapshots erhalten. */
   rates: Record<string, number>
   /** Euro pro Einheit je Karrierestufe und Karriereplan. Optional — fehlt es,
    * gelten die Default-Sätze aus DEFAULT_PLAN_RATES (struktur.ts). */
@@ -136,7 +135,7 @@ export interface BoardTodo {
 }
 
 /** employees/{id}/todos/{todoId} — ein Dokument je Todo. */
-export interface ErikTodosDoc {
+export interface BoardTodosDoc {
   todos: BoardTodo[]
 }
 

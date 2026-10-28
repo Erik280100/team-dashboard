@@ -1,4 +1,4 @@
-// Umdrehrechner — Äquivalent zu initUmdrehRechner() aus legacy/index.html:3462–3527.
+// Umdrehrechner — Äquivalent zu initUmdrehRechner() aus der früheren Einzeldatei-App.
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -65,7 +65,7 @@ export function UmdrehRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags mit dem Verdienst bei finova.
       </div>
 
@@ -117,7 +117,7 @@ export function UmdrehRechner() {
       </Card>
 
       {inputs.stornoActive && (
-        <div className="rounded-lg border bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="rounded-lg border bg-amber-50 px-4 py-2 text-xs text-amber-900">
           Hinweis: Die Stornoreserve (15%) wurde berücksichtigt — alle angezeigten Beträge sind
           bereits um die einbehaltene Stornoreserve reduziert.
         </div>

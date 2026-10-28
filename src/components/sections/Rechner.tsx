@@ -1,5 +1,5 @@
 // Rechner-Sektion — Äquivalent zu section-rechner + initRechnerTabs() aus
-// legacy/index.html:1842–2011, 5023–5036.
+// der früheren Einzeldatei-App.
 import { useState } from "react"
 import { PillTabs } from "@/components/ui/dark"
 import { EhRechner } from "@/components/sections/rechner/EhRechner"

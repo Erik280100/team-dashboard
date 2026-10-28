@@ -12,43 +12,8 @@ import {
   DEFAULTS_HOLDING_IMMO, GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ, berechneHoldingImmobilien, type HoldingImmoEingabe,
 } from "@/lib/calc/holdingImmobilien"
 import { KOEST_SATZ } from "@/lib/calc/gmbhVsEu"
-
-const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
-
-function Feld({
-  label, value, onChange, suffix, step = 1, min, className,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  suffix?: string
-  step?: number
-  min?: number
-  className?: string
-}) {
-  return (
-    <label className={cn("flex flex-col gap-1 text-xs text-muted-foreground", className)}>
-      {label}
-      <div className="flex items-center gap-1.5">
-        <input type="number" min={min} step={step} value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_CLASS} />
-        {suffix && <span className="text-xs">{suffix}</span>}
-      </div>
-    </label>
-  )
-}
-
-function ZeilePos({ label, value, muted, bold }: { label: string; value: string; muted?: boolean; bold?: boolean }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span className={muted ? "text-muted-foreground" : undefined}>{label}</span>
-      <span className={cn("tabular-nums", bold && "font-semibold")}>{value}</span>
-    </div>
-  )
-}
-
-function n(v: string): number {
-  return Number(v) || 0
-}
+import { Feld, ZeilePos } from "@/components/sections/rechner/fields"
+import { n } from "@/components/sections/rechner/numbers"
 
 export function HoldingImmobilienRechner() {
   const [verfuegbarerGewinnVorSteuer, setVerfuegbarerGewinnVorSteuer] = useState(String(DEFAULTS_HOLDING_IMMO.verfuegbarerGewinnVorSteuer))
@@ -109,7 +74,7 @@ export function HoldingImmobilienRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <strong>Holding &amp; Immobilien-GmbH:</strong> Vergleicht den Kauf einer vermieteten
         Anlegerwohnung über drei Wege — als Einzelunternehmer, über eine GmbH deren Gewinn erst
         ausgeschüttet wird, und über eine Kapitalgesellschaft, die direkt investiert (Direktkauf
@@ -211,7 +176,7 @@ export function HoldingImmobilienRechner() {
       {erg.warnungen.length > 0 && (
         <div className="flex flex-col gap-2">
           {erg.warnungen.map((w) => (
-            <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
               {w}
             </div>
           ))}
