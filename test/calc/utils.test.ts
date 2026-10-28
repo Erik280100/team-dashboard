@@ -7,6 +7,7 @@ describe("cn", () => {
   })
 
   it("ignoriert falsche Werte", () => {
-    expect(cn("a", false && "b", undefined, null, "c")).toBe("a c")
+    const off = false as boolean
+    expect(cn("a", off && "b", undefined, null, "c")).toBe("a c")
   })
 })

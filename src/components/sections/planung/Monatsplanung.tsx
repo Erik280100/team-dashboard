@@ -199,11 +199,11 @@ export function Monatsplanung({
       }
       return agg
     },
-    // loaded ist ein neues Array je Render (planung.getWeek liest aus einem Ref-
-    // Cache) — über weeks/loading/people gated, damit hier nicht bei jedem
-    // Render neu aggregiert wird, sondern erst wenn sich echt etwas ändert.
+    // loaded ist ein neues Array je Render (planung.getWeek liest aus einem Ref-Cache). planung wechselt die
+    // Identität bei jeder Datenänderung (Live-Update, eigenes Speichern, Nachladen); nur an `loading` zu koppeln
+    // ließ die Summen nach Live-Updates veraltet stehen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weeks, loading, people, unitsByName]
+    [weeks, planung, people, unitsByName]
   )
   const total = useMemo(() => sumWeekEntries([...byName.values()]), [byName])
 
@@ -219,8 +219,9 @@ export function Monatsplanung({
       }
       return agg
     },
+    // loaded: siehe byName oben (planung statt loading).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weeks, loading, teamGroups, unitsByName]
+    [weeks, planung, teamGroups, unitsByName]
   )
   // Einheitenziel je Person aus den Monats-Notizkacheln (nur gültig, wenn das
   // Notizdokument zum angezeigten Monat gehört — direkt nach Monatswechsel noch nicht).

@@ -34,17 +34,18 @@ import { daysUntil, dueSoonTodos, dueState, hasOpenDueTodos } from "@/lib/calc/t
 import { announceCelebration } from "@/lib/celebrate"
 import { useCelebrations } from "@/hooks/useCelebrations"
 import { ConfettiRain } from "@/components/ConfettiRain"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
 import { LoginPage } from "@/components/LoginPage"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Overview } from "@/components/sections/Overview"
 import { ChangePasswordPage } from "@/components/ChangePasswordPage"
 import type { MonthKey } from "@/types/archive"
 import type { OrgChartDoc } from "@/types/dashboard"
 
 // Sektionen außer dem Dashboard werden erst beim Öffnen geladen (kleineres Start-Paket).
+const Overview = lazy(() => import("@/components/sections/Overview").then((m) => ({ default: m.Overview })))
 const Team = lazy(() => import("@/components/sections/Team").then((m) => ({ default: m.Team })))
 const Rechner = lazy(() => import("@/components/sections/Rechner").then((m) => ({ default: m.Rechner })))
 const Karriere = lazy(() => import("@/components/sections/Karriere").then((m) => ({ default: m.Karriere })))
@@ -455,6 +456,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
         )}
 
         <div className="flex-1 p-6">
+          <ErrorBoundary resetKey={section}>
           <Suspense fallback={<p className="p-6 text-sm text-muted-foreground" role="status">Lade …</p>}>
           {SECTION_IDS.map((id) => (
             <section
@@ -588,6 +590,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
             </section>
           ))}
           </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
     </div>

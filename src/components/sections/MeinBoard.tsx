@@ -2,7 +2,7 @@
 // 5 fixe Swimlanes,
 // Drag-&-Drop per nativer HTML5-DnD (keine zusätzliche Library, siehe StrukturBaum.tsx
 // für dasselbe Prinzip bei Pointer-Events). Keine Legacy-Entsprechung — neues Feature.
-import { useLayoutEffect, useRef, useState, type DragEvent } from "react"
+import { lazy, useLayoutEffect, useRef, useState, type DragEvent } from "react"
 import { Archive, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,9 +15,11 @@ import {
 } from "@/types/dashboard"
 import { NewTodoDialog } from "@/components/sections/board/NewTodoDialog"
 import { TodoCard } from "@/components/sections/board/TodoCard"
-import { EuVsGmbhRechner } from "@/components/sections/rechner/EuVsGmbhRechner"
-import { HoldingImmobilienRechner } from "@/components/sections/rechner/HoldingImmobilienRechner"
-import { RechtsformVergleichRechner } from "@/components/sections/rechner/RechtsformVergleichRechner"
+
+// Nur Admins sehen diese Rechner — erst beim Öffnen laden.
+const EuVsGmbhRechner = lazy(() => import("@/components/sections/rechner/EuVsGmbhRechner").then((m) => ({ default: m.EuVsGmbhRechner })))
+const HoldingImmobilienRechner = lazy(() => import("@/components/sections/rechner/HoldingImmobilienRechner").then((m) => ({ default: m.HoldingImmobilienRechner })))
+const RechtsformVergleichRechner = lazy(() => import("@/components/sections/rechner/RechtsformVergleichRechner").then((m) => ({ default: m.RechtsformVergleichRechner })))
 
 const LANE_SORT_KEY = "meinBoard.laneSort"
 

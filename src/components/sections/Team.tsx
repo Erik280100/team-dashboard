@@ -101,14 +101,8 @@ export function Team({
   // auf der Mitarbeiterseite. Nur live (planung gesetzt); im Archiv-Modus
   // bleiben die zum Monatsabschluss eingefrorenen Row-Werte unverändert.
   //
-  // Bewusst ohne useMemo für planByName/merged: Team.tsx bleibt (anders als
-  // z.B. Monatsplanung.tsx) dauerhaft gemountet, auch während auf der
-  // Controlling-Seite Wochenplanung-Werte eingegeben werden (App.tsx zeigt
-  // Sektionen nur per CSS "hidden" an/aus, unmountet sie nicht). Ein
-  // useMemo mit fester Dependency-Liste hätte hier den ersten (meist noch
-  // ungeladenen) Stand eingefroren und nie neu aus dem Wochenplanung-Cache
-  // nachgezogen — die Berechnung ist für die paar Personen/Wochen aber
-  // billig genug, um bei jedem Render einfach neu zu laufen.
+  // planung wechselt die Identität bei jeder Datenänderung (Live-Update, Speichern, Nachladen) — daran hängen
+  // die Memos, damit sie nicht bei jedem Tastendruck im Suchfeld neu rechnen, aber nie veraltet sind.
   const planWeeks = planung ? monthWeekKeys(monthKeyOf(teamGoal)) : []
   useEffect(() => {
     if (!planung || planWeeks.length === 0) return
@@ -117,22 +111,28 @@ export function Team({
     // damit loadWeeks nicht bei jedem Render erneut angestoßen wird.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planung, planWeeks.join(",")])
-  const planByName = planung
-    ? aggregateByName(
-        planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null),
-        roster.map((r) => r.name)
-      )
-    : null
+  const planByName = useMemo(
+    () => planung
+      ? aggregateByName(
+          planWeeks.map((w) => planung.getWeek(w)).filter((d): d is PlanWeekDoc => d !== null),
+          roster.map((r) => r.name)
+        )
+      : null,
+    // planWeeks ist ein neues Array je Render — die Schlüsselliste steht dafür in den Abhängigkeiten.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [planung, planWeeks.join(","), roster]
+  )
   // Soll (Einheiten) = Einheitenziel aus den Monatsplanung-Kacheln des Umsatzmonats.
   const zielDoc = planung ? planung.getMonthNotes(monthKeyOf(teamGoal)) : null
-  const merged = planByName
+  const merged = useMemo(() => planByName
     ? rosterMerged.map((r) => {
         if (!canEditRow(r.name)) return r // fremde Person: Werte stammen aus den Monatssummen (App.tsx)
         const p = planByName.get(r.name)
         // Zuordnung nach Nutzerangabe: AT = Analysen, BT = Beratungen, ST = Strukturtermine, ET = Einstellungstermine (jeweils "Gemacht").
         return { ...r, soll: Number(zielDoc?.entries[r.name]?.ehZiel) || 0, atPlan: p?.analysenZ ?? 0, btPlan: p?.beratungenZ ?? 0, stPlan: p?.stz ?? 0, etPlan: p?.etz ?? 0, atIst: p?.analysen ?? 0, btIst: p?.beratungen ?? 0, stIst: p?.stg ?? 0, etIst: p?.etg ?? 0 }
       })
-    : rosterMerged
+    : rosterMerged,
+  [planByName, rosterMerged, canEditRow, zielDoc])
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
   // Führungskräfte landen direkt auf ihrem eigenen Filter; Trainees (und alle
   // anderen) sehen "Alle". Einmalig, sobald Name und Strukturbaum geladen sind,

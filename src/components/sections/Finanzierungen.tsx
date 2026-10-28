@@ -1,14 +1,15 @@
 // Finanzierungen-Sektion — Tab-Switcher analog zu Rechner.tsx: "Offene Abwicklungen"
 // (ehemals alleinige Finanzierungen-Sektion, siehe finanzierungen/OffeneAbwicklungen.tsx)
 // und der hierher umgesiedelte Finanzierungsrechner (ehemals Tab in Rechner.tsx).
-import { useState } from "react"
+import { lazy, useState } from "react"
 import { PillTabs } from "@/components/ui/dark"
 import { OffeneAbwicklungen } from "@/components/sections/finanzierungen/OffeneAbwicklungen"
-import { KreditRechner } from "@/components/sections/rechner/KreditRechner"
-import { ImmoPortfolioRechner } from "@/components/sections/rechner/ImmoPortfolioRechner"
 import type { Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
 import type { RosterEntry } from "@/lib/calc/struktur"
+
+const KreditRechner = lazy(() => import("@/components/sections/rechner/KreditRechner").then((m) => ({ default: m.KreditRechner })))
+const ImmoPortfolioRechner = lazy(() => import("@/components/sections/rechner/ImmoPortfolioRechner").then((m) => ({ default: m.ImmoPortfolioRechner })))
 
 type FinanzierungenTab = "offen" | "rechner" | "immo" | "immoGmbh"
 

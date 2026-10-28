@@ -138,9 +138,10 @@ export function Jahresplanung({
       byQuarter[quarter].push(entry)
     })
     return { all, byQuarter }
-    // weekDocs wird aus weeks+loading-Zustand abgeleitet — über beide gated.
+    // weekDocs kommt aus dem Cache von planung; dessen Identität wechselt bei jeder Datenänderung (Live-Update,
+    // eigenes Speichern, Nachladen) — nur an `loading` zu koppeln ließ die Summen nach Live-Updates veraltet stehen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, loading, names, unitEntries])
+  }, [weeks, planung, names, unitEntries])
 
   const yearActual = useMemo(() => sumWeekEntries(entriesFor.all), [entriesFor])
   const quarterActuals = useMemo(() => {
@@ -170,10 +171,9 @@ export function Jahresplanung({
     const out = new Map<string, PlanWeekEntry>()
     teamGroups.forEach((g) => out.set(g.name, sumWeekEntries(byGroupEntries.get(g.name) ?? [])))
     return out
-    // weekDocs wird aus weeks+loading-Zustand abgeleitet — über beide gated,
-    // analog zu entriesFor oben.
+    // weekDocs: siehe entriesFor oben (planung statt loading).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weeks, loading, teamGroups, unitEntries])
+  }, [weeks, planung, teamGroups, unitEntries])
 
   // Änderungen werden beim Verlassen des Feldes direkt gespeichert.
   function commitTarget(key: PlanTargetKey, value: number) {
