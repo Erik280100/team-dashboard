@@ -57,40 +57,40 @@ service cloud.firestore {
 
     // Den Bonus (€) setzen Vorgesetzte/Admin, nicht die Person selbst.
     function bonusUntouchedOrManager() {
-      return isAncestor(resource.data.ancestors)
+      return myEmp() in resource.data.ancestors
         || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['bonus']);
     }
 
     // Plausibilitaet der Zahlen, die Mitarbeiter und Vorgesetzte selbst schreiben (Admin und Functions sind frei).
-    function num(v) { return v is number && v > -10000000 && v < 10000000; }
-    function numOrAbsent(d, k) { return !(k in d) || num(d[k]); }
+    // Bewusst knapp gehalten: Firestore bricht eine Regelauswertung bei mehr als 1000 Ausdruecken ab (= alles abgelehnt).
+    function num(v) { return v is number && math.abs(v) < 10000000; }
     function validCareerUnits(d) {
-      return !('careerUnits' in d) || (d.careerUnits is map
-        && d.careerUnits.keys().hasOnly(['insurance', 'investment', 'credit', 'realestate'])
-        && num(d.careerUnits.get('insurance', 0)) && num(d.careerUnits.get('investment', 0))
-        && num(d.careerUnits.get('credit', 0)) && num(d.careerUnits.get('realestate', 0)));
+      let c = d.get('careerUnits', {});
+      return c is map && c.keys().hasOnly(['insurance', 'investment', 'credit', 'realestate'])
+        && num(c.get('insurance', 0)) && num(c.get('investment', 0))
+        && num(c.get('credit', 0)) && num(c.get('realestate', 0));
     }
     function validEhByPlan(d) {
-      return !('ehByPlan' in d) || (d.ehByPlan is map
-        && d.ehByPlan.keys().hasOnly(['insurance', 'investment', 'investmentVb', 'credit', 'realestate'])
-        && num(d.ehByPlan.get('insurance', 0)) && num(d.ehByPlan.get('investment', 0)) && num(d.ehByPlan.get('investmentVb', 0))
-        && num(d.ehByPlan.get('credit', 0)) && num(d.ehByPlan.get('realestate', 0)));
+      let e = d.get('ehByPlan', {});
+      return e is map && e.keys().hasOnly(['insurance', 'investment', 'investmentVb', 'credit', 'realestate'])
+        && num(e.get('insurance', 0)) && num(e.get('investment', 0)) && num(e.get('investmentVb', 0))
+        && num(e.get('credit', 0)) && num(e.get('realestate', 0));
     }
     function validEmployeeData(d) {
-      return numOrAbsent(d, 'soll') && numOrAbsent(d, 'ist')
-        && numOrAbsent(d, 'at') && numOrAbsent(d, 'bt') && numOrAbsent(d, 'et')
-        && numOrAbsent(d, 'atPlan') && numOrAbsent(d, 'atIst') && numOrAbsent(d, 'btPlan') && numOrAbsent(d, 'btIst')
-        && numOrAbsent(d, 'stPlan') && numOrAbsent(d, 'stIst') && numOrAbsent(d, 'etPlan') && numOrAbsent(d, 'etIst')
-        && numOrAbsent(d, 'bonus')
+      return num(d.get('soll', 0)) && num(d.get('ist', 0))
+        && num(d.get('at', 0)) && num(d.get('bt', 0)) && num(d.get('et', 0))
+        && num(d.get('atPlan', 0)) && num(d.get('atIst', 0)) && num(d.get('btPlan', 0)) && num(d.get('btIst', 0))
+        && num(d.get('stPlan', 0)) && num(d.get('stIst', 0)) && num(d.get('etPlan', 0)) && num(d.get('etIst', 0))
+        && num(d.get('bonus', 0))
         && validCareerUnits(d) && validEhByPlan(d)
-        && (!('vbByAbwickler' in d) || d.vbByAbwickler is map)
+        && d.get('vbByAbwickler', {}) is map
         && (!('joinDate' in d) || (d.joinDate is string && d.joinDate.size() <= 10))
-        && (!('isNew' in d) || d.isNew is bool);
+        && d.get('isNew', false) is bool;
     }
     // Der Karrierezaehler (loest Stufenaufstiege und damit hoehere Saetze aus) darf bei der Person selbst nur steigen;
     // zuruecksetzen koennen ihn Vorgesetzte und Admin (Storno/Korrektur).
     function careerNotLoweredBySelf(empId) {
-      return !isSelf(empId)
+      return myEmp() != empId
         || (request.resource.data.get('careerUnits', {}).get('insurance', 0) >= resource.data.get('careerUnits', {}).get('insurance', 0)
           && request.resource.data.get('careerUnits', {}).get('investment', 0) >= resource.data.get('careerUnits', {}).get('investment', 0)
           && request.resource.data.get('careerUnits', {}).get('credit', 0) >= resource.data.get('careerUnits', {}).get('credit', 0)
