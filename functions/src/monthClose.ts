@@ -13,7 +13,7 @@ const REGION = "europe-west1" // wie in index.ts
 const loadShared = (): Shared => require("./shared.cjs") as Shared
 
 /** Aktueller Kalendermonat "YYYY-MM" in Wien. */
-function viennaMonth(now: Date): string {
+export function viennaMonth(now: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Vienna", year: "numeric", month: "2-digit" }).formatToParts(now)
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ""
   return `${get("year")}-${get("month")}`

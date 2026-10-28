@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "emulators": "firebase emulators:start --only auth,firestore",
-    "test:rules": "firebase emulators:exec --only firestore \"vitest run test/rules\""
+    "test:rules": "firebase emulators:exec --only firestore \"vitest run test/rules\"",
+    "test:coverage": "vitest run --coverage --exclude \"test/rules/**\""
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.23",
@@ -37,6 +38,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.10",
     "firebase-admin": "^14.5.0",
     "firebase-tools": "^15.34.0",
     "oxlint": "^1.71.0",
