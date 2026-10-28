@@ -127,8 +127,9 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const boardTodos = useBoardTodosDoc(auth.employeeId)
   useCelebrations(auth.ready && !!auth.user)
   const today = useToday()
-  const boardAlert = hasOpenDueTodos(boardTodos.todos, today)
   const dueSoon = dueSoonTodos(boardTodos.todos, today)
+  // Rufzeichen auch schon, sobald das Banner "Bald fällige Todos" auf dem Dashboard erscheint
+  const boardAlert = dueSoon.length > 0 || hasOpenDueTodos(boardTodos.todos, today)
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
   // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin sieht den ganzen Baum,
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
