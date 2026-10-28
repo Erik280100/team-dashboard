@@ -224,6 +224,15 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertFails(updateDoc(doc(self, "employees", "m1"), { careerUnits: { insurance: 100, credit: 100 } }))
       await assertFails(updateDoc(doc(self, "employees", "m1"), { careerUnits: { insurance: 600 } })) // credit würde auf 0 fallen
       await assertSucceeds(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { careerUnits: { insurance: 100, credit: 100 } }))
+      await assertSucceeds(updateDoc(doc(as("admin"), "employees", "m1"), { careerUnits: { insurance: 500, credit: 100 } }))
+    })
+    it("die Person korrigiert eigene Einheiten: Zähler darf höchstens um die Einheiten-Differenz sinken", async () => {
+      await seed({ ist: 50, ehByPlan: { credit: 50 }, careerUnits: { insurance: 0, investment: 0, credit: 100, realestate: 0 } })
+      const self = as("member", "m1")
+      await assertSucceeds(updateDoc(doc(self, "employees", "m1"),
+        { ist: 40, ehByPlan: { credit: 40 }, careerUnits: { insurance: 0, investment: 0, credit: 90, realestate: 0 } }))
+      await assertFails(updateDoc(doc(self, "employees", "m1"),
+        { ist: 40, ehByPlan: { credit: 40 }, careerUnits: { insurance: 0, investment: 0, credit: 50, realestate: 0 } }))
       await assertSucceeds(updateDoc(doc(as("admin"), "employees", "m1"), { careerUnits: { insurance: 0 } }))
     })
   })

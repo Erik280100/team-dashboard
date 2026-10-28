@@ -87,14 +87,22 @@ service cloud.firestore {
         && (!('joinDate' in d) || (d.joinDate is string && d.joinDate.size() <= 10))
         && d.get('isNew', false) is bool;
     }
-    // Der Karrierezaehler (loest Stufenaufstiege und damit hoehere Saetze aus) darf bei der Person selbst nur steigen;
-    // zuruecksetzen koennen ihn Vorgesetzte und Admin (Storno/Korrektur).
+    // Der Karrierezaehler (loest Stufenaufstiege und damit hoehere Saetze aus) darf bei der Person selbst nur steigen
+    // oder um hoechstens so viel sinken, wie sie die Einheiten desselben Plans selbst reduziert (eigene Korrektur der
+    // Einheiten zieht den Zaehler mit). Beliebig zuruecksetzen koennen ihn Vorgesetzte und Admin (Storno/Korrektur).
+    function careerDrop(n, o, newU, oldU) {
+      return n >= o - (oldU > newU ? oldU - newU : 0);
+    }
     function careerNotLoweredBySelf(empId) {
+      let nc = request.resource.data.get('careerUnits', {});
+      let oc = resource.data.get('careerUnits', {});
+      let ne = request.resource.data.get('ehByPlan', {});
+      let oe = resource.data.get('ehByPlan', {});
       return myEmp() != empId
-        || (request.resource.data.get('careerUnits', {}).get('insurance', 0) >= resource.data.get('careerUnits', {}).get('insurance', 0)
-          && request.resource.data.get('careerUnits', {}).get('investment', 0) >= resource.data.get('careerUnits', {}).get('investment', 0)
-          && request.resource.data.get('careerUnits', {}).get('credit', 0) >= resource.data.get('careerUnits', {}).get('credit', 0)
-          && request.resource.data.get('careerUnits', {}).get('realestate', 0) >= resource.data.get('careerUnits', {}).get('realestate', 0));
+        || (careerDrop(nc.get('insurance', 0), oc.get('insurance', 0), ne.get('insurance', 0), oe.get('insurance', resource.data.get('ist', 0)))
+          && careerDrop(nc.get('investment', 0), oc.get('investment', 0), ne.get('investment', 0) + ne.get('investmentVb', 0), oe.get('investment', 0) + oe.get('investmentVb', 0))
+          && careerDrop(nc.get('credit', 0), oc.get('credit', 0), ne.get('credit', 0), oe.get('credit', 0))
+          && careerDrop(nc.get('realestate', 0), oc.get('realestate', 0), ne.get('realestate', 0), oe.get('realestate', 0)));
     }
 
     match /users/{uid} {
