@@ -483,7 +483,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   abwicklerCandidates={allRoster}
                   planRates={withDefaultPlanRates(orgChart.planRates)}
                   defaultEmployee={myName}
-                  canBookUnits={auth.ready && !!auth.user}
+                  canBookUnits={auth.ready && !!auth.user && !auth.isViewer}
                   onApplyUnits={applyUnitsToEmployee}
                 />
               )}
@@ -510,7 +510,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   abwicklerNames={ehAbwicklerOptions(allRoster).map((r) => r.name)}
                   removeCase={finanzierungen.removeCase}
                   isEditor={auth.isEditor}
-                  canWrite={auth.ready && !!auth.user}
+                  canWrite={auth.ready && !!auth.user && !auth.isViewer}
                 />
               )}
               {section === id && id === "partner" && <Partner />}
@@ -541,7 +541,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 )
               )}
               {section === id && id === "statistik" && (seesAll || auth.isLead) && <Statistik archive={archive} />}
-              {section === id && id === "konten" && seesAll &&<Konten employees={dashboard.employees} />}
+              {section === id && id === "konten" && seesAll &&<Konten employees={dashboard.employees} readOnly={auth.isViewer} />}
               {section === id && id === "einstellungen" && <Einstellungen auth={auth} name={myName} avatarVersion={dashboard.employees.find((e) => e.id === auth.employeeId)?.avatarVersion} />}
             </section>
           ))}

@@ -154,7 +154,7 @@ export function useAuth(): UseAuthResult {
     isAdmin,
     isLead,
     isViewer,
-    isEditor: !!user,
+    isEditor: !!user && !isViewer, // Lesemodus: alle Eingabefelder gesperrt (Hinweisleiste in App.tsx)
     ready,
     signIn,
     resetPassword,
