@@ -15,11 +15,14 @@ interface UmdrehDraft {
   beraterNeu: string
   fkAlt: string
   fkNeu: string
+  ehAlt: string
+  ehNeu: string
   stornoActive: boolean
 }
 
 const defaultInputs: UmdrehDraft = {
-  praemie: "100", beraterAlt: "0", beraterNeu: "0", fkAlt: "0", fkNeu: "0", stornoActive: false,
+  praemie: "100", beraterAlt: "0", beraterNeu: "0", fkAlt: "0", fkNeu: "0",
+  ehAlt: String(UM_EH_ALT), ehNeu: String(UM_EH_NEU), stornoActive: false,
 }
 
 function DiffValue({ value, onDark }: { value: number; onDark?: boolean }) {
@@ -46,6 +49,8 @@ export function UmdrehRechner() {
     fkAlt: Number(inputs.fkAlt) || 0,
     fkNeu: Number(inputs.fkNeu) || 0,
     stornoActive: inputs.stornoActive,
+    ehAlt: Number(inputs.ehAlt) || 0,
+    ehNeu: Number(inputs.ehNeu) || 0,
   })
 
   function set<K extends keyof UmdrehDraft>(key: K, value: UmdrehDraft[K]) {
@@ -75,14 +80,18 @@ export function UmdrehRechner() {
                 onChange={(e) => set("praemie", e.target.value)}
                 className="h-9 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Einheiten alt
-              <input type="text" disabled value={UM_EH_ALT.toFixed(2).replace(".", ",")} className="h-9 rounded-md border border-input bg-muted px-2 text-sm" />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Einheiten neu
-              <input type="text" disabled value={UM_EH_NEU.toFixed(2).replace(".", ",")} className="h-9 rounded-md border border-input bg-muted px-2 text-sm" />
-            </label>
+            {([
+              ["Einheiten alt", "ehAlt"],
+              ["Einheiten neu", "ehNeu"],
+            ] as const).map(([label, key]) => (
+              <label key={key} className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {label}
+                <input type="number" min={0} step={0.01} value={inputs[key]}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => set(key, e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+              </label>
+            ))}
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {([

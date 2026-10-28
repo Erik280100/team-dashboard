@@ -15,17 +15,26 @@ service cloud.firestore {
 
     // Wer sein Startpasswort noch nicht geaendert hat (Claim mustChangePassword), darf nichts lesen/schreiben.
     // Nur Konten mit gueltiger Rolle (Claims von inviteUser/createAccount) — alte anonyme Logins ohne Claims haben keinen Zugriff.
+    // Wer aus dem Strukturbaum entfernt wurde (employees/{id}.active == false), verliert den Zugriff sofort,
+    // auch wenn sein Token noch bis zu eine Stunde gueltig ist. Konten ohne Mitarbeiter-Verknuepfung (Admin) bleiben unberuehrt.
+    function stillActive() {
+      return request.auth.token.get('employeeId', '') == ''
+        || !exists(/databases/$(database)/documents/employees/$(request.auth.token.get('employeeId', '')))
+        || get(/databases/$(database)/documents/employees/$(request.auth.token.get('employeeId', ''))).data.get('active', true) != false;
+    }
     function signedIn() {
       return request.auth != null
         && request.auth.token.get('role', '') in ['admin', 'lead', 'member', 'viewer']
-        && !request.auth.token.get('mustChangePassword', false);
+        && !request.auth.token.get('mustChangePassword', false)
+        && stillActive();
     }
     function role() { return request.auth.token.get('role', ''); }
     function myEmp() { return request.auth.token.get('employeeId', ''); }
     function isAdmin() { return signedIn() && role() == 'admin'; }
     function isViewer() { return signedIn() && role() == 'viewer'; }
-    function isSelf(empId) { return signedIn() && myEmp() != '' && myEmp() == empId; }
-    function isAncestor(ancestors) { return signedIn() && myEmp() != '' && myEmp() in ancestors; }
+    // Der Lesemodus hat in den Regeln keine eigene Identitaet: auch mit verknuepftem Mitarbeiter schreibt er nirgends.
+    function isSelf(empId) { return signedIn() && role() != 'viewer' && myEmp() != '' && myEmp() == empId; }
+    function isAncestor(ancestors) { return signedIn() && role() != 'viewer' && myEmp() != '' && myEmp() in ancestors; }
 
     function empDoc(empId) {
       return get(/databases/$(database)/documents/employees/$(empId));

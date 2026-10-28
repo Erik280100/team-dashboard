@@ -11,6 +11,9 @@ export interface UmdrehInputs {
   fkAlt: number
   fkNeu: number
   stornoActive: boolean
+  /** Einheiten je Prämien-Euro; Standard UM_EH_ALT / UM_EH_NEU. */
+  ehAlt?: number
+  ehNeu?: number
 }
 
 export interface UmdrehResult {
@@ -26,17 +29,17 @@ export interface UmdrehResult {
 }
 
 export function calcUmdreh(inputs: UmdrehInputs): UmdrehResult {
-  const { praemie, beraterAlt, beraterNeu, fkAlt, fkNeu, stornoActive } = inputs
+  const { praemie, beraterAlt, beraterNeu, fkAlt, fkNeu, stornoActive, ehAlt = UM_EH_ALT, ehNeu = UM_EH_NEU } = inputs
   const stornoFactor = stornoActive ? 0.85 : 1
 
-  const beraterMinus = UM_EH_ALT * praemie * beraterAlt * stornoFactor
-  const beraterAktuell = UM_EH_NEU * praemie * beraterNeu * stornoFactor
+  const beraterMinus = ehAlt * praemie * beraterAlt * stornoFactor
+  const beraterAktuell = ehNeu * praemie * beraterNeu * stornoFactor
   const beraterDiff = beraterAktuell - beraterMinus
 
-  const fkMinus = UM_EH_ALT * praemie * (fkAlt - beraterAlt) * stornoFactor
+  const fkMinus = ehAlt * praemie * (fkAlt - beraterAlt) * stornoFactor
   let fkNeuProEH = fkNeu - beraterNeu
   if (fkNeuProEH === 0 && beraterNeu >= 4 && fkNeu >= 4) fkNeuProEH = 0.5
-  const fkAktuell = UM_EH_NEU * praemie * fkNeuProEH * stornoFactor
+  const fkAktuell = ehNeu * praemie * fkNeuProEH * stornoFactor
   const fkDiff = fkAktuell - fkMinus
 
   const gesamtMinus = beraterMinus + fkMinus
