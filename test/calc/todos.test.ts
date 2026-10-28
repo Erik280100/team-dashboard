@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { dueState, reorderForMove, seedOrderByDue, todosInLane } from "../../src/lib/calc/todos"
+import { dueSoonTodos, dueState, reorderForMove, seedOrderByDue, todosInLane } from "../../src/lib/calc/todos"
 import type { BoardTodo } from "../../src/types/dashboard"
 
 function makeTodo(overrides: Partial<BoardTodo> & Pick<BoardTodo, "id">): BoardTodo {
@@ -121,17 +121,31 @@ describe("dueState", () => {
   it("kein Datum -> 'none'", () => {
     expect(dueState("", "2026-08-27")).toBe("none")
   })
-  it("Datum in der Vergangenheit -> 'overdue'", () => {
-    expect(dueState("2026-08-26", "2026-08-27")).toBe("overdue")
+  it("überfällig und heute -> 'red'", () => {
+    expect(dueState("2026-08-26", "2026-08-27")).toBe("red")
+    expect(dueState("2026-08-27", "2026-08-27")).toBe("red")
   })
-  it("Datum heute -> 'today'", () => {
-    expect(dueState("2026-08-27", "2026-08-27")).toBe("today")
+  it("30 Tage -> 'red', 31 Tage -> 'orange'", () => {
+    expect(dueState("2026-09-26", "2026-08-27")).toBe("red")
+    expect(dueState("2026-09-27", "2026-08-27")).toBe("orange")
   })
-  it("Datum in 3 Tagen -> 'soon'", () => {
-    expect(dueState("2026-08-30", "2026-08-27")).toBe("soon")
+  it("45 Tage -> 'orange', 46 Tage -> 'none'", () => {
+    expect(dueState("2026-10-11", "2026-08-27")).toBe("orange")
+    expect(dueState("2026-10-12", "2026-08-27")).toBe("none")
   })
-  it("Datum in 4 Tagen -> 'none'", () => {
-    expect(dueState("2026-08-31", "2026-08-27")).toBe("none")
+})
+
+describe("dueSoonTodos", () => {
+  it("nur offene Todos bis 45 Tage, früheste zuerst", () => {
+    const todos = [
+      makeTodo({ id: "spaet", dueDate: "2026-10-11" }),
+      makeTodo({ id: "frueh", dueDate: "2026-08-20" }),
+      makeTodo({ id: "weit", dueDate: "2026-12-01" }),
+      makeTodo({ id: "fertig", dueDate: "2026-08-20", lane: "fertig" }),
+      makeTodo({ id: "archiv", dueDate: "2026-08-20", archived: true }),
+      makeTodo({ id: "ohne" }),
+    ]
+    expect(dueSoonTodos(todos, "2026-08-27").map((t) => t.id)).toEqual(["frueh", "spaet"])
   })
 })
 

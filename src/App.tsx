@@ -30,7 +30,7 @@ import { useBoardTodosDoc } from "@/hooks/useBoardTodosDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
 import { useFinancingStats } from "@/hooks/useFinancingStats"
 import { useToday } from "@/hooks/useToday"
-import { hasOpenDueTodos } from "@/lib/calc/todos"
+import { daysUntil, dueSoonTodos, dueState, hasOpenDueTodos } from "@/lib/calc/todos"
 import { announceCelebration } from "@/lib/celebrate"
 import { useCelebrations } from "@/hooks/useCelebrations"
 import { ConfettiRain } from "@/components/ConfettiRain"
@@ -38,6 +38,7 @@ import { Sidebar } from "@/components/Sidebar"
 import { Topbar } from "@/components/Topbar"
 import { LoginPage } from "@/components/LoginPage"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Overview } from "@/components/sections/Overview"
 import { ChangePasswordPage } from "@/components/ChangePasswordPage"
 import type { MonthKey } from "@/types/archive"
@@ -126,7 +127,9 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
   const boardTodos = useBoardTodosDoc(auth.employeeId)
   useCelebrations(auth.ready && !!auth.user)
-  const boardAlert = hasOpenDueTodos(boardTodos.todos, useToday())
+  const today = useToday()
+  const boardAlert = hasOpenDueTodos(boardTodos.todos, today)
+  const dueSoon = dueSoonTodos(boardTodos.todos, today)
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
   // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin sieht den ganzen Baum,
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
@@ -409,6 +412,45 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
             >
               Monat abschließen
             </Button>
+          </div>
+        )}
+
+        {section === "overview" && !isArchive && dueSoon.length > 0 && (
+          <div
+            role="status"
+            className={cn(
+              "border-b px-6 py-3 text-sm",
+              dueSoon.some((t) => dueState(t.dueDate, today) === "red")
+                ? "bg-rose-50 text-rose-900 dark:bg-rose-950 dark:text-rose-200"
+                : "bg-orange-50 text-orange-900 dark:bg-orange-950 dark:text-orange-200"
+            )}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="font-medium">
+                Folgende Todos haben ihre Fälligkeit bald erreicht ({dueSoon.length}):
+              </span>
+              <Button size="sm" variant="ghost" onClick={() => navigateTo("board")}>
+                Zu Mein Board
+              </Button>
+            </div>
+            <ul className="mt-1 flex flex-col gap-0.5">
+              {dueSoon.map((t) => (
+                <li key={t.id} className="flex flex-wrap items-baseline gap-x-2">
+                  <span
+                    className={cn(
+                      "tabular-nums font-medium",
+                      dueState(t.dueDate, today) === "red" ? "text-destructive" : "text-orange-600 dark:text-orange-400"
+                    )}
+                  >
+                    {new Date(t.dueDate).toLocaleDateString("de-AT")}
+                  </span>
+                  <span>{t.title}</span>
+                  <span className="text-xs opacity-70">
+                    {daysUntil(t.dueDate, today) < 0 ? `${-daysUntil(t.dueDate, today)} Tage überfällig` : `in ${daysUntil(t.dueDate, today)} Tagen`}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

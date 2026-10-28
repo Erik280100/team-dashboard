@@ -18,9 +18,8 @@ const CARD_BORDER_CLASS: Record<BoardTodo["color"], string> = {
 }
 
 const DUE_TEXT_CLASS: Record<ReturnType<typeof dueState>, string> = {
-  overdue: "text-destructive font-medium",
-  today: "text-amber-600 dark:text-amber-400 font-medium",
-  soon: "text-amber-600 dark:text-amber-400",
+  red: "text-destructive font-medium",
+  orange: "text-orange-600 dark:text-orange-400 font-medium",
   none: "text-muted-foreground",
 }
 
@@ -70,10 +69,8 @@ export function TodoCard({
   }
 
   const state = dueState(todo.dueDate, todayStr())
-  // Fällig heute, in den nächsten 3 Tagen oder bereits überfällig — ganze Kachel
-  // leicht rot einfärben, nicht nur das Datum, damit es beim Überfliegen der Lane
-  // sofort auffällt.
-  const isUrgent = state !== "none"
+  // Fällig in höchstens 45 Tagen (orange) bzw. 30 Tagen oder überfällig (rot) — ganze Kachel
+  // einfärben, nicht nur das Datum, damit es beim Überfliegen der Lane sofort auffällt.
 
   return (
     <div
@@ -82,7 +79,7 @@ export function TodoCard({
       onDragStart={onDragStart}
       className={cn(
         "flex cursor-grab flex-col gap-2 rounded-md border border-l-4 p-3 text-sm shadow-sm active:cursor-grabbing",
-        isUrgent ? "bg-rose-50 dark:bg-rose-950/40" : "bg-background",
+        state === "red" ? "bg-rose-50 dark:bg-rose-950/40" : state === "orange" ? "bg-orange-50 dark:bg-orange-950/40" : "bg-background",
         CARD_BORDER_CLASS[todo.color]
       )}
     >

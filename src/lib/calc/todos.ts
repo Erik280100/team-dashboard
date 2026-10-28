@@ -76,18 +76,31 @@ export function reorderForMove(todos: BoardTodo[], id: string, lane: TodoLane, b
   return todos.map((t) => (t.id === id ? { ...t, lane, order: newOrder, ...(lane !== "fertig" && t.completed ? { completed: false } : {}) } : t))
 }
 
-export type DueState = "overdue" | "today" | "soon" | "none"
+/** Bis so viele Tage vor der Fälligkeit wird ein Todo orange, bis RED_DUE_DAYS rot (überfällig bleibt rot). */
+export const ORANGE_DUE_DAYS = 45
+export const RED_DUE_DAYS = 30
 
-/** Fälligkeitsstatus eines Todos relativ zu `today` (YYYY-MM-DD, lokale Zeit). "soon" = innerhalb 3 Tagen. */
+export type DueState = "red" | "orange" | "none"
+
+/** Tage von `today` bis `dueDate` (beide "YYYY-MM-DD"); negativ = überfällig. */
+export function daysUntil(dueDate: string, today: string): number {
+  return Math.round((Date.parse(dueDate) - Date.parse(today)) / 86_400_000)
+}
+
+/** Dringlichkeit eines Fälligkeitsdatums relativ zu `today`: rot bis 30 Tage (inkl. überfällig), orange bis 45 Tage. */
 export function dueState(dueDate: string, today: string): DueState {
   if (!dueDate) return "none"
-  if (dueDate < today) return "overdue"
-  if (dueDate === today) return "today"
-  const soonUntil = new Date(today)
-  soonUntil.setDate(soonUntil.getDate() + 3)
-  const soonUntilStr = soonUntil.toISOString().slice(0, 10)
-  if (dueDate <= soonUntilStr) return "soon"
+  const days = daysUntil(dueDate, today)
+  if (days <= RED_DUE_DAYS) return "red"
+  if (days <= ORANGE_DUE_DAYS) return "orange"
   return "none"
+}
+
+/** Offene Todos (nicht in "fertig", nicht abgehakt, nicht archiviert) mit Fälligkeit in höchstens 45 Tagen, früheste zuerst. */
+export function dueSoonTodos(todos: BoardTodo[], today: string): BoardTodo[] {
+  return todos
+    .filter((t) => t.lane !== "fertig" && !t.completed && !t.archived && dueState(t.dueDate, today) !== "none")
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.createdAt.localeCompare(b.createdAt))
 }
 
 /**
