@@ -13,6 +13,9 @@ describe("hasOpenDueTodos", () => {
     expect(hasOpenDueTodos([todo("2026-10-01", "fertig")], "2026-10-20")).toBe(false)
     expect(hasOpenDueTodos([], "2026-10-20")).toBe(false)
   })
+  it("false für archivierte Todos", () => {
+    expect(hasOpenDueTodos([{ dueDate: "2026-10-01", lane: "todo", archived: true }], "2026-10-20")).toBe(false)
+  })
   it("ein fälliges unter mehreren genügt", () => {
     expect(hasOpenDueTodos([todo("2026-12-01"), todo("2026-10-19"), todo("")], "2026-10-20")).toBe(true)
   })

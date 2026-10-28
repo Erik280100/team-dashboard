@@ -3,7 +3,7 @@
 // Drag-&-Drop per nativer HTML5-DnD (keine zusätzliche Library, siehe StrukturBaum.tsx
 // für dasselbe Prinzip bei Pointer-Events). Keine Legacy-Entsprechung — neues Feature.
 import { useLayoutEffect, useRef, useState, type DragEvent } from "react"
-import { Plus } from "lucide-react"
+import { Archive, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -63,6 +63,8 @@ export function MeinBoard({
   const [flaggedOnly, setFlaggedOnly] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
+  const [showCompleted, setShowCompleted] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
 
   // Swimlanes sollen die restliche Bildschirmhöhe unterhalb von Topbar/Bannern/Tab-
   // leiste ausfüllen, statt mit dem Rest der Seite mitzuscrollen (das Verschieben von
@@ -157,9 +159,17 @@ export function MeinBoard({
   // Rauschen erzeugen und sind meist noch Tippbeginn).
   const searchTerm = search.trim().toLowerCase()
   const searchActive = searchTerm.length >= 2
-  const visibleTodos = todos
+  const matchingTodos = todos
     .filter((t) => !flaggedOnly || t.flagged)
     .filter((t) => !searchActive || (t.title ?? "").toLowerCase().includes(searchTerm) || (t.description ?? "").toLowerCase().includes(searchTerm))
+    .filter((t) => filter === "alle" || t.category === filter)
+  const archivedTodos = matchingTodos
+    .filter((t) => t.archived)
+    .sort((a, b) => a.title.localeCompare(b.title))
+  // Abgehakte Todos sind ausgeblendet, bis "Erledigte anzeigen" aktiv ist; Archiviertes nie auf dem Board.
+  const visibleTodos = matchingTodos.filter((t) => !t.archived && (showCompleted || !t.completed))
+  const completedCount = todos.filter((t) => t.completed && !t.archived).length
+  const archivedCount = todos.filter((t) => t.archived).length
 
   return (
     <div className="flex flex-col gap-4">
@@ -219,6 +229,34 @@ export function MeinBoard({
               >
                 Nur geflaggte
               </button>
+              {!showArchive && (
+                <button
+                  type="button"
+                  aria-pressed={showCompleted}
+                  onClick={() => setShowCompleted((v) => !v)}
+                  className={cn(
+                    "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                    showCompleted
+                      ? "border-transparent bg-emerald-600 text-white shadow-sm"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  )}
+                >
+                  {showCompleted ? "Erledigte ausblenden" : "Erledigte anzeigen"} ({completedCount})
+                </button>
+              )}
+              <button
+                type="button"
+                aria-pressed={showArchive}
+                onClick={() => setShowArchive((v) => !v)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                  showArchive
+                    ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                )}
+              >
+                <Archive className="size-3.5" /> {showArchive ? "Zurück zum Board" : "Archiv"} ({archivedCount})
+              </button>
               <Input
                 type="search"
                 placeholder="Suchen…"
@@ -233,9 +271,34 @@ export function MeinBoard({
             </Button>
           </div>
 
+          {showArchive && (
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold">Archiv</h3>
+              {archivedTodos.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Keine archivierten Todos.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {archivedTodos.map((todo) => (
+                    <div key={todo.id} className="flex flex-col gap-1">
+                      <span className="px-1 text-[11px] text-muted-foreground">Aus: {TODO_LANE_LABELS[todo.lane]}</span>
+                      <TodoCard
+                        todo={todo}
+                        showCategory
+                        inArchive
+                        onPatch={(patch) => patchTodo(todo.id, patch)}
+                        onDelete={() => handleDelete(todo)}
+                        onDragStart={(e) => e.preventDefault()}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div
             ref={boardRef}
-            className="flex gap-4"
+            className={cn("flex gap-4", showArchive && "hidden")}
             style={boardHeight !== null ? { height: boardHeight } : undefined}
           >
             {TODO_LANES.map((lane) => {

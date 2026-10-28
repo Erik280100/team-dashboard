@@ -126,6 +126,10 @@ export interface BoardTodo {
   category: TodoCategory
   color: TodoColor
   flagged: boolean
+  /** Abgehakt in der Lane "fertig": aus dem Board ausgeblendet, über "Erledigte anzeigen" wieder sichtbar. */
+  completed?: boolean
+  /** Archiviert (aus jeder Lane möglich): nur im Archiv sichtbar; die Lane bleibt für die Wiederherstellung erhalten. */
+  archived?: boolean
   /** Position innerhalb der Lane (aufsteigend). */
   order: number
   createdAt: string

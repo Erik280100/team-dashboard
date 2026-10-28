@@ -72,7 +72,8 @@ export function reorderForMove(todos: BoardTodo[], id: string, lane: TodoLane, b
     }
   }
 
-  return todos.map((t) => (t.id === id ? { ...t, lane, order: newOrder } : t))
+  // "Abgehakt" gilt nur in der Lane "fertig" — wer das Todo woandershin zieht, öffnet es damit wieder.
+  return todos.map((t) => (t.id === id ? { ...t, lane, order: newOrder, ...(lane !== "fertig" && t.completed ? { completed: false } : {}) } : t))
 }
 
 export type DueState = "overdue" | "today" | "soon" | "none"
@@ -94,6 +95,6 @@ export function dueState(dueDate: string, today: string): DueState {
  * und Todos ohne Datum zählen nicht.) `today` = "YYYY-MM-DD" in lokaler Zeit. Steuert das rote Ausrufezeichen
  * bei "Mein Board" in der Sidebar.
  */
-export function hasOpenDueTodos(todos: Pick<BoardTodo, "dueDate" | "lane">[], today: string): boolean {
-  return todos.some((t) => t.lane !== "fertig" && !!t.dueDate && t.dueDate <= today)
+export function hasOpenDueTodos(todos: Pick<BoardTodo, "dueDate" | "lane" | "archived">[], today: string): boolean {
+  return todos.some((t) => t.lane !== "fertig" && !t.archived && !!t.dueDate && t.dueDate <= today)
 }

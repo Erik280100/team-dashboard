@@ -3,7 +3,7 @@
 // Lane) — Drop-Zielberechnung (vor welcher Karte losgelassen wird) macht die Lane
 // selbst anhand von data-todo-id, nicht diese Komponente.
 import { useEffect, useRef, useState, type DragEvent } from "react"
-import { Flag, Trash2 } from "lucide-react"
+import { Archive, ArchiveRestore, CheckCircle2, Flag, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { dueState } from "@/lib/calc/todos"
 import { TODO_CATEGORY_LABELS, TODO_COLOR_LABELS, TODO_COLORS, type BoardTodo } from "@/types/dashboard"
@@ -29,13 +29,15 @@ function todayStr(): string {
 }
 
 export function TodoCard({
-  todo, showCategory, onPatch, onDelete, onDragStart,
+  todo, showCategory, onPatch, onDelete, onDragStart, inArchive = false,
 }: {
   todo: BoardTodo
   showCategory: boolean
   onPatch: (patch: Partial<BoardTodo>) => void
   onDelete: () => void
   onDragStart: (e: DragEvent<HTMLDivElement>) => void
+  /** Im Archiv: statt Archivieren/Abhaken gibt es "Wiederherstellen". */
+  inArchive?: boolean
 }) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(todo.title)
@@ -183,6 +185,44 @@ export function TodoCard({
           >
             <Flag className="size-3.5" fill={todo.flagged ? "currentColor" : "none"} />
           </button>
+          {inArchive ? (
+            <button
+              type="button"
+              aria-label="Aus Archiv wiederherstellen"
+              title="Aus Archiv wiederherstellen"
+              onClick={() => onPatch({ archived: false })}
+              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <ArchiveRestore className="size-3.5" />
+            </button>
+          ) : (
+            <>
+              {todo.lane === "fertig" && (
+                <button
+                  type="button"
+                  aria-label={todo.completed ? "Wieder als offen markieren" : "Als erledigt abhaken"}
+                  title={todo.completed ? "Wieder als offen markieren" : "Abhaken — Todo verschwindet aus der Lane"}
+                  aria-pressed={!!todo.completed}
+                  onClick={() => onPatch({ completed: !todo.completed })}
+                  className={cn(
+                    "rounded p-1 hover:bg-accent",
+                    todo.completed ? "text-emerald-600" : "text-muted-foreground hover:text-emerald-600"
+                  )}
+                >
+                  <CheckCircle2 className="size-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                aria-label="Archivieren"
+                title="Archivieren"
+                onClick={() => onPatch({ archived: true })}
+                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <Archive className="size-3.5" />
+              </button>
+            </>
+          )}
           <button
             type="button"
             aria-label="Todo löschen"

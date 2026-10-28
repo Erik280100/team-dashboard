@@ -134,3 +134,14 @@ describe("dueState", () => {
     expect(dueState("2026-08-31", "2026-08-27")).toBe("none")
   })
 })
+
+describe("reorderForMove und completed", () => {
+  it("Verschieben aus 'fertig' heraus öffnet ein abgehaktes Todo wieder", () => {
+    const todos = [makeTodo({ id: "a", lane: "fertig", completed: true })]
+    expect(reorderForMove(todos, "a", "todo", null)[0].completed).toBe(false)
+  })
+  it("Verschieben innerhalb von 'fertig' behält den Haken", () => {
+    const todos = [makeTodo({ id: "a", lane: "fertig", completed: true })]
+    expect(reorderForMove(todos, "a", "fertig", null)[0].completed).toBe(true)
+  })
+})
