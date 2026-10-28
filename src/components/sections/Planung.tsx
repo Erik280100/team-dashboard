@@ -11,26 +11,23 @@ import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, ty
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { PlanTeamGroup } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
-import type { UseUmsaetzeDocResult } from "@/hooks/useUmsaetzeDoc"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { EmployeeRow } from "@/types/dashboard"
 import { Wochenplanung } from "@/components/sections/planung/Wochenplanung"
 import { Monatsplanung } from "@/components/sections/planung/Monatsplanung"
 import { Jahresplanung } from "@/components/sections/planung/Jahresplanung"
-import { Umsatzverfolgung } from "@/components/sections/planung/Umsatzverfolgung"
 
-type PlanEbene = "woche" | "monat" | "jahr" | "umsatz"
+type PlanEbene = "woche" | "monat" | "jahr"
 type PlanScope = "alle" | "fuehrung" | "direkt"
 
 const EBENEN: { id: PlanEbene; label: string }[] = [
   { id: "woche", label: "Wochenplanung" },
   { id: "monat", label: "Monatsplanung" },
   { id: "jahr", label: "Jahresplanung" },
-  { id: "umsatz", label: "Umsatzverfolgung" },
 ]
 
 export function Planung({
-  roster, orgTree, planung, umsaetze, isEditor, rows, unitsMonthKey, archive,
+  roster, orgTree, planung, isEditor, rows, unitsMonthKey, archive,
 }: {
   archive: UseMonthArchiveResult
   rows: EmployeeRow[]
@@ -38,7 +35,6 @@ export function Planung({
   roster: RosterEntry[]
   orgTree: SbNode
   planung: UsePlanungDocResult
-  umsaetze: UseUmsaetzeDocResult
   isEditor: boolean
 }) {
   const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
@@ -89,11 +85,6 @@ export function Planung({
     if (leadFrontier.length === 0) setScope((s) => (s === "fuehrung" ? "alle" : s))
   }, [leadFrontier])
   const groupByLead = scope === "fuehrung"
-  // Umsatzverfolgung: nur Umsätze der aktuell gelisteten Personen (Führungskraft, Umfang, Namenssuche).
-  const umsatzEntries = useMemo(() => {
-    const listed = new Set(filteredPeople.map((p) => p.name.trim().toLowerCase()))
-    return umsaetze.entries.filter((e) => listed.has(e.mitarbeiter.trim().toLowerCase()))
-  }, [umsaetze.entries, filteredPeople])
 
   if (managerOptions.length === 0) {
     return (
@@ -158,14 +149,6 @@ export function Planung({
           planung={planung}
           isEditor={isEditor}
           teamGroups={groupByLead ? filteredTeamGroups : null}
-        />
-      )}
-      {ebene === "umsatz" && (
-        <Umsatzverfolgung
-          entries={umsatzEntries}
-          isEditor={isEditor}
-          patchEntry={umsaetze.patchEntry}
-          removeEntry={umsaetze.removeEntry}
         />
       )}
       {ebene === "jahr" && selectedManager && (

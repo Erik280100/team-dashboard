@@ -76,7 +76,7 @@ export function EhRechner({
     acc[planId] = round2(result.planSums[planId] || 0)
     return acc
   }, {} as Record<PlanId, number>)
-  // Positionen mit Betrag wandern bei der Buchung in die Umsatzverfolgung (Controlling).
+  // Positionen mit Betrag wandern bei der Buchung in die Umsatzverfolgung (eigene Seite).
   const sales = umsatzDrafts(j, result.perItem, kunde)
   const selectedEmployee = employees.find((e) => e.name === selectedName) ?? null
   // Fallback auf alle Mitarbeiter, falls Georg/Sandro im Strukturbaum nicht gefunden werden.

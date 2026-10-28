@@ -58,6 +58,7 @@ const Einstellungen = lazy(() => import("@/components/sections/Einstellungen").t
 const StrukturBaum = lazy(() => import("@/components/sections/struktur/StrukturBaum").then((m) => ({ default: m.StrukturBaum })))
 const Statistik = lazy(() => import("@/components/sections/Statistik").then((m) => ({ default: m.Statistik })))
 const Planung = lazy(() => import("@/components/sections/Planung").then((m) => ({ default: m.Planung })))
+const Umsatz = lazy(() => import("@/components/sections/Umsatz").then((m) => ({ default: m.Umsatz })))
 
 const SECTION_LABELS: Record<SectionId, string> = {
   overview: "Dashboard",
@@ -65,6 +66,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   struktur: "Strukturbaum",
   statistik: "Statistik",
   planung: "Planung",
+  umsatz: "Umsatzverfolgung",
   rechner: "Rechner",
   karriere: "Karrierepläne",
   guide: "Guide",
@@ -536,10 +538,17 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   orgTree={controllingTree}
                   archive={archive}
                   planung={planung}
-                  umsaetze={umsaetze}
                   isEditor={auth.isEditor}
                   rows={planungRows}
                   unitsMonthKey={monthKeyOf(dashboard.teamGoal)}
+                />
+              )}
+              {section === id && id === "umsatz" && (
+                <Umsatz
+                  roster={controllingRoster}
+                  orgTree={controllingTree}
+                  umsaetze={umsaetze}
+                  isEditor={auth.isEditor}
                 />
               )}
               {section === id && id === "rechner" && (

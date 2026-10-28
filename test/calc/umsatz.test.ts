@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { calcEh, EH_GROUPS, EH_ITEMS } from "../../src/lib/calc/eh"
-import { umsatzDrafts } from "../../src/lib/calc/umsatz"
+import { umsatzDrafts, umsatzMatches } from "../../src/lib/calc/umsatz"
 
 function inputs(j: Record<string, string>) {
   const g: Record<string, string> = {}
@@ -43,5 +43,24 @@ describe("umsatzDrafts mit Kundenname", () => {
   it("lässt den Kunden ohne Eingabe weg", () => {
     const i = inputs({ flv: "100" })
     expect(umsatzDrafts(i.j, calcEh(i as never).perItem, "   ")[0]).not.toHaveProperty("kunde")
+  })
+})
+
+describe("umsatzMatches", () => {
+  const e = { kunde: "Max Muster", mitarbeiter: "Anna Beispiel", produkt: "Lebensversicherung", praemie: 120.5, einheiten: 36.15 }
+  it("findet Kunde, Mitarbeiter und Produkt per Text", () => {
+    expect(umsatzMatches(e, "muster")).toBe(true)
+    expect(umsatzMatches(e, "anna")).toBe(true)
+    expect(umsatzMatches(e, "leben")).toBe(true)
+    expect(umsatzMatches(e, "xyz")).toBe(false)
+  })
+  it("findet Prämie und Einheiten per Zahl (Komma oder Punkt)", () => {
+    expect(umsatzMatches(e, "120,5")).toBe(true)
+    expect(umsatzMatches(e, "36.15")).toBe(true)
+    expect(umsatzMatches(e, "120")).toBe(true)
+    expect(umsatzMatches(e, "999")).toBe(false)
+  })
+  it("leere Suche trifft alles", () => {
+    expect(umsatzMatches(e, "  ")).toBe(true)
   })
 })

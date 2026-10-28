@@ -1,6 +1,6 @@
 // Umsatzverfolgung — stumpfe Tabelle aller im EH-Rechner gebuchten Umsätze (Datum, Produkt, Prämie). Kunde,
 // Beginn, "policiert" und "ausbezahlt" werden nachträglich von Hand gepflegt. Welche Zeilen sichtbar sind,
-// bestimmt Planung.tsx (gewählte Führungskraft/Filter) und die Regeln (eigene Zeilen + Unterstruktur).
+// bestimmt Umsatz.tsx (gewählte Führungskraft/Filter) und die Regeln (eigene Zeilen + Unterstruktur).
 // Sind "policiert" und "ausbezahlt" beide gesetzt, gilt der Umsatz als erledigt und wandert automatisch ins
 // Archiv (abgeleitet, kein eigenes Feld); Häkchen wieder entfernen holt ihn zurück in die Liste.
 import { useState } from "react"
@@ -39,9 +39,11 @@ function KundeInput({ entry, disabled, onSave }: { entry: UmsatzEntry; disabled:
 }
 
 export function Umsatzverfolgung({
-  entries: allEntries, isEditor, patchEntry, removeEntry,
+  entries: allEntries, isEditor, patchEntry, removeEntry, tags,
 }: {
   entries: UmsatzEntry[]
+  /** Kleine Markierung hinter dem Namen (Schlüssel: Name in Kleinbuchstaben), z. B. "Eigener Umsatz" oder "Trainee". */
+  tags?: Record<string, string>
   isEditor: boolean
   patchEntry: UseUmsaetzeDocResult["patchEntry"]
   removeEntry: UseUmsaetzeDocResult["removeEntry"]
@@ -107,7 +109,14 @@ export function Umsatzverfolgung({
           {entries.map((e) => (
             <tr key={e.id} className="border-t border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]">
               <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{formatISODateDE(e.bookedAt.slice(0, 10))}</td>
-              <td className="px-3 py-1.5">{e.mitarbeiter}</td>
+              <td className="px-3 py-1.5">
+                {e.mitarbeiter}
+                {tags?.[e.mitarbeiter.trim().toLowerCase()] && (
+                  <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">
+                    {tags[e.mitarbeiter.trim().toLowerCase()]}
+                  </span>
+                )}
+              </td>
               <td className="px-3 py-1.5">{e.produkt}</td>
               <td className="px-3 py-1.5 text-right tabular-nums" title={e.praemieLabel}>{ehFormatEUR(e.praemie)}</td>
               <td className="px-3 py-1.5 text-right tabular-nums">{ehFormatEH(e.einheiten)}</td>

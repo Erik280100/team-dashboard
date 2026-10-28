@@ -227,7 +227,7 @@ export const STARTER_GOAL: TeamGoal = {
   ...defaultPeriod(),
 }
 
-// Umsatzverfolgung (Controlling): eine Zeile je Rechner-Position, die im EH-Rechner gebucht wurde.
+// Umsatzverfolgung: eine Zeile je Rechner-Position, die im EH-Rechner gebucht wurde.
 export interface UmsatzEntry {
   id: string
   /** ISO-Zeitpunkt der Buchung. */
