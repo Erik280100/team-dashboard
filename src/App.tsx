@@ -7,7 +7,7 @@
 // Komponente von ConfirmProvider statt in App (analog dazu, wie Kalender.tsx
 // useConfirm() bereits als Kind-Komponente nutzt).
 import { lazy, Suspense, useEffect, useMemo, useState } from "react"
-import { AlarmClock } from "lucide-react"
+import { AlarmClock, ChevronDown } from "lucide-react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
 import { applyMonthStats, mergeRosterWithRows, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
@@ -164,6 +164,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
 
   // Mobil: Sidebar ist standardmäßig eingeklappt (off-canvas), siehe Sidebar.tsx.
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [dueSoonOpen, setDueSoonOpen] = useState(true)
 
   // Archiv-Modus verlassen, sobald eine Sektion ohne Monatswähler aktiv wird
   // (Rechner/Karriere/Guide/Kalender/Partner/Statistik zeigen immer live/den
@@ -421,15 +422,26 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               )}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-sm font-semibold">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 text-sm font-semibold"
+                  aria-expanded={dueSoonOpen}
+                  aria-controls="due-soon-list"
+                  onClick={() => setDueSoonOpen((o) => !o)}
+                >
+                  <ChevronDown
+                    className={cn("size-4 transition-transform", !dueSoonOpen && "-rotate-90")}
+                    aria-hidden="true"
+                  />
                   <AlarmClock className="size-4" aria-hidden="true" />
                   Bald fällige Todos ({dueSoon.length})
-                </span>
+                </button>
                 <Button size="sm" variant="outline" onClick={() => navigateTo("board")}>
                   Zu Mein Board
                 </Button>
               </div>
-              <ul className="mt-3 flex flex-col gap-1.5">
+              {dueSoonOpen && (
+              <ul id="due-soon-list" className="mt-3 flex flex-col gap-1.5">
                 {dueSoon.map((t) => {
                   const red = dueState(t.dueDate, today) === "red"
                   const days = daysUntil(t.dueDate, today)
@@ -459,6 +471,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   )
                 })}
               </ul>
+              )}
             </div>
           </div>
         )}
