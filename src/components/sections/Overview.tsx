@@ -11,7 +11,7 @@ import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "l
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_TICK } from "@/lib/chartSetup"
-import { fmt as fmtDecimal, formatISODateDE } from "@/lib/calc/format"
+import { fmt as fmtDecimal, formatISODateDE, toISODate } from "@/lib/calc/format"
 import { readPlanUnits } from "@/lib/calc/verguetung"
 import { monthKeyOf, monthLabel } from "@/lib/calc/archive"
 import type { ArchiveIndexEntry } from "@/types/archive"
@@ -101,7 +101,17 @@ export function Overview({
   // Berechnungen nur bei geänderten Eingaben (statt bei jedem Render der ganzen App).
   const kpis = useMemo(() => summaryKpis(rows), [rows])
   const goal = useMemo(() => goalProgress(rows), [rows])
-  const timeline = useMemo(() => timelineData(teamGoal, rows, history, now ?? new Date()), [teamGoal, rows, history, now])
+  // Der gespeicherte Verlauf wird nur bei Admin-Speicherungen fortgeschrieben und hinkt sonst dem Live-Ist hinterher
+  // (Kurve blieb auf altem Stand stehen). Für den heutigen Tag zählt deshalb immer die aktuelle Summe aus den Zeilen.
+  const timeline = useMemo(() => {
+    const ref = now ?? new Date()
+    const { periodStart, periodEnd } = teamGoal
+    const today = toISODate(ref)
+    const date = periodEnd && today > periodEnd ? periodEnd : periodStart && today < periodStart ? periodStart : today
+    const live = { date, ist: goal.totalIst }
+    const merged = [...history.filter((h) => h.date !== date), live].sort((a, b) => a.date.localeCompare(b.date))
+    return timelineData(teamGoal, rows, merged, ref)
+  }, [teamGoal, rows, history, now, goal.totalIst])
   const shares = useMemo(() => revenueShareData(rows), [rows])
   const sparten = useMemo(() => {
     const planTotals = rows.reduce(
