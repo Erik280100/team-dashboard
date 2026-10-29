@@ -10,7 +10,8 @@ import { Siegertreppchen } from "@/components/Siegertreppchen"
 import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_TICK } from "@/lib/chartSetup"
+import { SURFACE_CARD, CHART_GRID, CHART_TICK } from "@/lib/chartSetup"
+import { FIELD_INPUT } from "@/components/ui/surface"
 import { fmt as fmtDecimal, fmtEurRound as fmtEur, formatISODateDE, toISODate } from "@/lib/calc/format"
 import { readPlanUnits } from "@/lib/calc/verguetung"
 import { monthKeyOf, monthLabel } from "@/lib/calc/archive"
@@ -46,8 +47,8 @@ const LINE_OPTIONS = {
   interaction: { mode: "index" as const, intersect: false },
   plugins: { legend: { display: false } },
   scales: {
-    x: { grid: { display: false }, ticks: { ...DARK_TICK, maxTicksLimit: 10 } },
-    y: { beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
+    x: { grid: { display: false }, ticks: { ...CHART_TICK, maxTicksLimit: 10 } },
+    y: { beginAtZero: true, ticks: CHART_TICK, grid: { color: CHART_GRID } },
   },
 }
 
@@ -184,7 +185,7 @@ export function Overview({
     <div className="flex flex-col gap-6">
       {/* Team-Ziel + KPI-Kacheln */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <CardContent className="flex flex-col gap-5">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-white/50">
@@ -199,7 +200,7 @@ export function Overview({
                 </span>
               </div>
               <Input
-                className={cn("mt-3", DARK_INPUT)}
+                className={cn("mt-3", FIELD_INPUT)}
                 placeholder="Kurzer Fokus/Motto für den Monat (optional)…"
                 aria-label="Fokus/Motto für den Monat"
                 value={noteDraft}
@@ -230,7 +231,7 @@ export function Overview({
           </CardContent>
         </Card>
 
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <DarkCardHeader title="Zielverlauf & Prognose" sub="Wann erreichen wir das Team-Ziel bei aktuellem Tempo?" />
           <CardContent>
             {timeline.valid ? (
@@ -261,7 +262,7 @@ export function Overview({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <CardContent className="flex items-center gap-4">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
               <Users className="size-4 text-[#64DDA3]" aria-hidden="true" />
@@ -273,7 +274,7 @@ export function Overview({
             </div>
           </CardContent>
         </Card>
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <CardContent className="flex items-center gap-4">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
               <Landmark className="size-4 text-[#64DDA3]" aria-hidden="true" />
@@ -285,7 +286,7 @@ export function Overview({
             </div>
           </CardContent>
         </Card>
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <CardContent className="flex items-center gap-4">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
               <Building2 className="size-4 text-[#64DDA3]" aria-hidden="true" />
@@ -301,14 +302,14 @@ export function Overview({
 
       {/* Umsatzanteil / Top 10 Geschäftspartner / Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <DarkCardHeader title="Treppchen" sub="Die Top 3 nach Einheiten" />
           <CardContent>
             <Siegertreppchen entries={shares} avatars={avatars} formatValue={fmt} />
           </CardContent>
         </Card>
 
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <DarkCardHeader title="Top 10 Geschäftspartner" sub="Einheiten" />
           <CardContent className="flex flex-col gap-1.5">
             {shares.slice(0, 10).map((s, i) => (
@@ -328,7 +329,7 @@ export function Overview({
           </CardContent>
         </Card>
 
-        <Card className={DARK_CARD}>
+        <Card className={SURFACE_CARD}>
           <DarkCardHeader title="Leaderboard" sub="Ranking nach Ist AT" />
           <CardContent className="flex flex-col gap-1.5">
             {leaderboard.map((r, i) => (
@@ -353,7 +354,7 @@ export function Overview({
       {/* Umsatz nach Sparte */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {sparten.map((s) => (
-          <Card key={s.label} className={DARK_CARD}>
+          <Card key={s.label} className={SURFACE_CARD}>
             <CardContent className="flex items-center gap-4">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
                 <s.icon className="size-4 text-[#64DDA3]" aria-hidden="true" />
@@ -376,7 +377,7 @@ export function Overview({
           { label: "Credit", icon: Wallet, units: yearly.totals.credit },
           { label: "Gesamt", icon: Sigma, units: yearly.total },
         ].map((s) => (
-          <Card key={s.label} className={DARK_CARD}>
+          <Card key={s.label} className={SURFACE_CARD}>
             <CardContent className="flex items-center gap-4">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
                 <s.icon className="size-4 text-[#64DDA3]" aria-hidden="true" />

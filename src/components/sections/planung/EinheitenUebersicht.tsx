@@ -9,7 +9,7 @@ import { PLAN_IDS, PLAN_LABELS, type RosterEntry } from "@/lib/calc/struktur"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { EmployeeRow } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
-import { DARK_CARD, DARK_TABLE, Pill } from "@/components/ui/dark"
+import { SURFACE_CARD, SURFACE_TABLE, Pill } from "@/components/ui/surface"
 
 export function EinheitenUebersicht({
   managerName, people, roster, year, archive, rows, unitsMonthKey,
@@ -74,19 +74,19 @@ export function EinheitenUebersicht({
         )}
         {loading && <span className="text-xs text-muted-foreground">Lade Archiv…</span>}
       </div>
-      <div className={cn(DARK_TABLE.wrap, DARK_CARD)}>
-        <table className={cn("min-w-[820px]", DARK_TABLE.table)}>
+      <div className={cn(SURFACE_TABLE.wrap, SURFACE_CARD)}>
+        <table className={cn("min-w-[820px]", SURFACE_TABLE.table)}>
           <thead>
             <tr>
-              <th className={DARK_TABLE.head}>{withTeam ? "Person · Team" : "Person"}</th>
-              {PLAN_IDS.map((p) => <th key={p} className={cn(DARK_TABLE.head, "text-right")}>{PLAN_LABELS[p]}</th>)}
-              <th className={cn(DARK_TABLE.head, "text-right")}>Einheiten {year}</th>
-              <th className={cn(DARK_TABLE.head, "text-right")}>Gesamt seit Beginn</th>
+              <th className={SURFACE_TABLE.head}>{withTeam ? "Person · Team" : "Person"}</th>
+              {PLAN_IDS.map((p) => <th key={p} className={cn(SURFACE_TABLE.head, "text-right")}>{PLAN_LABELS[p]}</th>)}
+              <th className={cn(SURFACE_TABLE.head, "text-right")}>Einheiten {year}</th>
+              <th className={cn(SURFACE_TABLE.head, "text-right")}>Gesamt seit Beginn</th>
             </tr>
           </thead>
           <tbody>
             {lines.map((l) => (
-              <tr key={l.entry.name} className={DARK_TABLE.row}>
+              <tr key={l.entry.name} className={SURFACE_TABLE.row}>
                 <td className="px-3 py-2">
                   <div className="truncate text-sm font-semibold">
                     {l.entry.name}

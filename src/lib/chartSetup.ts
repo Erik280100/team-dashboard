@@ -10,11 +10,9 @@ ChartJS.register(
   ArcElement, Title, Tooltip, Legend, Filler
 )
 
-export const DARK_GRID = "rgba(255,255,255,.08)"
-export const DARK_TICK = { color: "#9FB3AF", font: { size: 10 } }
-export const DARK_LEGEND = { labels: { color: "#DCEAE6", boxWidth: 12, font: { size: 11 } }, position: "top" as const }
+export const CHART_GRID = "#e2e8f0"
+export const CHART_TICK = { color: "#64748b", font: { size: 10 } }
+export const CHART_LEGEND = { labels: { color: "#1e293b", boxWidth: 12, font: { size: 11 } }, position: "top" as const }
 
-// Original: linear-gradient(160deg, #16323F 0%, #0B1F2A 100%) — durchgängig für
-// alle dunklen Kacheln (Übersicht, Statistik), nicht nur Chart-Panels.
-export const DARK_CARD = "border-white/10 bg-[linear-gradient(160deg,#16323F_0%,#0B1F2A_100%)] text-white"
-export const DARK_INPUT = "border-white/20 bg-white/10 text-white placeholder:text-white/40 [color-scheme:dark]"
+// Weiße Karte mit zartem Mint-Rand — durchgängig für alle Kacheln (Übersicht, Statistik), nicht nur Chart-Panels.
+export const SURFACE_CARD = "border-finova-border bg-card text-foreground"

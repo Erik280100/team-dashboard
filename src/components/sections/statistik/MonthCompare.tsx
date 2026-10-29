@@ -5,7 +5,7 @@ import "@/lib/chartSetup"
 import { Bar } from "react-chartjs-2"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
-import { DARK_CARD, DARK_GRID, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
+import { SURFACE_CARD, CHART_GRID, CHART_LEGEND, CHART_TICK } from "@/lib/chartSetup"
 import { fmt, fmtEur } from "@/lib/calc/format"
 import { compareMonths, type MetricDelta } from "@/lib/calc/statistik"
 import { PLAN_IDS, PLAN_LABELS } from "@/lib/calc/struktur"
@@ -38,7 +38,7 @@ export function MonthCompare({
   const deltas = compareMonths(entryA, entryB)
 
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader>
         <CardTitle className="text-white">Monatsvergleich</CardTitle>
         <p className="text-xs text-white/50">Monat A gegen Monat B, Differenz absolut und in Prozent</p>
@@ -116,10 +116,10 @@ export function MonthCompare({
               indexAxis: "y" as const,
               responsive: true,
               maintainAspectRatio: false,
-              plugins: { legend: DARK_LEGEND },
+              plugins: { legend: CHART_LEGEND },
               scales: {
-                x: { beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
-                y: { grid: { display: false }, ticks: DARK_TICK },
+                x: { beginAtZero: true, ticks: CHART_TICK, grid: { color: CHART_GRID } },
+                y: { grid: { display: false }, ticks: CHART_TICK },
               },
             }}
             aria-label="Einheiten je Karriereplan, Monat A vs. Monat B"

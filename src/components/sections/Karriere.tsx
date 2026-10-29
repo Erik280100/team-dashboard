@@ -2,7 +2,7 @@
 import { useState } from "react"
 import DOMPurify from "dompurify"
 import { Card, CardContent } from "@/components/ui/card"
-import { PillTabs } from "@/components/ui/dark"
+import { PillTabs } from "@/components/ui/surface"
 import { useCareerPlansDoc } from "@/hooks/useCareerPlansDoc"
 import { MeinKarrierestand } from "@/components/sections/karriere/MeinKarrierestand"
 import type { MergedRow } from "@/lib/calc/team"

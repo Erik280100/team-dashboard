@@ -6,7 +6,7 @@
 import { useState } from "react"
 import { Archive, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DARK_CARD, DARK_INPUT } from "@/components/ui/dark"
+import { SURFACE_CARD, FIELD_INPUT } from "@/components/ui/surface"
 import { cn } from "@/lib/utils"
 import { useConfirm } from "@/hooks/useConfirm"
 import type { UseUmsaetzeDocResult } from "@/hooks/useUmsaetzeDoc"
@@ -16,7 +16,7 @@ import type { UmsatzEntry } from "@/types/dashboard"
 
 const CELL_INPUT = cn(
   "h-8 w-full rounded-md border px-2 text-sm focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25 disabled:opacity-60",
-  DARK_INPUT
+  FIELD_INPUT
 )
 
 /** Freitext: lokal tippen, erst beim Verlassen des Feldes speichern (kein Schreibvorgang je Tastendruck). */
@@ -75,7 +75,7 @@ export function Umsatzverfolgung({
     return (
       <div className="flex flex-col gap-3">
         {toggle}
-        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
+        <div className={cn(SURFACE_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
           {showArchive
             ? "Das Archiv ist leer."
             : allEntries.length > 0
@@ -89,7 +89,7 @@ export function Umsatzverfolgung({
   return (
     <div className="flex flex-col gap-3">
     {toggle}
-    <div className={cn(DARK_CARD, "overflow-x-auto rounded-xl border")}>
+    <div className={cn(SURFACE_CARD, "overflow-x-auto rounded-xl border")}>
       <table className="w-full min-w-[60rem] border-collapse text-sm text-white">
         <thead>
           <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/90">

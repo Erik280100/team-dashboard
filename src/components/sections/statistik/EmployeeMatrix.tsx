@@ -5,7 +5,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
-import { DARK_CARD } from "@/lib/chartSetup"
+import { SURFACE_CARD } from "@/lib/chartSetup"
 import { fmt, progressClass } from "@/lib/calc/format"
 import type { EmployeeSeries } from "@/lib/calc/statistik"
 import type { ArchiveIndexEntry } from "@/types/archive"
@@ -42,7 +42,7 @@ export function EmployeeMatrix({
   })
 
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader>
         <CardTitle className="text-white">Mitarbeiter-Entwicklung</CardTitle>
         <p className="text-xs text-white/50">

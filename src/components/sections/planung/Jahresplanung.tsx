@@ -5,7 +5,7 @@
 // hängt an Mitarbeiter-Notizen außerhalb der drei Planungsbereiche.
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { DARK_CARD, DARK_INPUT, DARK_TABLE, DARK_TILE, MintBar } from "@/components/ui/dark"
+import { SURFACE_CARD, FIELD_INPUT, SURFACE_TABLE, SURFACE_TILE, MintBar } from "@/components/ui/surface"
 import { fmt } from "@/lib/calc/format"
 import {
   QUARTER_LIST, Q_MONTHS, emptyWeekEntry, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
@@ -189,7 +189,7 @@ export function Jahresplanung({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className={cn("flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3", DARK_CARD)}>
+      <div className={cn("flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3", SURFACE_CARD)}>
         <Button type="button" variant="ghost" size="icon" className={NAV_BTN} onClick={() => setYear((y) => y - 1)} aria-label="Vorjahr">
           ◀
         </Button>
@@ -200,7 +200,7 @@ export function Jahresplanung({
         {(loading || unitsLoading) && <span className="text-xs text-white/90">Lade Wochendaten…</span>}
       </div>
 
-      <section className={cn("rounded-xl border p-5 shadow-sm", DARK_CARD)}>
+      <section className={cn("rounded-xl border p-5 shadow-sm", SURFACE_CARD)}>
         <h3 className="mb-4 text-xs font-bold uppercase tracking-wide text-[#64DDA3]">🎯 Jahresziele — {managerName}</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {PLAN_TARGET_KEYS.map((k) => {
@@ -208,7 +208,7 @@ export function Jahresplanung({
             const actual = actualFor(k, yearActual)
             const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0
             return (
-              <div key={k} className={cn(DARK_TILE, "p-3")}>
+              <div key={k} className={cn(SURFACE_TILE, "p-3")}>
                 <div className="text-[11px] font-bold uppercase tracking-wide text-white/90">{PLAN_TARGET_LABELS[k]} Ist</div>
                 <div className="mt-1 text-xl font-extrabold tabular-nums">{fmt(actual)}</div>
                 <div className="mt-0.5 text-xs text-white/90">Soll: {fmt(target)} · {pct}%</div>
@@ -230,7 +230,7 @@ export function Jahresplanung({
                 disabled={!isEditor}
                 defaultValue={draft.targets[k] || 0}
                 aria-label={`${PLAN_TARGET_LABELS[k]} Soll`}
-                className={cn("h-8 px-2 text-sm tabular-nums", INP, DARK_INPUT)}
+                className={cn("h-8 px-2 text-sm tabular-nums", INP, FIELD_INPUT)}
                 onBlur={(e) => commitTarget(k, Number(e.target.value) || 0)}
               />
             </label>
@@ -248,7 +248,7 @@ export function Jahresplanung({
             const pct = target > 0 ? Math.min(100, Math.round((actuals.vertraege / target) * 100)) : 0
             const status = quarterStatus(q, actuals, { vertraege: target }, year)
             return (
-              <div key={q} className={cn("rounded-xl border p-4 shadow-sm", DARK_CARD)}>
+              <div key={q} className={cn("rounded-xl border p-4 shadow-sm", SURFACE_CARD)}>
                 <div className="mb-2.5 flex items-center gap-2.5">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#64DDA3,#3FCB8E)] text-xs font-extrabold text-[#0b1f2a]">{q}</div>
                   <div>
@@ -265,12 +265,12 @@ export function Jahresplanung({
                   defaultValue={qData.milestone || ""}
                   placeholder="Meilenstein / Schwerpunkt…"
                   aria-label={`Meilenstein ${q}`}
-                  className={cn("mb-3 h-8 w-full px-2 text-sm", INP, DARK_INPUT)}
+                  className={cn("mb-3 h-8 w-full px-2 text-sm", INP, FIELD_INPUT)}
                   onBlur={(e) => commitQuarterField(q, "milestone", e.target.value)}
                 />
                 <div className="grid grid-cols-2 gap-2">
                   {(["vertraege", "einheiten", "atg", "analysen"] as PlanTargetKey[]).map((k) => (
-                    <label key={k} className={cn(DARK_TILE, "flex flex-col gap-1 p-2 text-[10px] font-semibold uppercase text-white/90")}>
+                    <label key={k} className={cn(SURFACE_TILE, "flex flex-col gap-1 p-2 text-[10px] font-semibold uppercase text-white/90")}>
                       {PLAN_TARGET_LABELS[k]} Soll
                       <input
                         key={`${year}-${managerName}-${q}-${k}`}
@@ -279,7 +279,7 @@ export function Jahresplanung({
                         disabled={!isEditor}
                         defaultValue={qData[k] || 0}
                         aria-label={`${PLAN_TARGET_LABELS[k]} Soll ${q}`}
-                        className={cn("h-7 px-1.5 text-sm normal-case tabular-nums", INP, DARK_INPUT)}
+                        className={cn("h-7 px-1.5 text-sm normal-case tabular-nums", INP, FIELD_INPUT)}
                         onBlur={(e) => commitQuarterField(q, k, Number(e.target.value) || 0)}
                       />
                     </label>
@@ -322,13 +322,13 @@ export function Jahresplanung({
       {groupYearActuals && (
         <section>
           <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white/85">👥 Jahres-Ist nach Führungskraft — {year}</h3>
-          <div className={cn(DARK_TABLE.wrap, DARK_CARD)}>
-            <table className={cn("min-w-[700px]", DARK_TABLE.table)}>
+          <div className={cn(SURFACE_TABLE.wrap, SURFACE_CARD)}>
+            <table className={cn("min-w-[700px]", SURFACE_TABLE.table)}>
               <thead>
                 <tr>
-                  <th className={DARK_TABLE.head}>Führungskraft</th>
+                  <th className={SURFACE_TABLE.head}>Führungskraft</th>
                   {PLAN_TARGET_KEYS.map((k) => (
-                    <th key={k} className={cn(DARK_TABLE.head, "text-right")}>{PLAN_TARGET_LABELS[k]}</th>
+                    <th key={k} className={cn(SURFACE_TABLE.head, "text-right")}>{PLAN_TARGET_LABELS[k]}</th>
                   ))}
                 </tr>
               </thead>
@@ -336,7 +336,7 @@ export function Jahresplanung({
                 {teamGroups!.map((g) => {
                   const a = groupYearActuals.get(g.name) ?? sumWeekEntries([])
                   return (
-                    <tr key={g.name} className={DARK_TABLE.row}>
+                    <tr key={g.name} className={SURFACE_TABLE.row}>
                       <td className="px-3 py-2">
                         <div className="truncate text-sm font-semibold">{g.name}</div>
                         <div className="truncate text-xs text-white/90">{g.role} · Team gesamt ({g.names.length})</div>

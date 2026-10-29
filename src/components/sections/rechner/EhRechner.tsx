@@ -9,7 +9,7 @@ import { Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
-import { DARK_CARD, DARK_OPTION, DARK_SELECT, DARK_TILE } from "@/components/ui/dark"
+import { SURFACE_CARD, FIELD_OPTION, FIELD_SELECT, SURFACE_TILE } from "@/components/ui/surface"
 import { cn } from "@/lib/utils"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -122,11 +122,11 @@ export function EhRechner({
   function renderGroup(group: EhGroup) {
     const items = EH_ITEMS.filter((it) => it.sparte === group.id)
     return (
-      <Card key={group.id} className={cn("border-t-[3px]", DARK_CARD)} style={{ borderTopColor: GROUP_ACCENT[group.id] }}>
+      <Card key={group.id} className={cn("border-t-[3px]", SURFACE_CARD)} style={{ borderTopColor: GROUP_ACCENT[group.id] }}>
         <CardContent className="@container flex flex-col gap-3">
           <h3 className="text-sm font-extrabold uppercase tracking-wide" style={{ color: GROUP_ACCENT[group.id] }}>{group.title}</h3>
           {items.map((it) => (
-            <div key={it.id} className={cn(DARK_TILE, "grid grid-cols-2 items-end gap-3 p-3 @lg:grid-cols-[1fr_7rem_7rem_7rem]")}>
+            <div key={it.id} className={cn(SURFACE_TILE, "grid grid-cols-2 items-end gap-3 p-3 @lg:grid-cols-[1fr_7rem_7rem_7rem]")}>
               <div className="col-span-2 min-w-0 @lg:col-span-1">
                 <div className="text-sm font-medium">{it.label}</div>
                 <div className="text-xs text-white/90">Auszahlung: {it.payout}</div>
@@ -209,7 +209,7 @@ export function EhRechner({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={cn(DARK_CARD, "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm text-white/90")}>
+      <div className={cn(SURFACE_CARD, "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm text-white/90")}>
         <Info className="mt-0.5 size-4 shrink-0 text-[#64DDA3]" aria-hidden="true" />
         <div><strong className="text-white">Einheiten (EH) berechnen:</strong> Prämien eintragen, Einheiten werden automatisch berechnet und summiert.
         froots-Geschäft über 500 € mtl. bzw. 10.000 € einmalig läuft automatisch über einen Abwickler (VB) und wird
@@ -244,11 +244,11 @@ export function EhRechner({
                 aria-label="Mitarbeiter für Übernahme wählen"
                 value={selectedName}
                 onChange={(e) => selectEmployee(e.target.value)}
-                className={cn("w-56", DARK_SELECT)}
+                className={cn("w-56", FIELD_SELECT)}
               >
-                <option value="" className={DARK_OPTION}>Mitarbeiter wählen…</option>
+                <option value="" className={FIELD_OPTION}>Mitarbeiter wählen…</option>
                 {[...employees].sort((a, b) => a.name.localeCompare(b.name, "de")).map((emp) => (
-                  <option key={emp.name} value={emp.name} className={DARK_OPTION}>
+                  <option key={emp.name} value={emp.name} className={FIELD_OPTION}>
                     {emp.name}
                   </option>
                 ))}
@@ -258,10 +258,10 @@ export function EhRechner({
                   aria-label="Abwickler wählen"
                   value={chosenAbwickler?.name ?? ""}
                   onChange={(e) => setAbwickler(e.target.value)}
-                  className={cn("w-56", DARK_SELECT)}
+                  className={cn("w-56", FIELD_SELECT)}
                 >
                   {abwicklerOptions.map((a) => (
-                    <option key={a.name} value={a.name} className={DARK_OPTION}>
+                    <option key={a.name} value={a.name} className={FIELD_OPTION}>
                       Abwickler: {a.name}
                     </option>
                   ))}

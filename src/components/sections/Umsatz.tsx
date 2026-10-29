@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { DARK_INPUT, Pill, SectionHero } from "@/components/ui/dark"
+import { FIELD_INPUT, Pill, SectionHero } from "@/components/ui/surface"
 import { SB_LEAD_ROLE_ABBR, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
 import { umsatzMatches } from "@/lib/calc/umsatz"
@@ -87,7 +87,7 @@ export function Umsatz({
           <Input
             placeholder="Kunde, Einheiten oder Prämie suchen…"
             aria-label="Umsätze nach Kunde, Einheiten oder Prämie suchen"
-            className={cn("ml-auto w-72", DARK_INPUT)}
+            className={cn("ml-auto w-72", FIELD_INPUT)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

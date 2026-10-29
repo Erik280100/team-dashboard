@@ -3,7 +3,7 @@
 import "@/lib/chartSetup"
 import { Line } from "react-chartjs-2"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DARK_CARD, DARK_GRID, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
+import { SURFACE_CARD, CHART_GRID, CHART_LEGEND, CHART_TICK } from "@/lib/chartSetup"
 import { monthLabel } from "@/lib/calc/archive"
 import type { EmployeeSeries } from "@/lib/calc/statistik"
 
@@ -11,7 +11,7 @@ export function EmployeeCurve({ series }: { series: EmployeeSeries | null }) {
   if (!series) return null
 
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader>
         <CardTitle className="text-white">
           {series.name}{series.role ? ` · ${series.role}` : ""}
@@ -44,11 +44,11 @@ export function EmployeeCurve({ series }: { series: EmployeeSeries | null }) {
               responsive: true,
               maintainAspectRatio: false,
               interaction: { mode: "index", intersect: false },
-              plugins: { legend: DARK_LEGEND },
+              plugins: { legend: CHART_LEGEND },
               scales: {
-                x: { grid: { display: false }, ticks: DARK_TICK },
-                y: { beginAtZero: true, ticks: DARK_TICK, grid: { color: DARK_GRID } },
-                y1: { beginAtZero: true, position: "right" as const, ticks: DARK_TICK, grid: { display: false } },
+                x: { grid: { display: false }, ticks: CHART_TICK },
+                y: { beginAtZero: true, ticks: CHART_TICK, grid: { color: CHART_GRID } },
+                y1: { beginAtZero: true, position: "right" as const, ticks: CHART_TICK, grid: { display: false } },
               },
             }}
             aria-label={`Verlauf für ${series.name}`}

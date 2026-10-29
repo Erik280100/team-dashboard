@@ -3,7 +3,7 @@
 // Lädt die betroffenen Wochendokumente lazy nach (usePlanungDoc.loadWeeks).
 import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { DARK_CARD, DARK_INPUT, DARK_TABLE } from "@/components/ui/dark"
+import { SURFACE_CARD, FIELD_INPUT, SURFACE_TABLE } from "@/components/ui/surface"
 import { cn } from "@/lib/utils"
 import { fmt, initials } from "@/lib/calc/format"
 import {
@@ -33,7 +33,7 @@ function MonthNoteCard({
   onCommitZiel: (value: number) => void
 }) {
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader className="border-b border-white/10 pb-3">
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
@@ -55,7 +55,7 @@ function MonthNoteCard({
             disabled={!isEditor}
             defaultValue={entry.ehZiel ?? 0}
             aria-label={`Einheitenziel – ${person.name}`}
-            className={cn("h-8 w-28 rounded-md border px-2 text-sm tabular-nums outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", DARK_INPUT)}
+            className={cn("h-8 w-28 rounded-md border px-2 text-sm tabular-nums outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", FIELD_INPUT)}
             onBlur={(e) => onCommitZiel(Number(e.target.value) || 0)}
           />
         </div>
@@ -68,7 +68,7 @@ function MonthNoteCard({
               defaultValue={entry[f.key] ?? ""}
               placeholder="Namen…"
               aria-label={`${f.label} – ${person.name}`}
-              className={cn("min-h-24 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", DARK_INPUT)}
+              className={cn("min-h-24 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", FIELD_INPUT)}
               onBlur={(e) => onCommit(f.key, e.target.value)}
             />
           </div>
@@ -80,7 +80,7 @@ function MonthNoteCard({
 
 function KpiTile({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className={cn(DARK_CARD, "rounded-xl border p-4 shadow-sm")}>
+    <div className={cn(SURFACE_CARD, "rounded-xl border p-4 shadow-sm")}>
       <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-white/90">{label}</div>
       <div className="text-2xl font-extrabold tabular-nums text-[#64DDA3]">{value}</div>
       <div className="mt-1 text-xs text-white/90">{sub}</div>
@@ -95,7 +95,7 @@ type RaceLine = { key: string; label: string; color: string; soll: number; ist: 
 // über alle Kacheln gleich, damit Personen untereinander vergleichbar bleiben.
 function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: RaceLine[] }) {
   return (
-    <div className={cn(DARK_CARD, "overflow-hidden rounded-xl border shadow-sm")}>
+    <div className={cn(SURFACE_CARD, "overflow-hidden rounded-xl border shadow-sm")}>
       <div className="border-b border-white/10 bg-white/[.04] px-4 py-2.5">
         <div className="truncate text-sm font-bold">{title}</div>
         {sub && <div className="truncate text-xs text-white/90">{sub}</div>}
@@ -268,29 +268,29 @@ export function Monatsplanung({
       })()}
 
       {rows.length === 0 ? (
-        <div className={cn(DARK_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
+        <div className={cn(SURFACE_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
           Keine Personen für diese Führungskraft im Strukturbaum.
         </div>
       ) : (
-        <div className={cn("max-h-[65vh]", DARK_TABLE.wrap, DARK_CARD)}>
-          <table className={cn("min-w-[900px]", DARK_TABLE.table)}>
+        <div className={cn("max-h-[65vh]", SURFACE_TABLE.wrap, SURFACE_CARD)}>
+          <table className={cn("min-w-[900px]", SURFACE_TABLE.table)}>
             <thead>
               <tr>
-                <th className={cn(DARK_TABLE.head, "min-w-[220px]")}>{byGroup ? "Führungskraft" : "Name"}</th>
-                <th className={cn(DARK_TABLE.head, "text-right")}>Wählversuche Soll / Ist</th>
-                <th className={cn(DARK_TABLE.head, "text-right")}>AT Soll / Ist</th>
-                <th className={cn(DARK_TABLE.head, "text-right")}>BT Soll / Ist</th>
-                <th className={cn(DARK_TABLE.head, "text-right")}>AT-Quote</th>
-                <th className={cn(DARK_TABLE.head, "text-right")}>ST Soll / Ist</th>
-                <th className={cn(DARK_TABLE.head, "text-right")}>ET Soll / Ist</th>
-                <th className={cn(DARK_TABLE.head, "text-right")}>EH gemacht</th>
+                <th className={cn(SURFACE_TABLE.head, "min-w-[220px]")}>{byGroup ? "Führungskraft" : "Name"}</th>
+                <th className={cn(SURFACE_TABLE.head, "text-right")}>Wählversuche Soll / Ist</th>
+                <th className={cn(SURFACE_TABLE.head, "text-right")}>AT Soll / Ist</th>
+                <th className={cn(SURFACE_TABLE.head, "text-right")}>BT Soll / Ist</th>
+                <th className={cn(SURFACE_TABLE.head, "text-right")}>AT-Quote</th>
+                <th className={cn(SURFACE_TABLE.head, "text-right")}>ST Soll / Ist</th>
+                <th className={cn(SURFACE_TABLE.head, "text-right")}>ET Soll / Ist</th>
+                <th className={cn(SURFACE_TABLE.head, "text-right")}>EH gemacht</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => {
                 const d = r.data
                 return (
-                  <tr key={r.key} className={DARK_TABLE.row}>
+                  <tr key={r.key} className={SURFACE_TABLE.row}>
                     <td className="px-3 py-2">
                       <div className="truncate text-sm font-semibold">{r.label}</div>
                       <div className="truncate text-xs text-white/90">{r.sub}</div>
@@ -309,7 +309,7 @@ export function Monatsplanung({
             <tfoot>
               <tr className="text-sm">
                 {(() => {
-                  const cell = cn(DARK_TABLE.foot, "text-right")
+                  const cell = cn(SURFACE_TABLE.foot, "text-right")
                   return (
                     <>
                       <td className={cell.replace("text-right", "")}>Summe</td>

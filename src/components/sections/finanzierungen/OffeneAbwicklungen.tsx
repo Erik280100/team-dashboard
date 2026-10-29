@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
-import { DARK_CARD, DARK_INPUT, DARK_OPTION, DARK_SELECT, DARK_TABLE, KpiTile, MintBar, SectionHero } from "@/components/ui/dark"
+import { SURFACE_CARD, FIELD_INPUT, FIELD_OPTION, FIELD_SELECT, SURFACE_TABLE, KpiTile, MintBar, SectionHero } from "@/components/ui/surface"
 import { fmtEurRound as fmtEur, initials } from "@/lib/calc/format"
 import { relevantGroups, relevantItemIds, type Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
@@ -91,7 +91,7 @@ function NewCaseForm({
   }
 
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader>
         <CardTitle className="text-white">Neuer Kreditfall</CardTitle>
       </CardHeader>
@@ -105,7 +105,7 @@ function NewCaseForm({
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={!canWrite}
-              className={cn("w-48", DARK_INPUT)}
+              className={cn("w-48", FIELD_INPUT)}
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -117,7 +117,7 @@ function NewCaseForm({
               value={betrag}
               onChange={(e) => setBetrag(e.target.value)}
               disabled={!canWrite}
-              className={cn("w-36", DARK_INPUT)}
+              className={cn("w-36", FIELD_INPUT)}
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -127,10 +127,10 @@ function NewCaseForm({
               value={art}
               onChange={(e) => setArt(e.target.value as FinanzierungArt)}
               disabled={!canWrite}
-              className={cn("w-40", DARK_SELECT)}
+              className={cn("w-40", FIELD_SELECT)}
             >
               {ART_OPTIONS.map((a) => (
-                <option className={DARK_OPTION} key={a} value={a}>{ART_LABEL[a]}</option>
+                <option className={FIELD_OPTION} key={a} value={a}>{ART_LABEL[a]}</option>
               ))}
             </Select>
           </div>
@@ -141,10 +141,10 @@ function NewCaseForm({
               value={beschaeftigung}
               onChange={(e) => setBeschaeftigung(e.target.value as Beschaeftigung)}
               disabled={!canWrite}
-              className={cn("w-40", DARK_SELECT)}
+              className={cn("w-40", FIELD_SELECT)}
             >
-              <option className={DARK_OPTION} value="unselbststaendig">Unselbstständig</option>
-              <option className={DARK_OPTION} value="selbststaendig">Selbstständig</option>
+              <option className={FIELD_OPTION} value="unselbststaendig">Unselbstständig</option>
+              <option className={FIELD_OPTION} value="selbststaendig">Selbstständig</option>
             </Select>
           </div>
           <div className="flex flex-col gap-1">
@@ -154,11 +154,11 @@ function NewCaseForm({
               value={betreuer}
               onChange={(e) => setBetreuer(e.target.value)}
               disabled={!canWrite}
-              className={cn("w-48", DARK_SELECT)}
+              className={cn("w-48", FIELD_SELECT)}
             >
-              <option className={DARK_OPTION} value="">– auswählen –</option>
+              <option className={FIELD_OPTION} value="">– auswählen –</option>
               {employeeNames.map((n) => (
-                <option className={DARK_OPTION} key={n} value={n}>{n}</option>
+                <option className={FIELD_OPTION} key={n} value={n}>{n}</option>
               ))}
             </Select>
           </div>
@@ -282,7 +282,7 @@ export function OffeneAbwicklungen({
 
       <NewCaseForm onAdd={addCase} canWrite={canWrite} employeeNames={employeeNames} />
 
-      <Card className={DARK_CARD}>
+      <Card className={SURFACE_CARD}>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <CardTitle className="text-white">{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
@@ -292,10 +292,10 @@ export function OffeneAbwicklungen({
                 id="fin-sort"
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className={cn("w-56", DARK_SELECT)}
+                className={cn("w-56", FIELD_SELECT)}
               >
                 {SORT_OPTIONS.map((k) => (
-                  <option className={DARK_OPTION} key={k} value={k}>{SORT_LABEL[k]}</option>
+                  <option className={FIELD_OPTION} key={k} value={k}>{SORT_LABEL[k]}</option>
                 ))}
               </Select>
               <Button variant="ghost" size="sm" className={GHOST_DARK} onClick={() => setShowArchived((s) => !s)}>
@@ -313,8 +313,8 @@ export function OffeneAbwicklungen({
               {showArchived ? "Keine archivierten Kreditfälle." : "Noch keine Kreditfälle angelegt."}
             </div>
           ) : (
-            <div className={DARK_TABLE.wrap}>
-              <table className={cn("min-w-[900px]", DARK_TABLE.table)}>
+            <div className={SURFACE_TABLE.wrap}>
+              <table className={cn("min-w-[900px]", SURFACE_TABLE.table)}>
                 <thead>
                   <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
                     <th className="w-8 px-2 py-2" />
@@ -334,7 +334,7 @@ export function OffeneAbwicklungen({
                     return (
                       <Fragment key={fc.id}>
                         <tr
-                          className={cn(DARK_TABLE.row, fc.eingereicht && "opacity-60")}
+                          className={cn(SURFACE_TABLE.row, fc.eingereicht && "opacity-60")}
                         >
                           <td className="px-2 py-2">
                             <button
@@ -419,7 +419,7 @@ export function OffeneAbwicklungen({
                                       if (v && v !== fc.name) patchCase(fc.id, { name: v })
                                     }}
                                     disabled={!isEditor}
-                                    className={cn("w-48", DARK_INPUT)}
+                                    className={cn("w-48", FIELD_INPUT)}
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -431,7 +431,7 @@ export function OffeneAbwicklungen({
                                     defaultValue={fc.betrag}
                                     onBlur={(e) => patchCase(fc.id, { betrag: Number(e.target.value) || 0 })}
                                     disabled={!isEditor}
-                                    className={cn("w-36", DARK_INPUT)}
+                                    className={cn("w-36", FIELD_INPUT)}
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -441,10 +441,10 @@ export function OffeneAbwicklungen({
                                     value={fc.art}
                                     onChange={(e) => patchCase(fc.id, { art: e.target.value as FinanzierungArt })}
                                     disabled={!isEditor}
-                                    className={cn("w-40", DARK_SELECT)}
+                                    className={cn("w-40", FIELD_SELECT)}
                                   >
                                     {ART_OPTIONS.map((a) => (
-                                      <option className={DARK_OPTION} key={a} value={a}>{ART_LABEL[a]}</option>
+                                      <option className={FIELD_OPTION} key={a} value={a}>{ART_LABEL[a]}</option>
                                     ))}
                                   </Select>
                                 </div>
@@ -455,10 +455,10 @@ export function OffeneAbwicklungen({
                                     value={fc.beschaeftigung}
                                     onChange={(e) => patchCase(fc.id, { beschaeftigung: e.target.value as Beschaeftigung })}
                                     disabled={!isEditor}
-                                    className={cn("w-40", DARK_SELECT)}
+                                    className={cn("w-40", FIELD_SELECT)}
                                   >
-                                    <option className={DARK_OPTION} value="unselbststaendig">Unselbstständig</option>
-                                    <option className={DARK_OPTION} value="selbststaendig">Selbstständig</option>
+                                    <option className={FIELD_OPTION} value="unselbststaendig">Unselbstständig</option>
+                                    <option className={FIELD_OPTION} value="selbststaendig">Selbstständig</option>
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
@@ -468,11 +468,11 @@ export function OffeneAbwicklungen({
                                     value={fc.betreuer || ""}
                                     onChange={(e) => patchCase(fc.id, { betreuer: e.target.value })}
                                     disabled={!isEditor}
-                                    className={cn("w-48", DARK_SELECT)}
+                                    className={cn("w-48", FIELD_SELECT)}
                                   >
-                                    <option className={DARK_OPTION} value="">– auswählen –</option>
+                                    <option className={FIELD_OPTION} value="">– auswählen –</option>
                                     {[...new Set([...employeeNames, ...(fc.betreuer ? [fc.betreuer] : [])])].map((n) => (
-                                      <option className={DARK_OPTION} key={n} value={n}>{n}</option>
+                                      <option className={FIELD_OPTION} key={n} value={n}>{n}</option>
                                     ))}
                                   </Select>
                                 </div>
@@ -483,11 +483,11 @@ export function OffeneAbwicklungen({
                                     value={fc.abwickler || ""}
                                     onChange={(e) => patchCase(fc.id, { abwickler: e.target.value })}
                                     disabled={!isEditor}
-                                    className={cn("w-48", DARK_SELECT)}
+                                    className={cn("w-48", FIELD_SELECT)}
                                   >
-                                    <option className={DARK_OPTION} value="">– keiner –</option>
+                                    <option className={FIELD_OPTION} value="">– keiner –</option>
                                     {abwicklerNames.map((n) => (
-                                      <option className={DARK_OPTION} key={n} value={n}>{n}</option>
+                                      <option className={FIELD_OPTION} key={n} value={n}>{n}</option>
                                     ))}
                                   </Select>
                                 </div>

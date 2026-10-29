@@ -6,7 +6,7 @@
 // werden lazy nachgeladen.
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { DARK_CARD } from "@/lib/chartSetup"
+import { SURFACE_CARD } from "@/lib/chartSetup"
 import { employeeMatrix, monthsInRange, planSplit } from "@/lib/calc/statistik"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { MonthKey, MonthSnapshot } from "@/types/archive"
@@ -18,7 +18,7 @@ import { PlanSplitChart } from "@/components/sections/statistik/PlanSplitChart"
 
 function EmptyCard({ title, text }: { title: string; text: string }) {
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardContent className="py-8 text-center text-sm text-white/60">
         <div className="mb-1 font-semibold text-white/80">{title}</div>
         {text}

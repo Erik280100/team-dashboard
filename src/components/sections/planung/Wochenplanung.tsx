@@ -6,7 +6,7 @@
 import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { DARK_CARD, DARK_INPUT, DARK_TILE } from "@/components/ui/dark"
+import { SURFACE_CARD, FIELD_INPUT, SURFACE_TILE } from "@/components/ui/surface"
 import { fmt, initials } from "@/lib/calc/format"
 import { aggregateByGroup, isoWeekKey, monthLabel, monthWeekKeys, sumWeekEntries, weekLabel, type PlanTeamGroup } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
@@ -53,7 +53,7 @@ function NumField({
         "h-8 w-full rounded-md border px-2 text-center text-sm tabular-nums outline-none",
         "focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]",
         "disabled:opacity-60",
-        DARK_INPUT
+        FIELD_INPUT
       )}
       onBlur={(e) => onCommit(field, Number(e.target.value) || 0)}
     />
@@ -70,7 +70,7 @@ function PersonCard({
   onCommit: CommitFn
 }) {
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader className="border-b border-white/10 pb-3">
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
@@ -90,7 +90,7 @@ function PersonCard({
       <CardContent className="flex flex-col gap-3 pt-1">
         <div className="grid grid-cols-2 gap-2">
           {FIELD_GROUPS.map((g) => (
-            <div key={g.label} className={cn(DARK_TILE, "p-2")}>
+            <div key={g.label} className={cn(SURFACE_TILE, "p-2")}>
               <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
@@ -107,14 +107,14 @@ function PersonCard({
           ))}
         </div>
         {isEditor && (
-          <div className={cn(DARK_TILE, "p-2")}>
+          <div className={cn(SURFACE_TILE, "p-2")}>
             <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">Notizen / Feedback</div>
             <textarea
               key={`${person.name}-notes-${entry.notes}`}
               defaultValue={entry.notes}
               placeholder="Besonderheiten, offene Punkte…"
               aria-label={`Notizen – ${person.name}`}
-              className={cn("min-h-16 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]", DARK_INPUT)}
+              className={cn("min-h-16 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]", FIELD_INPUT)}
               onBlur={(e) => onCommit("notes", e.target.value)}
             />
           </div>
@@ -126,7 +126,7 @@ function PersonCard({
 
 function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeekEntry }) {
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader className="border-b border-white/10 pb-3">
         <div className="flex items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
@@ -141,7 +141,7 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
       <CardContent className="flex flex-col gap-3 pt-1">
         <div className="grid grid-cols-2 gap-2">
           {FIELD_GROUPS.map((g) => (
-            <div key={g.label} className={cn(DARK_TILE, "p-2")}>
+            <div key={g.label} className={cn(SURFACE_TILE, "p-2")}>
               <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
@@ -201,7 +201,7 @@ export function Wochenplanung({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={cn("flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3", DARK_CARD)}>
+      <div className={cn("flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3", SURFACE_CARD)}>
         <Button type="button" variant="ghost" size="icon" className={NAV_BTN} disabled={weekIdx <= 0} onClick={() => setActiveWeek(weeks[weekIdx - 1])} aria-label="Vorwoche">
           ‹
         </Button>
@@ -223,7 +223,7 @@ export function Wochenplanung({
           ))}
         </div>
       ) : people.length === 0 ? (
-        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", DARK_CARD)}>
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", SURFACE_CARD)}>
           Keine Personen für {managerName ?? "diese Führungskraft"} im Strukturbaum.
         </div>
       ) : (

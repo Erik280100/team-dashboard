@@ -4,7 +4,7 @@
 // Strukturbaum-Rolle. Führungskräfte sehen ihren Strukturaufbau (Kriterien wie im Strukturbaum-Panel).
 import { useMemo, useState } from "react"
 import { Select } from "@/components/ui/select"
-import { DARK_OPTION, DARK_SELECT, MintBar, SectionHero } from "@/components/ui/dark"
+import { FIELD_OPTION, FIELD_SELECT, MintBar, SectionHero } from "@/components/ui/surface"
 import { computePlanStandings, computePromotionProgress } from "@/lib/calc/befoerderung"
 import { fmt } from "@/lib/calc/format"
 import { PLAN_IDS, PLAN_LABELS, sbGetPlanRate, type PlanId } from "@/lib/calc/struktur"
@@ -40,13 +40,13 @@ export function MeinKarrierestand({ merged, planRates, myName }: Props) {
           !own && (
             <Select
               aria-label="Person auswählen"
-              className={cn("w-64", DARK_SELECT)}
+              className={cn("w-64", FIELD_SELECT)}
               value={picked}
               onChange={(e) => setPicked(e.target.value)}
             >
-              <option className={DARK_OPTION} value="">— Person auswählen —</option>
+              <option className={FIELD_OPTION} value="">— Person auswählen —</option>
               {merged.map((m) => (
-                <option className={DARK_OPTION} key={m.name} value={m.name}>{m.name} ({m.role || "—"})</option>
+                <option className={FIELD_OPTION} key={m.name} value={m.name}>{m.name} ({m.role || "—"})</option>
               ))}
             </Select>
           )

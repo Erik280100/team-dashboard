@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { DARK_CARD, DARK_INPUT, Pill, SectionHero } from "@/components/ui/dark"
+import { SURFACE_CARD, FIELD_INPUT, Pill, SectionHero } from "@/components/ui/surface"
 import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { PlanTeamGroup } from "@/lib/calc/planung"
@@ -90,7 +90,7 @@ export function Planung({
     return (
       <div className="flex flex-col gap-4">
         <SectionHero eyebrow="Controlling" title="Planung" />
-        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", DARK_CARD)}>
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", SURFACE_CARD)}>
           Noch keine Führungskräfte im Strukturbaum erfasst (ab Teamleiter aufwärts).
         </div>
       </div>
@@ -122,7 +122,7 @@ export function Planung({
           <Input
             placeholder="Name suchen…"
             aria-label="Mitarbeiter nach Name suchen"
-            className={cn("ml-auto w-56", DARK_INPUT)}
+            className={cn("ml-auto w-56", FIELD_INPUT)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

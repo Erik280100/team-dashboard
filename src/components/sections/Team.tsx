@@ -9,8 +9,8 @@ import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import {
-  DARK_CARD, DARK_INPUT, DARK_OPTION, DARK_SELECT, DARK_TABLE, MintBar, Pill, SectionHero, Switch,
-} from "@/components/ui/dark"
+  SURFACE_CARD, FIELD_INPUT, FIELD_OPTION, FIELD_SELECT, SURFACE_TABLE, MintBar, Pill, SectionHero, Switch,
+} from "@/components/ui/surface"
 import { Avatar } from "@/components/Avatar"
 import { fmt, fmtEur, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import {
@@ -191,7 +191,7 @@ export function Team({
     }
   }
 
-  const th = DARK_TABLE.head
+  const th = SURFACE_TABLE.head
   const groupHead = "px-1 py-1.5 text-center text-[11px] font-bold uppercase leading-tight tracking-wide"
 
   return (
@@ -209,7 +209,7 @@ export function Team({
         }
       />
 
-      <div className={cn("flex flex-col gap-3 rounded-xl border p-4", DARK_CARD)}>
+      <div className={cn("flex flex-col gap-3 rounded-xl border p-4", SURFACE_CARD)}>
         <div className="flex flex-wrap gap-3">
           <Switch
             checked={stornoreserve}
@@ -221,21 +221,21 @@ export function Team({
           <Input
             placeholder="Name suchen…"
             aria-label="Mitarbeiter nach Name suchen"
-            className={cn("w-56", DARK_INPUT)}
+            className={cn("w-56", FIELD_INPUT)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Select aria-label="Mitarbeiter filtern" value={filter} onChange={(e) => setFilter(e.target.value as TeamFilter)} className={cn("w-48", DARK_SELECT)}>
-            <option className={DARK_OPTION} value="all">Alle Mitarbeiter</option>
-            <option className={DARK_OPTION} value="new">Nur neue MA</option>
-            <option className={DARK_OPTION} value="existing">Nur bestehendes Team</option>
+          <Select aria-label="Mitarbeiter filtern" value={filter} onChange={(e) => setFilter(e.target.value as TeamFilter)} className={cn("w-48", FIELD_SELECT)}>
+            <option className={FIELD_OPTION} value="all">Alle Mitarbeiter</option>
+            <option className={FIELD_OPTION} value="new">Nur neue MA</option>
+            <option className={FIELD_OPTION} value="existing">Nur bestehendes Team</option>
           </Select>
-          <Select aria-label="Mitarbeiter sortieren" value={sort} onChange={(e) => setSort(e.target.value as TeamSort)} className={cn("w-64", DARK_SELECT)}>
-            <option className={DARK_OPTION} value="name">Sortieren: Name (A–Z)</option>
-            <option className={DARK_OPTION} value="manager">Nach Führungskraft (Struktur)</option>
-            <option className={DARK_OPTION} value="progress-desc">Fortschritt (hoch → niedrig)</option>
-            <option className={DARK_OPTION} value="progress-asc">Fortschritt (niedrig → hoch)</option>
-            <option className={DARK_OPTION} value="einheiten-desc">Einheiten Ist (absteigend)</option>
+          <Select aria-label="Mitarbeiter sortieren" value={sort} onChange={(e) => setSort(e.target.value as TeamSort)} className={cn("w-64", FIELD_SELECT)}>
+            <option className={FIELD_OPTION} value="name">Sortieren: Name (A–Z)</option>
+            <option className={FIELD_OPTION} value="manager">Nach Führungskraft (Struktur)</option>
+            <option className={FIELD_OPTION} value="progress-desc">Fortschritt (hoch → niedrig)</option>
+            <option className={FIELD_OPTION} value="progress-asc">Fortschritt (niedrig → hoch)</option>
+            <option className={FIELD_OPTION} value="einheiten-desc">Einheiten Ist (absteigend)</option>
           </Select>
         </div>
 
@@ -263,8 +263,8 @@ export function Team({
         )}
       </div>
 
-      <div className={cn("max-h-[65vh]", DARK_TABLE.wrap, DARK_CARD)}>
-        <table className={cn("min-w-[900px]", DARK_TABLE.table)}>
+      <div className={cn("max-h-[65vh]", SURFACE_TABLE.wrap, SURFACE_CARD)}>
+        <table className={cn("min-w-[900px]", SURFACE_TABLE.table)}>
           <thead>
             <tr>
               <th rowSpan={2} className={cn(th, "min-w-[300px]")}>Name</th>
@@ -312,7 +312,7 @@ export function Team({
                   <tr
                     key={`${r.rowIndex}-${r.name}`}
                     className={cn(
-                      DARK_TABLE.row,
+                      SURFACE_TABLE.row,
                       highlight === "at-above" && "bg-[#64DDA3]/[.06] shadow-[inset_3px_0_0_#64DDA3]",
                       highlight === "at-below" && "bg-[#e2685b]/[.08] shadow-[inset_3px_0_0_#e2685b]"
                     )}
@@ -392,7 +392,7 @@ export function Team({
             <tfoot>
               <tr className="text-sm">
                 {(() => {
-                  const cell = DARK_TABLE.foot
+                  const cell = SURFACE_TABLE.foot
                   return (
                     <>
                       <td className={cell}>

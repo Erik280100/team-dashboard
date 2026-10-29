@@ -2,7 +2,7 @@
 // Strukturbaum-Seitenpanel (hell) und vom Reiter "Mein Karrierestand" (dunkel).
 import { fmt } from "@/lib/calc/format"
 import type { PromotionProgress } from "@/lib/calc/befoerderung"
-import { DARK_CARD, MintBar } from "@/components/ui/dark"
+import { SURFACE_CARD, MintBar } from "@/components/ui/surface"
 import { cn } from "@/lib/utils"
 
 export function PromotionPanel({
@@ -11,7 +11,7 @@ export function PromotionPanel({
   const dark = variant === "dark"
   const muted = dark ? "text-white/90" : "text-muted-foreground"
   return (
-    <div className={cn(dark ? cn("rounded-xl border p-4", DARK_CARD) : "rounded-md border bg-muted/30 p-3", className)}>
+    <div className={cn(dark ? cn("rounded-xl border p-4", SURFACE_CARD) : "rounded-md border bg-muted/30 p-3", className)}>
       <div className={cn("mb-2 font-semibold", dark ? "text-sm" : "text-xs")}>
         {promotion.nextRole
           ? <>🎯 Nächste Stufe: {promotion.nextRole}</>

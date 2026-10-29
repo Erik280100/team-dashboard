@@ -2,54 +2,81 @@
 @import "tw-animate-css";
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
-  /* Marken-Palette 1:1 aus der früheren Einzeldatei-App übernommen */
-  --navy: #0b1f2a;
-  --navy-2: #122c3a;
-  --teal: #155767;
-  --mint: #64dda3;
-  --mint-2: #3fcb8e;
-  --amber: #e7a94c;
-  --brand-red: #e2685b;
-  --brand-grey: #5b6b70;
-  --brand-grey-light: #8fa1a6;
-  --brand-border: #e7ecef;
+  /* Finova-Palette (aus den Referenz-Screenshots der offiziellen App gemessen).
+     Alle Farben der App laufen ueber diese Tokens, damit sie bei der Uebernahme
+     in Finova auf deren Variablen gemappt werden koennen. */
+  --finova-green: #3ee08e;
+  --finova-green-hover: #34cf80;
+  --finova-green-soft: #ecfdf3;
+  --finova-green-border: #cdf5de;
+  --finova-green-ink: #047857;
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --amber: #f5b800;
+  --danger: #ef4444;
+  --info: #2563eb;
+  --info-soft: #dbeafe;
 
-  --background: #f5f7f8;
-  --foreground: var(--navy);
+  /* Alt-Namen (Bestand) auf die neuen Werte gelegt, bis alle Seiten umgestellt sind */
+  --navy: var(--slate-900);
+  --navy-2: var(--slate-800);
+  --teal: var(--finova-green-ink);
+  --mint: var(--finova-green);
+  --mint-2: var(--finova-green);
+  --brand-red: var(--danger);
+  --brand-grey: var(--slate-500);
+  --brand-grey-light: var(--slate-400);
+  --brand-border: var(--finova-green-border);
+
+  --background: #f9fafb;
+  --foreground: var(--slate-900);
   --card: #ffffff;
-  --card-foreground: var(--navy);
+  --card-foreground: var(--slate-900);
   --popover: #ffffff;
-  --popover-foreground: var(--navy);
-  --primary: var(--mint-2);
-  --primary-foreground: var(--navy);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: var(--navy);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: var(--navy);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: var(--navy);
-  --destructive: var(--brand-red);
-  --border: var(--brand-border);
-  --input: var(--brand-border);
-  --ring: var(--mint-2);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: var(--navy);
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: var(--mint);
-  --sidebar-primary-foreground: var(--navy);
-  --sidebar-accent: rgba(100, 221, 163, 0.14);
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: var(--mint);
+  --popover-foreground: var(--slate-900);
+  --primary: var(--finova-green);
+  --primary-foreground: var(--slate-900);
+  --secondary: var(--slate-200);
+  --secondary-foreground: var(--slate-600);
+  --muted: var(--slate-100);
+  --muted-foreground: var(--slate-500);
+  --accent: var(--finova-green-soft);
+  --accent-foreground: var(--slate-900);
+  --destructive: var(--danger);
+  --border: var(--finova-green-border);
+  --input: var(--slate-200);
+  --ring: var(--finova-green);
+  --chart-1: var(--finova-green);
+  --chart-2: var(--amber);
+  --chart-3: var(--info);
+  --chart-4: var(--danger);
+  --chart-5: var(--slate-400);
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--slate-600);
+  --sidebar-primary: var(--finova-green);
+  --sidebar-primary-foreground: var(--slate-900);
+  --sidebar-accent: var(--finova-green-soft);
+  --sidebar-accent-foreground: var(--finova-green-ink);
+  --sidebar-border: var(--slate-200);
+  --sidebar-ring: var(--finova-green);
 }
 
 @theme inline {
+  --color-finova-green: var(--finova-green);
+  --color-finova-soft: var(--finova-green-soft);
+  --color-finova-border: var(--finova-green-border);
+  --color-finova-ink: var(--finova-green-ink);
+  --color-amber: var(--amber);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -94,7 +121,7 @@
   body {
     @apply bg-background text-foreground;
     /* der früheren Einzeldatei-App — dieselbe Schriftfamilie wie im Original */
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   /* Tailwinds Preflight setzt button { cursor: default } zurück — alle
@@ -112,7 +139,7 @@
     flex-shrink: 0;
     width: 18px;
     height: 18px;
-    border: 1.5px solid var(--brand-grey-light);
+    border: 1.5px solid var(--slate-400);
     border-radius: 5px;
     background-color: transparent;
     background-position: center;
@@ -121,12 +148,12 @@
     transition: background-color 0.15s ease, border-color 0.15s ease;
   }
   input[type="checkbox"]:checked {
-    border-color: var(--mint-2);
-    background-color: var(--mint-2);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%230b1f2a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.5l2.5 2.5 4.5-5.5'/%3E%3C/svg%3E");
+    border-color: var(--finova-green);
+    background-color: var(--finova-green);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.5l2.5 2.5 4.5-5.5'/%3E%3C/svg%3E");
   }
   input[type="checkbox"]:focus-visible {
-    outline: 2px solid var(--mint);
+    outline: 2px solid var(--finova-green);
     outline-offset: 2px;
   }
   input[type="checkbox"]:disabled {
@@ -187,7 +214,7 @@
   color: var(--brand-grey-light);
   font-weight: 700;
   padding: 8px 10px;
-  border-bottom: 2px solid var(--navy);
+  border-bottom: 1px solid var(--slate-200);
 }
 .career-plan td {
   padding: 10px;
@@ -209,7 +236,7 @@
 .btn {
   display: inline-block;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 700;
@@ -222,9 +249,8 @@
   transform: scale(0.97);
 }
 .btn-primary {
-  background: linear-gradient(135deg, var(--mint), var(--mint-2));
-  color: var(--navy);
-  box-shadow: 0 4px 14px rgba(63, 203, 142, 0.35);
+  background: var(--finova-green);
+  color: var(--slate-900);
 }
 .btn-small {
   padding: 7px 12px;
@@ -243,36 +269,36 @@
 .career-stage {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(160deg, #16323f 0%, #0b1f2a 100%);
-  border-radius: 16px;
+  background: #fff;
+  border-radius: 12px;
   padding: 18px 20px;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--slate-900);
+  border: 1px solid var(--finova-green-border);
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 .career-stage:hover {
   transform: translateY(-2px);
-  border-color: rgba(100, 221, 163, 0.35);
+  border-color: var(--finova-green);
 }
 .career-stage .stage-label {
   align-self: flex-start;
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--mint);
-  background: rgba(100, 221, 163, 0.12);
+  color: var(--finova-green-ink);
+  background: var(--finova-green-soft);
   border-radius: 999px;
   padding: 3px 10px;
   font-weight: 700;
   margin-bottom: 10px;
 }
 .career-stage.is-fuehrung .stage-label {
-  color: var(--amber);
-  background: rgba(231, 169, 76, 0.14);
+  color: #92400e;
+  background: #fef3c7;
 }
 .career-stage.is-start .stage-label {
-  color: #9fc3d0;
-  background: rgba(159, 195, 208, 0.14);
+  color: var(--slate-600);
+  background: var(--slate-100);
 }
 .career-stage .stage-title {
   font-size: 15px;
@@ -281,22 +307,22 @@
 }
 .career-stage .stage-desc {
   font-size: 12.5px;
-  color: #b9c7c4;
+  color: var(--slate-500);
 }
 .career-stage .stage-rate {
   font-size: 26px;
   line-height: 1.1;
   font-weight: 800;
-  color: var(--mint);
+  color: var(--finova-green-ink);
   margin-bottom: 12px;
 }
 .career-stage.is-fuehrung .stage-rate {
-  color: var(--amber);
+  color: #b45309;
 }
 .career-stage .stage-rate small {
   font-size: 12px;
   font-weight: 600;
-  color: #b9c7c4;
+  color: var(--slate-500);
   margin-left: 4px;
 }
 .career-stage .stage-crit {
@@ -310,8 +336,8 @@
   padding: 6px 10px 6px 28px;
   font-size: 12px;
   line-height: 1.35;
-  color: #dbe7e4;
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--slate-800);
+  background: var(--slate-100);
   border-radius: 10px;
 }
 .career-stage .stage-chip::before {
@@ -320,10 +346,10 @@
   left: 10px;
   top: 6px;
   font-weight: 800;
-  color: var(--mint);
+  color: var(--finova-green-ink);
 }
 .career-stage.is-fuehrung .stage-chip::before {
-  color: var(--amber);
+  color: #b45309;
 }
 .career-plan .career-sub {
   margin: 0 0 20px;
@@ -350,9 +376,9 @@
   margin: 0;
   padding: 12px 14px 12px 38px;
   position: relative;
-  border: 1px solid var(--border, #e2e8e6);
+  border: 1px solid var(--finova-green-border);
   border-radius: 12px;
-  background: rgba(100, 221, 163, 0.07);
+  background: var(--finova-green-soft);
   line-height: 1.45;
 }
 .career-tiles ul li::before {
@@ -366,8 +392,8 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--teal);
-  color: #fff;
+  background: var(--finova-green);
+  color: var(--slate-900);
   font-size: 11px;
   font-weight: 800;
   font-style: italic;

@@ -2,7 +2,7 @@
 // (ehemals alleinige Finanzierungen-Sektion, siehe finanzierungen/OffeneAbwicklungen.tsx)
 // und der hierher umgesiedelte Finanzierungsrechner (ehemals Tab in Rechner.tsx).
 import { lazy, useState } from "react"
-import { PillTabs } from "@/components/ui/dark"
+import { PillTabs } from "@/components/ui/surface"
 import { OffeneAbwicklungen } from "@/components/sections/finanzierungen/OffeneAbwicklungen"
 import type { Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"

@@ -1,7 +1,7 @@
 // Rechner-Sektion — Äquivalent zu section-rechner + initRechnerTabs() aus
 // der früheren Einzeldatei-App.
 import { useState } from "react"
-import { PillTabs } from "@/components/ui/dark"
+import { PillTabs } from "@/components/ui/surface"
 import { EhRechner } from "@/components/sections/rechner/EhRechner"
 import { UmdrehRechner } from "@/components/sections/rechner/UmdrehRechner"
 import { RenditeRechner } from "@/components/sections/rechner/RenditeRechner"

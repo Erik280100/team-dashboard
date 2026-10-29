@@ -5,7 +5,7 @@ import { useState } from "react"
 import { Bar, Doughnut } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DARK_CARD, DARK_GRID, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
+import { SURFACE_CARD, CHART_GRID, CHART_LEGEND, CHART_TICK } from "@/lib/chartSetup"
 import { fmt } from "@/lib/calc/format"
 import { PLAN_COLORS, type PlanSplitPoint } from "@/lib/calc/statistik"
 import { PLAN_IDS, PLAN_LABELS } from "@/lib/calc/struktur"
@@ -16,7 +16,7 @@ export function PlanSplitChart({ points }: { points: PlanSplitPoint[] }) {
   const totalsByPlan = PLAN_IDS.map((p) => points.reduce((s, pt) => s + (pt.units[p] || 0), 0))
 
   return (
-    <Card className={DARK_CARD}>
+    <Card className={SURFACE_CARD}>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-white">Karriereplan-Aufteilung</CardTitle>
@@ -56,13 +56,13 @@ export function PlanSplitChart({ points }: { points: PlanSplitPoint[] }) {
             options={{
               responsive: true,
               maintainAspectRatio: false,
-              plugins: { legend: DARK_LEGEND },
+              plugins: { legend: CHART_LEGEND },
               scales: {
-                x: { stacked: true, grid: { display: false }, ticks: DARK_TICK },
+                x: { stacked: true, grid: { display: false }, ticks: CHART_TICK },
                 y: {
                   stacked: true, beginAtZero: true,
                   max: mode === "percent" ? 100 : undefined,
-                  ticks: DARK_TICK, grid: { color: DARK_GRID },
+                  ticks: CHART_TICK, grid: { color: CHART_GRID },
                 },
               },
             }}

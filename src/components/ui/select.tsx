@@ -12,7 +12,7 @@ function Select({ className, children, ...props }: React.ComponentProps<"select"
       <select
         data-slot="select"
         className={cn(
-          "border-input bg-background flex h-9 w-full appearance-none items-center rounded-md border px-3 py-1 pr-8 text-sm shadow-xs outline-none",
+          "border-input bg-background flex h-9 w-full appearance-none items-center rounded-lg border bg-card px-3 py-1 pr-8 text-sm outline-none",
           "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
           "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
           className
@@ -21,7 +21,7 @@ function Select({ className, children, ...props }: React.ComponentProps<"select"
       >
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 opacity-50" />
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
     </div>
   )
 }

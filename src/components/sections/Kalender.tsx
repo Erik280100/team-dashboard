@@ -9,8 +9,8 @@ import { GraduationCap, Presentation } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import {
-  DARK_CARD, DARK_INPUT, DARK_OPTION, DARK_SELECT, KpiTile, MintBar, PresenceToggle, SectionHero,
-} from "@/components/ui/dark"
+  SURFACE_CARD, FIELD_INPUT, FIELD_OPTION, FIELD_SELECT, KpiTile, MintBar, PresenceToggle, SectionHero,
+} from "@/components/ui/surface"
 import { initials } from "@/lib/calc/format"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { AttendanceEntry } from "@/types/dashboard"
@@ -39,7 +39,7 @@ function AttendanceToggle({
           defaultValue={reason}
           onBlur={(e) => onReasonChange(e.target.value)}
           aria-label={`Absagegrund ${label}`}
-          className={cn("h-7 w-44 rounded-md border px-2 text-xs outline-none focus-visible:border-[#64DDA3]", DARK_INPUT)}
+          className={cn("h-7 w-44 rounded-md border px-2 text-xs outline-none focus-visible:border-[#64DDA3]", FIELD_INPUT)}
         />
       )}
     </div>
@@ -101,10 +101,10 @@ export function Kalender({
               aria-label="Anwesenheitsliste sortieren"
               value={sort}
               onChange={(e) => setSort(e.target.value as AttendanceSort)}
-              className={cn("w-48", DARK_SELECT)}
+              className={cn("w-48", FIELD_SELECT)}
             >
-              <option className={DARK_OPTION} value="name">Sortieren: Name (A–Z)</option>
-              <option className={DARK_OPTION} value="struktur">Nach Struktur</option>
+              <option className={FIELD_OPTION} value="name">Sortieren: Name (A–Z)</option>
+              <option className={FIELD_OPTION} value="struktur">Nach Struktur</option>
             </Select>
             {isEditor && (
               <Button
@@ -131,7 +131,7 @@ export function Kalender({
         </div>
       </SectionHero>
 
-      <div className={cn("rounded-xl border", DARK_CARD)}>
+      <div className={cn("rounded-xl border", SURFACE_CARD)}>
         {total === 0 ? (
           <div className="py-8 text-center text-sm text-white/90">Noch keine Mitarbeiter angelegt.</div>
         ) : (
