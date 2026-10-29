@@ -26,8 +26,8 @@ export function EmployeeCurve({ series }: { series: EmployeeSeries | null }) {
               datasets: [
                 {
                   label: "Ist", data: series.cells.map((c) => (c.present ? c.ist : null)),
-                  borderColor: "#64DDA3", backgroundColor: "rgba(100,221,163,.15)",
-                  borderWidth: 3, pointRadius: 3, pointBackgroundColor: "#64DDA3",
+                  borderColor: "#3ee08e", backgroundColor: "rgba(62,224,142,.15)",
+                  borderWidth: 3, pointRadius: 3, pointBackgroundColor: "#3ee08e",
                   fill: true, tension: 0.25, spanGaps: true,
                 },
                 {
@@ -36,7 +36,7 @@ export function EmployeeCurve({ series }: { series: EmployeeSeries | null }) {
                 },
                 {
                   label: "Vergütung €", data: series.cells.map((c) => (c.present ? c.eur : null)),
-                  borderColor: "#E7A94C", borderWidth: 2, pointRadius: 2, yAxisID: "y1", spanGaps: true,
+                  borderColor: "#f5b800", borderWidth: 2, pointRadius: 2, yAxisID: "y1", spanGaps: true,
                 },
               ],
             }}

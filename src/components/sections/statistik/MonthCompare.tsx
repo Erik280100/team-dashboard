@@ -108,8 +108,8 @@ export function MonthCompare({
             data={{
               labels: PLAN_IDS.map((p) => PLAN_LABELS[p]),
               datasets: [
-                { label: entryA.label, data: PLAN_IDS.map((p) => entryA.totals.ehByPlan[p] || 0), backgroundColor: "rgba(255,255,255,.25)", borderRadius: 4 },
-                { label: entryB.label, data: PLAN_IDS.map((p) => entryB.totals.ehByPlan[p] || 0), backgroundColor: "#64DDA3", borderRadius: 4 },
+                { label: entryA.label, data: PLAN_IDS.map((p) => entryA.totals.ehByPlan[p] || 0), backgroundColor: "#cbd5e1", borderRadius: 4 },
+                { label: entryB.label, data: PLAN_IDS.map((p) => entryB.totals.ehByPlan[p] || 0), backgroundColor: "#3ee08e", borderRadius: 4 },
               ],
             }}
             options={{

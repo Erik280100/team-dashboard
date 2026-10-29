@@ -164,13 +164,13 @@ export function Overview({
       },
       {
         label: "Ist-Verlauf", data: timeline.points.map((p) => p.actual),
-        borderColor: "#64DDA3", backgroundColor: "rgba(100,221,163,.15)",
-        borderWidth: 3, pointRadius: 2, pointBackgroundColor: "#64DDA3",
+        borderColor: "#3ee08e", backgroundColor: "rgba(62,224,142,.15)",
+        borderWidth: 3, pointRadius: 2, pointBackgroundColor: "#3ee08e",
         fill: true, tension: 0.25, spanGaps: true,
       },
       {
         label: "Prognose", data: timeline.points.map((p) => p.forecast),
-        borderColor: "#E7A94C", borderDash: [3, 3], borderWidth: 2,
+        borderColor: "#f5b800", borderDash: [3, 3], borderWidth: 2,
         pointRadius: 0, tension: 0.15, spanGaps: true,
       },
     ],
