@@ -4,6 +4,7 @@ Entwurf eines relationalen Modells für das Team-Dashboard. Abgeleitet aus `src/
 `firestore.rules` und `functions/src`. **Nicht gegen echte Daten oder Finovas bestehendes Schema geprüft.**
 Vorhandene Finova-Tabellen (Mitarbeiter, Kunden, Kreditfälle) zuerst abgleichen und dann verknüpfen statt neu anlegen.
 
+- PDF zum Weitergeben: [`Datenmodell_PostgreSQL.pdf`](Datenmodell_PostgreSQL.pdf)
 - SQL zum Anlegen: [`schema.postgres.sql`](schema.postgres.sql) (getestet: läuft in PostgreSQL 16 fehlerfrei durch)
 - Umfang: 31 Tabellen, 234 Spalten, 29 Fremdschlüssel
 - Die Diagramme (Mermaid) sind aus dem laufenden Schema erzeugt, nicht von Hand gezeichnet. Sie rendern in GitHub, VS Code
@@ -41,7 +42,7 @@ Vorhandene Finova-Tabellen (Mitarbeiter, Kunden, Kreditfälle) zuerst abgleichen
 | `snapshots/{YYYY-MM}` (+ `/employees/{id}`) | `month_snapshot`, `snapshot_*` | unveränderlich nach Monatsabschluss |
 | `org/archiveIndex` | `month_totals` | ableitbar, auch als Materialized View möglich |
 
-## Mitarbeiter, Struktur & Konten
+## Mitarbeiter & Konten
 
 ```mermaid
 erDiagram
@@ -53,17 +54,6 @@ erDiagram
   employee ||--o{ employee_vb_abwickler : "employee_id"
   employee ||--o{ employee_vb_abwickler : "abwickler_id"
   employee ||--o{ employee_month_stats : "employee_id"
-  employee ||--o{ org_note : "employee_id"
-  employee ||--o{ org_connection : "from_id"
-  employee ||--o{ org_connection : "to_id"
-  employee ||--o{ plan_week : "employee_id"
-  employee ||--o{ plan_month : "employee_id"
-  employee ||--o{ plan_annual : "employee_id"
-  employee ||--o| attendance : "employee_id"
-  employee ||--o{ board_todo : "employee_id"
-  employee ||--o{ financing_case : "owner_id"
-  employee |o--o{ financing_case : "abwickler_id"
-  employee ||--o{ sale : "owner_id"
   employee {
     text id PK
     text name
@@ -117,6 +107,15 @@ erDiagram
     integer et_ist
     numeric soll
   }
+```
+
+## Organisation, Sätze & Teamziel
+
+```mermaid
+erDiagram
+  employee ||--o{ org_note : "employee_id"
+  employee ||--o{ org_connection : "from_id"
+  employee ||--o{ org_connection : "to_id"
   org_note {
     bigint id PK
     text employee_id FK
@@ -153,28 +152,7 @@ erDiagram
     date day PK
     numeric ist
   }
-  plan_week {
-    text employee_id PK
-    char week PK
-  }
-  plan_month {
-    text employee_id PK
-    char month PK
-  }
-  plan_annual {
-    text employee_id PK
-    smallint year PK
-  }
-  attendance {
-    text employee_id PK
-  }
-  board_todo {
-    text id PK
-  }
-  financing_case {
-    text id PK
-  }
-  sale {
+  employee {
     text id PK
   }
 ```
