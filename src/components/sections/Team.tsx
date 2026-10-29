@@ -241,7 +241,7 @@ export function Team({
 
         {managerOptions.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-white/90">Schnellfilter Führungskraft:</span>
+            <span className="text-xs font-medium text-slate-600">Schnellfilter Führungskraft:</span>
             <Pill active={managerFilter === null} onClick={() => setManagerFilter(null)} className="px-3 py-1 text-xs">Alle</Pill>
             {managerOptions.map((m) => (
               <Pill
@@ -268,12 +268,12 @@ export function Team({
           <thead>
             <tr>
               <th rowSpan={2} className={cn(th, "min-w-[300px]")}>Name</th>
-              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Status</th>
-              <th colSpan={4} className={cn(groupHead, "sticky top-0 z-10 border-l border-white/10 bg-[#13384a] text-sky-300")}>Plan</th>
-              <th colSpan={4} className={cn(groupHead, "sticky top-0 z-10 border-l border-white/10 bg-[#3a3320] text-amber-300")}>Ist</th>
-              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Soll</th>
-              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Ist</th>
-              <th rowSpan={2} className={cn(th, "border-l border-white/10")}>Fortschritt</th>
+              <th rowSpan={2} className={cn(th, "border-l border-slate-200")}>Status</th>
+              <th colSpan={4} className={cn(groupHead, "sticky top-0 z-10 border-l border-slate-200 bg-[#13384a] text-sky-300")}>Plan</th>
+              <th colSpan={4} className={cn(groupHead, "sticky top-0 z-10 border-l border-slate-200 bg-[#3a3320] text-amber-300")}>Ist</th>
+              <th rowSpan={2} className={cn(th, "border-l border-slate-200")}>Soll</th>
+              <th rowSpan={2} className={cn(th, "border-l border-slate-200")}>Ist</th>
+              <th rowSpan={2} className={cn(th, "border-l border-slate-200")}>Fortschritt</th>
             </tr>
             <tr>
               {(["Plan", "Ist"] as const).flatMap((g) =>
@@ -281,9 +281,9 @@ export function Team({
                   <th
                     key={`${g}-${k}`}
                     className={cn(
-                      "sticky top-[30px] z-10 px-1 py-1 text-center text-[11px] font-semibold text-white/90",
+                      "sticky top-[30px] z-10 px-1 py-1 text-center text-[11px] font-semibold text-slate-600",
                       g === "Plan" ? "bg-[#0f2f3e]" : "bg-[#2c2819]",
-                      i === 0 && "border-l border-white/10"
+                      i === 0 && "border-l border-slate-200"
                     )}
                     title={g === "Ist" ? "Wird automatisch aus der Wochenplanung übernommen" : undefined}
                   >
@@ -296,7 +296,7 @@ export function Team({
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-3 py-8 text-center text-sm text-white/90">
+                <td colSpan={13} className="px-3 py-8 text-center text-sm text-slate-600">
                   {merged.length === 0 ? "Noch keine Personen im Strukturbaum erfasst." : "Keine Mitarbeiter entsprechen der Suche/Filterung."}
                 </td>
               </tr>
@@ -313,8 +313,8 @@ export function Team({
                     key={`${r.rowIndex}-${r.name}`}
                     className={cn(
                       SURFACE_TABLE.row,
-                      highlight === "at-above" && "bg-[#64DDA3]/[.06] shadow-[inset_3px_0_0_#64DDA3]",
-                      highlight === "at-below" && "bg-[#e2685b]/[.08] shadow-[inset_3px_0_0_#e2685b]"
+                      highlight === "at-above" && "bg-primary/[.06] shadow-[inset_3px_0_0_#64DDA3]",
+                      highlight === "at-below" && "bg-destructive/[.08] shadow-[inset_3px_0_0_#e2685b]"
                     )}
                   >
                     <td className="px-3 py-2" style={{ paddingLeft: 12 + indent }}>
@@ -323,7 +323,7 @@ export function Team({
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-semibold">{r.name}</div>
                           {(r.role || r.managerName) && (
-                            <div className="truncate text-xs text-white/90">
+                            <div className="truncate text-xs text-slate-600">
                               {r.role}
                               {r.managerName ? ` · unter ${r.managerName}` : ""}
                             </div>
@@ -334,16 +334,16 @@ export function Team({
                             type="button"
                             onClick={() => setDetailName(r.name)}
                             aria-label={`Verdienst-Details – ${r.name}`}
-                            className="shrink-0 whitespace-nowrap rounded-full bg-[#64DDA3]/10 px-2.5 py-1 text-sm font-bold tabular-nums text-[#64DDA3] transition-colors hover:bg-[#64DDA3]/20"
+                            className="shrink-0 whitespace-nowrap rounded-full bg-finova-soft px-2.5 py-1 text-sm font-bold tabular-nums text-finova-ink transition-colors hover:bg-finova-soft"
                           >
                             {fmtEur(rowEarnings.total - stornoreserveAmount(rowEarnings, reserveRate))} €
                           </button>
                         ) : (
-                          <span className="shrink-0 text-white/70">—</span>
+                          <span className="shrink-0 text-slate-500">—</span>
                         )}
                       </div>
                     </td>
-                    <td className="border-l border-white/10 px-3 py-2">
+                    <td className="border-l border-slate-200 px-3 py-2">
                       <button
                         type="button"
                         disabled={!isEditor || !canEditRow(r.name as string)}
@@ -352,32 +352,32 @@ export function Team({
                         aria-label={`Status ${r.name}: ${r.isNew ? "Neu" : "Bestand"}, umschalten`}
                         className={cn(
                           "rounded-full px-2.5 py-1 text-xs font-bold transition-colors disabled:opacity-60",
-                          r.isNew ? "bg-[#64DDA3]/15 text-[#64DDA3]" : "bg-white/10 text-white/85"
+                          r.isNew ? "bg-finova-soft text-finova-ink" : "bg-slate-100 text-slate-600"
                         )}
                       >
                         {r.isNew ? "NEU" : "Bestand"}
                       </button>
                     </td>
-                    <td className={cn(num, "border-l border-white/10 bg-sky-400/[.06]")}><ComputedField value={r.atPlan} /></td>
+                    <td className={cn(num, "border-l border-slate-200 bg-sky-400/[.06]")}><ComputedField value={r.atPlan} /></td>
                     <td className={cn(num, "bg-sky-400/[.06]")}><ComputedField value={r.btPlan} /></td>
                     <td className={cn(num, "bg-sky-400/[.06]")}><ComputedField value={r.stPlan} /></td>
                     <td className={cn(num, "bg-sky-400/[.06]")}><ComputedField value={r.etPlan} /></td>
-                    <td className={cn(num, "border-l border-white/10 bg-amber-400/[.06]")}><ComputedField value={r.atIst} /></td>
+                    <td className={cn(num, "border-l border-slate-200 bg-amber-400/[.06]")}><ComputedField value={r.atIst} /></td>
                     <td className={cn(num, "bg-amber-400/[.06]")}><ComputedField value={r.btIst} /></td>
                     <td className={cn(num, "bg-amber-400/[.06]")}><ComputedField value={r.stIst} /></td>
                     <td className={cn(num, "bg-amber-400/[.06]")}><ComputedField value={r.etIst} /></td>
-                    <td className="border-l border-white/10 px-2 py-2"><ComputedField value={r.soll} title="Einheitenziel aus der Monatsplanung" /></td>
-                    <td className="border-l border-white/10 px-2 py-2">
+                    <td className="border-l border-slate-200 px-2 py-2"><ComputedField value={r.soll} title="Einheitenziel aus der Monatsplanung" /></td>
+                    <td className="border-l border-slate-200 px-2 py-2">
                       <button
                         type="button"
                         onClick={() => setDetailName(r.name)}
                         aria-label={`Einheiten-Details – ${r.name}`}
-                        className="h-8 w-20 rounded-md border border-transparent px-2 text-right text-sm font-bold tabular-nums transition-colors hover:border-white/20 hover:bg-white/10"
+                        className="h-8 w-20 rounded-md border border-transparent px-2 text-right text-sm font-bold tabular-nums transition-colors hover:border-slate-200 hover:bg-slate-100"
                       >
                         {fmt(r.ist)}
                       </button>
                     </td>
-                    <td className="border-l border-white/10 px-3 py-2">
+                    <td className="border-l border-slate-200 px-3 py-2">
                       <div className="flex items-center gap-2">
                         <MintBar pct={pct} tone={tone} className="w-16" />
                         <span className="text-xs font-semibold tabular-nums">{pct}%</span>
@@ -398,21 +398,21 @@ export function Team({
                       <td className={cell}>
                         <div className="flex items-center justify-between gap-3">
                           <span>Summe</span>
-                          <span className="whitespace-nowrap text-[#64DDA3]">{fmtEur(grandTotalEur)} €</span>
+                          <span className="whitespace-nowrap text-finova-ink">{fmtEur(grandTotalEur)} €</span>
                         </div>
                       </td>
-                      <td className={cn(cell, "border-l border-white/10")} />
-                      <td className={cn(cell, "border-l border-white/10 text-center")}>{fmt(totals.atPlan)}</td>
+                      <td className={cn(cell, "border-l border-slate-200")} />
+                      <td className={cn(cell, "border-l border-slate-200 text-center")}>{fmt(totals.atPlan)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.btPlan)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.stPlan)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.etPlan)}</td>
-                      <td className={cn(cell, "border-l border-white/10 text-center")}>{fmt(totals.atIst)}</td>
+                      <td className={cn(cell, "border-l border-slate-200 text-center")}>{fmt(totals.atIst)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.btIst)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.stIst)}</td>
                       <td className={cn(cell, "text-center")}>{fmt(totals.etIst)}</td>
-                      <td className={cn(cell, "border-l border-white/10")}>{fmt(totals.soll)}</td>
-                      <td className={cn(cell, "border-l border-white/10")}>{fmt(totals.ist)}</td>
-                      <td className={cn(cell, "border-l border-white/10")} />
+                      <td className={cn(cell, "border-l border-slate-200")}>{fmt(totals.soll)}</td>
+                      <td className={cn(cell, "border-l border-slate-200")}>{fmt(totals.ist)}</td>
+                      <td className={cn(cell, "border-l border-slate-200")} />
                     </>
                   )
                 })()}

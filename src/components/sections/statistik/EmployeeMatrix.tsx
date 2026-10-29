@@ -44,8 +44,8 @@ export function EmployeeMatrix({
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-white">Mitarbeiter-Entwicklung</CardTitle>
-        <p className="text-xs text-white/50">
+        <CardTitle className="text-foreground">Mitarbeiter-Entwicklung</CardTitle>
+        <p className="text-xs text-slate-400">
           {loading ? `Lädt Monate… (${loaded} von ${total})` : "Einheiten je Mitarbeiter und Monat, anklickbar für den Verlauf"}
         </p>
       </CardHeader>
@@ -56,13 +56,13 @@ export function EmployeeMatrix({
             aria-label="Mitarbeiter nach Name suchen"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-56 border-white/20 bg-white/10 text-white placeholder:text-white/40"
+            className="w-56 border-slate-200 bg-slate-100 text-foreground placeholder:text-slate-400"
           />
           <Select
             aria-label="Mitarbeiter sortieren"
             value={sort}
             onChange={(e) => setSort(e.target.value as MatrixSort)}
-            className="w-56 border-white/20 bg-white/10 text-white"
+            className="w-56 border-slate-200 bg-slate-100 text-foreground"
           >
             <option value="name" className="text-black">Sortieren: Name (A–Z)</option>
             <option value="struktur" className="text-black">Nach Führungskraft (Struktur)</option>
@@ -72,7 +72,7 @@ export function EmployeeMatrix({
         </div>
 
         {months.length === 0 || sorted.length === 0 ? (
-          <div className="py-6 text-center text-sm text-white/50">
+          <div className="py-6 text-center text-sm text-slate-400">
             {months.length === 0
               ? "Kein Zeitraum gewählt."
               : loading
@@ -80,17 +80,17 @@ export function EmployeeMatrix({
                 : "Keine Mitarbeiter für diesen Zeitraum/Suche."}
           </div>
         ) : (
-          <div className="max-h-[420px] overflow-auto rounded-lg border border-white/10">
+          <div className="max-h-[420px] overflow-auto rounded-lg border border-slate-200">
             <table className="w-full min-w-[600px] border-collapse text-sm">
               <thead>
-                <tr className="text-left text-xs text-white/50">
-                  <th className="sticky left-0 top-0 z-20 bg-[#0B1F2A] px-3 py-2">Name</th>
+                <tr className="text-left text-xs text-slate-400">
+                  <th className="sticky left-0 top-0 z-20 bg-background px-3 py-2">Name</th>
                   {months.map((m) => (
-                    <th key={m.month} className="sticky top-0 z-10 bg-[#0B1F2A] px-2 py-2 text-right">{m.label}</th>
+                    <th key={m.month} className="sticky top-0 z-10 bg-background px-2 py-2 text-right">{m.label}</th>
                   ))}
-                  <th className="sticky top-0 z-10 bg-[#0B1F2A] px-2 py-2 text-right">Σ</th>
-                  <th className="sticky top-0 z-10 bg-[#0B1F2A] px-2 py-2 text-right">Ø</th>
-                  <th className="sticky top-0 z-10 bg-[#0B1F2A] px-2 py-2 text-right">Trend</th>
+                  <th className="sticky top-0 z-10 bg-background px-2 py-2 text-right">Σ</th>
+                  <th className="sticky top-0 z-10 bg-background px-2 py-2 text-right">Ø</th>
+                  <th className="sticky top-0 z-10 bg-background px-2 py-2 text-right">Trend</th>
                 </tr>
               </thead>
               <tbody>
@@ -99,12 +99,12 @@ export function EmployeeMatrix({
                     key={s.name}
                     onClick={() => onSelect(s.name)}
                     className={cn(
-                      "cursor-pointer border-t border-white/10 hover:bg-white/5",
-                      selectedName === s.name && "bg-white/10"
+                      "cursor-pointer border-t border-slate-200 hover:bg-slate-100",
+                      selectedName === s.name && "bg-slate-100"
                     )}
                   >
                     <td
-                      className="sticky left-0 z-10 bg-[#0B1F2A] px-3 py-2 font-medium text-white/90"
+                      className="sticky left-0 z-10 bg-background px-3 py-2 font-medium text-slate-600"
                       style={sort === "struktur" ? { paddingLeft: 12 + s.depth * 14 } : undefined}
                     >
                       {s.name}
@@ -116,19 +116,19 @@ export function EmployeeMatrix({
                           key={c.month}
                           className={cn(
                             "px-2 py-2 text-right tabular-nums",
-                            !c.present ? "text-white/25" : pc === "low" ? "text-red-300" : pc === "high" ? "text-emerald-300" : "text-white/70"
+                            !c.present ? "text-slate-400" : pc === "low" ? "text-red-300" : pc === "high" ? "text-emerald-300" : "text-slate-500"
                           )}
                         >
                           {c.present ? fmt(c.ist) : "—"}
                         </td>
                       )
                     })}
-                    <td className="px-2 py-2 text-right tabular-nums font-semibold text-white">{fmt(s.total)}</td>
-                    <td className="px-2 py-2 text-right tabular-nums text-white/70">{fmt(Math.round(s.avg))}</td>
+                    <td className="px-2 py-2 text-right tabular-nums font-semibold text-foreground">{fmt(s.total)}</td>
+                    <td className="px-2 py-2 text-right tabular-nums text-slate-500">{fmt(Math.round(s.avg))}</td>
                     <td
                       className={cn(
                         "px-2 py-2 text-right tabular-nums font-medium",
-                        s.trend > 0 ? "text-emerald-400" : s.trend < 0 ? "text-red-400" : "text-white/50"
+                        s.trend > 0 ? "text-emerald-400" : s.trend < 0 ? "text-red-400" : "text-slate-400"
                       )}
                     >
                       {s.trend > 0 ? "+" : ""}{fmt(s.trend)}

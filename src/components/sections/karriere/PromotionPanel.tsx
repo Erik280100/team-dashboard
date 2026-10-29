@@ -9,7 +9,7 @@ export function PromotionPanel({
   promotion, className, variant = "light",
 }: { promotion: PromotionProgress; className?: string; variant?: "light" | "dark" }) {
   const dark = variant === "dark"
-  const muted = dark ? "text-white/90" : "text-muted-foreground"
+  const muted = dark ? "text-slate-600" : "text-muted-foreground"
   return (
     <div className={cn(dark ? cn("rounded-xl border p-4", SURFACE_CARD) : "rounded-md border bg-muted/30 p-3", className)}>
       <div className={cn("mb-2 font-semibold", dark ? "text-sm" : "text-xs")}>
@@ -44,13 +44,13 @@ export function PromotionPanel({
                   </div>
                 )}
                 {c.sources && c.sources.length > 0 && (
-                  <ul className={cn("mt-1 flex flex-col gap-0.5 border-l pl-2", dark && "border-white/15")}>
+                  <ul className={cn("mt-1 flex flex-col gap-0.5 border-l pl-2", dark && "border-slate-200")}>
                     {c.sources.map((s) => (
                       <li
                         key={s.name}
                         className={cn(
                           "flex items-center justify-between text-[10px]",
-                          s.excludedReason ? (dark ? "text-white/70" : "text-muted-foreground/70") : muted
+                          s.excludedReason ? (dark ? "text-slate-500" : "text-muted-foreground/70") : muted
                         )}
                       >
                         <span className="truncate">
@@ -68,7 +68,7 @@ export function PromotionPanel({
         </div>
       )}
       {promotion.ready && (
-        <div className={cn("mt-2 text-[11px] font-medium", dark ? "text-[#64DDA3]" : "text-emerald-600")}>
+        <div className={cn("mt-2 text-[11px] font-medium", dark ? "text-finova-ink" : "text-emerald-600")}>
           ✓ Alle erfassten Kriterien für {promotion.nextRole} erfüllt
         </div>
       )}

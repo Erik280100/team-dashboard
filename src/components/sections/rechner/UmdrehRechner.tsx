@@ -30,8 +30,8 @@ function DiffValue({ value, onDark }: { value: number; onDark?: boolean }) {
     <span
       className={cn(
         "font-semibold",
-        value < 0 ? (onDark ? "text-[#E2685B]" : "text-destructive") : value > 0 ? "text-[#155767]" : undefined,
-        onDark && value >= 0 && "text-[#64DDA3]"
+        value < 0 ? "text-destructive" : value > 0 ? "text-[#155767]" : undefined,
+        onDark && value >= 0 && "text-finova-ink"
       )}
     >
       {ehFormatEUR(value)} €
@@ -142,24 +142,24 @@ export function UmdrehRechner() {
         </Card>
       </div>
 
-      <Card className="border-none bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
+      <Card className="border-finova-border bg-finova-soft">
         <CardContent className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-xs text-white/60">Storno-Minus gesamt</div>
+            <div className="text-xs text-slate-600">Storno-Minus gesamt</div>
             <div className="text-lg font-bold tabular-nums">{ehFormatEUR(r.gesamtMinus)} €</div>
           </div>
           <div>
-            <div className="text-xs text-white/60">Aktuell gesamt</div>
+            <div className="text-xs text-slate-600">Aktuell gesamt</div>
             <div className="text-lg font-bold tabular-nums">{ehFormatEUR(r.gesamtAktuell)} €</div>
           </div>
           <div>
-            <div className="text-xs text-white/60">Differenz gesamt</div>
+            <div className="text-xs text-slate-600">Differenz gesamt</div>
             <div className="text-lg font-bold tabular-nums"><DiffValue value={r.gesamtDiff} onDark /></div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+            className="border-slate-200 bg-transparent text-foreground hover:bg-slate-100"
             onClick={onReset}
           >
             Zurücksetzen

@@ -40,7 +40,7 @@ const SORT_LABEL: Record<SortKey, string> = {
 
 const SORT_OPTIONS: SortKey[] = ["standard", "betreuer-asc", "offen-asc", "offen-desc"]
 
-const GHOST_DARK = "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+const GHOST_DARK = "border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground"
 
 /** Status-Häkchen als Pill statt Browser-Checkbox. */
 function StatusPill({
@@ -57,8 +57,8 @@ function StatusPill({
       className={cn(
         "inline-flex size-7 items-center justify-center rounded-full border transition-colors disabled:opacity-60",
         checked
-          ? "border-transparent bg-[#3FCB8E] text-[#0b1f2a]"
-          : "border-white/20 bg-white/5 text-transparent hover:border-[#64DDA3]/50"
+          ? "border-transparent bg-primary text-primary-foreground"
+          : "border-slate-200 bg-slate-100 text-transparent hover:border-finova-border"
       )}
     >
       <Check className="size-4" aria-hidden="true" />
@@ -93,12 +93,12 @@ function NewCaseForm({
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-white">Neuer Kreditfall</CardTitle>
+        <CardTitle className="text-foreground">Neuer Kreditfall</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-white" htmlFor="fin-name">Person</label>
+            <label className="text-xs font-semibold text-foreground" htmlFor="fin-name">Person</label>
             <Input
               id="fin-name"
               placeholder="Name"
@@ -109,7 +109,7 @@ function NewCaseForm({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-white" htmlFor="fin-betrag">Kreditsumme</label>
+            <label className="text-xs font-semibold text-foreground" htmlFor="fin-betrag">Kreditsumme</label>
             <Input
               id="fin-betrag"
               type="number"
@@ -121,7 +121,7 @@ function NewCaseForm({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-white" htmlFor="fin-art">Art</label>
+            <label className="text-xs font-semibold text-foreground" htmlFor="fin-art">Art</label>
             <Select
               id="fin-art"
               value={art}
@@ -135,7 +135,7 @@ function NewCaseForm({
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-white" htmlFor="fin-beschaeftigung">Beschäftigung</label>
+            <label className="text-xs font-semibold text-foreground" htmlFor="fin-beschaeftigung">Beschäftigung</label>
             <Select
               id="fin-beschaeftigung"
               value={beschaeftigung}
@@ -148,7 +148,7 @@ function NewCaseForm({
             </Select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-white" htmlFor="fin-betreuer">Zuständiger Mitarbeiter</label>
+            <label className="text-xs font-semibold text-foreground" htmlFor="fin-betreuer">Zuständiger Mitarbeiter</label>
             <Select
               id="fin-betreuer"
               value={betreuer}
@@ -165,7 +165,7 @@ function NewCaseForm({
           <Button
             onClick={submit}
             disabled={!canWrite || !name.trim()}
-            className="border-0 bg-[linear-gradient(135deg,#64DDA3,#3FCB8E)] font-bold text-[#0b1f2a] shadow-[0_4px_14px_rgba(63,203,142,.3)] hover:opacity-90"
+            className="border-0 bg-primary font-bold text-primary-foreground  hover:opacity-90"
           >
             Anlegen
           </Button>
@@ -188,7 +188,7 @@ function ChecklistGrid({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((g) => (
           <div key={g.id} className="flex flex-col gap-1.5">
-            <div className="text-xs font-bold uppercase tracking-wide text-[#64DDA3]">{g.title}</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-finova-ink">{g.title}</div>
             {g.items.map((item) => (
               <label key={item.id} className="flex items-start gap-2 text-sm">
                 <input
@@ -201,14 +201,14 @@ function ChecklistGrid({
                 />
                 <span>
                   {item.label}
-                  {item.hint && <span className="ml-1 text-xs text-white/90">({item.hint})</span>}
+                  {item.hint && <span className="ml-1 text-xs text-slate-600">({item.hint})</span>}
                 </span>
               </label>
             ))}
           </div>
         ))}
       </div>
-      <p className="text-xs font-bold text-[#E7A94C]">Wichtig: alle Dateien in ein separates PDF.</p>
+      <p className="text-xs font-bold text-amber-700">Wichtig: alle Dateien in ein separates PDF.</p>
     </div>
   )
 }
@@ -285,9 +285,9 @@ export function OffeneAbwicklungen({
       <Card className={SURFACE_CARD}>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="text-white">{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
+            <CardTitle className="text-foreground">{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-white" htmlFor="fin-sort">Sortierung</label>
+              <label className="text-xs font-semibold text-foreground" htmlFor="fin-sort">Sortierung</label>
               <Select
                 id="fin-sort"
                 value={sortKey}
@@ -301,7 +301,7 @@ export function OffeneAbwicklungen({
               <Button variant="ghost" size="sm" className={GHOST_DARK} onClick={() => setShowArchived((s) => !s)}>
                 {showArchived ? "Zurück zu aktiven Fällen" : `Archiv anzeigen (${archivedCount})`}
               </Button>
-              <span className="rounded-full bg-[#64DDA3]/15 px-2.5 py-1 text-xs font-bold text-[#64DDA3]">
+              <span className="rounded-full bg-finova-soft px-2.5 py-1 text-xs font-bold text-finova-ink">
                 {visibleCases.length} Fälle
               </span>
             </div>
@@ -309,14 +309,14 @@ export function OffeneAbwicklungen({
         </CardHeader>
         <CardContent>
           {visibleCases.length === 0 ? (
-            <div className="py-6 text-center text-sm text-white/90">
+            <div className="py-6 text-center text-sm text-slate-600">
               {showArchived ? "Keine archivierten Kreditfälle." : "Noch keine Kreditfälle angelegt."}
             </div>
           ) : (
             <div className={SURFACE_TABLE.wrap}>
               <table className={cn("min-w-[900px]", SURFACE_TABLE.table)}>
                 <thead>
-                  <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
+                  <tr className="bg-background text-left text-[11px] font-bold uppercase tracking-wide text-slate-600">
                     <th className="w-8 px-2 py-2" />
                     <th className="px-2 py-2">Person</th>
                     <th className="px-2 py-2">Betreuer</th>
@@ -341,20 +341,20 @@ export function OffeneAbwicklungen({
                               type="button"
                               onClick={() => setExpanded(isOpen ? null : fc.id)}
                               aria-label={isOpen ? `Checkliste ${fc.name} einklappen` : `Checkliste ${fc.name} aufklappen`}
-                              className="flex size-6 items-center justify-center rounded-md text-white/85 hover:bg-white/10 hover:text-white"
+                              className="flex size-6 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-foreground"
                             >
                               {isOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                             </button>
                           </td>
                           <td className="px-2 py-2">
                             <div className="flex items-center gap-2">
-                              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
+                              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-finova-soft text-xs font-bold text-finova-ink">
                                 {initials(fc.name)}
                               </div>
                               <span className="font-semibold">{fc.name}</span>
                             </div>
                           </td>
-                          <td className="px-2 py-2 text-white/85">
+                          <td className="px-2 py-2 text-slate-600">
                             {fc.betreuer || "—"}
                             {fc.abwickler && <div className="text-xs">Abwickler: {fc.abwickler}</div>}
                           </td>
@@ -362,7 +362,7 @@ export function OffeneAbwicklungen({
                             <span
                               className={cn(
                                 "rounded-full px-2 py-0.5 text-xs font-semibold",
-                                fc.art === "anlegerwohnung" ? "bg-[#E7A94C]/15 text-[#E7A94C]" : "bg-white/10 text-white/90"
+                                fc.art === "anlegerwohnung" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
                               )}
                             >
                               {ART_LABEL[fc.art]}
@@ -372,7 +372,7 @@ export function OffeneAbwicklungen({
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-2">
                               <MintBar pct={relevant.length ? (done / relevant.length) * 100 : 0} className="w-24" />
-                              <span className="text-xs tabular-nums text-white/90">
+                              <span className="text-xs tabular-nums text-slate-600">
                                 {done}/{relevant.length}
                               </span>
                             </div>
@@ -403,13 +403,13 @@ export function OffeneAbwicklungen({
                           </td>
                         </tr>
                         {isOpen && (
-                          <tr className="border-b border-white/5 bg-white/[.03] last:border-0">
+                          <tr className="border-b border-slate-200 bg-slate-50 last:border-0">
                             <td className="px-2 py-2" />
                             <td colSpan={8} className="px-3 py-3">
                               <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
                                 <div className="flex flex-wrap items-end gap-3">
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
+                                  <label className="text-xs font-semibold text-foreground" htmlFor={`fin-edit-name-${fc.id}`}>Person</label>
                                   <Input
                                     id={`fin-edit-name-${fc.id}`}
                                     key={`name-${fc.id}-${fc.name}`}
@@ -423,7 +423,7 @@ export function OffeneAbwicklungen({
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-betrag-${fc.id}`}>Kreditsumme</label>
+                                  <label className="text-xs font-semibold text-foreground" htmlFor={`fin-edit-betrag-${fc.id}`}>Kreditsumme</label>
                                   <Input
                                     id={`fin-edit-betrag-${fc.id}`}
                                     key={`betrag-${fc.id}-${fc.betrag}`}
@@ -435,7 +435,7 @@ export function OffeneAbwicklungen({
                                   />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-art-${fc.id}`}>Art</label>
+                                  <label className="text-xs font-semibold text-foreground" htmlFor={`fin-edit-art-${fc.id}`}>Art</label>
                                   <Select
                                     id={`fin-edit-art-${fc.id}`}
                                     value={fc.art}
@@ -449,7 +449,7 @@ export function OffeneAbwicklungen({
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-beschaeftigung-${fc.id}`}>Beschäftigung</label>
+                                  <label className="text-xs font-semibold text-foreground" htmlFor={`fin-edit-beschaeftigung-${fc.id}`}>Beschäftigung</label>
                                   <Select
                                     id={`fin-edit-beschaeftigung-${fc.id}`}
                                     value={fc.beschaeftigung}
@@ -462,7 +462,7 @@ export function OffeneAbwicklungen({
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-betreuer-${fc.id}`}>Zuständiger Mitarbeiter</label>
+                                  <label className="text-xs font-semibold text-foreground" htmlFor={`fin-edit-betreuer-${fc.id}`}>Zuständiger Mitarbeiter</label>
                                   <Select
                                     id={`fin-edit-betreuer-${fc.id}`}
                                     value={fc.betreuer || ""}
@@ -477,7 +477,7 @@ export function OffeneAbwicklungen({
                                   </Select>
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-white" htmlFor={`fin-edit-abwickler-${fc.id}`}>Abwickler</label>
+                                  <label className="text-xs font-semibold text-foreground" htmlFor={`fin-edit-abwickler-${fc.id}`}>Abwickler</label>
                                   <Select
                                     id={`fin-edit-abwickler-${fc.id}`}
                                     value={fc.abwickler || ""}
@@ -543,7 +543,7 @@ export function OffeneAbwicklungen({
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t border-white/15 bg-[#12372f] font-semibold">
+                  <tr className="border-t border-slate-200 bg-background font-semibold">
                     <td className="px-2 py-2" />
                     <td className="px-2 py-2">Gesamt</td>
                     <td className="px-2 py-2" />

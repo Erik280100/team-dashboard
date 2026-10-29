@@ -320,7 +320,7 @@ export function RenditeRechner() {
                   className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
               </label>
             </div>
-            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-finova-ink">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
           </CardContent>
         </Card>
 
@@ -329,7 +329,7 @@ export function RenditeRechner() {
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>—</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>—</span></div>
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">Vorübergehend deaktiviert</div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-finova-ink">Vorübergehend deaktiviert</div>
           </CardContent>
         </Card>
 
@@ -339,7 +339,7 @@ export function RenditeRechner() {
             {fondssparerKostenZeilen(jahreClamped).map(([label]) => (
               <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>—</span></div>
             ))}
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">Vorübergehend deaktiviert</div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-finova-ink">Vorübergehend deaktiviert</div>
           </CardContent>
         </Card>
 
@@ -356,7 +356,7 @@ export function RenditeRechner() {
                 <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
               ))}
             </div>
-            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-finova-ink">KESt-frei</div>
             <div className="text-[10.5px] text-muted-foreground">
               Sparprämie kalibriert auf echte Merkur-Angebote (Stand 08/2026, zwei Fonds, Annahme 6 % p.a.)
             </div>
@@ -442,7 +442,7 @@ export function RenditeRechner() {
                         Kapital reicht bis Jahr {Math.ceil((p.reichtBisMonat as number) / 12)}
                       </div>
                     ) : (
-                      <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
+                      <div className={cn("text-xs font-bold", positive ? "text-finova-ink" : "text-destructive")}>
                         {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
                       </div>
                     )}
@@ -454,7 +454,7 @@ export function RenditeRechner() {
                     </div>
                   </>
                 ) : (
-                  <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
+                  <div className={cn("text-xs font-bold", positive ? "text-finova-ink" : "text-destructive")}>
                     {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
                   </div>
                 )}

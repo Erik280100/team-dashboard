@@ -28,7 +28,7 @@ const GROUP_ACCENT: Record<EhGroup["id"], string> = {
 }
 
 /** Eingabefelder auf den dunklen Gruppenkarten. */
-const EH_INPUT = "rounded-md border border-white/35 bg-white/[.12] text-white placeholder:text-white/65 [color-scheme:dark] transition-colors focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25"
+const EH_INPUT = "rounded-md border border-slate-200 bg-slate-100 text-foreground placeholder:text-slate-400  transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-[#64DDA3]/25"
 
 function defaultG(): Record<string, string> {
   const g: Record<string, string> = {}
@@ -129,7 +129,7 @@ export function EhRechner({
             <div key={it.id} className={cn(SURFACE_TILE, "grid grid-cols-2 items-end gap-3 p-3 @lg:grid-cols-[1fr_7rem_7rem_7rem]")}>
               <div className="col-span-2 min-w-0 @lg:col-span-1">
                 <div className="text-sm font-medium">{it.label}</div>
-                <div className="text-xs text-white/90">Auszahlung: {it.payout}</div>
+                <div className="text-xs text-slate-600">Auszahlung: {it.payout}</div>
                 {it.planFor && (
                   <div className="text-[11px] font-medium" style={{ color: GROUP_ACCENT[group.id] }}>
                     → {PLAN_LABELS[result.perItemPlan[it.id]]}
@@ -137,7 +137,7 @@ export function EhRechner({
                 )}
               </div>
               {it.hasG ? (
-                <label className="flex flex-col gap-1 text-xs text-white/90">
+                <label className="flex flex-col gap-1 text-xs text-slate-600">
                   {it.gLabel} ({it.gUnit})
                   <input
                     type="number" min={0} step={1} max={it.gMax}
@@ -151,9 +151,9 @@ export function EhRechner({
                 <div />
               )}
               {it.disabled ? (
-                <input type="text" disabled value={it.disabledNote} className="h-8 w-28 rounded-md border border-white/15 bg-white/5 px-2 text-sm text-white/70" />
+                <input type="text" disabled value={it.disabledNote} className="h-8 w-28 rounded-md border border-slate-200 bg-slate-100 px-2 text-sm text-slate-500" />
               ) : (
-                <label className="flex flex-col gap-1 text-xs text-white/90">
+                <label className="flex flex-col gap-1 text-xs text-slate-600">
                   {it.jLabel}
                   <input
                     type="number" min={0} step={10}
@@ -165,19 +165,19 @@ export function EhRechner({
                 </label>
               )}
               <div className="col-span-2 text-right sm:col-span-1">
-                <div className="text-base font-bold tabular-nums text-[#64DDA3]">{ehFormatEH(result.perItem[it.id])}</div>
-                <div className="text-xs text-white/90">EH</div>
+                <div className="text-base font-bold tabular-nums text-finova-ink">{ehFormatEH(result.perItem[it.id])}</div>
+                <div className="text-xs text-slate-600">EH</div>
               </div>
             </div>
           ))}
-          <div className="flex items-center justify-between border-t border-white/20 pt-3 text-sm">
-            <span className="font-semibold text-white/85">Zwischensumme</span>
+          <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-sm">
+            <span className="font-semibold text-slate-600">Zwischensumme</span>
             <span className="text-lg font-extrabold tabular-nums">{ehFormatEH(result.groupSums[group.id])} EH</span>
           </div>
           {group.plans.length > 1 && group.plans.filter((p) => result.planSums[p] > 0).length > 1 && (
             <div className="-mt-2 flex flex-col gap-0.5">
               {group.plans.map((p) => (
-                <div key={p} className="flex items-center justify-between text-xs text-white/90">
+                <div key={p} className="flex items-center justify-between text-xs text-slate-600">
                   <span>davon {PLAN_LABELS[p]}</span>
                   <span className="tabular-nums">{ehFormatEH(result.planSums[p])} EH</span>
                 </div>
@@ -185,7 +185,7 @@ export function EhRechner({
             </div>
           )}
           <div className="mt-2 flex items-center gap-1.5">
-            <label className="shrink-0 text-[11px] font-semibold text-white/90">
+            <label className="shrink-0 text-[11px] font-semibold text-slate-600">
               Multiplikator (€ / EH)
             </label>
             <input
@@ -195,7 +195,7 @@ export function EhRechner({
               onFocus={(e) => e.target.select()}
               onChange={(e) => setMult((s) => ({ ...s, [group.id]: e.target.value }))}
             />
-            <span className="ml-auto shrink-0 whitespace-nowrap text-[13.5px] font-bold tabular-nums text-[#64DDA3]">
+            <span className="ml-auto shrink-0 whitespace-nowrap text-[13.5px] font-bold tabular-nums text-finova-ink">
               {ehFormatEUR(result.groupEur[group.id])} €
             </span>
           </div>
@@ -209,29 +209,29 @@ export function EhRechner({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={cn(SURFACE_CARD, "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm text-white/90")}>
-        <Info className="mt-0.5 size-4 shrink-0 text-[#64DDA3]" aria-hidden="true" />
-        <div><strong className="text-white">Einheiten (EH) berechnen:</strong> Prämien eintragen, Einheiten werden automatisch berechnet und summiert.
+      <div className={cn(SURFACE_CARD, "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm text-slate-600")}>
+        <Info className="mt-0.5 size-4 shrink-0 text-finova-ink" aria-hidden="true" />
+        <div><strong className="text-foreground">Einheiten (EH) berechnen:</strong> Prämien eintragen, Einheiten werden automatisch berechnet und summiert.
         froots-Geschäft über 500 € mtl. bzw. 10.000 € einmalig läuft automatisch über einen Abwickler (VB) und wird
         auf „Investment (mit VB)" statt „Investment" gebucht.
         </div>
       </div>
 
-      <Card className="border-white/10 bg-[linear-gradient(135deg,#0B1F2A_0%,#155767_130%)] text-white">
+      <Card className="border-finova-border bg-finova-soft">
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/90">Gesamt Einheiten</div>
-              <div className="text-4xl font-extrabold tabular-nums text-[#64DDA3]">{ehFormatEH(result.grandTotal)} EH</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Gesamt Einheiten</div>
+              <div className="text-4xl font-extrabold tabular-nums text-finova-ink">{ehFormatEH(result.grandTotal)} EH</div>
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/90">Gesamt in €</div>
-              <div className="text-4xl font-extrabold tabular-nums text-[#64DDA3]">{ehFormatEUR(result.grandTotalEur)} €</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Gesamt in €</div>
+              <div className="text-4xl font-extrabold tabular-nums text-finova-ink">{ehFormatEUR(result.grandTotalEur)} €</div>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+              className="border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground"
               onClick={onReset}
             >
               Zurücksetzen
@@ -239,7 +239,7 @@ export function EhRechner({
           </div>
 
           {canBook && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-white/15 pt-3">
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
               <Select
                 aria-label="Mitarbeiter für Übernahme wählen"
                 value={selectedName}
@@ -269,14 +269,14 @@ export function EhRechner({
               )}
               <Button
                 size="sm"
-                className="border-0 bg-[linear-gradient(135deg,#64DDA3,#3FCB8E)] font-bold text-[#0b1f2a] shadow-[0_4px_14px_rgba(63,203,142,.3)] hover:opacity-90"
+                className="border-0 bg-primary font-bold text-primary-foreground  hover:opacity-90"
                 disabled={!selectedEmployee || result.grandTotal <= 0}
                 onClick={() => setBookingOpen(true)}
               >
                 Auf Mitarbeiter buchen
               </Button>
               {lastBooked && (
-                <span className="text-xs text-white/70">Zuletzt gebucht auf {lastBooked}.</span>
+                <span className="text-xs text-slate-500">Zuletzt gebucht auf {lastBooked}.</span>
               )}
             </div>
           )}

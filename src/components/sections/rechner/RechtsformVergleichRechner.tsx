@@ -398,14 +398,14 @@ export function RechtsformVergleichRechner() {
         </Card>
       </div>
 
-      <Card style={{ background: "linear-gradient(135deg,#0B1F2A 0%,#155767 130%)" }} className="text-white">
+      <Card className="border-finova-border bg-finova-soft">
         <CardContent className="flex flex-col gap-2">
-          <span className="text-xs text-white/70">
+          <span className="text-xs text-slate-600">
             Beste Option — inkl. thesauriertem Gewinn nach latenter Steuer
             {n(anlagehorizontJahre) > 0 && ` (Thesaurierung verzinst über ${n(anlagehorizontJahre)} Jahre)`}
           </span>
           <span className="text-2xl font-bold tabular-nums">{bester.label}: {kreditFormatEUR(bester.wert)}</span>
-          <div className="mt-1 flex flex-col gap-1 border-t border-white/10 pt-2 text-xs text-white/80">
+          <div className="mt-1 flex flex-col gap-1 border-t border-slate-200 pt-2 text-xs text-slate-600">
             <span>
               GmbH ggü. Einzelunternehmer: {gmbh.gesamtNachLatenterSteuer - eu.nettoEinkommen >= 0 ? "+" : ""}
               {kreditFormatEUR(gmbh.gesamtNachLatenterSteuer - eu.nettoEinkommen)}/Jahr —{" "}

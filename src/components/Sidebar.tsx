@@ -67,10 +67,10 @@ export function Sidebar({
           onClose()
         }}
         className={cn(
-          "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
+          "flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors",
           active
-            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
-            : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
+            : "text-sidebar-foreground hover:bg-slate-100 hover:text-foreground"
         )}
       >
         <Icon aria-hidden="true" className="size-4 shrink-0" />
@@ -97,25 +97,25 @@ export function Sidebar({
       >
         <div className="mb-1.5 flex items-center justify-between gap-0.5">
           <div className="flex items-baseline gap-0.5 px-1.5 text-[26px] font-extrabold">
-            <span className="italic text-sidebar-primary">fi</span>
+            <span className="italic text-primary">fi</span>
             <span>nova</span>
           </div>
           <button
             type="button"
             aria-label="Menü schließen"
             onClick={onClose}
-            className="rounded-md p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground lg:hidden"
+            className="rounded-md p-1.5 text-sidebar-foreground hover:bg-slate-100 hover:text-foreground lg:hidden"
           >
             <X aria-hidden="true" className="size-5" />
           </button>
         </div>
-        <div className="mb-4 px-2 text-xs text-sidebar-foreground/60">
+        <div className="mb-4 px-2 text-xs text-slate-400">
           Direktion KKB · Team Dashboard
         </div>
 
         {navItems.map(renderItem)}
 
-        <div className="mt-auto flex flex-col gap-1 border-t border-sidebar-foreground/10 pt-3">
+        <div className="mt-auto flex flex-col gap-1 border-t border-slate-200 pt-3">
           <button
             type="button"
             data-section="board"
@@ -125,10 +125,10 @@ export function Sidebar({
               onClose()
             }}
             className={cn(
-              "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors",
               section === "board"
-                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
-                : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
+                : "text-sidebar-foreground hover:bg-slate-100 hover:text-foreground"
             )}
           >
             <KanbanSquare aria-hidden="true" className="size-4 shrink-0" />
@@ -148,7 +148,7 @@ export function Sidebar({
             target="_blank"
             rel="noopener noreferrer"
             onClick={onClose}
-            className="flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-semibold text-slate-400 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <FilePlus2 aria-hidden="true" className="size-4 shrink-0" />
             Neue Analyse starten
@@ -164,17 +164,17 @@ export function Sidebar({
               onClose()
             }}
             className={cn(
-              "flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition-colors",
               section === "einstellungen"
-                ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_0_0_0_1px_rgba(100,221,163,.35)]"
-                : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold"
+                : "text-sidebar-foreground hover:bg-slate-100 hover:text-foreground"
             )}
           >
             <Settings aria-hidden="true" className="size-4 shrink-0" />
             Einstellungen
           </button>
-          <div className="px-2 pt-1 text-xs text-sidebar-foreground/60">
-            <strong className="block text-sidebar-foreground">Grenzgasse 1</strong>
+          <div className="px-2 pt-1 text-xs text-slate-400">
+            <strong className="block text-slate-600">Grenzgasse 1</strong>
             8055 Seiersberg, Austria
           </div>
         </div>

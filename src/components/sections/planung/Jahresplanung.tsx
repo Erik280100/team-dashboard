@@ -29,10 +29,10 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  "on-track": "bg-[#64DDA3]/15 text-[#64DDA3]",
-  behind: "bg-[#e2685b]/15 text-[#f0948a]",
-  completed: "bg-[#64DDA3]/15 text-[#64DDA3]",
-  upcoming: "bg-white/10 text-white/85",
+  "on-track": "bg-finova-soft text-finova-ink",
+  behind: "bg-red-100 text-[#f0948a]",
+  completed: "bg-finova-soft text-finova-ink",
+  upcoming: "bg-slate-100 text-slate-600",
 }
 
 /** Ist-Wert einer Zielkennzahl aus einer summierten Wochenzahlen-Entry. */
@@ -42,13 +42,13 @@ function actualFor(key: PlanTargetKey, entry: PlanWeekEntry): number {
 }
 
 function barColor(pct: number): string {
-  if (pct >= 100) return "bg-[#64DDA3]"
-  if (pct >= 60) return "bg-[#E7A94C]"
-  return "bg-[#e2685b]"
+  if (pct >= 100) return "bg-primary"
+  if (pct >= 60) return "bg-amber"
+  return "bg-destructive"
 }
 
-const NAV_BTN = "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
-const INP = "rounded-md border outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60"
+const NAV_BTN = "border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground"
+const INP = "rounded-md border outline-none focus-visible:border-primary focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60"
 
 export function Jahresplanung({
   managerName, people, roster, planung, isEditor, teamGroups, rows, unitsMonthKey, archive,
@@ -197,11 +197,11 @@ export function Jahresplanung({
         <Button type="button" variant="ghost" size="icon" className={NAV_BTN} onClick={() => setYear((y) => y + 1)} aria-label="Folgejahr">
           ▶
         </Button>
-        {(loading || unitsLoading) && <span className="text-xs text-white/90">Lade Wochendaten…</span>}
+        {(loading || unitsLoading) && <span className="text-xs text-slate-600">Lade Wochendaten…</span>}
       </div>
 
       <section className={cn("rounded-xl border p-5 shadow-sm", SURFACE_CARD)}>
-        <h3 className="mb-4 text-xs font-bold uppercase tracking-wide text-[#64DDA3]">🎯 Jahresziele — {managerName}</h3>
+        <h3 className="mb-4 text-xs font-bold uppercase tracking-wide text-finova-ink">🎯 Jahresziele — {managerName}</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {PLAN_TARGET_KEYS.map((k) => {
             const target = draft.targets[k] || 0
@@ -209,10 +209,10 @@ export function Jahresplanung({
             const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0
             return (
               <div key={k} className={cn(SURFACE_TILE, "p-3")}>
-                <div className="text-[11px] font-bold uppercase tracking-wide text-white/90">{PLAN_TARGET_LABELS[k]} Ist</div>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-600">{PLAN_TARGET_LABELS[k]} Ist</div>
                 <div className="mt-1 text-xl font-extrabold tabular-nums">{fmt(actual)}</div>
-                <div className="mt-0.5 text-xs text-white/90">Soll: {fmt(target)} · {pct}%</div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15">
+                <div className="mt-0.5 text-xs text-slate-600">Soll: {fmt(target)} · {pct}%</div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
                   <div className={cn("h-full rounded-full", barColor(pct))} style={{ width: `${pct}%` }} />
                 </div>
               </div>
@@ -221,7 +221,7 @@ export function Jahresplanung({
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {PLAN_TARGET_KEYS.map((k) => (
-            <label key={k} className="flex flex-col gap-1 text-xs text-white/90">
+            <label key={k} className="flex flex-col gap-1 text-xs text-slate-600">
               {PLAN_TARGET_LABELS[k]} Soll
               <input
                 key={`${year}-${managerName}-${k}-target`}
@@ -239,7 +239,7 @@ export function Jahresplanung({
       </section>
 
       <section>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white/85">🏁 Quartalsmeilensteine</h3>
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">🏁 Quartalsmeilensteine</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {QUARTER_LIST.map((q) => {
             const qData: PlanQuarterData = draft.quarters[q]
@@ -250,7 +250,7 @@ export function Jahresplanung({
             return (
               <div key={q} className={cn("rounded-xl border p-4 shadow-sm", SURFACE_CARD)}>
                 <div className="mb-2.5 flex items-center gap-2.5">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#64DDA3,#3FCB8E)] text-xs font-extrabold text-[#0b1f2a]">{q}</div>
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-extrabold text-primary-foreground">{q}</div>
                   <div>
                     <div className="text-xs font-semibold">{Q_MONTHS[q]}</div>
                     <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold", STATUS_CLASSES[status])}>
@@ -270,7 +270,7 @@ export function Jahresplanung({
                 />
                 <div className="grid grid-cols-2 gap-2">
                   {(["vertraege", "einheiten", "atg", "analysen"] as PlanTargetKey[]).map((k) => (
-                    <label key={k} className={cn(SURFACE_TILE, "flex flex-col gap-1 p-2 text-[10px] font-semibold uppercase text-white/90")}>
+                    <label key={k} className={cn(SURFACE_TILE, "flex flex-col gap-1 p-2 text-[10px] font-semibold uppercase text-slate-600")}>
                       {PLAN_TARGET_LABELS[k]} Soll
                       <input
                         key={`${year}-${managerName}-${q}-${k}`}
@@ -285,12 +285,12 @@ export function Jahresplanung({
                     </label>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-white/90">
+                <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-slate-600">
                   <span>Verträge</span>
                   <span>{actuals.vertraege} / {target} ({pct}%)</span>
                 </div>
                 <MintBar pct={pct} className="mt-1" />
-                <div className="mt-3 flex flex-wrap gap-3 border-t border-white/10 pt-3">
+                <div className="mt-3 flex flex-wrap gap-3 border-t border-slate-200 pt-3">
                   {[
                     { label: "Wählversuche Ist", value: actuals.atg },
                     { label: "AT Ist", value: actuals.analysen },
@@ -299,7 +299,7 @@ export function Jahresplanung({
                   ].map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-0.5">
                       <div className="text-sm font-bold tabular-nums">{fmt(item.value)}</div>
-                      <div className="text-[9px] font-semibold uppercase text-white/90">{item.label}</div>
+                      <div className="text-[9px] font-semibold uppercase text-slate-600">{item.label}</div>
                     </div>
                   ))}
                 </div>
@@ -321,7 +321,7 @@ export function Jahresplanung({
 
       {groupYearActuals && (
         <section>
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white/85">👥 Jahres-Ist nach Führungskraft — {year}</h3>
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-600">👥 Jahres-Ist nach Führungskraft — {year}</h3>
           <div className={cn(SURFACE_TABLE.wrap, SURFACE_CARD)}>
             <table className={cn("min-w-[700px]", SURFACE_TABLE.table)}>
               <thead>
@@ -339,7 +339,7 @@ export function Jahresplanung({
                     <tr key={g.name} className={SURFACE_TABLE.row}>
                       <td className="px-3 py-2">
                         <div className="truncate text-sm font-semibold">{g.name}</div>
-                        <div className="truncate text-xs text-white/90">{g.role} · Team gesamt ({g.names.length})</div>
+                        <div className="truncate text-xs text-slate-600">{g.role} · Team gesamt ({g.names.length})</div>
                       </td>
                       {PLAN_TARGET_KEYS.map((k) => (
                         <td key={k} className="px-3 py-2 text-right tabular-nums">{fmt(actualFor(k, a))}</td>

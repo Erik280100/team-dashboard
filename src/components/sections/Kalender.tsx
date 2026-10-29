@@ -39,7 +39,7 @@ function AttendanceToggle({
           defaultValue={reason}
           onBlur={(e) => onReasonChange(e.target.value)}
           aria-label={`Absagegrund ${label}`}
-          className={cn("h-7 w-44 rounded-md border px-2 text-xs outline-none focus-visible:border-[#64DDA3]", FIELD_INPUT)}
+          className={cn("h-7 w-44 rounded-md border px-2 text-xs outline-none focus-visible:border-primary", FIELD_INPUT)}
         />
       )}
     </div>
@@ -110,7 +110,7 @@ export function Kalender({
               <Button
                 variant="ghost"
                 size="sm"
-                className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                className="border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground"
                 onClick={onResetAttendance}
               >
                 Zurücksetzen
@@ -133,12 +133,12 @@ export function Kalender({
 
       <div className={cn("rounded-xl border", SURFACE_CARD)}>
         {total === 0 ? (
-          <div className="py-8 text-center text-sm text-white/90">Noch keine Mitarbeiter angelegt.</div>
+          <div className="py-8 text-center text-sm text-slate-600">Noch keine Mitarbeiter angelegt.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] border-collapse text-sm">
               <thead>
-                <tr className="border-b-2 border-white/25 text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
+                <tr className="border-b-2 border-slate-200 text-left text-[11px] font-bold uppercase tracking-wide text-slate-600">
                   <th className="px-4 py-3">Mitarbeiter</th>
                   <th className="px-4 py-3">Seminar</th>
                   <th className="px-4 py-3">Training</th>
@@ -151,13 +151,13 @@ export function Kalender({
                     <tr
                       key={name}
                       className={cn(
-                        "border-b border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]",
+                        "border-b border-slate-200 transition-colors hover:bg-slate-100",
                         (!a.seminar || !a.training) && "shadow-[inset_3px_0_0_rgba(226,104,91,.7)]"
                       )}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
+                          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-finova-soft text-xs font-bold text-finova-ink">
                             {initials(name)}
                           </div>
                           <span className="font-semibold">{name}</span>

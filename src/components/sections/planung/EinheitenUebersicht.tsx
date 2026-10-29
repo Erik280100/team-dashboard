@@ -65,7 +65,7 @@ export function EinheitenUebersicht({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h3 className="text-xs font-bold uppercase tracking-wide text-white/85">⚡ Einheiten je Person — {year}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wide text-slate-600">⚡ Einheiten je Person — {year}</h3>
         {hasTeams && (
           <div className="flex gap-2">
             <Pill active={!withTeam} onClick={() => setWithTeam(false)} className="px-3 py-1 text-xs">Einzelperson</Pill>
@@ -90,9 +90,9 @@ export function EinheitenUebersicht({
                 <td className="px-3 py-2">
                   <div className="truncate text-sm font-semibold">
                     {l.entry.name}
-                    {l.entry.name === managerName && <span className="ml-1 text-xs font-normal text-white/90">(du / Führungskraft)</span>}
+                    {l.entry.name === managerName && <span className="ml-1 text-xs font-normal text-slate-600">(du / Führungskraft)</span>}
                   </div>
-                  <div className="truncate text-xs text-white/90">
+                  <div className="truncate text-xs text-slate-600">
                     {l.entry.role}{withTeam && l.teamSize > 1 ? ` · Team gesamt (${l.teamSize})` : ""}
                   </div>
                 </td>
@@ -102,12 +102,12 @@ export function EinheitenUebersicht({
               </tr>
             ))}
             {lines.length === 0 && (
-              <tr><td colSpan={PLAN_IDS.length + 3} className="px-3 py-6 text-center text-white/90">Keine Personen.</td></tr>
+              <tr><td colSpan={PLAN_IDS.length + 3} className="px-3 py-6 text-center text-slate-600">Keine Personen.</td></tr>
             )}
           </tbody>
           {!withTeam && lines.length > 1 && (
             <tfoot>
-              <tr className="bg-[#12372f] font-semibold">
+              <tr className="bg-background font-semibold">
                 <td className="px-3 py-2" colSpan={PLAN_IDS.length + 1}>Summe ({lines.length} Personen)</td>
                 <td className="px-3 py-2 text-right tabular-nums">{fmt(sumYear)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{fmt(sumTotal)}</td>

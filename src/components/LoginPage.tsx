@@ -34,10 +34,14 @@ export function LoginPage({ auth }: { auth: UseAuthResult }) {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background p-4 text-foreground">
-      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-6 shadow-sm">
+    <div className="flex min-h-svh flex-col bg-background text-foreground">
+      <header className="flex h-14 items-center bg-primary px-6 text-3xl font-extrabold text-primary-foreground">
+        <span className="italic">fi</span>nova
+      </header>
+      <div className="flex flex-1 items-center justify-center p-4">
+      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 rounded-xl border border-finova-border bg-card p-6">
         <div>
-          <h1 className="text-xl font-semibold">Team-Dashboard</h1>
+          <h1 className="text-xl font-extrabold uppercase">Team-Dashboard</h1>
           <p className="text-sm text-muted-foreground">Bitte melde dich an.</p>
         </div>
         <Input
@@ -67,6 +71,7 @@ export function LoginPage({ auth }: { auth: UseAuthResult }) {
           Passwort vergessen?
         </Button>
       </form>
+      </div>
     </div>
   )
 }

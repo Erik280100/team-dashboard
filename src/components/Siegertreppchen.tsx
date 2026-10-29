@@ -71,7 +71,7 @@ export function Siegertreppchen({
 }) {
   const top = entries.slice(0, 3)
   if (top.length === 0) {
-    return <div className="py-8 text-center text-sm text-white/50">Noch keine Einheiten gebucht.</div>
+    return <div className="py-8 text-center text-sm text-slate-400">Noch keine Einheiten gebucht.</div>
   }
   const label = top.map((e, i) => `Platz ${i + 1}: ${e.name}, ${formatValue(e.value)} Einheiten`).join("; ")
   // Podest-Reihenfolge: Platz 2 links, Platz 1 Mitte, Platz 3 rechts.
@@ -84,8 +84,8 @@ export function Siegertreppchen({
         return (
           <div key={i} className="flex min-w-0 flex-1 flex-col items-center">
             <Hero rank={i} name={entry.name} avatar={avatars?.[entry.name]} />
-            <div className="mt-1 w-full truncate text-center text-xs font-medium text-white/90">{entry.name}</div>
-            <div className="mb-1 text-[11px] tabular-nums text-white/60">{formatValue(entry.value)} EH</div>
+            <div className="mt-1 w-full truncate text-center text-xs font-medium text-foreground">{entry.name}</div>
+            <div className="mb-1 text-[11px] tabular-nums text-slate-500">{formatValue(entry.value)} EH</div>
             <div
               className={cn("flex w-full items-start justify-center rounded-t-md pt-1.5 text-2xl font-extrabold", TIERS[i].block)}
               style={{ height: TIERS[i].height }}

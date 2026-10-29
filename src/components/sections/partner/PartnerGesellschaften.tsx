@@ -50,16 +50,16 @@ function ContactBlock({ contact }: { contact: PartnerContact }) {
 
 function CompanyCard({ company }: { company: PartnerCompany }) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-start gap-3 border-b-2 border-[var(--mint)] bg-gradient-to-br from-[var(--navy)] to-[var(--teal)] px-4 py-3.5">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-[var(--mint)]/35 bg-[var(--mint)]/15 text-base font-extrabold text-[var(--mint)]">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-finova-border bg-card transition-shadow hover:shadow-md">
+      <div className="flex items-start gap-3 bg-primary px-4 py-3.5">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-white/40 text-base font-extrabold text-primary-foreground">
           {company.initials}
         </span>
         <div className="flex-1">
-          <h3 className="text-sm font-extrabold leading-tight text-white">{company.name}</h3>
-          <div className="mt-0.5 text-[11px] leading-snug text-white/55">{company.legalName}</div>
+          <h3 className="text-sm font-extrabold leading-tight text-primary-foreground">{company.name}</h3>
+          <div className="mt-0.5 text-[11px] leading-snug text-primary-foreground/70">{company.legalName}</div>
         </div>
-        <span className="shrink-0 whitespace-nowrap rounded-md bg-[var(--mint)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--navy)]">
+        <span className="shrink-0 whitespace-nowrap rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold text-finova-ink">
           {company.badge}
         </span>
       </div>

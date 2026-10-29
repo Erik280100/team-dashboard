@@ -13,10 +13,10 @@ export function EmployeeCurve({ series }: { series: EmployeeSeries | null }) {
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-white">
+        <CardTitle className="text-foreground">
           {series.name}{series.role ? ` · ${series.role}` : ""}
         </CardTitle>
-        <p className="text-xs text-white/50">Verlauf über den gewählten Zeitraum</p>
+        <p className="text-xs text-slate-400">Verlauf über den gewählten Zeitraum</p>
       </CardHeader>
       <CardContent>
         <div className="h-[220px]">

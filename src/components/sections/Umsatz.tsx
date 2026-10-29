@@ -76,7 +76,7 @@ export function Umsatz({
           </div>
         )}
 
-        <div className={cn("flex flex-wrap items-center gap-2", hasManagers && "border-t border-white/10 pt-4")}>
+        <div className={cn("flex flex-wrap items-center gap-2", hasManagers && "border-t border-slate-200 pt-4")}>
           {hasManagers && (
             <>
               <Pill active={scope === "alle"} onClick={() => setScope("alle")}>Alle</Pill>

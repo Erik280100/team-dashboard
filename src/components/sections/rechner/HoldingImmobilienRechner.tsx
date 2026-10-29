@@ -234,11 +234,11 @@ export function HoldingImmobilienRechner() {
         </Card>
       </div>
 
-      <Card style={{ background: "linear-gradient(135deg,#0B1F2A 0%,#155767 130%)" }} className="text-white">
+      <Card className="border-finova-border bg-finova-soft">
         <CardContent className="flex flex-col gap-1">
-          <span className="text-xs text-white/70">Beste Option nach {horizontClamped} Jahren</span>
+          <span className="text-xs text-slate-600">Beste Option nach {horizontClamped} Jahren</span>
           <span className="text-2xl font-bold tabular-nums">{bester.label}: {kreditFormatEUR(bester.wert)}</span>
-          <span className="mt-1 text-xs text-white/70">
+          <span className="mt-1 text-xs text-slate-600">
             Differenz {holdingLabel} vs. Einzelunternehmer: {erg.endwertHolding - erg.endwertEu >= 0 ? "+" : ""}
             {kreditFormatEUR(erg.endwertHolding - erg.endwertEu)} · vs. GmbH ausgeschüttet: {erg.endwertHolding - erg.endwertGmbhPrivat >= 0 ? "+" : ""}
             {kreditFormatEUR(erg.endwertHolding - erg.endwertGmbhPrivat)}

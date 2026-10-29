@@ -90,7 +90,7 @@ export function Planung({
     return (
       <div className="flex flex-col gap-4">
         <SectionHero eyebrow="Controlling" title="Planung" />
-        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", SURFACE_CARD)}>
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-slate-600", SURFACE_CARD)}>
           Noch keine Führungskräfte im Strukturbaum erfasst (ab Teamleiter aufwärts).
         </div>
       </div>
@@ -109,11 +109,11 @@ export function Planung({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
           {EBENEN.map((e) => (
             <Pill key={e.id} active={ebene === e.id} onClick={() => setEbene(e.id)}>{e.label}</Pill>
           ))}
-          <span className="mx-1 h-5 w-px bg-white/15" />
+          <span className="mx-1 h-5 w-px bg-slate-200" />
           <Pill active={scope === "alle"} onClick={() => setScope("alle")}>Alle Mitarbeiter</Pill>
           <Pill active={scope === "direkt"} onClick={() => setScope("direkt")}>Direkte Mitarbeiter</Pill>
           {leadFrontier.length > 0 && (

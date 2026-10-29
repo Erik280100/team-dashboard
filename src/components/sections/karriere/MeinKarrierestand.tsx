@@ -70,7 +70,7 @@ export function MeinKarrierestand({ merged, planRates, myName }: Props) {
                   {standing ? (
                     <div className="mt-auto flex flex-col gap-2">
                       <MintBar pct={Math.round(standing.fraction * 100)} />
-                      <div className="rounded-[10px] bg-white/[.06] px-2.5 py-1.5 text-xs leading-snug text-[#dbe7e4]">
+                      <div className="rounded-[10px] bg-slate-50 px-2.5 py-1.5 text-xs leading-snug text-[#dbe7e4]">
                         {standing.nextRole
                           ? <>{fmt(standing.have)} / {fmt(standing.need)} EH · noch {fmt(standing.missing)} EH bis {standing.nextRole}</>
                           : <>{fmt(standing.have)} EH gesamt · Ende der Stufen in diesem Plan, der nächste Schritt ist Teamleiter (Strukturaufbau)</>}

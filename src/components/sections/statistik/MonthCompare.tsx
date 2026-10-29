@@ -40,27 +40,27 @@ export function MonthCompare({
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-white">Monatsvergleich</CardTitle>
-        <p className="text-xs text-white/50">Monat A gegen Monat B, Differenz absolut und in Prozent</p>
+        <CardTitle className="text-foreground">Monatsvergleich</CardTitle>
+        <p className="text-xs text-slate-400">Monat A gegen Monat B, Differenz absolut und in Prozent</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="text-xs font-medium text-white/60" htmlFor="compareMonthA">Monat A</label>
+            <label className="text-xs font-medium text-slate-500" htmlFor="compareMonthA">Monat A</label>
             <Select
               id="compareMonthA" aria-label="Monat A" value={monthA}
               onChange={(e) => onChangeA(e.target.value)}
-              className="w-40 border-white/20 bg-white/10 text-white"
+              className="w-40 border-slate-200 bg-slate-100 text-foreground"
             >
               {index.map((e) => <option key={e.month} value={e.month} className="text-black">{e.label}</option>)}
             </Select>
           </div>
           <div>
-            <label className="text-xs font-medium text-white/60" htmlFor="compareMonthB">Monat B</label>
+            <label className="text-xs font-medium text-slate-500" htmlFor="compareMonthB">Monat B</label>
             <Select
               id="compareMonthB" aria-label="Monat B" value={monthB}
               onChange={(e) => onChangeB(e.target.value)}
-              className="w-40 border-white/20 bg-white/10 text-white"
+              className="w-40 border-slate-200 bg-slate-100 text-foreground"
             >
               {index.map((e) => <option key={e.month} value={e.month} className="text-black">{e.label}</option>)}
             </Select>
@@ -70,7 +70,7 @@ export function MonthCompare({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] border-collapse text-sm">
             <thead>
-              <tr className="text-left text-xs text-white/50">
+              <tr className="text-left text-xs text-slate-400">
                 <th className="py-1.5 pr-3">Kennzahl</th>
                 <th className="py-1.5 pr-3 text-right">A</th>
                 <th className="py-1.5 pr-3 text-right">B</th>
@@ -79,20 +79,20 @@ export function MonthCompare({
             </thead>
             <tbody>
               {deltas.map((d) => (
-                <tr key={d.key} className="border-t border-white/10">
-                  <td className="py-1.5 pr-3 text-white/80">{d.label}</td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums text-white/70">{formatValue(d.a, d.unit)}</td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums text-white/70">{formatValue(d.b, d.unit)}</td>
+                <tr key={d.key} className="border-t border-slate-200">
+                  <td className="py-1.5 pr-3 text-slate-600">{d.label}</td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums text-slate-500">{formatValue(d.a, d.unit)}</td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums text-slate-500">{formatValue(d.b, d.unit)}</td>
                   <td
                     className={cn(
                       "py-1.5 text-right tabular-nums font-semibold",
-                      d.delta > 0 ? "text-emerald-400" : d.delta < 0 ? "text-red-400" : "text-white/50"
+                      d.delta > 0 ? "text-emerald-400" : d.delta < 0 ? "text-red-400" : "text-slate-400"
                     )}
                   >
                     {d.delta > 0 ? "▲ " : d.delta < 0 ? "▼ " : ""}
                     {formatValue(Math.abs(d.delta), d.unit)}
                     {d.pctChange !== null && (
-                      <span className="ml-1 text-xs text-white/40">
+                      <span className="ml-1 text-xs text-slate-400">
                         ({d.pctChange > 0 ? "+" : ""}{d.pctChange}%)
                       </span>
                     )}

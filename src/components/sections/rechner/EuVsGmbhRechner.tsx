@@ -223,9 +223,9 @@ export function EuVsGmbhRechner() {
         </Card>
       </div>
 
-      <Card style={{ background: "linear-gradient(135deg,#0B1F2A 0%,#155767 130%)" }} className="text-white">
+      <Card className="border-finova-border bg-finova-soft">
         <CardContent className="flex flex-col gap-1">
-          <span className="text-xs text-white/70">
+          <span className="text-xs text-slate-600">
             {n(anlagehorizontJahre) > 0
               ? `Differenz — Jahresnetto EU vs. GmbH-Endwert nach ${n(anlagehorizontJahre)} Jahren Verzinsung`
               : "Jährliche Differenz (inkl. thesauriertem Gewinn)"} — {gmbhBesser ? "GmbH" : "Einzelunternehmer"} liegt vorne
@@ -233,7 +233,7 @@ export function EuVsGmbhRechner() {
           <span className="text-2xl font-bold tabular-nums">
             {differenz >= 0 ? "+" : ""}{kreditFormatEUR(differenz)}
           </span>
-          <span className="mt-1 text-xs text-white/70">
+          <span className="mt-1 text-xs text-slate-600">
             {gruendung.breakEvenJahre !== null
               ? `Bei ${kreditFormatEUR(n(gruendungskostenEinmalig))} Gründungskosten rentiert sich die Gründung nach rund ${gruendung.breakEvenJahre.toFixed(1)} Jahren.`
               : "In diesem Szenario bringt die GmbH laufend keinen Vorteil — die Gründungskosten würden sich nicht amortisieren."}

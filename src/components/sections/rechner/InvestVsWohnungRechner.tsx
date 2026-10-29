@@ -410,9 +410,9 @@ export function InvestVsWohnungRechner() {
         </Card>
       </div>
 
-      <Card style={{ background: "linear-gradient(135deg,#0B1F2A 0%,#155767 130%)" }} className="text-white">
+      <Card className="border-finova-border bg-finova-soft">
         <CardContent className="flex flex-col gap-1">
-          <span className="text-xs text-white/70">
+          <span className="text-xs text-slate-600">
             Differenz nach {horizontClamped} Jahren — {wohnungBesser ? "Wohnung" : "Depot"} liegt vorne
           </span>
           <span className="text-2xl font-bold tabular-nums">

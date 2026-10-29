@@ -34,8 +34,8 @@ function fmt(n: number | undefined | null): string {
 function DarkCardHeader({ title, sub }: { title: string; sub: string }) {
   return (
     <CardHeader>
-      <CardTitle className="text-white">{title}</CardTitle>
-      <p className="text-xs text-white/50">{sub}</p>
+      <CardTitle className="text-foreground">{title}</CardTitle>
+      <p className="text-xs text-slate-400">{sub}</p>
     </CardHeader>
   )
 }
@@ -188,12 +188,12 @@ export function Overview({
         <Card className={SURFACE_CARD}>
           <CardContent className="flex flex-col gap-5">
             <div>
-              <div className="text-xs font-medium uppercase tracking-wide text-white/50">
+              <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 Team-Ziel
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <div className="text-4xl font-bold tabular-nums">{fmt(goal.target)}</div>
-                <span className="text-sm text-white/60">
+                <span className="text-sm text-slate-500">
                   Einheiten
                   <br />
                   <span className="text-xs opacity-75">Summe Soll (Mitarbeiter)</span>
@@ -208,7 +208,7 @@ export function Overview({
                 onChange={(e) => setNoteDraft(e.target.value)}
                 onBlur={() => { if (noteDraft !== teamGoal.note) commitField("note", noteDraft) }}
               />
-              <div className="mt-3 text-xs text-white/60">
+              <div className="mt-3 text-xs text-slate-500">
                 {monthLabel(monthKeyOf(teamGoal))} · {formatISODateDE(teamGoal.periodStart)} – {formatISODateDE(teamGoal.periodEnd)}
                 <span className="opacity-75"> (wird am Monatsende automatisch abgeschlossen)</span>
               </div>
@@ -218,9 +218,9 @@ export function Overview({
                 <span>
                   {fmt(goal.totalIst)} von {fmt(goal.target)} Einheiten
                 </span>
-                <span className="text-base font-extrabold text-[#64DDA3]">{goal.pct}%</span>
+                <span className="text-base font-extrabold text-finova-ink">{goal.pct}%</span>
               </div>
-              <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-white/15">
+              <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-slate-200">
                 <div
                   className="h-full rounded-full bg-[linear-gradient(90deg,#3FCB8E,#64DDA3)] transition-[width]"
                   style={{ width: `${Math.min(goal.pct, 100)}%` }}
@@ -244,16 +244,16 @@ export function Overview({
                 />
               </div>
             ) : (
-              <div className="py-8 text-center text-sm text-white/50">{timeline.forecastText}</div>
+              <div className="py-8 text-center text-sm text-slate-400">{timeline.forecastText}</div>
             )}
-            <div className="mt-3 flex flex-wrap gap-4 text-xs text-white/50">
-              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[#64DDA3]" />Ist-Verlauf</span>
+            <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
+              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-primary" />Ist-Verlauf</span>
               <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[#5B7C8A]" />Ziel-Pfad (linear)</span>
-              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-[#E7A94C]" />Prognose</span>
+              <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-amber" />Prognose</span>
             </div>
             {timeline.valid && (
               <div
-                className="mt-3 text-sm text-white/80"
+                className="mt-3 text-sm text-slate-600"
                 dangerouslySetInnerHTML={{ __html: timeline.forecastText }}
               />
             )}
@@ -264,37 +264,37 @@ export function Overview({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className={SURFACE_CARD}>
           <CardContent className="flex items-center gap-4">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
-              <Users className="size-4 text-[#64DDA3]" aria-hidden="true" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-finova-soft">
+              <Users className="size-4 text-finova-ink" aria-hidden="true" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Geschäftspartner</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Geschäftspartner</div>
               <div className="text-2xl font-extrabold">{teamSize ?? kpis.employeeCount}</div>
-              <div className="text-xs text-white/50">im Team</div>
+              <div className="text-xs text-slate-400">im Team</div>
             </div>
           </CardContent>
         </Card>
         <Card className={SURFACE_CARD}>
           <CardContent className="flex items-center gap-4">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
-              <Landmark className="size-4 text-[#64DDA3]" aria-hidden="true" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-finova-soft">
+              <Landmark className="size-4 text-finova-ink" aria-hidden="true" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Offenes Finanzierungsvolumen</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Offenes Finanzierungsvolumen</div>
               <div className="text-2xl font-extrabold">{fmtEur(offenesFinanzierungsvolumen)}</div>
-              <div className="text-xs text-white/50">Kreditsumme offener Fälle</div>
+              <div className="text-xs text-slate-400">Kreditsumme offener Fälle</div>
             </div>
           </CardContent>
         </Card>
         <Card className={SURFACE_CARD}>
           <CardContent className="flex items-center gap-4">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
-              <Building2 className="size-4 text-[#64DDA3]" aria-hidden="true" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-finova-soft">
+              <Building2 className="size-4 text-finova-ink" aria-hidden="true" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">Anlegerwohnungen ausstehend</div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Anlegerwohnungen ausstehend</div>
               <div className="text-2xl font-extrabold">{offeneAnlegerwohnungen}</div>
-              <div className="text-xs text-white/50">offene Finanzierungsfälle</div>
+              <div className="text-xs text-slate-400">offene Finanzierungsfälle</div>
             </div>
           </CardContent>
         </Card>
@@ -317,13 +317,13 @@ export function Overview({
                 <span
                   className={
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold " +
-                    (i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-neutral-300 text-black" : i === 2 ? "bg-amber-700 text-white" : "bg-white/10 text-white/60")
+                    (i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-neutral-300 text-black" : i === 2 ? "bg-amber-700 text-white" : "bg-slate-100 text-slate-500")
                   }
                 >
                   {i + 1}
                 </span>
-                <span className="flex-1 truncate text-white/80">{s.name}</span>
-                <span className="font-semibold tabular-nums text-white">{fmt(s.value)} EH</span>
+                <span className="flex-1 truncate text-slate-600">{s.name}</span>
+                <span className="font-semibold tabular-nums text-foreground">{fmt(s.value)} EH</span>
               </div>
             ))}
           </CardContent>
@@ -337,13 +337,13 @@ export function Overview({
                 <span
                   className={
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold " +
-                    (i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-neutral-300 text-black" : i === 2 ? "bg-amber-700 text-white" : "bg-white/10 text-white/60")
+                    (i === 0 ? "bg-yellow-500 text-black" : i === 1 ? "bg-neutral-300 text-black" : i === 2 ? "bg-amber-700 text-white" : "bg-slate-100 text-slate-500")
                   }
                 >
                   {i + 1}
                 </span>
-                <span className="flex-1 truncate text-white/80">{r.name}</span>
-                <span className="font-semibold tabular-nums text-white">{fmt(r.atIst)}</span>
+                <span className="flex-1 truncate text-slate-600">{r.name}</span>
+                <span className="font-semibold tabular-nums text-foreground">{fmt(r.atIst)}</span>
               </div>
             ))}
           </CardContent>
@@ -356,13 +356,13 @@ export function Overview({
         {sparten.map((s) => (
           <Card key={s.label} className={SURFACE_CARD}>
             <CardContent className="flex items-center gap-4">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
-                <s.icon className="size-4 text-[#64DDA3]" aria-hidden="true" />
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-finova-soft">
+                <s.icon className="size-4 text-finova-ink" aria-hidden="true" />
               </div>
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">{s.label}</div>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{s.label}</div>
                 <div className="text-2xl font-extrabold">{fmt(s.units)}</div>
-                <div className="text-xs text-white/50">{s.pct}% vom Umsatz (Einheiten)</div>
+                <div className="text-xs text-slate-400">{s.pct}% vom Umsatz (Einheiten)</div>
               </div>
             </CardContent>
           </Card>
@@ -379,13 +379,13 @@ export function Overview({
         ].map((s) => (
           <Card key={s.label} className={SURFACE_CARD}>
             <CardContent className="flex items-center gap-4">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#64DDA3]/15">
-                <s.icon className="size-4 text-[#64DDA3]" aria-hidden="true" />
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-finova-soft">
+                <s.icon className="size-4 text-finova-ink" aria-hidden="true" />
               </div>
               <div>
-                <div className="text-[11px] font-bold uppercase tracking-wide text-white/50">{s.label} {yearly.year}</div>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{s.label} {yearly.year}</div>
                 <div className="text-2xl font-extrabold">{fmt(s.units)}</div>
-                <div className="text-xs text-white/50">Einheiten im Jahr</div>
+                <div className="text-xs text-slate-400">Einheiten im Jahr</div>
               </div>
             </CardContent>
           </Card>

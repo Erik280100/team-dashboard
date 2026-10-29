@@ -106,7 +106,7 @@ export function Topbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-4 md:px-6">
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-card px-4 py-4 md:px-6">
       <div className="flex items-center gap-3">
         <Button
           size="icon"
@@ -118,7 +118,7 @@ export function Topbar({
           <Menu aria-hidden="true" className="size-5" />
         </Button>
         <div>
-          <h1 className="text-xl font-bold">Team Dashboard</h1>
+          <h1 className="text-xl font-extrabold uppercase">Team Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             {isArchive ? `Ziele & Fortschritt — ${monthLabel(archiveMonth)} (Archiv)` : "Ziele & Fortschritt — laufender Monat"}
           </p>

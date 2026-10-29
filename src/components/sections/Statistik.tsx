@@ -19,8 +19,8 @@ import { PlanSplitChart } from "@/components/sections/statistik/PlanSplitChart"
 function EmptyCard({ title, text }: { title: string; text: string }) {
   return (
     <Card className={SURFACE_CARD}>
-      <CardContent className="py-8 text-center text-sm text-white/60">
-        <div className="mb-1 font-semibold text-white/80">{title}</div>
+      <CardContent className="py-8 text-center text-sm text-slate-500">
+        <div className="mb-1 font-semibold text-slate-600">{title}</div>
         {text}
       </CardContent>
     </Card>

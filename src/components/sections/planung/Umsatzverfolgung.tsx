@@ -15,7 +15,7 @@ import { formatISODateDE } from "@/lib/calc/format"
 import type { UmsatzEntry } from "@/types/dashboard"
 
 const CELL_INPUT = cn(
-  "h-8 w-full rounded-md border px-2 text-sm focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25 disabled:opacity-60",
+  "h-8 w-full rounded-md border px-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-[#64DDA3]/25 disabled:opacity-60",
   FIELD_INPUT
 )
 
@@ -75,7 +75,7 @@ export function Umsatzverfolgung({
     return (
       <div className="flex flex-col gap-3">
         {toggle}
-        <div className={cn(SURFACE_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
+        <div className={cn(SURFACE_CARD, "rounded-xl border p-12 text-center text-sm text-slate-600")}>
           {showArchive
             ? "Das Archiv ist leer."
             : allEntries.length > 0
@@ -90,9 +90,9 @@ export function Umsatzverfolgung({
     <div className="flex flex-col gap-3">
     {toggle}
     <div className={cn(SURFACE_CARD, "overflow-x-auto rounded-xl border")}>
-      <table className="w-full min-w-[60rem] border-collapse text-sm text-white">
+      <table className="w-full min-w-[60rem] border-collapse text-sm text-foreground">
         <thead>
-          <tr className="bg-[#0f2633] text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
+          <tr className="bg-background text-left text-[11px] font-bold uppercase tracking-wide text-slate-600">
             <th className="px-3 py-2">Gebucht am</th>
             <th className="px-3 py-2">Mitarbeiter</th>
             <th className="px-3 py-2">Produkt</th>
@@ -107,12 +107,12 @@ export function Umsatzverfolgung({
         </thead>
         <tbody>
           {entries.map((e) => (
-            <tr key={e.id} className="border-t border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]">
+            <tr key={e.id} className="border-t border-slate-200 transition-colors hover:bg-slate-100">
               <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{formatISODateDE(e.bookedAt.slice(0, 10))}</td>
               <td className="px-3 py-1.5">
                 {e.mitarbeiter}
                 {tags?.[e.mitarbeiter.trim().toLowerCase()] && (
-                  <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">
+                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                     {tags[e.mitarbeiter.trim().toLowerCase()]}
                   </span>
                 )}
@@ -153,7 +153,7 @@ export function Umsatzverfolgung({
               </td>
               <td className="px-3 py-1.5 text-right">
                 {isEditor && (
-                  <Button size="sm" variant="ghost" className="border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white" aria-label="Umsatz löschen" onClick={() => onRemove(e)}>
+                  <Button size="sm" variant="ghost" className="border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground" aria-label="Umsatz löschen" onClick={() => onRemove(e)}>
                     <Trash2 className="size-4" />
                   </Button>
                 )}

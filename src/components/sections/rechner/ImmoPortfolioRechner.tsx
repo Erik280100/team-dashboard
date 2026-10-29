@@ -45,7 +45,7 @@ function KPI({ label, value, accent }: { label: string; value: string; accent?: 
     <Card>
       <CardContent className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">{label}</span>
-        <span className={cn("text-xl font-bold tabular-nums", accent && "text-[#155767]")}>{value}</span>
+        <span className={cn("text-xl font-bold tabular-nums", accent && "text-finova-ink")}>{value}</span>
       </CardContent>
     </Card>
   )
@@ -671,7 +671,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
                   <tr className="border-b border-border/50">
                     <td className="py-1 pr-3 text-muted-foreground">GmbH nach Vollausschüttung (vs. EU-Nettovermögen n. St.)</td>
                     {meilensteine.map((m, i) => (
-                      <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums font-semibold text-[#155767]">
+                      <td key={m.jahr} className="py-1 pr-3 text-right tabular-nums font-semibold text-finova-ink">
                         {kreditFormatEUR(m.nettovermoegenNachAusschuettung ?? 0)} / {kreditFormatEUR(vergleichPrivat.meilensteine[i]?.nettovermoegenNachSteuer ?? 0)}
                       </td>
                     ))}
@@ -800,7 +800,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
                       <td className="py-1 pr-3 tabular-nums">{k.jahr}</td>
                       <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(k.kaufpreis)}</td>
                       <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(k.eigenmittelbedarf)}</td>
-                      <td className="py-1 pr-3 text-right tabular-nums font-semibold text-[#155767]">{kreditFormatEUR(k.eigenmittelAnteil)}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums font-semibold text-finova-ink">{kreditFormatEUR(k.eigenmittelAnteil)}</td>
                       <td className="py-1 pr-3 text-right tabular-nums text-muted-foreground">{kreditFormatEUR(k.ausUmschuldung)}</td>
                       <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatEUR(k.rate)}</td>
                       <td className="py-1 pr-3 text-right tabular-nums">{kreditFormatPct(k.bruttomietrenditePct, 1)}</td>

@@ -34,20 +34,20 @@ function MonthNoteCard({
 }) {
   return (
     <Card className={SURFACE_CARD}>
-      <CardHeader className="border-b border-white/10 pb-3">
+      <CardHeader className="border-b border-slate-200 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-finova-soft text-xs font-bold text-finova-ink">
             {initials(person.name)}
           </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{person.name}</div>
-            <div className="truncate text-xs text-white/90">{person.role}</div>
+            <div className="truncate text-xs text-slate-600">{person.role}</div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-3">
         <div>
-          <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">Einheitenziel</div>
+          <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-finova-ink">Einheitenziel</div>
           <input
             key={`${person.name}-ehZiel-${entry.ehZiel ?? 0}`}
             type="number"
@@ -55,20 +55,20 @@ function MonthNoteCard({
             disabled={!isEditor}
             defaultValue={entry.ehZiel ?? 0}
             aria-label={`Einheitenziel – ${person.name}`}
-            className={cn("h-8 w-28 rounded-md border px-2 text-sm tabular-nums outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", FIELD_INPUT)}
+            className={cn("h-8 w-28 rounded-md border px-2 text-sm tabular-nums outline-none focus-visible:border-primary focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", FIELD_INPUT)}
             onBlur={(e) => onCommitZiel(Number(e.target.value) || 0)}
           />
         </div>
         {NOTE_FIELDS.map((f) => (
           <div key={f.key}>
-            <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{f.label}</div>
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-finova-ink">{f.label}</div>
             <textarea
               key={`${person.name}-${f.key}-${entry[f.key]}`}
               disabled={!isEditor}
               defaultValue={entry[f.key] ?? ""}
               placeholder="Namen…"
               aria-label={`${f.label} – ${person.name}`}
-              className={cn("min-h-24 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", FIELD_INPUT)}
+              className={cn("min-h-24 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-primary focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60", FIELD_INPUT)}
               onBlur={(e) => onCommit(f.key, e.target.value)}
             />
           </div>
@@ -81,9 +81,9 @@ function MonthNoteCard({
 function KpiTile({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className={cn(SURFACE_CARD, "rounded-xl border p-4 shadow-sm")}>
-      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-white/90">{label}</div>
-      <div className="text-2xl font-extrabold tabular-nums text-[#64DDA3]">{value}</div>
-      <div className="mt-1 text-xs text-white/90">{sub}</div>
+      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-600">{label}</div>
+      <div className="text-2xl font-extrabold tabular-nums text-finova-ink">{value}</div>
+      <div className="mt-1 text-xs text-slate-600">{sub}</div>
     </div>
   )
 }
@@ -96,9 +96,9 @@ type RaceLine = { key: string; label: string; color: string; soll: number; ist: 
 function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: RaceLine[] }) {
   return (
     <div className={cn(SURFACE_CARD, "overflow-hidden rounded-xl border shadow-sm")}>
-      <div className="border-b border-white/10 bg-white/[.04] px-4 py-2.5">
+      <div className="border-b border-slate-200 bg-slate-50 px-4 py-2.5">
         <div className="truncate text-sm font-bold">{title}</div>
-        {sub && <div className="truncate text-xs text-white/90">{sub}</div>}
+        {sub && <div className="truncate text-xs text-slate-600">{sub}</div>}
       </div>
       <div className="flex flex-col gap-1.5 p-3">
         {lines.map((l) => {
@@ -111,7 +111,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
               >
                 {l.label}
               </div>
-              <div className="relative h-5 flex-1 rounded-sm bg-white/10">
+              <div className="relative h-5 flex-1 rounded-sm bg-slate-100">
                 <div
                   className="h-full rounded-sm"
                   style={{ width: `${(l.ist / l.max) * 100}%`, backgroundColor: l.color, opacity: reached ? 1 : 0.6 }}
@@ -126,7 +126,7 @@ function RaceCard({ title, sub, lines }: { title: string; sub?: string; lines: R
               </div>
               <div className="w-24 shrink-0 whitespace-nowrap text-right text-xs tabular-nums">
                 <strong>{fmt(l.ist)}</strong>
-                <span className="text-white/90">/{fmt(l.soll)}</span>
+                <span className="text-slate-600">/{fmt(l.soll)}</span>
               </div>
             </div>
           )
@@ -238,7 +238,7 @@ export function Monatsplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="rounded-full bg-[#64DDA3]/15 px-3 py-1 text-sm font-bold text-[#64DDA3]">{monthLabel(monthKey)}</div>
+        <div className="rounded-full bg-finova-soft px-3 py-1 text-sm font-bold text-finova-ink">{monthLabel(monthKey)}</div>
         <span className="text-xs text-muted-foreground">Kumulierte Wochenpläne</span>
         {loading && <span className="ml-auto text-xs text-muted-foreground">Lade Wochendaten…</span>}
       </div>
@@ -268,7 +268,7 @@ export function Monatsplanung({
       })()}
 
       {rows.length === 0 ? (
-        <div className={cn(SURFACE_CARD, "rounded-xl border p-12 text-center text-sm text-white/90")}>
+        <div className={cn(SURFACE_CARD, "rounded-xl border p-12 text-center text-sm text-slate-600")}>
           Keine Personen für diese Führungskraft im Strukturbaum.
         </div>
       ) : (
@@ -293,11 +293,11 @@ export function Monatsplanung({
                   <tr key={r.key} className={SURFACE_TABLE.row}>
                     <td className="px-3 py-2">
                       <div className="truncate text-sm font-semibold">{r.label}</div>
-                      <div className="truncate text-xs text-white/90">{r.sub}</div>
+                      <div className="truncate text-xs text-slate-600">{r.sub}</div>
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.atz)}/{fmt(d.atg)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/90">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
-                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-white/90">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-slate-600">{fmt(d.analysenZ)}</span>/<strong>{fmt(d.analysen)}</strong></td>
+                    <td className="px-3 py-2 text-right tabular-nums"><span className="text-slate-600">{fmt(d.beratungenZ)}</span>/<strong>{fmt(d.beratungen)}</strong></td>
                     <td className="px-3 py-2 text-right tabular-nums">{quotePct(d.analysen, d.analysenZ)}%</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.stz)}/{fmt(d.stg)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{fmt(d.etz)}/{fmt(d.etg)}</td>

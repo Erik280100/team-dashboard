@@ -19,14 +19,14 @@ export function PlanSplitChart({ points }: { points: PlanSplitPoint[] }) {
     <Card className={SURFACE_CARD}>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="text-white">Karriereplan-Aufteilung</CardTitle>
-          <p className="text-xs text-white/50">Insurance / Investment / Credit / Real Estate über den Zeitraum</p>
+          <CardTitle className="text-foreground">Karriereplan-Aufteilung</CardTitle>
+          <p className="text-xs text-slate-400">Insurance / Investment / Credit / Real Estate über den Zeitraum</p>
         </div>
         <div className="flex gap-1.5">
           <Button
             size="sm"
             variant={mode === "absolute" ? "default" : "outline"}
-            className={mode === "absolute" ? "" : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"}
+            className={mode === "absolute" ? "" : "border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground"}
             onClick={() => setMode("absolute")}
           >
             Absolut
@@ -34,7 +34,7 @@ export function PlanSplitChart({ points }: { points: PlanSplitPoint[] }) {
           <Button
             size="sm"
             variant={mode === "percent" ? "default" : "outline"}
-            className={mode === "percent" ? "" : "border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"}
+            className={mode === "percent" ? "" : "border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground"}
             onClick={() => setMode("percent")}
           >
             Prozentual
@@ -84,7 +84,7 @@ export function PlanSplitChart({ points }: { points: PlanSplitPoint[] }) {
           </div>
           <div className="mt-3 flex flex-col gap-1.5">
             {PLAN_IDS.map((p, i) => (
-              <div key={p} className={cn("flex items-center gap-2 text-xs text-white/70")}>
+              <div key={p} className={cn("flex items-center gap-2 text-xs text-slate-500")}>
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: PLAN_COLORS[p] }} />
                 <span className="flex-1">{PLAN_LABELS[p]}</span>
                 <span className="font-medium">{fmt(totalsByPlan[i])}</span>

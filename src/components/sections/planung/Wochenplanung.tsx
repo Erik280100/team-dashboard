@@ -29,7 +29,7 @@ const FIELD_GROUPS: FieldGroup[] = [
   { label: "Aktivitäten", left: { sub: "Soll", key: "aktivitaetenSoll" }, right: { sub: "Ist", key: "aktivitaetenIst" } },
 ]
 
-const NAV_BTN = "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+const NAV_BTN = "border-slate-200 bg-transparent text-foreground hover:bg-slate-100 hover:text-foreground"
 
 type CommitFn = (field: keyof PlanWeekEntry, value: number | string) => void
 
@@ -51,7 +51,7 @@ function NumField({
       aria-label={`${String(field)} – ${personName}`}
       className={cn(
         "h-8 w-full rounded-md border px-2 text-center text-sm tabular-nums outline-none",
-        "focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]",
+        "focus-visible:border-primary focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]",
         "disabled:opacity-60",
         FIELD_INPUT
       )}
@@ -71,19 +71,19 @@ function PersonCard({
 }) {
   return (
     <Card className={SURFACE_CARD}>
-      <CardHeader className="border-b border-white/10 pb-3">
+      <CardHeader className="border-b border-slate-200 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-finova-soft text-xs font-bold text-finova-ink">
             {initials(person.name)}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 truncate text-sm font-semibold">
               {person.name}
               {isFk && (
-                <span className="rounded-full bg-[#E7A94C]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#E7A94C]">FK</span>
+                <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">FK</span>
               )}
             </div>
-            <div className="truncate text-xs text-white/90">{person.role}</div>
+            <div className="truncate text-xs text-slate-600">{person.role}</div>
           </div>
         </div>
       </CardHeader>
@@ -91,15 +91,15 @@ function PersonCard({
         <div className="grid grid-cols-2 gap-2">
           {FIELD_GROUPS.map((g) => (
             <div key={g.label} className={cn(SURFACE_TILE, "p-2")}>
-              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
+              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-finova-ink">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/90">{g.left.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-slate-600">{g.left.sub}</span>
                   <NumField personName={person.name} field={g.left.key} value={Number(entry[g.left.key]) || 0} isEditor={isEditor} onCommit={onCommit} />
                 </div>
-                <span className="pt-3 text-white/70">/</span>
+                <span className="pt-3 text-slate-500">/</span>
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/90">{g.right.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-slate-600">{g.right.sub}</span>
                   <NumField personName={person.name} field={g.right.key} value={Number(entry[g.right.key]) || 0} isEditor={isEditor} onCommit={onCommit} />
                 </div>
               </div>
@@ -108,13 +108,13 @@ function PersonCard({
         </div>
         {isEditor && (
           <div className={cn(SURFACE_TILE, "p-2")}>
-            <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">Notizen / Feedback</div>
+            <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-finova-ink">Notizen / Feedback</div>
             <textarea
               key={`${person.name}-notes-${entry.notes}`}
               defaultValue={entry.notes}
               placeholder="Besonderheiten, offene Punkte…"
               aria-label={`Notizen – ${person.name}`}
-              className={cn("min-h-16 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]", FIELD_INPUT)}
+              className={cn("min-h-16 w-full resize-y rounded-md border px-2 py-1.5 text-sm outline-none focus-visible:border-primary focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px]", FIELD_INPUT)}
               onBlur={(e) => onCommit("notes", e.target.value)}
             />
           </div>
@@ -127,14 +127,14 @@ function PersonCard({
 function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeekEntry }) {
   return (
     <Card className={SURFACE_CARD}>
-      <CardHeader className="border-b border-white/10 pb-3">
+      <CardHeader className="border-b border-slate-200 pb-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-finova-soft text-xs font-bold text-finova-ink">
             {initials(group.name)}
           </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold">{group.name}</div>
-            <div className="truncate text-xs text-white/90">{group.role} · Team gesamt ({group.names.length})</div>
+            <div className="truncate text-xs text-slate-600">{group.role} · Team gesamt ({group.names.length})</div>
           </div>
         </div>
       </CardHeader>
@@ -142,17 +142,17 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
         <div className="grid grid-cols-2 gap-2">
           {FIELD_GROUPS.map((g) => (
             <div key={g.label} className={cn(SURFACE_TILE, "p-2")}>
-              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#64DDA3]">{g.label}</div>
+              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-finova-ink">{g.label}</div>
               <div className="flex items-center gap-1.5">
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/90">{g.left.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-slate-600">{g.left.sub}</span>
                   <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.left.key]) || 0)}
                   </div>
                 </div>
-                <span className="pt-3 text-white/70">/</span>
+                <span className="pt-3 text-slate-500">/</span>
                 <div className="flex flex-1 flex-col items-center gap-1">
-                  <span className="text-[9px] font-medium uppercase text-white/90">{g.right.sub}</span>
+                  <span className="text-[9px] font-medium uppercase text-slate-600">{g.right.sub}</span>
                   <div className="flex h-8 w-full items-center justify-center text-sm font-semibold tabular-nums">
                     {fmt(Number(entry[g.right.key]) || 0)}
                   </div>
@@ -209,9 +209,9 @@ export function Wochenplanung({
         <Button type="button" variant="ghost" size="icon" className={NAV_BTN} disabled={weekIdx < 0 || weekIdx >= weeks.length - 1} onClick={() => setActiveWeek(weeks[weekIdx + 1])} aria-label="Nächste Woche">
           ›
         </Button>
-        <span className="rounded-full bg-[#64DDA3]/15 px-2.5 py-1 text-xs font-bold text-[#64DDA3]">{monthLabel(monthKey)}</span>
-        <span className="text-xs text-white/90">Bitte bis Montag 10:00 Uhr abgeben</span>
-        <span className="ml-auto rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold">
+        <span className="rounded-full bg-finova-soft px-2.5 py-1 text-xs font-bold text-finova-ink">{monthLabel(monthKey)}</span>
+        <span className="text-xs text-slate-600">Bitte bis Montag 10:00 Uhr abgeben</span>
+        <span className="ml-auto rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold">
           Σ Verträge {totals.vertraege}
         </span>
       </div>
@@ -223,7 +223,7 @@ export function Wochenplanung({
           ))}
         </div>
       ) : people.length === 0 ? (
-        <div className={cn("rounded-xl border p-12 text-center text-sm text-white/90", SURFACE_CARD)}>
+        <div className={cn("rounded-xl border p-12 text-center text-sm text-slate-600", SURFACE_CARD)}>
           Keine Personen für {managerName ?? "diese Führungskraft"} im Strukturbaum.
         </div>
       ) : (
