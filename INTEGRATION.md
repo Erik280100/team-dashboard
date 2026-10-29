@@ -78,9 +78,9 @@ Empfohlene Reihenfolge: (1) Tokens/Theme, (2) Services + `lib/calc` einbinden, (
 | `employees/{id}/planMonthNotes/{YYYY-MM}` | Monatsnotizen, Einheitenziel `ehZiel` | dito |
 | `employees/{id}/planAnnual/{YYYY}` | Jahresziele + Quartalsmeilensteine je Führungskraft | |
 | `employees/{id}/attendance/*` | Anwesenheit (Seminar/Training + Grund) | |
-| `employees/{id}/todos/*` | Board-Todos (Lane, Kategorie, Farbe, Fälligkeit, Reihenfolge) | mehrere Todos als **Array in einem Dokument** |
-| `financings/{caseId}` | Kreditfälle (`cases[]`: Name, Betrag, Art, Beschäftigung, Betreuer, Abwickler, Checkliste `docs`, Status-Flags) | Array eingebettet |
-| `sales/{id}` | Umsatzverfolgung: Buchung aus dem EH-Rechner (Produkt, Prämie, Einheiten, Kunde, Beginn, policiert, ausbezahlt) | |
+| `employees/{id}/todos/{todoId}` | Board-Todos (Lane, Kategorie, Farbe, Fälligkeit, Reihenfolge) | ein Dokument je Todo, nur für den Besitzer sichtbar |
+| `financings/{caseId}` | Kreditfälle (Name, Betrag, Art, Beschäftigung, `ownerId` = Betreuer, `abwicklerId`, Checkliste `docs`, Status-Flags, `ancestors`) | ein Dokument je Fall; `docs` ist ein Objekt (Unterlage → abgehakt) |
+| `sales/{id}` | Umsatzverfolgung: Buchung aus dem EH-Rechner (Produkt, Prämie, Einheiten, Kunde, Beginn, policiert, ausbezahlt, `ownerId`, `ancestors`) | nachträglich änderbar nur Kunde, Beginn, policiert, ausbezahlt |
 | `celebrations/{id}` | Feier-/Konfetti-Ereignisse | |
 | `org/structure` (`org/{docId}`) | Strukturbaum (`tree` verschachtelt, `notes`, `conns`, `planRates`) | Baum als **ein JSON-Dokument** |
 | `org/teamGoal`, `org/archiveIndex` | Teamziel + Verlauf, Index der Monatsarchive | |
@@ -97,12 +97,16 @@ Typdefinitionen: `src/types/dashboard.ts`, `src/types/archive.ts`, `EmployeeRow`
 2. **Serverlogik:** `functions/src/*` (Monatsabschluss, Karrierestufen, Statistik, Backup, Kontoanlage). Wird zu Backend-Jobs
    oder Services bei Finova; die Berechnung selbst steckt in `src/lib/calc` und `functions/shared`.
 3. **Live-Updates:** Die App nutzt `onSnapshot` (Echtzeit). Mit REST braucht es Polling, WebSocket oder SSE.
-4. **Eingebettete Arrays/Maps:** Todos, Kreditfälle, Wochenplan-`entries` und der Strukturbaum liegen als Array bzw. Objekt
-   in einem Dokument. In SQL werden das eigene Tabellen/Zeilen (siehe Vorschlag).
+4. **Eingebettete Objekte:** Der Strukturbaum (`org/structure.tree`), `ehByPlan`/`careerUnits`, `planRates`, die Quartale der
+   Jahresplanung und die Unterlagen-Checkliste `docs` liegen verschachtelt in einem Dokument. In SQL werden das eigene Tabellen/Zeilen.
 5. **Mitarbeiter und Anmeldung:** Statt `users`/`employees/private` kommen Finovas bestehende Mitarbeiter und deren Login (SSO).
    Der Strukturbaum/`ancestors` muss aus Finovas Organisationsdaten abgeleitet oder weitergepflegt werden.
 
 ### Vorschlag: Abbildung auf ein relationales Modell (falls Finova SQL nutzt)
+**Ausgearbeitet in `docs/`:** [`docs/schema.postgres.sql`](docs/schema.postgres.sql) (31 Tabellen, in PostgreSQL 16 getestet),
+[`docs/DATENMODELL.md`](docs/DATENMODELL.md) (ER-Diagramme und Zuordnung Firestore → Tabellen). Die Übersicht darunter ist die
+Kurzfassung; maßgeblich sind die Dateien in `docs/`.
+
 | Tabelle | Quelle | Wichtige Spalten |
 |---|---|---|
 | `employee` | `employees/{id}` | id, name, role, parent_id (Strukturbaum), joined_at, bonus, is_new |
