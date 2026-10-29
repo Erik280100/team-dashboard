@@ -235,6 +235,16 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
         { ist: 40, ehByPlan: { credit: 40 }, careerUnits: { insurance: 0, investment: 0, credit: 50, realestate: 0 } }))
       await assertSucceeds(updateDoc(doc(as("admin"), "employees", "m1"), { careerUnits: { insurance: 0 } }))
     })
+    it("Mitarbeiter-Dialog: kompletter Schreibsatz (mehr und weniger) geht für die Person selbst", async () => {
+      await seed({ ist: 50, ehByPlan: { insurance: 20, investment: 10, investmentVb: 5, credit: 10, realestate: 5 },
+        careerUnits: { insurance: 120, investment: 60, credit: 40, realestate: 10 } })
+      const self = as("member", "m1")
+      const full = (ins: number, car: number) => ({ soll: 7, ist: ins + 30,
+        ehByPlan: { insurance: ins, investment: 10, investmentVb: 5, credit: 10, realestate: 5 },
+        careerUnits: { insurance: car, investment: 60, credit: 40, realestate: 10 } })
+      await assertSucceeds(updateDoc(doc(self, "employees", "m1"), full(25, 125)))
+      await assertSucceeds(updateDoc(doc(self, "employees", "m1"), full(15, 115)))
+    })
   })
 
   describe("entfernte Mitarbeiter (active=false)", () => {

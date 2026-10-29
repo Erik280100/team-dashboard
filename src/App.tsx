@@ -6,7 +6,7 @@
 // Context nicht konsumieren, daher lebt die gesamte Logik in einer Kind-
 // Komponente von ConfirmProvider statt in App (analog dazu, wie Kalender.tsx
 // useConfirm() bereits als Kind-Komponente nutzt).
-import { lazy, Suspense, useEffect, useMemo, useState } from "react"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { AlarmClock, ChevronDown } from "lucide-react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
@@ -15,7 +15,7 @@ import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import type { UmsatzDraft } from "@/lib/calc/umsatz"
 import { readPlanUnits } from "@/lib/calc/verguetung"
 import { archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
-import { formatISODateDE, toISODate } from "@/lib/calc/format"
+import { formatISODateDE, toISODate, type EmployeeRow } from "@/lib/calc/format"
 import { canViewEmployee } from "@/lib/calc/roles"
 import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
 import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSection"
@@ -217,6 +217,14 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
       now: snapshot ? archiveNow(snapshot.teamGoal) : undefined,
     }
   }, [snapshot, liveRows, dashboard.teamGoal, dashboard.history, orgChart.tree, orgChart.notes, orgChart.conns, orgChart.rates, orgChart.planRates])
+
+  // Die Team-Seite sieht bei fremden Personen die Monatssummen statt der Rohwerte (applyMonthStats). Würde sie diese
+  // Zeilen zurückgeben, schriebe saveRows die Abweichung in fremde Dokumente — Firestore lehnt das ab und verwirft
+  // den ganzen Batch samt der eigenen Änderung. Fremde Zeilen daher auf den gespeicherten Stand zurücksetzen.
+  const saveTeamRows = useCallback((next: EmployeeRow[]) => {
+    const raw = new Map(dashboard.rows.map((r) => [r.name.trim().toLowerCase(), r]))
+    dashboard.saveRows(next.map((r) => (canEditRow(r.name) ? r : raw.get(r.name.trim().toLowerCase()) ?? r)))
+  }, [dashboard.rows, dashboard.saveRows, canEditRow])
 
   // Sicherheitsnetz: im Archiv-Modus dürfen die Seiten nichts schreiben (die
   // Seiten selbst sind über isEditor={false} bereits schreibgeschützt — siehe
@@ -518,7 +526,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   <Team
                     key={archiveMonth ?? "live"}
                     rows={view.rows}
-                    saveRows={isArchive ? blocked : dashboard.saveRows}
+                    saveRows={isArchive ? blocked : saveTeamRows}
                     teamGoal={view.teamGoal}
                     orgTree={view.orgTree}
                     orgPlanRates={view.planRates}
