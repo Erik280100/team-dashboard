@@ -37,7 +37,7 @@ export function Guide() {
             />
           ) : (
             <>
-              <h2 className="text-lg font-semibold">{g.title}</h2>
+              <h2 className="text-base font-extrabold uppercase tracking-wide">{g.title}</h2>
               <p className="mt-2 text-sm text-muted-foreground">Inhalte folgen in Kürze.</p>
             </>
           )}

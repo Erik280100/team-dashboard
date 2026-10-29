@@ -323,7 +323,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Start &amp; Sparen</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Start &amp; Sparen</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feld label="Aktuelle Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} />
             <Feld label="Sparbetrag (€/Monat)" value={sparbetragMonat} onChange={setSparbetragMonat} step={50} />
@@ -367,7 +367,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Wohnung &amp; Finanzierung (gilt für jeden künftigen Kauf)</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Wohnung &amp; Finanzierung (gilt für jeden künftigen Kauf)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feld label="Kaufpreis heute (€)" value={kaufpreisReferenz} onChange={setKaufpreisReferenz} step={5000} />
             <Feld label="Wohnfläche (m²)" value={wohnflaecheM2} onChange={setWohnflaecheM2} step={1} suffix="m²" />
@@ -417,7 +417,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Miete &amp; Kosten (pro Wohnung, außer wo anders angegeben)</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Miete &amp; Kosten (pro Wohnung, außer wo anders angegeben)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
               Nettomiete (ohne Betriebskosten, exkl. 10 % USt auf Wohnraumvermietung)
@@ -444,7 +444,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Wertentwicklung, Umschuldung &amp; Steuer</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Wertentwicklung, Umschuldung &amp; Steuer</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Wertzuwachs Immobilien (% p.a.)
@@ -622,7 +622,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
       {istGmbh && vergleichPrivat && (
         <Card>
           <CardContent>
-            <h3 className="mb-1 text-sm font-semibold">Gegenüberstellung: GmbH vs. Einzelunternehmen</h3>
+            <h3 className="mb-1 text-sm font-extrabold uppercase tracking-wide">Gegenüberstellung: GmbH vs. Einzelunternehmen</h3>
             <p className="mb-3 text-xs text-muted-foreground">
               Dieselben Eingaben, einmal als Kapitalgesellschaft (diese Seite) und einmal als natürliche Person
               gerechnet — bei sonst identischer Portfolio-Mechanik (Käufe, Miete, Wertentwicklung, Umschuldung).
@@ -709,7 +709,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
       {meilensteine.length > 0 && (
         <Card>
           <CardContent>
-            <h3 className="mb-3 text-sm font-semibold">Meilensteine</h3>
+            <h3 className="mb-3 text-sm font-extrabold uppercase tracking-wide">Meilensteine</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -750,7 +750,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
       <Card>
         <CardContent>
-          <h3 className="mb-3 text-sm font-semibold">Portfolioentwicklung</h3>
+          <h3 className="mb-3 text-sm font-extrabold uppercase tracking-wide">Portfolioentwicklung</h3>
           <div className="h-[420px]">
             <Line
               data={chartData}
@@ -769,7 +769,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
       {kaeufe.length > 0 && (
         <Card>
           <CardContent>
-            <h3 className="text-sm font-semibold">Kauf-Timeline</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Kauf-Timeline</h3>
             <p className="mt-1 mb-3 text-xs text-muted-foreground">
               "Kapitalbedarf gesamt" ist der Betrag neben dem Kredit, der für diesen Kauf nötig ist (Anzahlung, weil
               nur {ltvClamped}&nbsp;% beliehen werden, plus Kaufnebenkosten) — unabhängig davon, woher das Geld
@@ -826,7 +826,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
       <Card>
         <CardContent>
-          <h3 className="mb-3 text-sm font-semibold">Jahresübersicht</h3>
+          <h3 className="mb-3 text-sm font-extrabold uppercase tracking-wide">Jahresübersicht</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -909,7 +909,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Renditen &amp; Leistbarkeit</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Renditen &amp; Leistbarkeit</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Bruttomietrendite (aktuell, bezogen auf Portfolio-Verkehrswert)</span>
@@ -1016,7 +1016,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
       {warnungen.length > 0 && (
         <Card>
           <CardContent className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold">Warnhinweise</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Warnhinweise</h3>
             {warnungen.map((w) => (
               <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
                 {w}

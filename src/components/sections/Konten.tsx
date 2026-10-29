@@ -108,7 +108,7 @@ export function Konten({ employees, readOnly = false }: { employees: EmployeeMet
     <Card>
       <CardContent className="flex flex-col gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Konten</h2>
+          <h2 className="text-2xl font-extrabold uppercase">Konten</h2>
           <p className="text-sm text-muted-foreground">
             Jede Person aus dem Strukturbaum bekommt ein eigenes Login. Die Rolle bestimmt die Rechte:
             Mitarbeiter sehen nur sich selbst, Führungskräfte zusätzlich ihre Unterstruktur, Admins alles.

@@ -86,7 +86,7 @@ export function HoldingImmobilienRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Kapitalherkunft</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Kapitalherkunft</h3>
           <div className="grid gap-4 sm:grid-cols-3">
             <Feld label="Verfügbarer Gewinn vor Steuer (€)" value={verfuegbarerGewinnVorSteuer} onChange={setVerfuegbarerGewinnVorSteuer} step={5000} min={0} />
             <Feld label="Grenzsteuersatz Einzelunternehmer (%)" value={euGrenzsteuersatzPct} onChange={setEuGrenzsteuersatzPct} step={1} suffix="%" min={0} />
@@ -105,7 +105,7 @@ export function HoldingImmobilienRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Immobilie (zur Vermietung)</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Immobilie (zur Vermietung)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} />
             <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} />
@@ -150,7 +150,7 @@ export function HoldingImmobilienRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Kapitalgesellschaft: Direktkauf vs. Holding-Struktur</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Kapitalgesellschaft: Direktkauf vs. Holding-Struktur</h3>
           <label className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
             <input type="checkbox" checked={ueberHolding} onChange={(e) => setUeberHolding(e.target.checked)} className="mt-0.5 size-4" />
             <span>
@@ -186,7 +186,7 @@ export function HoldingImmobilienRechner() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">Einzelunternehmer mit Immobilie</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Einzelunternehmer mit Immobilie</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertEu)}</div>
             <div className="flex flex-col gap-1.5 border-t pt-3 text-sm">
               <ZeilePos label="Eigenmittel nach Grenzsteuersatz" value={kreditFormatEUR(erg.eigenmittelEu)} muted />
@@ -200,7 +200,7 @@ export function HoldingImmobilienRechner() {
 
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">GmbH, ausgeschüttet &amp; privat investiert</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">GmbH, ausgeschüttet &amp; privat investiert</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertGmbhPrivat)}</div>
             <div className="flex flex-col gap-1.5 border-t pt-3 text-sm">
               <ZeilePos label="Eigenmittel nach KöSt + KESt" value={kreditFormatEUR(erg.eigenmittelGmbhPrivat)} muted />
@@ -214,7 +214,7 @@ export function HoldingImmobilienRechner() {
 
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">{holdingLabel}</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">{holdingLabel}</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(erg.endwertHolding)}</div>
             <div className="flex flex-col gap-1.5 border-t pt-3 text-sm">
               <ZeilePos label="Eigenmittel nach KöSt" value={kreditFormatEUR(erg.eigenmittelHolding)} muted />

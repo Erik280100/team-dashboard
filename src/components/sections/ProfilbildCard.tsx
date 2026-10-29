@@ -3,7 +3,8 @@ import { useRef, useState } from "react"
 import { Avatar } from "@/components/Avatar"
 import { AvatarCropDialog } from "@/components/sections/AvatarCropDialog"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Camera } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { removeAvatar, resizeToAvatar, uploadAvatar } from "@/lib/avatar"
 
 export function ProfilbildCard({ employeeId, name, version }: { employeeId: string; name: string; version?: number }) {
@@ -21,8 +22,10 @@ export function ProfilbildCard({ employeeId, name, version }: { employeeId: stri
 
   return (
     <Card>
+      <CardHeader>
+        <CardTitle icon={Camera}>Profilbild</CardTitle>
+      </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Profilbild</h2>
         <div className="flex items-center gap-4">
           <Avatar name={name} avatar={version ? { id: employeeId, version } : undefined} className="size-20 text-xl" />
           <div className="flex flex-wrap gap-2">

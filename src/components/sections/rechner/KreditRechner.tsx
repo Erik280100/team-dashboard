@@ -169,7 +169,7 @@ export function KreditRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Eingaben</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Eingaben</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Kaufpreis (€)
@@ -224,7 +224,7 @@ export function KreditRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <div>
-            <h3 className="text-sm font-semibold">Sparform für schnellere Kreditabzahlung und Zinsersparnis</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Sparform für schnellere Kreditabzahlung und Zinsersparnis</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Parallel besparte fondsgebundene Lebensversicherung mit gleicher Laufzeit
               wie der Kredit. Zeigt, ab wann das Guthaben die Restschuld übersteigt.
@@ -328,7 +328,7 @@ export function KreditRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-3">
-          <h3 className="text-sm font-semibold">Kostenaufstellung</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Kostenaufstellung</h3>
           {warnungen.length > 0 && (
             <div className="flex flex-col gap-1">
               {warnungen.map((w) => (
@@ -392,7 +392,7 @@ export function KreditRechner() {
       <Card>
         <CardContent>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold">Restschuldverlauf</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Restschuldverlauf</h3>
             <span className="text-xs text-muted-foreground">
               Laufzeit: <strong className="tabular-nums text-foreground">{laufzeitClamped} Jahre</strong>
             </span>
@@ -560,7 +560,7 @@ export function KreditRechner() {
       <Card>
         <CardContent>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-sm font-semibold">Tilgungsplan (jährlich)</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Tilgungsplan (jährlich)</h3>
             <span className="text-xs text-muted-foreground">
               AfA-Bemessungsgrundlage ({saetze.gebaeudeanteilPct.toLocaleString("de-AT")} % von Kaufpreis + Kaufnebenkosten):{" "}
               <strong className="tabular-nums text-foreground">{kreditFormatEUR(afaBemessungsgrundlage)}</strong>

@@ -78,8 +78,8 @@ export function TodoCard({
       draggable
       onDragStart={onDragStart}
       className={cn(
-        "flex cursor-grab flex-col gap-2 rounded-md border border-l-4 p-3 text-sm shadow-sm active:cursor-grabbing",
-        state === "red" ? "bg-rose-50" : state === "orange" ? "bg-orange-50" : "bg-background",
+        "flex cursor-grab flex-col gap-2 rounded-lg border border-l-4 p-3 text-sm active:cursor-grabbing",
+        state === "red" ? "bg-rose-50" : state === "orange" ? "bg-orange-50" : "bg-card",
         CARD_BORDER_CLASS[todo.color]
       )}
     >
@@ -99,7 +99,7 @@ export function TodoCard({
             if (e.key === "Enter") commitTitle()
             if (e.key === "Escape") { setTitleDraft(todo.title); setEditingTitle(false) }
           }}
-          className="h-7 rounded border border-input bg-transparent px-2 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+          className="h-7 rounded-lg border border-input bg-card px-2 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         />
       ) : (
         <button
@@ -122,7 +122,7 @@ export function TodoCard({
           }}
           placeholder="Beschreibung"
           rows={2}
-          className="w-full resize-none rounded border border-input bg-transparent px-2 py-1 text-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+          className="w-full resize-none rounded-lg border border-input bg-card px-2 py-1 text-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
         />
       ) : (
         <button

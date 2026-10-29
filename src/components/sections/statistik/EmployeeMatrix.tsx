@@ -2,6 +2,7 @@
 // mit Σ/Ø/Trend, Suche + Sortierung analog zur Mitarbeiterseite (Team.tsx).
 // Zellenfarbe folgt progressClass() (format.ts) wie die Fortschrittsbalken dort.
 import { useState } from "react"
+import { Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
@@ -44,7 +45,7 @@ export function EmployeeMatrix({
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-foreground">Mitarbeiter-Entwicklung</CardTitle>
+        <CardTitle icon={Users}>Mitarbeiter-Entwicklung</CardTitle>
         <p className="text-xs text-slate-400">
           {loading ? `Lädt Monate… (${loaded} von ${total})` : "Einheiten je Mitarbeiter und Monat, anklickbar für den Verlauf"}
         </p>

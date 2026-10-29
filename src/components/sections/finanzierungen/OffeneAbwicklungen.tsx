@@ -4,7 +4,7 @@
 // lib/data/finanzierung.ts. Dumme/kontrollierte Sektion: Firestore-Zugriff läuft
 // ausschließlich über useFinanzierungenDoc() in App.tsx.
 import { Fragment, useState } from "react"
-import { Archive, ArchiveRestore, Check, ChevronDown, ChevronRight, FileText, Landmark, Trash2, Layers } from "lucide-react"
+import { Archive, ArchiveRestore, Check, ChevronDown, ChevronRight, FileText, Landmark, Plus, Trash2, Layers } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -93,7 +93,7 @@ function NewCaseForm({
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-foreground">Neuer Kreditfall</CardTitle>
+        <CardTitle icon={Plus}>Neuer Kreditfall</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap items-end gap-3">
@@ -285,7 +285,7 @@ export function OffeneAbwicklungen({
       <Card className={SURFACE_CARD}>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="text-foreground">{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
+            <CardTitle icon={Landmark}>{showArchived ? "Archivierte Kreditfälle" : "Kreditfälle"}</CardTitle>
             <div className="flex items-center gap-2">
               <label className="text-xs font-semibold text-foreground" htmlFor="fin-sort">Sortierung</label>
               <Select

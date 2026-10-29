@@ -28,7 +28,7 @@ const GROUP_ACCENT: Record<EhGroup["id"], string> = {
 }
 
 /** Eingabefelder auf den dunklen Gruppenkarten. */
-const EH_INPUT = "rounded-md border border-slate-200 bg-slate-100 text-foreground placeholder:text-slate-400  transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-[#64DDA3]/25"
+const EH_INPUT = "rounded-lg border border-slate-200 bg-card text-foreground placeholder:text-slate-400 transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/25"
 
 function defaultG(): Record<string, string> {
   const g: Record<string, string> = {}
@@ -124,7 +124,7 @@ export function EhRechner({
     return (
       <Card key={group.id} className={cn("border-t-[3px]", SURFACE_CARD)} style={{ borderTopColor: GROUP_ACCENT[group.id] }}>
         <CardContent className="@container flex flex-col gap-3">
-          <h3 className="text-sm font-extrabold uppercase tracking-wide" style={{ color: GROUP_ACCENT[group.id] }}>{group.title}</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">{group.title}</h3>
           {items.map((it) => (
             <div key={it.id} className={cn(SURFACE_TILE, "grid grid-cols-2 items-end gap-3 p-3 @lg:grid-cols-[1fr_7rem_7rem_7rem]")}>
               <div className="col-span-2 min-w-0 @lg:col-span-1">

@@ -2,6 +2,7 @@
 // ausgewählten Person — Ist/Soll/Vergütung über den gewählten Zeitraum.
 import "@/lib/chartSetup"
 import { Line } from "react-chartjs-2"
+import { TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SURFACE_CARD, CHART_GRID, CHART_LEGEND, CHART_TICK } from "@/lib/chartSetup"
 import { monthLabel } from "@/lib/calc/archive"
@@ -13,7 +14,7 @@ export function EmployeeCurve({ series }: { series: EmployeeSeries | null }) {
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-foreground">
+        <CardTitle icon={TrendingUp}>
           {series.name}{series.role ? ` · ${series.role}` : ""}
         </CardTitle>
         <p className="text-xs text-slate-400">Verlauf über den gewählten Zeitraum</p>

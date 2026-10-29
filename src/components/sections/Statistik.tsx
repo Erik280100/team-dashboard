@@ -71,7 +71,7 @@ export function Statistik({ archive }: { archive: UseMonthArchiveResult }) {
   if (index.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <h2 className="text-lg font-semibold">Statistik</h2>
+        <h2 className="text-2xl font-extrabold uppercase">Statistik</h2>
         <EmptyCard
           title="Noch keine abgeschlossenen Monate"
           text='Sobald ein Monat über "Monat abschließen" archiviert wurde, erscheinen hier Verlauf und Vergleich.'
@@ -89,7 +89,7 @@ export function Statistik({ archive }: { archive: UseMonthArchiveResult }) {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Statistik</h2>
+        <h2 className="text-2xl font-extrabold uppercase">Statistik</h2>
         {effectiveFrom && effectiveTo && (
           <MonthRangePicker
             index={index}

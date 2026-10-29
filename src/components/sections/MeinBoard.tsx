@@ -183,10 +183,10 @@ export function MeinBoard({
               type="button"
               onClick={() => setView(t.id)}
               className={cn(
-                "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                "rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors",
                 view === t.id
-                  ? "border-transparent bg-primary text-primary-foreground shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  ? "border-transparent bg-primary text-primary-foreground"
+                  : "border-slate-200 bg-card text-foreground hover:bg-slate-100"
               )}
             >
               {t.label}
@@ -209,10 +209,10 @@ export function MeinBoard({
                   type="button"
                   onClick={() => setFilter(t.id)}
                   className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                    "rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors",
                     filter === t.id
-                      ? "border-transparent bg-primary text-primary-foreground shadow-sm"
-                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                      ? "border-transparent bg-primary text-primary-foreground"
+                      : "border-slate-200 bg-card text-foreground hover:bg-slate-100"
                   )}
                 >
                   {t.label}
@@ -223,10 +223,10 @@ export function MeinBoard({
                 aria-pressed={flaggedOnly}
                 onClick={() => setFlaggedOnly((v) => !v)}
                 className={cn(
-                  "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                  "rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors",
                   flaggedOnly
                     ? "border-transparent bg-destructive text-white shadow-sm"
-                    : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    : "border-slate-200 bg-card text-foreground hover:bg-slate-100"
                 )}
               >
                 Nur geflaggte
@@ -237,10 +237,10 @@ export function MeinBoard({
                   aria-pressed={showCompleted}
                   onClick={() => setShowCompleted((v) => !v)}
                   className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                    "rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors",
                     showCompleted
                       ? "border-transparent bg-emerald-600 text-white shadow-sm"
-                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                      : "border-slate-200 bg-card text-foreground hover:bg-slate-100"
                   )}
                 >
                   {showCompleted ? "Erledigte ausblenden" : "Erledigte anzeigen"} ({completedCount})
@@ -253,8 +253,8 @@ export function MeinBoard({
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
                   showArchive
-                    ? "border-transparent bg-primary text-primary-foreground shadow-sm"
-                    : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    ? "border-transparent bg-primary text-primary-foreground"
+                    : "border-slate-200 bg-card text-foreground hover:bg-slate-100"
                 )}
               >
                 <Archive className="size-3.5" /> {showArchive ? "Zurück zum Board" : "Archiv"} ({archivedCount})
@@ -275,7 +275,7 @@ export function MeinBoard({
 
           {showArchive && (
             <div className="flex flex-col gap-3">
-              <h3 className="text-sm font-semibold">Archiv</h3>
+              <h3 className="text-sm font-extrabold uppercase tracking-wide">Archiv</h3>
               {archivedTodos.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Keine archivierten Todos.</p>
               ) : (
@@ -309,7 +309,7 @@ export function MeinBoard({
               return (
                 <div key={lane} className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden rounded-xl border bg-card p-3">
                   <div className="flex items-center justify-between gap-2 px-1">
-                    <h3 className="truncate text-sm font-semibold">{TODO_LANE_LABELS[lane]}</h3>
+                    <h3 className="truncate text-sm font-extrabold uppercase tracking-wide">{TODO_LANE_LABELS[lane]}</h3>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         type="button"

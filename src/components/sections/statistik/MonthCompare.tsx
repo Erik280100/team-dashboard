@@ -3,6 +3,7 @@
 // Einheiten je Karriereplan.
 import "@/lib/chartSetup"
 import { Bar } from "react-chartjs-2"
+import { BarChart3 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
 import { SURFACE_CARD, CHART_GRID, CHART_LEGEND, CHART_TICK } from "@/lib/chartSetup"
@@ -40,7 +41,7 @@ export function MonthCompare({
   return (
     <Card className={SURFACE_CARD}>
       <CardHeader>
-        <CardTitle className="text-foreground">Monatsvergleich</CardTitle>
+        <CardTitle icon={BarChart3}>Monatsvergleich</CardTitle>
         <p className="text-xs text-slate-400">Monat A gegen Monat B, Differenz absolut und in Prozent</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">

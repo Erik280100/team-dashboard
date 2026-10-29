@@ -715,7 +715,7 @@ export function StrukturBaum({
       <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-lg font-semibold">Team Strukturbaum</h2>
+          <h2 className="text-2xl font-extrabold uppercase">Team Strukturbaum</h2>
           <div className="flex flex-wrap gap-1.5">
             {SB_COLOR_LEGEND.map((l) => {
               const c = SB_COLORS.find((sc) => sc.key === l.key)

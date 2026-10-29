@@ -75,7 +75,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   partner: "Partner",
   board: "Mein Board",
   konten: "Konten",
-  einstellungen: "Einstellungen",
+  einstellungen: "Profil",
 }
 
 // Nur diese drei Sektionen kennen einen Monatswähler/Archiv-Modus. Statistik zeigt Archiv-Daten

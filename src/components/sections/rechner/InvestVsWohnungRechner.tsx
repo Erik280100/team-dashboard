@@ -88,7 +88,7 @@ export function InvestVsWohnungRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Eigenmittel &amp; Zeitraum</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Eigenmittel &amp; Zeitraum</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} min={0} />
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -106,7 +106,7 @@ export function InvestVsWohnungRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Szenario A — Depot</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Szenario A — Depot</h3>
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             Rendite (% p.a.)
             <div className="flex flex-wrap items-center gap-2">
@@ -128,7 +128,7 @@ export function InvestVsWohnungRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Szenario B — Anlegerwohnung</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Szenario B — Anlegerwohnung</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} />
             <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} />
@@ -160,7 +160,7 @@ export function InvestVsWohnungRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Kredit</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Kredit</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Laufzeit (Jahre)
@@ -189,7 +189,7 @@ export function InvestVsWohnungRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Steuer &amp; Verkauf</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Steuer &amp; Verkauf</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
               Grenzsteuersatz (%)
@@ -364,7 +364,7 @@ export function InvestVsWohnungRechner() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">Depot nach {horizontClamped} Jahren</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Depot nach {horizontClamped} Jahren</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(depot.endwertNachSteuer)}</div>
             <div className="flex flex-col gap-1.5 border-t pt-3">
               <ZeilePos label="Gesamtbetrag (vor KESt)" value={kreditFormatEUR(depot.bruttoEndwert)} muted />
@@ -376,7 +376,7 @@ export function InvestVsWohnungRechner() {
 
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">Wohnung, verkauft nach {horizontClamped} Jahren</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Wohnung, verkauft nach {horizontClamped} Jahren</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(wohnung.endwertNachSteuer)}</div>
             <div className="flex flex-col gap-1.5 border-t pt-3">
               <ZeilePos label="Verkehrswert" value={kreditFormatEUR(wohnung.immobilienwertEnde)} muted />
@@ -424,7 +424,7 @@ export function InvestVsWohnungRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <div>
-            <h3 className="text-sm font-semibold">Monatliche Entnahme über {entnahmeJahreClamped} Jahre</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Monatliche Entnahme über {entnahmeJahreClamped} Jahre</h3>
             <p className="mt-1 text-xs text-muted-foreground">
               Wie viel könnte man sich nach Ablauf des Anlagehorizonts monatlich auszahlen, bis das
               Kapital nach der gewählten Entnahmezeit exakt aufgebraucht ist? Beide Werte mit derselben

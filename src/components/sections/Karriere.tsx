@@ -87,7 +87,7 @@ function KarrierePlaene() {
     return (
       <Card className="mx-auto max-w-md">
         <CardContent className="flex flex-col gap-2 text-sm">
-          <h2 className="text-lg font-semibold">Karrierepläne</h2>
+          <h2 className="text-2xl font-extrabold uppercase">Karrierepläne</h2>
           {cloud.status === "error"
             ? "Die Karrierepläne konnten nicht geladen werden. Bitte Seite neu laden."
             : "Die Karrierepläne sind noch nicht freigeschaltet. Bitte den Admin informieren."}

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 
 // Gemeinsame Bausteine der Rechner-Oberflächen (Eingabefeld, Regler, Ergebniszeile, Zahlen-Parser).
-export const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
+export const INPUT_CLASS = "h-8 rounded-lg border border-input bg-card focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
 
 export function Feld({
   label, value, onChange, suffix, step = 1, min, className,

@@ -143,7 +143,7 @@ export function RechtsformVergleichRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Betriebsdaten (für alle drei Rechtsformen gleich)</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Betriebsdaten (für alle drei Rechtsformen gleich)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} />
             <Feld label="Betriebsausgaben ohne SV/AfA/Gehalt (€/Jahr)" value={betriebsausgaben} onChange={setBetriebsausgaben} step={500} min={0} />
@@ -186,7 +186,7 @@ export function RechtsformVergleichRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">GmbH-spezifisch</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">GmbH-spezifisch</h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <Feld label="Geschäftsführer-Gehalt, brutto bar (€/Jahr)" value={gfGehaltBrutto} onChange={setGfGehaltBrutto} step={1000} min={0} />
             <Regler
@@ -216,7 +216,7 @@ export function RechtsformVergleichRechner() {
 
       <Card className={!wohnsitzVollstaendigVerlegt ? "border-destructive/50" : undefined}>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Zypern Ltd — spezifisch</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Zypern Ltd — spezifisch</h3>
 
           <label className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
             <input type="checkbox" checked={wohnsitzVollstaendigVerlegt} onChange={(e) => setWohnsitzVollstaendigVerlegt(e.target.checked)} className="mt-0.5 size-4" />
@@ -312,7 +312,7 @@ export function RechtsformVergleichRechner() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">Einzelunternehmer</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Einzelunternehmer</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(eu.nettoEinkommen)}<span className="ml-1 text-xs font-normal text-muted-foreground">/Jahr verfügbar</span></div>
             <div className="flex flex-col gap-1.5 border-t pt-3">
               <ZeilePos label="Gewinn vor SV" value={kreditFormatEUR(eu.gewinnVorSv)} muted />
@@ -327,7 +327,7 @@ export function RechtsformVergleichRechner() {
 
         <Card>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="text-sm font-semibold">GmbH (Geschäftsführer)</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">GmbH (Geschäftsführer)</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(gmbh.verfuegbaresEinkommen)}<span className="ml-1 text-xs font-normal text-muted-foreground">/Jahr bar verfügbar</span></div>
             <div className="flex flex-col gap-1.5 border-t pt-3">
               <ZeilePos label="Betriebliches Ergebnis vor KöSt" value={kreditFormatEUR(gmbh.betrieblichesErgebnisVorKoest)} muted />
@@ -358,7 +358,7 @@ export function RechtsformVergleichRechner() {
 
         <Card className={!zypern.wohnsitzGueltig ? "border-destructive/50" : undefined}>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <h3 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide">
               Zypern Ltd (Direktor)
               {!zypern.wohnsitzGueltig && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive">⚠ kein echter Umzug</span>}
             </h3>
@@ -428,7 +428,7 @@ export function RechtsformVergleichRechner() {
 
       <Card>
         <CardContent>
-          <h3 className="mb-1 text-sm font-semibold">Ab welchem Gewinn lohnt sich welche Rechtsform?</h3>
+          <h3 className="mb-1 text-sm font-extrabold uppercase tracking-wide">Ab welchem Gewinn lohnt sich welche Rechtsform?</h3>
           <p className="mb-3 text-xs text-muted-foreground">
             Operativer Gewinn (Umsatz − Betriebsausgaben − AfA) auf der X-Achse, bei sonst gleichbleibenden
             Einstellungen. Dein aktueller Wert: {kreditFormatEUR(operativerGewinn)}.

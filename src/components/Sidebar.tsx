@@ -171,7 +171,7 @@ export function Sidebar({
             )}
           >
             <Settings aria-hidden="true" className="size-4 shrink-0" />
-            Einstellungen
+            Profil
           </button>
           <div className="px-2 pt-1 text-xs text-slate-400">
             <strong className="block text-slate-600">Grenzgasse 1</strong>

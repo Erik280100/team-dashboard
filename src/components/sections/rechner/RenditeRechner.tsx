@@ -239,7 +239,7 @@ export function RenditeRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Eingaben</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Eingaben</h3>
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               <label htmlFor="rrMonat">Monatliche Einzahlung (€)</label>
@@ -299,7 +299,7 @@ export function RenditeRechner() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card style={productCardStyle("fondsdepot")}>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondsdepot" />Depot</h3>
+            <h3 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide"><ProductDot colorKey="fondsdepot" />Depot</h3>
             <div className="grid grid-cols-3 gap-3">
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Ausgabeaufschlag (%)
@@ -326,7 +326,7 @@ export function RenditeRechner() {
 
         <Card style={productCardStyle("vv")} className="pointer-events-none opacity-40 grayscale">
           <CardContent className="flex flex-col gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
+            <h3 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>—</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>—</span></div>
             <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-finova-ink">Vorübergehend deaktiviert</div>
@@ -335,7 +335,7 @@ export function RenditeRechner() {
 
         <Card style={productCardStyle("fondssparer")} className="pointer-events-none opacity-40 grayscale">
           <CardContent className="flex flex-col gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
+            <h3 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
             {fondssparerKostenZeilen(jahreClamped).map(([label]) => (
               <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>—</span></div>
             ))}
@@ -345,7 +345,7 @@ export function RenditeRechner() {
 
         <Card style={productCardStyle("flv")}>
           <CardContent className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="flv" />FLV (Fondsgebundene Lebensversicherung)</h3>
+            <h3 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide"><ProductDot colorKey="flv" />FLV (Fondsgebundene Lebensversicherung)</h3>
             <ToggleGroup
               value={provider}
               options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia", disabled: true }]}
@@ -366,7 +366,7 @@ export function RenditeRechner() {
 
       <Card>
         <CardContent>
-          <h3 className="mb-3 text-sm font-semibold">Wertentwicklung im Vergleich</h3>
+          <h3 className="mb-3 text-sm font-extrabold uppercase tracking-wide">Wertentwicklung im Vergleich</h3>
           <div className="h-[460px]">
             <Line
               data={{
@@ -466,7 +466,7 @@ export function RenditeRechner() {
 
       <Card>
         <CardContent>
-          <h3 className="mb-3 text-sm font-semibold">Jahrestabelle</h3>
+          <h3 className="mb-3 text-sm font-extrabold uppercase tracking-wide">Jahrestabelle</h3>
           {entnahmeAktiv && (
             <div className="mb-2 text-[10.5px] text-muted-foreground">
               Ab Jahr {jahreClamped} (hinterlegte Zeilen): Entnahmephase, Restkapital wird zu gleichen Konditionen weiterveranlagt.

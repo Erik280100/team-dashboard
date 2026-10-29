@@ -25,13 +25,18 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({
+  className, icon, children, ...props
+}: React.ComponentProps<"div"> & { icon?: React.ComponentType<{ className?: string }> }) {
   return (
     <div
       data-slot="card-title"
-      className={cn("text-sm font-bold uppercase leading-none tracking-wide", className)}
+      className={cn("text-sm font-bold uppercase leading-none tracking-wide", icon && "flex items-center gap-2.5", className)}
       {...props}
-    />
+    >
+      {icon && <CardIcon icon={icon} />}
+      {children}
+    </div>
   )
 }
 

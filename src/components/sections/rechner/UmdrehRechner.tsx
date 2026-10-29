@@ -71,7 +71,7 @@ export function UmdrehRechner() {
 
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h3 className="text-sm font-semibold">Eingabe</h3>
+          <h3 className="text-sm font-extrabold uppercase tracking-wide">Eingabe</h3>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               Prämie (€)
@@ -126,7 +126,7 @@ export function UmdrehRechner() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold">Berater</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Berater</h3>
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Storno-Minus</span><span>{ehFormatEUR(r.beraterMinus)} €</span></div>
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Aktuell</span><span>{ehFormatEUR(r.beraterAktuell)} €</span></div>
             <div className="flex justify-between border-t pt-2 text-sm"><span className="text-muted-foreground">Differenz</span><DiffValue value={r.beraterDiff} /></div>
@@ -134,7 +134,7 @@ export function UmdrehRechner() {
         </Card>
         <Card>
           <CardContent className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold">Führungskraft</h3>
+            <h3 className="text-sm font-extrabold uppercase tracking-wide">Führungskraft</h3>
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Storno-Minus</span><span>{ehFormatEUR(r.fkMinus)} €</span></div>
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Aktuell</span><span>{ehFormatEUR(r.fkAktuell)} €</span></div>
             <div className="flex justify-between border-t pt-2 text-sm"><span className="text-muted-foreground">Differenz</span><DiffValue value={r.fkDiff} /></div>

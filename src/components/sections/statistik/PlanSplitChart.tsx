@@ -4,6 +4,7 @@ import "@/lib/chartSetup"
 import { useState } from "react"
 import { Bar, Doughnut } from "react-chartjs-2"
 import { Button } from "@/components/ui/button"
+import { PieChart } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SURFACE_CARD, CHART_GRID, CHART_LEGEND, CHART_TICK } from "@/lib/chartSetup"
 import { fmt } from "@/lib/calc/format"
@@ -19,7 +20,7 @@ export function PlanSplitChart({ points }: { points: PlanSplitPoint[] }) {
     <Card className={SURFACE_CARD}>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="text-foreground">Karriereplan-Aufteilung</CardTitle>
+          <CardTitle icon={PieChart}>Karriereplan-Aufteilung</CardTitle>
           <p className="text-xs text-slate-400">Insurance / Investment / Credit / Real Estate über den Zeitraum</p>
         </div>
         <div className="flex gap-1.5">

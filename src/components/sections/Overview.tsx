@@ -7,7 +7,7 @@ import "@/lib/chartSetup"
 import { useEffect, useMemo, useState } from "react"
 import { Line } from "react-chartjs-2"
 import { Siegertreppchen } from "@/components/Siegertreppchen"
-import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
+import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma, Trophy, Medal, type LucideIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { SURFACE_CARD, CHART_GRID, CHART_TICK } from "@/lib/chartSetup"
@@ -31,11 +31,11 @@ function fmt(n: number | undefined | null): string {
   return fmtDecimal(Math.round(Number(n) || 0))
 }
 
-function DarkCardHeader({ title, sub }: { title: string; sub: string }) {
+function DashCardHeader({ title, sub, icon }: { title: string; sub: string; icon: LucideIcon }) {
   return (
     <CardHeader>
-      <CardTitle className="text-foreground">{title}</CardTitle>
-      <p className="text-xs text-slate-400">{sub}</p>
+      <CardTitle icon={icon}>{title}</CardTitle>
+      <p className="text-xs text-slate-500">{sub}</p>
     </CardHeader>
   )
 }
@@ -188,7 +188,7 @@ export function Overview({
         <Card className={SURFACE_CARD}>
           <CardContent className="flex flex-col gap-5">
             <div>
-              <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
                 Team-Ziel
               </div>
               <div className="mt-1 flex items-baseline gap-2">
@@ -232,7 +232,7 @@ export function Overview({
         </Card>
 
         <Card className={SURFACE_CARD}>
-          <DarkCardHeader title="Zielverlauf & Prognose" sub="Wann erreichen wir das Team-Ziel bei aktuellem Tempo?" />
+          <DashCardHeader icon={TrendingUp} title="Zielverlauf & Prognose" sub="Wann erreichen wir das Team-Ziel bei aktuellem Tempo?" />
           <CardContent>
             {timeline.valid ? (
               <div className="h-[220px]">
@@ -303,14 +303,14 @@ export function Overview({
       {/* Umsatzanteil / Top 10 Geschäftspartner / Leaderboard */}
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className={SURFACE_CARD}>
-          <DarkCardHeader title="Treppchen" sub="Die Top 3 nach Einheiten" />
+          <DashCardHeader icon={Trophy} title="Treppchen" sub="Die Top 3 nach Einheiten" />
           <CardContent>
             <Siegertreppchen entries={shares} avatars={avatars} formatValue={fmt} />
           </CardContent>
         </Card>
 
         <Card className={SURFACE_CARD}>
-          <DarkCardHeader title="Top 10 Geschäftspartner" sub="Einheiten" />
+          <DashCardHeader icon={Building2} title="Top 10 Geschäftspartner" sub="Einheiten" />
           <CardContent className="flex flex-col gap-1.5">
             {shares.slice(0, 10).map((s, i) => (
               <div key={s.name} className="flex items-center gap-3 text-sm">
@@ -330,7 +330,7 @@ export function Overview({
         </Card>
 
         <Card className={SURFACE_CARD}>
-          <DarkCardHeader title="Leaderboard" sub="Ranking nach Ist AT" />
+          <DashCardHeader icon={Medal} title="Leaderboard" sub="Ranking nach Ist AT" />
           <CardContent className="flex flex-col gap-1.5">
             {leaderboard.map((r, i) => (
               <div key={r.name} className="flex items-center gap-3 text-sm">
