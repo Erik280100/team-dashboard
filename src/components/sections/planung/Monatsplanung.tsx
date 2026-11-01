@@ -1,10 +1,12 @@
 // Monatsplanung — read-only Verdichtung der Wochen des Monats. Vorbild
 // Finova_Controlling.html:824-829 (KPI-Kacheln) und 1558-1587 (Tabelle).
 // Lädt die betroffenen Wochendokumente lazy nach (usePlanungDoc.loadWeeks).
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { DARK_CARD, DARK_INPUT, DARK_TABLE } from "@/components/ui/dark"
 import { cn } from "@/lib/utils"
+import { monthKeyOf, nextMonthGoal } from "@/lib/calc/archive"
 import { fmt, formatISODateDE, initials } from "@/lib/calc/format"
 import {
   aggregateByGroup, aggregateByName, emptyMonthNoteEntry, monthLabel, periodWeekKeys, quotePct,
@@ -160,11 +162,20 @@ export function Monatsplanung({
   isEditor: boolean
   teamGroups?: PlanTeamGroup[] | null
 }) {
-  // Immer der aktuelle (offene) Monat — vergangene Monate stehen im Archiv/Statistik.
-  const monthKey = unitsMonthKey
+  // Der offene Umsatzmonat oder — per Pfeil — schon der Folgemonat, damit er vorgeplant werden kann, solange der
+  // aktuelle noch läuft. Vergangene Monate stehen im Archiv/Statistik.
+  const [showNext, setShowNext] = useState(false)
+  // Nach dem Monatsabschluss ist der bisherige Folgemonat der offene — dann nicht noch einen Monat weiter springen.
+  useEffect(() => setShowNext(false), [unitsMonthKey])
+  const shown = useMemo(
+    () => (showNext ? nextMonthGoal(period) : period),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showNext, period.periodStart, period.periodEnd]
+  )
+  const monthKey = showNext ? monthKeyOf(shown) : unitsMonthKey
   const weeks = useMemo(
-    () => periodWeekKeys(period.periodStart, period.periodEnd),
-    [period.periodStart, period.periodEnd]
+    () => periodWeekKeys(shown.periodStart, shown.periodEnd),
+    [shown.periodStart, shown.periodEnd]
   )
 
   useEffect(() => {
@@ -243,10 +254,16 @@ export function Monatsplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="ghost" size="icon" disabled={!showNext} onClick={() => setShowNext(false)} aria-label="Vormonat">
+          ‹
+        </Button>
         <div className="rounded-full bg-[#64DDA3]/15 px-3 py-1 text-sm font-bold text-[#64DDA3]">
-          {monthLabel(monthKey)} · {formatISODateDE(period.periodStart)} – {formatISODateDE(period.periodEnd)}
+          {monthLabel(monthKey)} · {formatISODateDE(shown.periodStart)} – {formatISODateDE(shown.periodEnd)}
         </div>
-        <span className="text-xs text-muted-foreground">Kumulierte Wochenpläne</span>
+        <Button type="button" variant="ghost" size="icon" disabled={showNext} onClick={() => setShowNext(true)} aria-label="Nächster Monat">
+          ›
+        </Button>
+        <span className="text-xs text-muted-foreground">{showNext ? "Vorplanung · kumulierte Wochenpläne" : "Kumulierte Wochenpläne"}</span>
         {loading && <span className="ml-auto text-xs text-muted-foreground">Lade Wochendaten…</span>}
       </div>
 

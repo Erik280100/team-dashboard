@@ -46,7 +46,7 @@ export function resetRowsForNewMonth(rows: EmployeeRow[]): EmployeeRow[] {
  * `note`/`recruitGoal` bleiben erhalten, `recruitActual` wird auf null gesetzt (wieder automatische Zählung
  * der "NEU"-markierten Mitarbeiter im neuen Zeitraum).
  */
-export function nextMonthGoal(goal: TeamGoal): TeamGoal {
+export function nextMonthGoal<T extends Pick<TeamGoal, "periodStart" | "periodEnd">>(goal: T): T {
   const def = defaultPeriod()
   const curKey = monthKeyOf(goal)
   let start = addDays(parseISODate(goal.periodEnd || def.periodEnd), 1)
