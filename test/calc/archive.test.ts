@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   archiveNow, buildIndexEntry, buildSnapshot, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel,
-  monthTotals, nextMonthGoal, resetRowsForNewMonth, withCalendarPeriod,
+  monthTotals, nextMonthGoal, resetRowsForNewMonth, validatePeriod,
 } from "../../src/lib/calc/archive"
 import { monthWeekProgress } from "../../src/lib/calc/format"
 import { timelineData } from "../../src/lib/calc/overview"
@@ -55,7 +55,7 @@ describe("resetRowsForNewMonth", () => {
 })
 
 describe("nextMonthGoal", () => {
-  // Es wird immer im Kalendermonat gerechnet: 1. bis letzter Tag.
+  // Folgezeitraum: Tag nach dem Ende, einen Monat lang.
   it("Juli -> August (1. bis 31.)", () => {
     const next = nextMonthGoal(GOAL)
     expect(next.periodStart).toBe("2026-08-01")
@@ -77,10 +77,40 @@ describe("nextMonthGoal", () => {
     expect(nextMonthGoal(jan).periodEnd).toBe("2028-02-29")
   })
 
-  it("alter Umsatzmonat (erster Mittwoch bis Tag davor) wird auf den Kalendermonat von periodStart gezogen", () => {
-    const old: TeamGoal = { ...GOAL, periodStart: "2026-08-05", periodEnd: "2026-09-01" }
-    expect(withCalendarPeriod(old)).toMatchObject({ periodStart: "2026-08-01", periodEnd: "2026-08-31" })
-    expect(nextMonthGoal(old)).toMatchObject({ periodStart: "2026-09-01", periodEnd: "2026-09-30" })
+  it("freier Umsatzmonat: Folgezeitraum beginnt am Tag nach dem Ende und dauert einen Monat", () => {
+    const cur: TeamGoal = { ...GOAL, periodStart: "2026-10-07", periodEnd: "2026-11-06" }
+    expect(nextMonthGoal(cur)).toMatchObject({ periodStart: "2026-11-07", periodEnd: "2026-12-06" })
+  })
+
+  it("Start am 31. wird auf den letzten Tag des kürzeren Folgemonats begrenzt", () => {
+    const cur: TeamGoal = { ...GOAL, periodStart: "2026-12-02", periodEnd: "2027-01-30" }
+    expect(nextMonthGoal(cur)).toMatchObject({ periodStart: "2027-01-31", periodEnd: "2027-02-27" })
+  })
+
+  it("Dezember rollt bei freiem Zeitraum ins Folgejahr", () => {
+    const cur: TeamGoal = { ...GOAL, periodStart: "2026-12-05", periodEnd: "2027-01-04" }
+    expect(nextMonthGoal(cur)).toMatchObject({ periodStart: "2027-01-05", periodEnd: "2027-02-04" })
+  })
+
+  it("verkürzter Zeitraum: Folgezeitraum bleibt nicht im selben Monat (kein doppelter Archivschlüssel)", () => {
+    const cur: TeamGoal = { ...GOAL, periodStart: "2026-10-01", periodEnd: "2026-10-20" }
+    expect(nextMonthGoal(cur)).toMatchObject({ periodStart: "2026-11-01", periodEnd: "2026-11-30" })
+  })
+})
+
+describe("validatePeriod", () => {
+  it("akzeptiert einen gültigen Zeitraum", () => {
+    expect(validatePeriod("2026-10-07", "2026-11-06")).toBeNull()
+  })
+  it("lehnt Ende vor Start ab", () => {
+    expect(validatePeriod("2026-10-07", "2026-10-06")).not.toBeNull()
+  })
+  it("lehnt zu lange Zeiträume ab", () => {
+    expect(validatePeriod("2026-01-01", "2026-06-30")).not.toBeNull()
+  })
+  it("lehnt einen bereits archivierten Startmonat ab", () => {
+    expect(validatePeriod("2026-10-07", "2026-11-06", "2026-10")).not.toBeNull()
+    expect(validatePeriod("2026-11-07", "2026-12-06", "2026-10")).toBeNull()
   })
 })
 

@@ -17,7 +17,7 @@ import {
   getMergedFilteredSorted, leadRosterOptions, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
 } from "@/lib/calc/team"
-import { aggregateByName, monthWeekKeys } from "@/lib/calc/planung"
+import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
 import { monthKeyOf } from "@/lib/calc/archive"
 import { SB_LEAD_ROLE_ABBR, sbRoster, sbSubtreeNames, type PlanId, type SbNode } from "@/lib/calc/struktur"
 import { computeEarnings, stornoreserveAmount, withUnitsAdjustingCareer } from "@/lib/calc/verguetung"
@@ -36,7 +36,7 @@ function ComputedField({ value, title }: { value: number | undefined; title?: st
   return (
     <div
       className="text-center text-sm tabular-nums"
-      title={title ?? "Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Monat)"}
+      title={title ?? "Automatisch aus der Wochenplanung übernommen (Summe der Wochen im aktuellen Umsatzmonat)"}
     >
       {fmt(value)}
     </div>
@@ -103,7 +103,7 @@ export function Team({
   //
   // planung wechselt die Identität bei jeder Datenänderung (Live-Update, Speichern, Nachladen) — daran hängen
   // die Memos, damit sie nicht bei jedem Tastendruck im Suchfeld neu rechnen, aber nie veraltet sind.
-  const planWeeks = planung ? monthWeekKeys(monthKeyOf(teamGoal)) : []
+  const planWeeks = planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd) : []
   useEffect(() => {
     if (!planung || planWeeks.length === 0) return
     void planung.loadWeeks(planWeeks)
@@ -204,7 +204,7 @@ export function Team({
           <>
             Die Liste wird aus dem Strukturbaum gespiegelt (Personen mit Status „Kommt vielleicht" werden ausgeblendet).
             Personen fügst du im Strukturbaum hinzu oder entfernst sie dort. Ist AT/BT/ET wird automatisch aus der
-            Wochenplanung des aktuellen Monats übernommen — keine doppelte Eingabe mehr nötig.
+            Wochenplanung des aktuellen Umsatzmonats übernommen — keine doppelte Eingabe mehr nötig.
           </>
         }
       />

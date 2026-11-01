@@ -3,7 +3,7 @@
 // nächsten Kalendermonat umstellen. Die Reihenfolge macht den Lauf wiederholbar (siehe closeOne).
 import { getFirestore, type Firestore } from "firebase-admin/firestore"
 import { onSchedule } from "firebase-functions/v2/scheduler"
-import { monthWeekKeys } from "./planStats"
+import { periodWeekKeys } from "./planStats"
 import { exportFirestore } from "./backup"
 import { planClose, type EmployeeInput, type Shared } from "./closePlan"
 
@@ -19,6 +19,26 @@ export function viennaMonth(now: Date): string {
   return `${get("year")}-${get("month")}`
 }
 
+/** Heutiges Datum "YYYY-MM-DD" in Wien. */
+export function viennaDate(now: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Vienna", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now)
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ""
+  return `${get("year")}-${get("month")}-${get("day")}`
+}
+
+/**
+ * Soll der Umsatzmonat jetzt abgeschlossen werden? Das eingestellte Ende (periodEnd) muss vorbei sein.
+ * Nur der unmittelbar vorangegangene Zeitraum wird automatisch abgeschlossen: wäre auch der Folgezeitraum
+ * (nextPeriodEnd) schon vorbei, wären alle übersprungenen Monate mit denselben aktuellen Zahlen archiviert —
+ * das muss der Admin bewusst von Hand klären.
+ */
+export function closeDecision(today: string, periodEnd: string, nextPeriodEnd: string): "wait" | "close" | "too-old" {
+  if (!(today > periodEnd)) return "wait"
+  return today > nextPeriodEnd ? "too-old" : "close"
+}
+
 async function closeOne(db: Firestore, shared: Shared, month: string, goalData: Record<string, unknown>) {
   const teamGoal = goalData.teamGoal as Record<string, unknown>
   const history = (Array.isArray(goalData.history) ? goalData.history : []) as { date: string; ist: number }[]
@@ -28,7 +48,7 @@ async function closeOne(db: Firestore, shared: Shared, month: string, goalData: 
     db.doc("org/archiveIndex").get(),
     db.collection("employees").get(),
   ])
-  const weekKeys = monthWeekKeys(month)
+  const weekKeys = periodWeekKeys(teamGoal.periodStart as string | undefined, teamGoal.periodEnd as string | undefined)
   const employees: EmployeeInput[] = await Promise.all(
     empSnap.docs.map(async (d) => {
       const [weekSnaps, noteSnap] = await Promise.all([
@@ -81,7 +101,7 @@ async function closeOne(db: Firestore, shared: Shared, month: string, goalData: 
   return plan.next
 }
 
-/** Schließt alle vergangenen Monate (normalerweise genau einen), bis der offene Monat der aktuelle ist. */
+/** Schließt den Umsatzmonat, dessen eingestelltes Ende (org/teamGoal.periodEnd) vorbei ist. */
 export async function closePastMonths(db: Firestore, now = new Date()): Promise<string[]> {
   const shared = loadShared()
   const closed: string[] = []
@@ -89,17 +109,16 @@ export async function closePastMonths(db: Firestore, now = new Date()): Promise<
     const goalSnap = await db.doc("org/teamGoal").get()
     const goalData = goalSnap.data()
     if (!goalData || typeof goalData.teamGoal !== "object" || !goalData.teamGoal) return closed
-    const month = shared.monthKeyOf(goalData.teamGoal as Record<string, unknown>)
-    const current = viennaMonth(now)
-    if (!(month < current)) return closed
-    // Nur der unmittelbare Vormonat wird automatisch abgeschlossen. Steht das Teamziel weiter zurück (z. B. nach
-    // einer Pause), wären alle übersprungenen Monate mit denselben aktuellen Zahlen archiviert — das muss der
-    // Admin bewusst von Hand klären.
-    const [cy, cm] = current.split("-").map(Number)
-    const prev = new Date(cy, cm - 2, 1)
-    const previousMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`
-    if (month < previousMonth) {
-      console.error(`Automatischer Abschluss übersprungen: offener Monat ${month} liegt mehr als einen Monat zurück (aktuell ${current}). Bitte von Hand abschließen.`)
+    const goal = goalData.teamGoal as Record<string, unknown>
+    const month = shared.monthKeyOf(goal)
+    const today = viennaDate(now)
+    const periodEnd = typeof goal.periodEnd === "string" && goal.periodEnd ? goal.periodEnd : ""
+    if (!periodEnd) return closed
+    const nextEnd = shared.nextMonthGoal(goal).periodEnd as string
+    const decision = closeDecision(today, periodEnd, nextEnd)
+    if (decision === "wait") return closed
+    if (decision === "too-old") {
+      console.error(`Automatischer Abschluss übersprungen: Umsatzmonat ${month} (Ende ${periodEnd}) liegt mehr als einen Zeitraum zurück (heute ${today}). Bitte von Hand abschließen.`)
       return closed
     }
     await closeOne(db, shared, month, goalData)

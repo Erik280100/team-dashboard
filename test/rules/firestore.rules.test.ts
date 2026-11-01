@@ -433,10 +433,12 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
         await setDoc(doc(db, "org", "archiveIndex"), { months: [{ month: "2026-08" }, { month: "2026-09" }] })
       })
     })
-    it("Teamziel darf nicht auf einen früheren Monat zurück, vorwärts schon", async () => {
+    it("Teamziel darf nicht auf einen früheren Zeitraum zurück, vorwärts und Verschieben des laufenden schon", async () => {
       const db = as("admin")
       await assertFails(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-09-01", periodEnd: "2026-09-30" }, history: [{ d: 1 }, { d: 2 }] }))
-      await assertFails(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-09-01" } }, { merge: true }))
+      await assertFails(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodEnd: "2026-09-30" } }, { merge: true }))
+      // Admin stellt den laufenden Umsatzmonat frei ein (z. B. 07.10.–06.11.)
+      await assertSucceeds(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-10-07", periodEnd: "2026-11-06" } }, { merge: true }))
       await assertSucceeds(setDoc(doc(db, "org", "teamGoal"), { teamGoal: { periodStart: "2026-11-01", periodEnd: "2026-11-30" }, history: [{ d: 1 }, { d: 2 }, { d: 3 }] }))
     })
     it("Verlauf darf nicht kürzer werden, Notiz ändern geht", async () => {

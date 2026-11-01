@@ -333,7 +333,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
       `• Der aktuelle Stand wird als Archiv gespeichert und ist danach über den Monatswähler einsehbar.\n` +
       `• Alle Ist-Werte (Einheiten, AT/BT/ET) werden auf 0 gesetzt — Plan- und Soll-Werte bleiben erhalten.\n` +
       `• "NEU"-Markierungen bleiben bestehen und werden nicht automatisch entfernt.\n` +
-      `• Der laufende Monat springt auf ${monthLabel(monthKeyOf(nextGoal))}.\n` +
+      `• Der Umsatzmonat springt auf ${monthLabel(monthKeyOf(nextGoal))} (${formatISODateDE(nextGoal.periodStart)} – ${formatISODateDE(nextGoal.periodEnd)}).\n` +
       `• Bitte andere offene Tabs vorher schließen.\n\n` +
       `Das lässt sich nicht rückgängig machen.`
     )
@@ -413,7 +413,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               size="sm"
               onClick={handleCloseMonth}
               disabled={archive.closing || !canCloseMonth(dashboard.teamGoal)}
-              title={!canCloseMonth(dashboard.teamGoal) ? "Erst nach Monatsende möglich" : undefined}
+              title={!canCloseMonth(dashboard.teamGoal) ? "Erst nach Ende des Umsatzmonats möglich" : undefined}
             >
               Monat abschließen
             </Button>
@@ -549,6 +549,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   isEditor={auth.isEditor}
                   rows={planungRows}
                   unitsMonthKey={monthKeyOf(dashboard.teamGoal)}
+                  period={dashboard.teamGoal}
                 />
               )}
               {section === id && id === "umsatz" && (
