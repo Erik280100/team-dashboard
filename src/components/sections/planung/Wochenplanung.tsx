@@ -7,8 +7,8 @@ import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { SURFACE_CARD, FIELD_INPUT, SURFACE_TILE } from "@/components/ui/surface"
-import { fmt, initials } from "@/lib/calc/format"
-import { aggregateByGroup, isoWeekKey, monthLabel, monthWeekKeys, sumWeekEntries, weekLabel, type PlanTeamGroup } from "@/lib/calc/planung"
+import { fmt, formatISODateDE, initials } from "@/lib/calc/format"
+import { aggregateByGroup, isoWeekKey, monthLabel, periodWeekKeys, sumWeekEntries, weekLabel, type PlanTeamGroup } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekEntry } from "@/types/dashboard"
@@ -167,10 +167,12 @@ function TeamGroupCard({ group, entry }: { group: PlanTeamGroup; entry: PlanWeek
 }
 
 export function Wochenplanung({
-  people, managerName, planung, isEditor, teamGroups, monthKey,
+  people, managerName, planung, isEditor, teamGroups, monthKey, period,
 }: {
-  /** Offener Monat ("YYYY-MM"): es werden nur dessen Wochen angeboten. */
+  /** Offener Umsatzmonat ("YYYY-MM", Name nach dem Starttag). */
   monthKey: string
+  /** Eingestellter Zeitraum des Umsatzmonats: es werden nur dessen Wochen angeboten. */
+  period: { periodStart: string; periodEnd: string }
   people: RosterEntry[]
   managerName: string | null
   planung: UsePlanungDocResult
@@ -178,9 +180,12 @@ export function Wochenplanung({
   teamGroups?: PlanTeamGroup[] | null
 }) {
   const { activeWeek, setActiveWeek, weekDoc, saveWeekEntry } = planung
-  // Nur Wochen des offenen Monats (Randwochen zählen zu beiden angrenzenden Monaten). Start: die aktuelle
-  // Woche, falls sie dazugehört, sonst die nächstliegende Woche des Monats.
-  const weeks = useMemo(() => monthWeekKeys(monthKey), [monthKey])
+  // Nur Wochen des eingestellten Umsatzmonats (Randwochen zählen zu beiden angrenzenden Zeiträumen). Start: die
+  // aktuelle Woche, falls sie dazugehört, sonst die nächstliegende Woche des Zeitraums.
+  const weeks = useMemo(
+    () => periodWeekKeys(period.periodStart, period.periodEnd),
+    [period.periodStart, period.periodEnd]
+  )
   useEffect(() => {
     if (weeks.includes(activeWeek)) return
     const current = isoWeekKey(new Date())
@@ -209,7 +214,7 @@ export function Wochenplanung({
         <Button type="button" variant="ghost" size="icon" className={NAV_BTN} disabled={weekIdx < 0 || weekIdx >= weeks.length - 1} onClick={() => setActiveWeek(weeks[weekIdx + 1])} aria-label="Nächste Woche">
           ›
         </Button>
-        <span className="rounded-full bg-finova-soft px-2.5 py-1 text-xs font-bold text-finova-ink">{monthLabel(monthKey)}</span>
+        <span className="rounded-full bg-finova-soft px-2.5 py-1 text-xs font-bold text-finova-ink">{monthLabel(monthKey)} · {formatISODateDE(period.periodStart)} – {formatISODateDE(period.periodEnd)}</span>
         <span className="text-xs text-slate-600">Bitte bis Montag 10:00 Uhr abgeben</span>
         <span className="ml-auto rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold">
           Σ Verträge {totals.vertraege}

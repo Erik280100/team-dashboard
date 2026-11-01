@@ -11,7 +11,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { FieldPath, increment, onSnapshot, setDoc, updateDoc, writeBatch } from "firebase/firestore"
 import { employeeDocRef, employeesCollection, firestore, orgDocRef } from "@/lib/firebase"
 import { recordSnapshot, type HistoryEntry } from "@/lib/calc/format"
-import { withCalendarPeriod } from "@/lib/calc/archive"
 import {
   diffRowWrites, employeeDocToRow, employeeMetaOf, idByName, type EmployeeMeta,
 } from "@/lib/calc/employees"
@@ -49,9 +48,8 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
   const myId = account.employeeId
 
   const [stored, setStored] = useState<Record<string, Stored>>({})
-  // Gerechnet wird immer im Kalendermonat: ältere Stände (Umsatzmonat ab erstem Mittwoch) werden beim Laden
-  // auf 1. bis letzter Tag des Startmonats gezogen.
-  const [teamGoal, setTeamGoal] = useState<TeamGoal>(() => withCalendarPeriod({ ...STARTER_GOAL }))
+  // Der Umsatzmonat (periodStart..periodEnd) wird vom Admin auf dem Dashboard eingestellt und unverändert übernommen.
+  const [teamGoal, setTeamGoal] = useState<TeamGoal>(() => ({ ...STARTER_GOAL }))
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("connecting")
   const goalReady = useRef(false)
@@ -91,7 +89,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
       if (snap.metadata.fromCache) return
       if (snap.exists()) {
         const data = snap.data() as Partial<DashboardDoc>
-        if (data.teamGoal && typeof data.teamGoal === "object") setTeamGoal(withCalendarPeriod({ ...STARTER_GOAL, ...data.teamGoal }))
+        if (data.teamGoal && typeof data.teamGoal === "object") setTeamGoal({ ...STARTER_GOAL, ...data.teamGoal })
         if (Array.isArray(data.history)) setHistory(data.history)
       }
       goalReady.current = true

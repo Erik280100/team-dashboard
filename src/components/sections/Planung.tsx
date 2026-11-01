@@ -27,11 +27,13 @@ const EBENEN: { id: PlanEbene; label: string }[] = [
 ]
 
 export function Planung({
-  roster, orgTree, planung, isEditor, rows, unitsMonthKey, archive,
+  roster, orgTree, planung, isEditor, rows, unitsMonthKey, period, archive,
 }: {
   archive: UseMonthArchiveResult
   rows: EmployeeRow[]
   unitsMonthKey: string
+  /** Eingestellter Umsatzmonat: Wochen- und Monatsplanung zeigen genau diesen Zeitraum. */
+  period: { periodStart: string; periodEnd: string }
   roster: RosterEntry[]
   orgTree: SbNode
   planung: UsePlanungDocResult
@@ -137,6 +139,7 @@ export function Planung({
           planung={planung}
           isEditor={isEditor}
           monthKey={unitsMonthKey}
+          period={period}
           teamGroups={groupByLead ? filteredTeamGroups : null}
         />
       )}
@@ -145,6 +148,7 @@ export function Planung({
           key={selectedManager}
           rows={rows}
           unitsMonthKey={unitsMonthKey}
+          period={period}
           people={filteredPeople}
           planung={planung}
           isEditor={isEditor}

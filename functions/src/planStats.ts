@@ -44,6 +44,26 @@ export function monthWeekKeys(monthKey: string): string[] {
   return [...weeks].sort()
 }
 
+const parseISO = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number)
+  return new Date(y, m - 1, d)
+}
+
+/**
+ * Alle ISO-Wochen, die einen Tag des eingestellten Umsatzmonats (periodStart..periodEnd) enthalten.
+ * Spiegel von periodWeekKeys in src/lib/calc/planung.ts; fehlt ein Wert, gilt der laufende Kalendermonat.
+ */
+export function periodWeekKeys(periodStart: string | undefined, periodEnd: string | undefined, now = new Date()): string[] {
+  const first = new Date(now.getFullYear(), now.getMonth(), 1)
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const start = periodStart ? parseISO(periodStart) : first
+  const end = periodEnd ? parseISO(periodEnd) : last
+  if (!(end >= start)) return []
+  const weeks = new Set<string>()
+  for (let d = start; d <= end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) weeks.add(isoWeekKey(d))
+  return [...weeks].sort()
+}
+
 const sum = (entries: (WeekEntry | undefined)[], field: string) =>
   entries.reduce((s, e) => s + (Number(e?.[field]) || 0), 0)
 

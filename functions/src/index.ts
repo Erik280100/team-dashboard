@@ -11,7 +11,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler"
 import { collectPeople, isLeadRole, type SbNode } from "./structure"
 import { exportFirestore } from "./backup"
 import { applySubtreeUpdate, isValidId, SubtreeError, type OrgStructure, type SubtreeInput } from "./subtree"
-import { computeMonthStats, monthKeyFromGoal, monthWeekKeys } from "./planStats"
+import { computeMonthStats, monthKeyFromGoal, periodWeekKeys } from "./planStats"
 
 initializeApp()
 const db = getFirestore()
@@ -343,12 +343,13 @@ export const updateSubtree = onCall({ region: REGION }, async (req) => {
  * Monatssummen (AT/BT/ST/ET, Soll) eines Mitarbeiters aus seiner Controlling-Planung berechnen und als
  * employees/{id}.monthStats ablegen — damit sie für alle sichtbar sind, ohne die Planung selbst freizugeben.
  */
-async function refreshMonthStats(empId: string, month: string) {
+async function refreshMonthStats(empId: string, goal: GoalPeriod) {
+  const { month } = goal
   const ref = db.doc(`employees/${empId}`)
   const [empSnap, note, ...weekSnaps] = await Promise.all([
     ref.get(),
     db.doc(`employees/${empId}/planMonthNotes/${month}`).get(),
-    ...monthWeekKeys(month).map((w) => db.doc(`employees/${empId}/planWeeks/${w}`).get()),
+    ...periodWeekKeys(goal.periodStart, goal.periodEnd).map((w) => db.doc(`employees/${empId}/planWeeks/${w}`).get()),
   ])
   if (!empSnap.exists) return
   const stats = computeMonthStats(
@@ -360,26 +361,32 @@ async function refreshMonthStats(empId: string, month: string) {
   await ref.update({ monthStats: stats })
 }
 
-async function currentMonth(): Promise<string> {
-  const goal = (await db.doc("org/teamGoal").get()).get("teamGoal") as { periodStart?: string } | undefined
-  return monthKeyFromGoal(goal)
+/** Eingestellter Umsatzmonat: Name ("YYYY-MM", Monat des Starttags) und Zeitraum. */
+interface GoalPeriod { month: string; periodStart?: string; periodEnd?: string }
+
+function goalPeriodOf(goal: { periodStart?: string; periodEnd?: string } | undefined): GoalPeriod {
+  return { month: monthKeyFromGoal(goal), periodStart: goal?.periodStart, periodEnd: goal?.periodEnd }
+}
+
+async function currentGoal(): Promise<GoalPeriod> {
+  return goalPeriodOf((await db.doc("org/teamGoal").get()).get("teamGoal"))
 }
 
 export const onPlanWeekChange = onDocumentWritten(
   { document: "employees/{empId}/planWeeks/{week}", region: REGION },
-  async (event) => refreshMonthStats(event.params.empId, await currentMonth()),
+  async (event) => refreshMonthStats(event.params.empId, await currentGoal()),
 )
 
 export const onPlanMonthChange = onDocumentWritten(
   { document: "employees/{empId}/planMonthNotes/{month}", region: REGION },
-  async (event) => refreshMonthStats(event.params.empId, await currentMonth()),
+  async (event) => refreshMonthStats(event.params.empId, await currentGoal()),
 )
 
-/** Umsatzmonat umgestellt (Monatsabschluss) -> Summen aller Mitarbeiter neu berechnen. */
+/** Umsatzmonat umgestellt (Monatsabschluss oder Admin ändert Start/Ende) -> Summen aller Mitarbeiter neu berechnen. */
 export const onTeamGoalChange = onDocumentWritten({ document: "org/teamGoal", region: REGION }, async (event) => {
-  const before = monthKeyFromGoal(event.data?.before.get("teamGoal"))
-  const after = monthKeyFromGoal(event.data?.after.get("teamGoal"))
-  if (before === after) return
+  const before = goalPeriodOf(event.data?.before.get("teamGoal"))
+  const after = goalPeriodOf(event.data?.after.get("teamGoal"))
+  if (before.month === after.month && before.periodStart === after.periodStart && before.periodEnd === after.periodEnd) return
   const emps = await db.collection("employees").get()
   for (let i = 0; i < emps.docs.length; i += 10) {
     await Promise.all(emps.docs.slice(i, i + 10).map((e) => refreshMonthStats(e.id, after)))

@@ -14,13 +14,13 @@ import { SURFACE_CARD, CHART_GRID, CHART_TICK } from "@/lib/chartSetup"
 import { FIELD_INPUT } from "@/components/ui/surface"
 import { fmt as fmtDecimal, fmtEurRound as fmtEur, formatISODateDE, toISODate } from "@/lib/calc/format"
 import { readPlanUnits } from "@/lib/calc/verguetung"
-import { monthKeyOf, monthLabel } from "@/lib/calc/archive"
+import { monthKeyOf, monthLabel, validatePeriod } from "@/lib/calc/archive"
 import type { ArchiveIndexEntry } from "@/types/archive"
 import {
   goalProgress, leaderboardData,
   revenueShareData, summaryKpis, timelineData,
 } from "@/lib/calc/overview"
-import { aggregateByName, monthWeekKeys } from "@/lib/calc/planung"
+import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import type { PlanWeekDoc } from "@/types/dashboard"
 import type { EmployeeRow, HistoryEntry, TeamGoal } from "@/types/dashboard"
@@ -136,7 +136,7 @@ export function Overview({
   // "analysen"-Gemacht-Werte über alle Wochen des aktuellen Umsatzmonats) —
   // dieselbe Quelle wie die "Ist"-Spalte auf der Mitarbeiterseite (Team.tsx),
   // statt des zuletzt gespeicherten, potenziell veralteten row.atIst.
-  const planWeekKey = planung ? monthWeekKeys(monthKeyOf(teamGoal)).join(",") : ""
+  const planWeekKey = planung ? periodWeekKeys(teamGoal.periodStart, teamGoal.periodEnd).join(",") : ""
   useEffect(() => {
     if (!planung || !planWeekKey) return
     void planung.loadWeeks(planWeekKey.split(","))
@@ -181,6 +181,29 @@ export function Overview({
     saveGoal({ ...teamGoal, [key]: value })
   }
 
+  // Umsatzmonat (Start/Ende) einstellen: Entwürfe, gespeichert wird erst, wenn der Zeitraum gültig ist.
+  const [startDraft, setStartDraft] = useState(teamGoal.periodStart)
+  const [endDraft, setEndDraft] = useState(teamGoal.periodEnd)
+  const [periodError, setPeriodError] = useState<string | null>(null)
+  useEffect(() => {
+    setStartDraft(teamGoal.periodStart)
+    setEndDraft(teamGoal.periodEnd)
+    setPeriodError(null)
+  }, [teamGoal.periodStart, teamGoal.periodEnd])
+  const lastArchivedMonth = useMemo(
+    () => archiveIndex.reduce<string | null>((m, e) => (m === null || e.month > m ? e.month : m), null),
+    [archiveIndex]
+  )
+  function commitPeriod(start: string, end: string) {
+    setStartDraft(start)
+    setEndDraft(end)
+    if (!start || !end) return
+    const err = validatePeriod(start, end, lastArchivedMonth)
+    setPeriodError(err)
+    if (err || (start === teamGoal.periodStart && end === teamGoal.periodEnd)) return
+    saveGoal({ ...teamGoal, periodStart: start, periodEnd: end })
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Team-Ziel + KPI-Kacheln */}
@@ -209,9 +232,38 @@ export function Overview({
                 onBlur={() => { if (noteDraft !== teamGoal.note) commitField("note", noteDraft) }}
               />
               <div className="mt-3 text-xs text-slate-500">
-                {monthLabel(monthKeyOf(teamGoal))} · {formatISODateDE(teamGoal.periodStart)} – {formatISODateDE(teamGoal.periodEnd)}
-                <span className="opacity-75"> (wird am Monatsende automatisch abgeschlossen)</span>
+                Umsatzmonat {monthLabel(monthKeyOf(teamGoal))} · {formatISODateDE(teamGoal.periodStart)} – {formatISODateDE(teamGoal.periodEnd)}
+                <span className="opacity-75"> (wird nach dem Ende automatisch abgeschlossen)</span>
               </div>
+              {isEditor && (
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="periodStartInput" className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      Umsatzmonat Start
+                    </label>
+                    <Input
+                      id="periodStartInput"
+                      type="date"
+                      className={FIELD_INPUT}
+                      value={startDraft}
+                      onChange={(e) => commitPeriod(e.target.value, endDraft)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="periodEndInput" className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      Umsatzmonat Ende
+                    </label>
+                    <Input
+                      id="periodEndInput"
+                      type="date"
+                      className={FIELD_INPUT}
+                      value={endDraft}
+                      onChange={(e) => commitPeriod(startDraft, e.target.value)}
+                    />
+                  </div>
+                  {periodError && <p className="col-span-2 text-xs text-red-600" role="alert">{periodError}</p>}
+                </div>
+              )}
             </div>
             <div>
               <div className="flex items-center justify-between text-sm">

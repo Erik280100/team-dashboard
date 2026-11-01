@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { computeMonthStats, monthKeyFromGoal, monthWeekKeys as serverWeekKeys } from "../../functions/src/planStats"
-import { monthWeekKeys, sumWeekEntries } from "../../src/lib/calc/planung"
+import { computeMonthStats, monthKeyFromGoal, monthWeekKeys as serverWeekKeys, periodWeekKeys as serverPeriodWeekKeys } from "../../functions/src/planStats"
+import { monthWeekKeys, periodWeekKeys, sumWeekEntries } from "../../src/lib/calc/planung"
 import { monthKeyOf } from "../../src/lib/calc/archive"
 import { applyMonthStats } from "../../src/lib/calc/team"
 import type { EmployeeRow } from "../../src/lib/calc/format"
@@ -13,6 +13,13 @@ describe("planStats (Server-Spiegel)", () => {
     for (const periodStart of ["2026-09-01", "2026-10-15", "2027-01-03"]) {
       expect(monthKeyFromGoal({ periodStart })).toBe(monthKeyOf({ periodStart }))
     }
+  })
+
+  it("Wochen eines freien Umsatzmonats stimmen mit dem Client überein", () => {
+    for (const [a, b] of [["2026-10-07", "2026-11-06"], ["2026-12-28", "2027-01-27"], ["2026-09-01", "2026-09-30"]]) {
+      expect(serverPeriodWeekKeys(a, b)).toEqual(periodWeekKeys(a, b))
+    }
+    expect(serverPeriodWeekKeys("2026-10-07", "2026-11-06")[0]).toBe("2026-W41")
   })
 
   it("Summen entsprechen sumWeekEntries + Zuordnung AT/BT/ST/ET", () => {

@@ -5,9 +5,9 @@ import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { SURFACE_CARD, FIELD_INPUT, SURFACE_TABLE } from "@/components/ui/surface"
 import { cn } from "@/lib/utils"
-import { fmt, initials } from "@/lib/calc/format"
+import { fmt, formatISODateDE, initials } from "@/lib/calc/format"
 import {
-  aggregateByGroup, aggregateByName, emptyMonthNoteEntry, monthLabel, monthWeekKeys, quotePct,
+  aggregateByGroup, aggregateByName, emptyMonthNoteEntry, monthLabel, periodWeekKeys, quotePct,
   sumWeekEntries, type PlanTeamGroup,
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
@@ -147,8 +147,10 @@ const RACE_CATS: { label: string; color: string; soll: (d: WeekSum) => number; i
 ]
 
 export function Monatsplanung({
-  people, planung, isEditor, teamGroups, rows: employeeRows, unitsMonthKey,
+  people, planung, isEditor, teamGroups, rows: employeeRows, unitsMonthKey, period,
 }: {
+  /** Eingestellter Zeitraum des Umsatzmonats: es werden genau dessen Wochen verdichtet. */
+  period: { periodStart: string; periodEnd: string }
   /** Mitarbeiterseite (dashboard.rows): dort werden ALLE Einheiten erfasst. */
   rows: EmployeeRow[]
   /** Umsatzmonat ("YYYY-MM"), auf den sich die Einheiten in rows beziehen. */
@@ -160,7 +162,10 @@ export function Monatsplanung({
 }) {
   // Immer der aktuelle (offene) Monat — vergangene Monate stehen im Archiv/Statistik.
   const monthKey = unitsMonthKey
-  const weeks = useMemo(() => monthWeekKeys(monthKey), [monthKey])
+  const weeks = useMemo(
+    () => periodWeekKeys(period.periodStart, period.periodEnd),
+    [period.periodStart, period.periodEnd]
+  )
 
   useEffect(() => {
     void planung.loadWeeks(weeks)
@@ -238,7 +243,9 @@ export function Monatsplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="rounded-full bg-finova-soft px-3 py-1 text-sm font-bold text-finova-ink">{monthLabel(monthKey)}</div>
+        <div className="rounded-full bg-finova-soft px-3 py-1 text-sm font-bold text-finova-ink">
+          {monthLabel(monthKey)} · {formatISODateDE(period.periodStart)} – {formatISODateDE(period.periodEnd)}
+        </div>
         <span className="text-xs text-muted-foreground">Kumulierte Wochenpläne</span>
         {loading && <span className="ml-auto text-xs text-muted-foreground">Lade Wochendaten…</span>}
       </div>

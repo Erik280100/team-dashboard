@@ -217,11 +217,13 @@ service cloud.firestore {
       allow update: if isAdmin() && !(docId in ['teamGoal', 'archiveIndex']);
     }
     // Schutz vor "alter Stand ueberschreibt neuen" (z. B. veralteter Admin-Tab): Teamziel darf nicht auf einen
-    // frueheren Monat zurueck und der Verlauf nicht kuerzer werden; das Archiv darf keine Monate verlieren.
+    // frueheren Zeitraum zurueck (das neue Ende muss mindestens am alten Start liegen; Start/Ende des laufenden
+    // Umsatzmonats darf der Admin frei verschieben) und der Verlauf nicht kuerzer werden; das Archiv darf keine
+    // Monate verlieren.
     // Die Cloud Functions (Admin SDK) sind davon nicht betroffen. Spezifischere Regel, gilt zusaetzlich zu oben.
     match /org/teamGoal {
       allow update: if isAdmin()
-        && request.resource.data.get('teamGoal', {}).get('periodStart', '') >= resource.data.get('teamGoal', {}).get('periodStart', '')
+        && request.resource.data.get('teamGoal', {}).get('periodEnd', '') >= resource.data.get('teamGoal', {}).get('periodStart', '')
         && request.resource.data.get('history', []).size() >= resource.data.get('history', []).size();
     }
     match /org/archiveIndex {

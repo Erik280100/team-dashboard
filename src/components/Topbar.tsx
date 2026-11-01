@@ -177,7 +177,7 @@ export function Topbar({
               size="sm"
               onClick={onCloseMonth}
               disabled={archive.closing || !canCloseMonth(dashboard.teamGoal)}
-              title={!canCloseMonth(dashboard.teamGoal) ? "Erst nach Monatsende möglich" : undefined}
+              title={!canCloseMonth(dashboard.teamGoal) ? "Erst nach Ende des Umsatzmonats möglich" : undefined}
             >
               Monat abschließen
             </Button>
