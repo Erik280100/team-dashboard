@@ -56,7 +56,8 @@ export function EuVsGmbhRechner() {
     [eu, gmbh, gruendungskostenEinmalig]
   )
 
-  const operativerGewinn = gemeinsam.umsatz - gemeinsam.betriebsausgaben - eu.afaGesamt
+  const autoAfaVoll = autoAfaJaehrlich(gemeinsam.autoAnschaffungswert, gemeinsam.autoNutzungsdauerJahre)
+  const operativerGewinn =gemeinsam.umsatz - gemeinsam.betriebsausgaben - eu.afaGesamt
   const schwellenreihe = useMemo(() => {
     const bis = Math.max(220000, Math.round((operativerGewinn * 2.2) / 10000) * 10000)
     return berechneSchwellenreihe(gemeinsam, spezifisch, 10000, bis, Math.max(5000, Math.round(bis / 30 / 5000) * 5000))
@@ -181,7 +182,12 @@ export function EuVsGmbhRechner() {
             <h3 className="text-sm font-semibold">Einzelunternehmer</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(eu.nettoEinkommen)}<span className="ml-1 text-xs font-normal text-muted-foreground">/Jahr verfügbar</span></div>
             <div className="flex flex-col gap-1.5 border-t pt-3">
-              <ZeilePos label="Gewinn vor SV" value={kreditFormatEUR(eu.gewinnVorSv)} muted />
+              <ZeilePos label="Umsatz" value={kreditFormatEUR(gemeinsam.umsatz)} muted />
+              <ZeilePos label="− Betriebsausgaben" value={"−" + kreditFormatEUR(gemeinsam.betriebsausgaben)} muted />
+              <ZeilePos label={`− AfA Auto (${kreditFormatEUR(autoAfaVoll)} × ${100 - Math.min(100, Math.max(0, n(autoPrivatanteilPct)))} % betrieblich)`} value={"−" + kreditFormatEUR(eu.afaAutoBetrieblich)} muted />
+              <ZeilePos label="− AfA Büro, Geräte etc." value={"−" + kreditFormatEUR(Math.max(0, gemeinsam.sonstigeAfaJahr))} muted />
+              <ZeilePos label="− Laufende Kfz-Kosten (betrieblicher Anteil)" value={"−" + kreditFormatEUR(eu.kfzLaufendeKostenBetrieblich)} muted />
+              <ZeilePos label="Gewinn vor SV" value={kreditFormatEUR(eu.gewinnVorSv)} />
               <ZeilePos label="− GSVG-Beiträge" value={"−" + kreditFormatEUR(eu.svsBeitrag)} muted />
               <ZeilePos label="− Gewinnfreibetrag" value={"−" + kreditFormatEUR(eu.gewinnfreibetrag)} muted />
               <ZeilePos label="ESt-Bemessungsgrundlage" value={kreditFormatEUR(eu.estBemessungsgrundlage)} muted />
@@ -196,7 +202,16 @@ export function EuVsGmbhRechner() {
             <h3 className="text-sm font-semibold">GmbH (Geschäftsführer)</h3>
             <div className="text-xl font-bold tabular-nums">{kreditFormatEUR(gmbh.verfuegbaresEinkommen)}<span className="ml-1 text-xs font-normal text-muted-foreground">/Jahr bar verfügbar</span></div>
             <div className="flex flex-col gap-1.5 border-t pt-3">
-              <ZeilePos label="Betriebliches Ergebnis vor KöSt" value={kreditFormatEUR(gmbh.betrieblichesErgebnisVorKoest)} muted />
+              <ZeilePos label="Umsatz" value={kreditFormatEUR(gemeinsam.umsatz)} muted />
+              <ZeilePos label="− Betriebsausgaben" value={"−" + kreditFormatEUR(gemeinsam.betriebsausgaben)} muted />
+              <ZeilePos label="− AfA Auto (voll, kein Privatanteil)" value={"−" + kreditFormatEUR(autoAfaVoll)} muted />
+              <ZeilePos label="− AfA Büro, Geräte etc." value={"−" + kreditFormatEUR(Math.max(0, gemeinsam.sonstigeAfaJahr))} muted />
+              <ZeilePos label="− Laufende Kfz-Kosten (voll)" value={"−" + kreditFormatEUR(gmbh.kfzLaufendeKosten)} muted />
+              <ZeilePos label="− GF-Gehalt brutto" value={"−" + kreditFormatEUR(Math.max(0, spezifisch.gfGehaltBrutto))} muted />
+              <ZeilePos label="− DB, DZ, Kommunalsteuer auf GF-Bezug" value={"−" + kreditFormatEUR(gmbh.lohnnebenkostenGmbh)} muted />
+              <ZeilePos label="− Steuerberatung/Buchhaltung (Mehrkosten)" value={"−" + kreditFormatEUR(Math.max(0, spezifisch.stbMehrkostenJahr))} muted />
+              <ZeilePos label="− Offenlegung/Firmenbuch" value={"−" + kreditFormatEUR(Math.max(0, spezifisch.offenlegungJahr))} muted />
+              <ZeilePos label="Betriebliches Ergebnis vor KöSt" value={kreditFormatEUR(gmbh.betrieblichesErgebnisVorKoest)} />
               <ZeilePos label="− Körperschaftsteuer (23 %, min. 500 €)" value={"−" + kreditFormatEUR(gmbh.koeSt)} muted />
               <ZeilePos label="Gewinn nach KöSt" value={kreditFormatEUR(gmbh.gewinnNachKoest)} muted />
               <ZeilePos label={`davon Ausschüttung (${kreditFormatPct(n(ausschuettungsquotePct), 0)})`} value={kreditFormatEUR(gmbh.ausschuettungBrutto)} muted />
