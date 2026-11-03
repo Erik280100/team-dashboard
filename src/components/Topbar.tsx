@@ -9,7 +9,7 @@ import type { useAuth } from "@/hooks/useAuth"
 import type { UseDashboardDocResult } from "@/hooks/useDashboardDoc"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { SectionId } from "@/hooks/useHashSection"
-import { canCloseMonth, monthLabel } from "@/lib/calc/archive"
+import { monthLabel } from "@/lib/calc/archive"
 import type { MonthKey } from "@/types/archive"
 import type { AttendanceEntry, FinanzierungCase, OrgChartDoc } from "@/types/dashboard"
 
@@ -176,8 +176,7 @@ export function Topbar({
             <Button
               size="sm"
               onClick={onCloseMonth}
-              disabled={archive.closing || !canCloseMonth(dashboard.teamGoal)}
-              title={!canCloseMonth(dashboard.teamGoal) ? "Erst nach Ende des Umsatzmonats möglich" : undefined}
+              disabled={archive.closing}
             >
               Monat abschließen
             </Button>

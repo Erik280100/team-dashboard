@@ -14,7 +14,7 @@ import { applyMonthStats, mergeRosterWithRows, relabelRowsByRoster, rowsMatchedT
 import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import type { UmsatzDraft } from "@/lib/calc/umsatz"
 import { readPlanUnits } from "@/lib/calc/verguetung"
-import { archiveNow, canCloseMonth, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
+import { archiveNow, isMonthCloseDue, monthKeyOf, monthLabel, nextMonthGoal } from "@/lib/calc/archive"
 import { formatISODateDE, toISODate, type EmployeeRow } from "@/lib/calc/format"
 import { canViewEmployee } from "@/lib/calc/roles"
 import { useAuth, type UseAuthResult } from "@/hooks/useAuth"
@@ -412,8 +412,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
             <Button
               size="sm"
               onClick={handleCloseMonth}
-              disabled={archive.closing || !canCloseMonth(dashboard.teamGoal)}
-              title={!canCloseMonth(dashboard.teamGoal) ? "Erst nach Ende des Umsatzmonats möglich" : undefined}
+              disabled={archive.closing}
             >
               Monat abschließen
             </Button>
