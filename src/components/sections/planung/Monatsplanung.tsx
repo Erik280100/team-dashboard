@@ -14,6 +14,7 @@ import {
 } from "@/lib/calc/planung"
 import type { RosterEntry } from "@/lib/calc/struktur"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
+import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import { readPlanUnits, sumPlanUnits } from "@/lib/calc/verguetung"
 import type { EmployeeRow, PlanMonthNotesEntry } from "@/types/dashboard"
 
@@ -149,8 +150,9 @@ const RACE_CATS: { label: string; color: string; soll: (d: WeekSum) => number; i
 ]
 
 export function Monatsplanung({
-  people, planung, isEditor, teamGroups, rows: employeeRows, unitsMonthKey, period,
+  people, planung, isEditor, teamGroups, rows: employeeRows, unitsMonthKey, period, archive,
 }: {
+  archive: UseMonthArchiveResult
   /** Eingestellter Zeitraum des Umsatzmonats: es werden genau dessen Wochen verdichtet. */
   period: { periodStart: string; periodEnd: string }
   /** Mitarbeiterseite (dashboard.rows): dort werden ALLE Einheiten erfasst. */
@@ -169,10 +171,17 @@ export function Monatsplanung({
   const showNext = offset === 1
   // Nach dem Monatsabschluss ist der bisherige Folgemonat der offene — dann nicht noch einen Monat weiter springen.
   useEffect(() => setOffset(0), [unitsMonthKey])
-  const shown = useMemo(
-    () => (offset === 1 ? nextMonthGoal(period) : offset === -1 ? prevMonthGoal(period) : period),
+  // Vormonat: echter Zeitraum und Einheiten kommen aus dem Archiv, sofern der Monat abgeschlossen wurde.
+  const prevPeriod = useMemo(
+    () => prevMonthGoal(period),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [offset, period.periodStart, period.periodEnd]
+    [period.periodStart, period.periodEnd]
+  )
+  const prevSnap = offset === -1 ? archive.getSnapshot(monthKeyOf(prevPeriod)) : null
+  const shown = useMemo(
+    () => (offset === 1 ? nextMonthGoal(period) : offset === -1 ? (prevSnap?.teamGoal ?? prevPeriod) : period),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [offset, period.periodStart, period.periodEnd, prevSnap]
   )
   const monthKey = offset === 0 ? unitsMonthKey : monthKeyOf(shown)
   const weeks = useMemo(
@@ -203,11 +212,12 @@ export function Monatsplanung({
   // Mitarbeiterseite (dort werden alle Einheiten gebucht), nicht aus den nur
   // sporadisch gepflegten Wochenplänen. Andere Monate: weiter Wochenplan-Summe.
   const unitsByName = useMemo(() => {
-    if (monthKey !== unitsMonthKey) return null
+    const src = monthKey === unitsMonthKey ? employeeRows : offset === -1 ? prevSnap?.rows : null
+    if (!src) return null
     const m = new Map<string, number>()
-    employeeRows.forEach((r) => m.set(r.name, sumPlanUnits(readPlanUnits(r))))
+    src.forEach((r) => m.set(r.name, sumPlanUnits(readPlanUnits(r))))
     return m
-  }, [monthKey, unitsMonthKey, employeeRows])
+  }, [monthKey, unitsMonthKey, employeeRows, offset, prevSnap])
 
   const byName = useMemo(
     () => {

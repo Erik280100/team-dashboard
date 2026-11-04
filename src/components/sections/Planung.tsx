@@ -151,6 +151,7 @@ export function Planung({
       {ebene === "monat" && (
         <Monatsplanung
           key={selectedManager}
+          archive={archive}
           rows={rows}
           unitsMonthKey={unitsMonthKey}
           period={period}
