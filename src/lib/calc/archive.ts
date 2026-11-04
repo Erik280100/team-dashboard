@@ -65,6 +65,20 @@ export function nextMonthGoal<T extends Pick<TeamGoal, "periodStart" | "periodEn
   }
 }
 
+/** Der Umsatzmonat direkt davor: endet am Vortag des Starts, beginnt am gleichen Tag des Vormonats (ggf. dessen letzter Tag). */
+export function prevMonthGoal<T extends Pick<TeamGoal, "periodStart" | "periodEnd">>(goal: T): T {
+  const def = defaultPeriod()
+  const cur = parseISODate(goal.periodStart || def.periodStart)
+  const lastDay = new Date(cur.getFullYear(), cur.getMonth(), 0).getDate()
+  const start = new Date(cur.getFullYear(), cur.getMonth() - 1, Math.min(cur.getDate(), lastDay))
+  return {
+    ...goal,
+    recruitActual: null,
+    periodStart: toISODate(start),
+    periodEnd: toISODate(addDays(cur, -1)),
+  }
+}
+
 /**
  * Prüft einen vom Admin eingestellten Umsatzmonat. Liefert einen Fehlertext oder null.
  * `lastArchivedMonth` ("YYYY-MM"): der Startmonat muss danach liegen, sonst würde ein Archiv überschrieben.

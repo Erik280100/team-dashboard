@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { DARK_CARD, DARK_INPUT, DARK_TABLE } from "@/components/ui/dark"
 import { cn } from "@/lib/utils"
-import { monthKeyOf, nextMonthGoal } from "@/lib/calc/archive"
+import { monthKeyOf, nextMonthGoal, prevMonthGoal } from "@/lib/calc/archive"
 import { fmt, formatISODateDE, initials } from "@/lib/calc/format"
 import {
   aggregateByGroup, aggregateByName, emptyMonthNoteEntry, monthLabel, periodWeekKeys, quotePct,
@@ -164,15 +164,17 @@ export function Monatsplanung({
 }) {
   // Der offene Umsatzmonat oder — per Pfeil — schon der Folgemonat, damit er vorgeplant werden kann, solange der
   // aktuelle noch läuft. Vergangene Monate stehen im Archiv/Statistik.
-  const [showNext, setShowNext] = useState(false)
+  // offset: -1 = letzter vergangener Monat, 0 = offener Umsatzmonat, 1 = Folgemonat.
+  const [offset, setOffset] = useState<-1 | 0 | 1>(0)
+  const showNext = offset === 1
   // Nach dem Monatsabschluss ist der bisherige Folgemonat der offene — dann nicht noch einen Monat weiter springen.
-  useEffect(() => setShowNext(false), [unitsMonthKey])
+  useEffect(() => setOffset(0), [unitsMonthKey])
   const shown = useMemo(
-    () => (showNext ? nextMonthGoal(period) : period),
+    () => (offset === 1 ? nextMonthGoal(period) : offset === -1 ? prevMonthGoal(period) : period),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [showNext, period.periodStart, period.periodEnd]
+    [offset, period.periodStart, period.periodEnd]
   )
-  const monthKey = showNext ? monthKeyOf(shown) : unitsMonthKey
+  const monthKey = offset === 0 ? unitsMonthKey : monthKeyOf(shown)
   const weeks = useMemo(
     () => periodWeekKeys(shown.periodStart, shown.periodEnd),
     [shown.periodStart, shown.periodEnd]
@@ -254,16 +256,16 @@ export function Monatsplanung({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="ghost" size="icon" disabled={!showNext} onClick={() => setShowNext(false)} aria-label="Vormonat">
+        <Button type="button" variant="ghost" size="icon" disabled={offset === -1} onClick={() => setOffset((o) => (o === 1 ? 0 : -1))} aria-label="Vormonat">
           ‹
         </Button>
         <div className="rounded-full bg-[#64DDA3]/15 px-3 py-1 text-sm font-bold text-[#64DDA3]">
           {monthLabel(monthKey)} · {formatISODateDE(shown.periodStart)} – {formatISODateDE(shown.periodEnd)}
         </div>
-        <Button type="button" variant="ghost" size="icon" disabled={showNext} onClick={() => setShowNext(true)} aria-label="Nächster Monat">
+        <Button type="button" variant="ghost" size="icon" disabled={showNext} onClick={() => setOffset((o) => (o === -1 ? 0 : 1))} aria-label="Nächster Monat">
           ›
         </Button>
-        <span className="text-xs text-muted-foreground">{showNext ? "Vorplanung · kumulierte Wochenpläne" : "Kumulierte Wochenpläne"}</span>
+        <span className="text-xs text-muted-foreground">{showNext ? "Vorplanung · kumulierte Wochenpläne" : offset === -1 ? "Vormonat · kumulierte Wochenpläne" : "Kumulierte Wochenpläne"}</span>
         {loading && <span className="ml-auto text-xs text-muted-foreground">Lade Wochendaten…</span>}
       </div>
 

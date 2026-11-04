@@ -39,7 +39,12 @@ export function Planung({
   planung: UsePlanungDocResult
   isEditor: boolean
 }) {
-  const managerOptions = useMemo(() => leadRosterOptions(roster), [roster])
+  // Trainees (keine Führungskraft) sehen ihren eigenen Teilbaum: die Wurzel (sie selbst) ist dann die einzige Auswahl.
+  const managerOptions = useMemo(() => {
+    const leads = leadRosterOptions(roster)
+    if (leads.length > 0 || roster.length === 0) return leads
+    return [{ name: roster[0].name, role: roster[0].role }]
+  }, [roster])
   const [managerFilter, setManagerFilter] = useState<string | null>(null)
   const [ebene, setEbene] = useState<PlanEbene>("woche")
   const [search, setSearch] = useState("")
