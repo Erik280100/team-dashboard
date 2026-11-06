@@ -24,6 +24,8 @@ export interface AttendanceEntry {
   seminarReason: string
   training: boolean
   trainingReason: string
+  monatsauftakt: boolean
+  monatsauftaktReason: string
 }
 
 /** finova/attendance */

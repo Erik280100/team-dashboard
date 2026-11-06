@@ -18,6 +18,8 @@ export function getAttendanceEntry(
     seminarReason: (e && e.seminarReason) || "",
     training: e && e.training !== undefined ? !!e.training : true,
     trainingReason: (e && e.trainingReason) || "",
+    monatsauftakt: e && e.monatsauftakt !== undefined ? !!e.monatsauftakt : true,
+    monatsauftaktReason: (e && e.monatsauftaktReason) || "",
   }
 }
 

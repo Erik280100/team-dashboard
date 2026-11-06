@@ -5,7 +5,7 @@
 // bearbeitbar (kein isEditor-Gate), identisch zum Original. Der
 // "Zurücksetzen"-Button ist neu und nur für eingeloggte Nutzer sichtbar.
 import { useMemo, useState } from "react"
-import { GraduationCap, Presentation } from "lucide-react"
+import { CalendarCheck, GraduationCap, Presentation } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select } from "@/components/ui/select"
 import {
@@ -72,12 +72,14 @@ export function Kalender({
   const counts = useMemo(() => {
     let seminar = 0
     let training = 0
+    let monatsauftakt = 0
     employeeRoster.forEach(({ name }) => {
       const a = getAttendanceEntry(attendance, name)
       if (a.seminar) seminar++
       if (a.training) training++
+      if (a.monatsauftakt) monatsauftakt++
     })
-    return { seminar, training }
+    return { seminar, training, monatsauftakt }
   }, [employeeRoster, attendance])
   const total = employeeRoster.length
   const pctOfTotal = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0)
@@ -119,7 +121,7 @@ export function Kalender({
           </>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <div className="flex flex-col gap-2">
             <KpiTile icon={Presentation} label="Seminar" value={`${counts.seminar} / ${total}`} sub="anwesend" />
             <MintBar pct={pctOfTotal(counts.seminar)} />
@@ -127,6 +129,10 @@ export function Kalender({
           <div className="flex flex-col gap-2">
             <KpiTile icon={GraduationCap} label="Training" value={`${counts.training} / ${total}`} sub="anwesend" />
             <MintBar pct={pctOfTotal(counts.training)} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <KpiTile icon={CalendarCheck} label="Monatsauftakt" value={`${counts.monatsauftakt} / ${total}`} sub="anwesend" />
+            <MintBar pct={pctOfTotal(counts.monatsauftakt)} />
           </div>
         </div>
       </SectionHero>
@@ -142,6 +148,7 @@ export function Kalender({
                   <th className="px-4 py-3">Mitarbeiter</th>
                   <th className="px-4 py-3">Seminar</th>
                   <th className="px-4 py-3">Training</th>
+                  <th className="px-4 py-3">Monatsauftakt</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,7 +159,7 @@ export function Kalender({
                       key={name}
                       className={cn(
                         "border-b border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]",
-                        (!a.seminar || !a.training) && "shadow-[inset_3px_0_0_rgba(226,104,91,.7)]"
+                        (!a.seminar || !a.training || !a.monatsauftakt) && "shadow-[inset_3px_0_0_rgba(226,104,91,.7)]"
                       )}
                     >
                       <td className="px-4 py-3">
@@ -179,6 +186,15 @@ export function Kalender({
                           reason={a.trainingReason}
                           onToggle={(present) => setAttendanceEntry(name, { training: present, ...(present ? { trainingReason: "" } : {}) })}
                           onReasonChange={(reason) => setAttendanceEntry(name, { trainingReason: reason })}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <AttendanceToggle
+                          label={`Monatsauftakt – ${name}`}
+                          present={a.monatsauftakt}
+                          reason={a.monatsauftaktReason}
+                          onToggle={(present) => setAttendanceEntry(name, { monatsauftakt: present, ...(present ? { monatsauftaktReason: "" } : {}) })}
+                          onReasonChange={(reason) => setAttendanceEntry(name, { monatsauftaktReason: reason })}
                         />
                       </td>
                     </tr>
