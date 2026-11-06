@@ -504,6 +504,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     key={archiveMonth ?? "live"}
                     rows={dashRows}
                     teamSize={isArchive ? undefined : dashRoster.length}
+                    canExport={canExport}
+                    scopeLabel={isArchive ? `Archiv ${monthLabel(archiveMonth!)}` : teamScope ? "Mein Team" : "Gesamt"}
                     avatars={avatarsByName}
                     teamGoal={view.teamGoal}
                     history={dashHistory}
@@ -536,6 +538,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     now={view.now}
                     planung={isArchive ? undefined : planung}
                     avatars={avatarsByName}
+                    canExport={canExport}
+                    scopeLabel={isArchive ? `Archiv ${monthLabel(archiveMonth!)}` : "Aktueller Monat"}
                   />
                 )
               )}

@@ -12,13 +12,15 @@ import {
   DARK_CARD, DARK_INPUT, DARK_OPTION, DARK_SELECT, DARK_TABLE, MintBar, Pill, SectionHero, Switch,
 } from "@/components/ui/dark"
 import { Avatar } from "@/components/Avatar"
-import { fmt, fmtEur, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
+import { ExportButtons } from "@/components/ExportButtons"
+import { exportTeamDocx, exportTeamXlsx, type TeamReport } from "@/lib/export/dashboardExport"
+import { fmt, fmtEur, formatISODateDE, monthWeekProgress, pctOf, progressClass, type EmployeeRow, type TeamGoal } from "@/lib/calc/format"
 import {
   getMergedFilteredSorted, leadRosterOptions, mergeRosterWithRows, newRowFor, rowHighlight, teamTotals,
   type MergedRow, type TeamFilter, type TeamSort,
 } from "@/lib/calc/team"
 import { aggregateByName, periodWeekKeys } from "@/lib/calc/planung"
-import { monthKeyOf } from "@/lib/calc/archive"
+import { monthKeyOf, monthLabel } from "@/lib/calc/archive"
 import { SB_LEAD_ROLE_ABBR, sbRoster, sbSubtreeNames, type PlanId, type SbNode } from "@/lib/calc/struktur"
 import { computeEarnings, stornoreserveAmount, withUnitsAdjustingCareer } from "@/lib/calc/verguetung"
 import { EmployeeEarningsDialog } from "@/components/sections/team/EmployeeEarningsDialog"
@@ -56,7 +58,12 @@ export function Team({
   planung,
   avatars,
   myName,
+  canExport = false,
+  scopeLabel = "Aktueller Monat",
 }: {
+  /** Excel-/Word-Export der (gefilterten) Liste anzeigen. */
+  canExport?: boolean
+  scopeLabel?: string
   /** Name des eingeloggten Nutzers — Führungskräfte werden darauf vorgefiltert. */
   myName?: string
   rows: EmployeeRow[]
@@ -191,6 +198,25 @@ export function Team({
     }
   }
 
+  function buildTeamReport(): TeamReport {
+    return {
+      title: "Finova Mitarbeiter-Übersicht",
+      scopeLabel,
+      periodLabel: `${monthLabel(monthKeyOf(teamGoal))} (${formatISODateDE(teamGoal.periodStart)} – ${formatISODateDE(teamGoal.periodEnd)})`,
+      rows: list.map((r) => ({
+        name: String(r.name),
+        role: r.role ?? "",
+        manager: r.managerName ?? "",
+        isNew: !!r.isNew,
+        atPlan: Number(r.atPlan || 0), btPlan: Number(r.btPlan || 0), stPlan: Number(r.stPlan || 0), etPlan: Number(r.etPlan || 0),
+        atIst: Number(r.atIst || 0), btIst: Number(r.btIst || 0), stIst: Number(r.stIst || 0), etIst: Number(r.etIst || 0),
+        soll: Math.round(Number(r.soll || 0)),
+        ist: Math.round(Number(r.ist || 0)),
+        pct: pctOf(r),
+      })),
+    }
+  }
+
   const th = DARK_TABLE.head
   const groupHead = "px-1 py-1.5 text-center text-[11px] font-bold uppercase leading-tight tracking-wide"
 
@@ -238,6 +264,10 @@ export function Team({
             <option className={DARK_OPTION} value="einheiten-desc">Einheiten Ist (absteigend)</option>
           </Select>
         </div>
+
+        {canExport && (
+          <ExportButtons light onXlsx={() => exportTeamXlsx(buildTeamReport())} onDocx={() => exportTeamDocx(buildTeamReport())} />
+        )}
 
         {managerOptions.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">

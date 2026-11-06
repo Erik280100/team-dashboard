@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from "react"
 import { Line } from "react-chartjs-2"
 import { Siegertreppchen } from "@/components/Siegertreppchen"
 import { Users, Landmark, Building2, Shield, TrendingUp, Wallet, Sigma } from "lucide-react"
+import { ExportButtons } from "@/components/ExportButtons"
+import { exportDashboardDocx, exportDashboardXlsx, type DashboardReport } from "@/lib/export/dashboardExport"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_GRID, DARK_INPUT, DARK_TICK } from "@/lib/chartSetup"
@@ -65,7 +67,13 @@ export function Overview({
   archiveIndex,
   teamSize,
   avatars,
+  canExport = false,
+  scopeLabel = "Gesamt",
 }: {
+  /** Excel-/Word-Export der Übersicht anzeigen (Admin und ab Geschäftsstellenleiter). */
+  canExport?: boolean
+  /** Bezeichnung der angezeigten Daten im Export, z. B. "Gesamt" oder "Mein Team". */
+  scopeLabel?: string
   /** Profilbilder je Name (nur Personen mit Bild) — Köpfe der Figuren im Treppchen. */
   avatars?: Record<string, { id: string; version: number }>
   /** Mitarbeiterzahl laut Strukturbaum (live); im Archiv undefined → rows.length. */
@@ -203,8 +211,52 @@ export function Overview({
     saveGoal({ ...teamGoal, periodStart: start, periodEnd: end })
   }
 
+  function buildReport(): DashboardReport {
+    return {
+      title: "Finova Team Dashboard",
+      scopeLabel,
+      periodLabel: `${monthLabel(monthKeyOf(teamGoal))} (${formatISODateDE(teamGoal.periodStart)} – ${formatISODateDE(teamGoal.periodEnd)})`,
+      note: teamGoal.note,
+      goal: { target: goal.target, ist: goal.totalIst, pct: goal.pct, remainingText: goal.remainingText },
+      kpis: [
+        { label: "Geschäftspartner im Team", value: String(teamSize ?? kpis.employeeCount) },
+        { label: "Offenes Finanzierungsvolumen", value: fmtEur(offenesFinanzierungsvolumen) },
+        { label: "Anlegerwohnungen ausstehend", value: String(offeneAnlegerwohnungen) },
+      ],
+      sparten: sparten.map((s) => ({ label: s.label, units: Math.round(s.units), pct: s.pct })),
+      yearly: {
+        year: yearly.year,
+        items: [
+          { label: "Insurance", units: Math.round(yearly.totals.insurance) },
+          { label: "Invest", units: Math.round(yearly.totals.invest) },
+          { label: "Credit", units: Math.round(yearly.totals.credit) },
+          { label: "Gesamt", units: Math.round(yearly.total) },
+        ],
+      },
+      top: shares.slice(0, 10).map((s) => ({ name: s.name, units: Math.round(s.value) })),
+      leaderboard: leaderboard.map((r) => ({ name: r.name, atIst: Math.round(r.atIst) })),
+      employees: [...rows]
+        .sort((a, b) => Number(b.ist || 0) - Number(a.ist || 0))
+        .map((r) => ({
+          name: String(r.name),
+          soll: Math.round(Number(r.soll || 0)),
+          ist: Math.round(Number(r.ist || 0)),
+          pct: Number(r.soll) > 0 ? Math.round((Number(r.ist || 0) / Number(r.soll)) * 100) : 0,
+          atPlan: Number(r.atPlan || 0), atIst: Number(r.atIst || 0),
+          btPlan: Number(r.btPlan || 0), btIst: Number(r.btIst || 0),
+          etPlan: Number(r.etPlan || 0), etIst: Number(r.etIst || 0),
+        })),
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      {canExport && (
+        <ExportButtons
+          onXlsx={() => exportDashboardXlsx(buildReport())}
+          onDocx={() => exportDashboardDocx(buildReport())}
+        />
+      )}
       {/* Team-Ziel + KPI-Kacheln */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className={DARK_CARD}>
