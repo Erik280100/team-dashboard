@@ -29,15 +29,18 @@ export function ExportButtons({
     }
   }
 
+  // Auf dunklen Karten: dunkle Fläche mit heller Schrift statt der hellen Outline-Variante.
+  const btnClass = light ? "border-white/30 bg-[#0f2f3e] text-white hover:bg-[#13384a] hover:text-white" : undefined
+
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       {failed && <span role="alert" className="text-xs text-red-500">Export fehlgeschlagen — bitte erneut versuchen.</span>}
       <span className={light ? "text-xs text-white/70" : "text-xs text-muted-foreground"}>Exportieren:</span>
-      <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void run("xlsx")}>
+      <Button size="sm" variant="outline" className={btnClass} disabled={busy !== null} onClick={() => void run("xlsx")}>
         <FileSpreadsheet aria-hidden="true" className="size-4" />
         {busy === "xlsx" ? "Erstelle Excel…" : "Excel"}
       </Button>
-      <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void run("docx")}>
+      <Button size="sm" variant="outline" className={btnClass} disabled={busy !== null} onClick={() => void run("docx")}>
         <FileText aria-hidden="true" className="size-4" />
         {busy === "docx" ? "Erstelle Word…" : "Word"}
       </Button>
