@@ -3,17 +3,21 @@
 // Quelle wie auf der Mitarbeiterseite/Statistik: abgeschlossene Monate aus den Archiv-Snapshots, der
 // laufende Umsatzmonat aus rows. Alle Eingeloggten dürfen die Einheiten aller Mitarbeiter lesen.
 import { useEffect, useMemo, useState } from "react"
-import { fmt } from "@/lib/calc/format"
+import { fmt, fmtEur } from "@/lib/calc/format"
 import { aggregateUnits, sumFor, teamNamesOf, totalUnits } from "@/lib/calc/einheiten"
-import { PLAN_IDS, PLAN_LABELS, type RosterEntry } from "@/lib/calc/struktur"
+import { aggregateYearEarnings, type MonthEarningsInput } from "@/lib/calc/verdienst"
+import { PLAN_IDS, PLAN_LABELS, type PlanId, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { EmployeeRow } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 import { DARK_CARD, DARK_TABLE, Pill } from "@/components/ui/dark"
 
 export function EinheitenUebersicht({
-  managerName, people, roster, year, archive, rows, unitsMonthKey,
+  managerName, people, roster, year, archive, rows, unitsMonthKey, liveTree, livePlanRates,
 }: {
+  /** Aktueller Strukturbaum + Sätze: Grundlage für den Verdienst des (noch nicht archivierten) Umsatzmonats. */
+  liveTree: SbNode
+  livePlanRates: Record<PlanId, Record<string, number>>
   managerName: string
   /** Personen der aktuellen Auswahl (Alle / Direkte Mitarbeiter); die Führungskraft selbst wird immer ergänzt. */
   people: RosterEntry[]
@@ -43,6 +47,21 @@ export function EinheitenUebersicht({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allMonths, loading, unitsMonthKey, rows, year])
 
+  // Verdienst {year}: Summe der Monatsergebnisse (inkl. Boni) — abgeschlossene Monate aus dem Snapshot
+  // (damaliger Strukturbaum/Sätze), der laufende Umsatzmonat live.
+  const yearEarnings = useMemo(() => {
+    const months: MonthEarningsInput[] = sources.flatMap((s) => {
+      const snap = archive.getSnapshot(s.month)
+      return snap && s.month.startsWith(`${year}-`)
+        ? [{ month: s.month, rows: snap.rows, tree: snap.orgChart.tree, planRates: snap.orgChart.planRates }]
+        : []
+    })
+    if (!allMonths.includes(unitsMonthKey)) months.push({ month: unitsMonthKey, rows, tree: liveTree, planRates: livePlanRates })
+    return aggregateYearEarnings(months, year)
+    // sources wird aus allMonths+Snapshot-Cache abgeleitet — über loading gated.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allMonths, loading, unitsMonthKey, rows, year, liveTree, livePlanRates])
+
   const list = useMemo(() => {
     const self = roster.find((r) => r.name === managerName)
     const others = people.filter((p) => p.name !== managerName)
@@ -57,8 +76,10 @@ export function EinheitenUebersicht({
       teamSize: names.length,
       year: sumFor(yearUnits, names),
       total: sumFor(totalUnitsMap, names),
+      earnings: names.reduce((s, n) => s + (yearEarnings.get(n) ?? 0), 0),
     }
   })
+  const sumEarnings = lines.reduce((s, l) => s + l.earnings, 0)
   const sumYear = lines.reduce((s, l) => s + totalUnits(l.year), 0)
   const sumTotal = lines.reduce((s, l) => s + totalUnits(l.total), 0)
 
@@ -82,6 +103,7 @@ export function EinheitenUebersicht({
               {PLAN_IDS.map((p) => <th key={p} className={cn(DARK_TABLE.head, "text-right")}>{PLAN_LABELS[p]}</th>)}
               <th className={cn(DARK_TABLE.head, "text-right")}>Einheiten {year}</th>
               <th className={cn(DARK_TABLE.head, "text-right")}>Gesamt seit Beginn</th>
+              <th className={cn(DARK_TABLE.head, "text-right")}>Verdienst {year}</th>
             </tr>
           </thead>
           <tbody>
@@ -99,10 +121,11 @@ export function EinheitenUebersicht({
                 {PLAN_IDS.map((p) => <td key={p} className="px-3 py-2 text-right tabular-nums">{fmt(l.year[p])}</td>)}
                 <td className="px-3 py-2 text-right font-semibold tabular-nums">{fmt(totalUnits(l.year))}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{fmt(totalUnits(l.total))}</td>
+                <td className="px-3 py-2 text-right font-semibold tabular-nums">{fmtEur(l.earnings)} €</td>
               </tr>
             ))}
             {lines.length === 0 && (
-              <tr><td colSpan={PLAN_IDS.length + 3} className="px-3 py-6 text-center text-white/90">Keine Personen.</td></tr>
+              <tr><td colSpan={PLAN_IDS.length + 4} className="px-3 py-6 text-center text-white/90">Keine Personen.</td></tr>
             )}
           </tbody>
           {!withTeam && lines.length > 1 && (
@@ -111,6 +134,7 @@ export function EinheitenUebersicht({
                 <td className="px-3 py-2" colSpan={PLAN_IDS.length + 1}>Summe ({lines.length} Personen)</td>
                 <td className="px-3 py-2 text-right tabular-nums">{fmt(sumYear)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{fmt(sumTotal)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{fmtEur(sumEarnings)} €</td>
               </tr>
             </tfoot>
           )}
@@ -121,6 +145,9 @@ export function EinheitenUebersicht({
           „Inkl. Team“ zählt jede Person mit ihrer gesamten Unterstruktur — Teams überschneiden sich, deshalb gibt es hier keine Gesamtsumme.
         </p>
       )}
+      <p className="mt-2 text-xs text-muted-foreground">
+        Verdienst {year} = Summe der Monatsergebnisse (Eigen- und Differenzvergütung inkl. der auf der Mitarbeiterseite erfassten Boni, vor Stornoreserve).
+      </p>
     </section>
   )
 }

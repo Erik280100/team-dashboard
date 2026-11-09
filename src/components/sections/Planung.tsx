@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { DARK_CARD, DARK_INPUT, Pill, SectionHero } from "@/components/ui/dark"
-import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
+import { SB_LEAD_ROLE_ABBR, sbLeadFrontier, sbSubtreeNames, type PlanId, type RosterEntry, type SbNode } from "@/lib/calc/struktur"
 import { leadRosterOptions } from "@/lib/calc/team"
 import type { PlanTeamGroup } from "@/lib/calc/planung"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
@@ -27,8 +27,11 @@ const EBENEN: { id: PlanEbene; label: string }[] = [
 ]
 
 export function Planung({
-  roster, orgTree, planung, isEditor, rows, unitsMonthKey, period, archive,
+  roster, orgTree, planung, isEditor, rows, unitsMonthKey, period, archive, liveTree, livePlanRates,
 }: {
+  /** Voller aktueller Strukturbaum + Sätze (nicht auf den Teilbaum beschnitten): Verdienstberechnung des laufenden Monats. */
+  liveTree: SbNode
+  livePlanRates: Record<PlanId, Record<string, number>>
   archive: UseMonthArchiveResult
   rows: EmployeeRow[]
   unitsMonthKey: string
@@ -172,6 +175,8 @@ export function Planung({
           archive={archive}
           rows={rows}
           unitsMonthKey={unitsMonthKey}
+          liveTree={liveTree}
+          livePlanRates={livePlanRates}
           managerName={selectedManager}
           people={people}
           roster={roster}

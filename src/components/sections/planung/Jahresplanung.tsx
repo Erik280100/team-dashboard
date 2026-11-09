@@ -10,7 +10,7 @@ import { fmt } from "@/lib/calc/format"
 import {
   QUARTER_LIST, Q_MONTHS, emptyWeekEntry, quarterStatus, sumWeekEntries, yearWeekKeys, weekToQuarter, type PlanTeamGroup,
 } from "@/lib/calc/planung"
-import type { RosterEntry } from "@/lib/calc/struktur"
+import type { PlanId, RosterEntry, SbNode } from "@/lib/calc/struktur"
 import type { UseMonthArchiveResult } from "@/hooks/useMonthArchive"
 import type { UsePlanungDocResult } from "@/hooks/usePlanungDoc"
 import { EinheitenUebersicht } from "@/components/sections/planung/EinheitenUebersicht"
@@ -51,8 +51,10 @@ const NAV_BTN = "border-white/25 bg-transparent text-white hover:bg-white/10 hov
 const INP = "rounded-md border outline-none focus-visible:border-[#64DDA3] focus-visible:ring-[#64DDA3]/25 focus-visible:ring-[3px] disabled:opacity-60"
 
 export function Jahresplanung({
-  managerName, people, roster, planung, isEditor, teamGroups, rows, unitsMonthKey, archive,
+  managerName, people, roster, planung, isEditor, teamGroups, rows, unitsMonthKey, archive, liveTree, livePlanRates,
 }: {
+  liveTree: SbNode
+  livePlanRates: Record<PlanId, Record<string, number>>
   archive: UseMonthArchiveResult
   /** Mitarbeiterseite (dashboard.rows): dort werden ALLE Einheiten erfasst. */
   rows: EmployeeRow[]
@@ -317,6 +319,8 @@ export function Jahresplanung({
         archive={archive}
         rows={rows}
         unitsMonthKey={unitsMonthKey}
+        liveTree={liveTree}
+        livePlanRates={livePlanRates}
       />
 
       {groupYearActuals && (

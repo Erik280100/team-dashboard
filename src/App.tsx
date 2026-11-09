@@ -298,6 +298,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const merged = useMemo(() => mergeRosterWithRows(roster, dashboard.rows), [roster, dashboard.rows])
   const planungRows = useMemo(() => relabelRowsByRoster(roster, dashboard.rows), [roster, dashboard.rows])
   const allRoster = useMemo(() => sbRoster(orgChart.tree), [orgChart.tree])
+  const livePlanRates = useMemo(() => withDefaultPlanRates(orgChart.planRates), [orgChart.planRates])
   const myName = useMemo(
     () => dashboard.employees.find((e) => e.id === auth.employeeId)?.name,
     [dashboard.employees, auth.employeeId]
@@ -547,6 +548,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 <Planung
                   roster={controllingRoster}
                   orgTree={controllingTree}
+                  liveTree={orgChart.tree}
+                  livePlanRates={livePlanRates}
                   archive={archive}
                   planung={planung}
                   isEditor={auth.isEditor}
