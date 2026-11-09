@@ -22,6 +22,11 @@ export type RRVerlauf = {
   values: number[]
   entnommenNetto: number
   reichtBisMonat: number | null
+  /** Nur Depot: Werte ohne jeden KESt-Abzug auf noch unversteuerte Gewinne (Hochrechnung "vor KESt"). */
+  valuesVorKest?: number[]
+  /** Nur Depot: Werte, bei denen die latente KESt auf den unversteuerten Gewinn in jedem Monat
+   *  direkt abgezogen ist (für die Grafik — kein Knick am Ende). */
+  valuesNachKest?: number[]
 }
 
 // Eine Farbe je Sparform, konsistent für Eingabe-Kachel, Chart-Linie und
@@ -208,7 +213,12 @@ export function simulateFondsdepotVerlauf(
     cumNetto += net
   }
   const values = [depot]
+  const valuesNachKest = [depot]
   let yearStart = depot
+  const syncNach = () => {
+    const latent = Math.max(0, depot - cumNetto - cumAge) * RR_KEST
+    valuesNachKest[values.length - 1] = depot - latent
+  }
 
   function jahresAbschluss() {
     const avg = (yearStart + depot) / 2
@@ -219,6 +229,7 @@ export function simulateFondsdepotVerlauf(
     cumAge += ageBetrag
     values[values.length - 1] = depot
     yearStart = depot
+    syncNach()
   }
 
   for (let m = 1; m <= months; m++) {
@@ -230,6 +241,8 @@ export function simulateFondsdepotVerlauf(
     depot -= depot * (depotgebuehrPa / 100 / 12)
     if (depot < 0) depot = 0
     values.push(depot)
+    valuesNachKest.push(depot)
+    syncNach()
     if (m % 12 === 0) jahresAbschluss()
   }
 
@@ -255,15 +268,18 @@ export function simulateFondsdepotVerlauf(
     depot -= depot * (depotgebuehrPa / 100 / 12)
     if (depot < 0) depot = 0
     values.push(depot)
+    valuesNachKest.push(depot)
+    syncNach()
     if (m % 12 === 0) jahresAbschluss()
   }
 
+  const valuesVorKest = values.slice()
   const restGewinn = depot - cumNetto - cumAge
   if (restGewinn > 0) {
     depot -= restGewinn * RR_KEST
     values[values.length - 1] = depot
   }
-  return { values, entnommenNetto, reichtBisMonat }
+  return { values, entnommenNetto, reichtBisMonat, valuesVorKest, valuesNachKest }
 }
 
 export function simulateFondsdepot(
