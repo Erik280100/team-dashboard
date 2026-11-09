@@ -1,14 +1,19 @@
-// Mein Board — persönliches Kanban-Board (nur der Besitzer sieht es, erzwingt firestore.rules),
+// Mein Board — persönliches Kanban-Board (der Besitzer bearbeitet es, Vorgesetzte sehen es nur an; erzwingt firestore.rules),
 // 5 fixe Swimlanes,
 // Drag-&-Drop per nativer HTML5-DnD (keine zusätzliche Library, siehe StrukturBaum.tsx
 // für dasselbe Prinzip bei Pointer-Events). Keine Legacy-Entsprechung — neues Feature.
-import { lazy, useLayoutEffect, useRef, useState, type DragEvent } from "react"
-import { Archive, Plus } from "lucide-react"
+import { lazy, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react"
+import { Archive, Plus, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useConfirm } from "@/hooks/useConfirm"
-import { todosInLane, type BoardFilter, type LaneSort } from "@/lib/calc/todos"
+import { assignableEmployees, boardSubordinates, todosInLane, type BoardFilter, type LaneSort } from "@/lib/calc/todos"
+import type { EmployeeMeta } from "@/lib/calc/employees"
+import { useBoardTodosDoc, type PersonRef, type TodoInit } from "@/hooks/useBoardTodosDoc"
+import { useAssignedByMe } from "@/hooks/useAssignedByMe"
+import { Select } from "@/components/ui/select"
+import { AssignTodoDialog } from "@/components/sections/board/AssignTodoDialog"
 import {
   TODO_CATEGORIES, TODO_CATEGORY_LABELS, TODO_LANES, TODO_LANE_LABELS,
   type BoardTodo, type TodoCategory, type TodoLane,
@@ -47,8 +52,15 @@ const VIEW_TABS: { id: BoardView; label: string }[] = [
 ]
 
 export function MeinBoard({
-  todos, addTodo, patchTodo, moveTodo, removeTodo, isAdmin,
+  todos: ownTodos, addTodo, patchTodo, moveTodo, removeTodo, isAdmin,
+  employees, myId, myName, assignTodo, addTodoFor,
 }: {
+  /** Alle Mitarbeiter (für Zuweisen und die Board-Auswahl der Führungskraft). */
+  employees: EmployeeMeta[]
+  myId: string | null
+  myName: string
+  assignTodo: (id: string, target: PersonRef, me: PersonRef) => Promise<void>
+  addTodoFor: (target: PersonRef, init: TodoInit, me: PersonRef) => Promise<void>
   /** Die Rechner (EU vs. GmbH, Holding & Immobilien, Zypern) sieht nur der Admin. */
   isAdmin: boolean
   todos: BoardTodo[]
@@ -67,6 +79,39 @@ export function MeinBoard({
   const [search, setSearch] = useState("")
   const [showCompleted, setShowCompleted] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
+  const [showTracked, setShowTracked] = useState(false)
+
+  // Führungskräfte können die Boards ihrer (in)direkten Mitarbeiter ansehen (nur lesen).
+  const subordinates = useMemo(() => boardSubordinates(employees, myId), [employees, myId])
+  const { superiors, subordinates: assignSubs } = useMemo(() => assignableEmployees(employees, myId), [employees, myId])
+  const [viewedIdState, setViewedId] = useState("")
+  const viewedId = subordinates.some((e) => e.id === viewedIdState) ? viewedIdState : ""
+  const viewedBoard = useBoardTodosDoc(viewedId || null)
+  const todos = viewedId ? viewedBoard.todos : ownTodos
+  const readOnly = !!viewedId
+  const viewedName = subordinates.find((e) => e.id === viewedId)?.name ?? ""
+  const me: PersonRef | null = myId ? { id: myId, name: myName } : null
+  const canAssign = !!me && superiors.length + assignSubs.length > 0
+  const [assigning, setAssigning] = useState<BoardTodo | null>(null)
+  const assignedByMe = useAssignedByMe(myId)
+  const trackedTodos = assignedByMe.filter((a) => a.ownerId !== myId)
+
+  // Neu zugewiesene Todos beim Öffnen des eigenen Boards als "Neu" markieren und danach als gesehen speichern
+  // (jeweils eines pro Durchlauf: patchTodo schreibt auf Basis des letzten gerenderten Stands).
+  const [freshIds, setFreshIds] = useState<Set<string>>(() => new Set())
+  useEffect(() => {
+    if (readOnly || view !== "todos") return
+    const unseen = ownTodos.find((t) => t.assignedUnseen)
+    if (!unseen) return
+    setFreshIds((prev) => new Set(prev).add(unseen.id))
+    patchTodo(unseen.id, { assignedUnseen: false })
+  }, [ownTodos, readOnly, view, patchTodo])
+  const shown = (t: BoardTodo): BoardTodo => (freshIds.has(t.id) ? { ...t, assignedUnseen: true } : t)
+
+  function handleCreate(init: TodoInit, target: EmployeeMeta | null) {
+    if (target && me) void addTodoFor({ id: target.id, name: target.name }, init, me)
+    else addTodo(init)
+  }
 
   // Swimlanes sollen die restliche Bildschirmhöhe unterhalb von Topbar/Bannern/Tab-
   // leiste ausfüllen, statt mit dem Rest der Seite mitzuscrollen (das Verschieben von
@@ -142,7 +187,7 @@ export function MeinBoard({
   function handleDrop(e: DragEvent<HTMLDivElement>, lane: TodoLane) {
     e.preventDefault()
     const id = e.dataTransfer.getData("text/plain")
-    if (!id) return
+    if (!id || readOnly) return
     const beforeId = beforeIdFromPoint(e.currentTarget, e.clientY)
     // Umsortieren innerhalb einer nach Fälligkeit sortierten Lane = Wechsel auf eigene Sortierung,
     // die dort startet, wo die Anzeige gerade stand. Aus einer anderen Lane landet die Karte einfach
@@ -203,6 +248,15 @@ export function MeinBoard({
         <>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
+              {subordinates.length > 0 && (
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  Board von
+                  <Select value={viewedId} onChange={(e) => { setViewedId(e.target.value); setShowTracked(false) }} aria-label="Board anzeigen von">
+                    <option value="">Mir</option>
+                    {subordinates.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                  </Select>
+                </label>
+              )}
               {BOARD_TABS.map((t) => (
                 <button
                   key={t.id}
@@ -231,7 +285,7 @@ export function MeinBoard({
               >
                 Nur geflaggte
               </button>
-              {!showArchive && (
+              {!showArchive && !showTracked && (
                 <button
                   type="button"
                   aria-pressed={showCompleted}
@@ -249,7 +303,7 @@ export function MeinBoard({
               <button
                 type="button"
                 aria-pressed={showArchive}
-                onClick={() => setShowArchive((v) => !v)}
+                onClick={() => { setShowArchive((v) => !v); setShowTracked(false) }}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
                   showArchive
@@ -259,6 +313,21 @@ export function MeinBoard({
               >
                 <Archive className="size-3.5" /> {showArchive ? "Zurück zum Board" : "Archiv"} ({archivedCount})
               </button>
+              {!readOnly && myId && (
+                <button
+                  type="button"
+                  aria-pressed={showTracked}
+                  onClick={() => { setShowTracked((v) => !v); setShowArchive(false) }}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                    showTracked
+                      ? "border-transparent bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  )}
+                >
+                  <Send className="size-3.5" /> {showTracked ? "Zurück zum Board" : "Von mir zugewiesen"} ({trackedTodos.length})
+                </button>
+              )}
               <Input
                 type="search"
                 placeholder="Suchen…"
@@ -268,10 +337,44 @@ export function MeinBoard({
                 className="h-8 w-40"
               />
             </div>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus /> Neues Todo
-            </Button>
+            {!readOnly && (
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus /> Neues Todo
+              </Button>
+            )}
           </div>
+
+          {readOnly && (
+            <p className="rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+              Board von {viewedName} — nur Ansicht. Ändern kann nur {viewedName} selbst.
+            </p>
+          )}
+
+          {showTracked && (
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold">Von mir zugewiesen</h3>
+              {trackedTodos.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Du hast noch keine Todos zugewiesen.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {[...trackedTodos]
+                    .sort((a, b) => (b.todo.assignedAt ?? "").localeCompare(a.todo.assignedAt ?? ""))
+                    .map(({ todo, ownerId }) => (
+                      <TodoCard
+                        key={`${ownerId}/${todo.id}`}
+                        todo={{ ...todo, assignedUnseen: false, assignedByName: undefined }}
+                        showCategory
+                        readOnly
+                        footer={`Bei ${employees.find((e) => e.id === ownerId)?.name ?? ownerId} · ${todo.archived ? "archiviert" : todo.completed ? "erledigt" : TODO_LANE_LABELS[todo.lane]}`}
+                        onPatch={() => {}}
+                        onDelete={() => {}}
+                        onDragStart={(e) => e.preventDefault()}
+                      />
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {showArchive && (
             <div className="flex flex-col gap-3">
@@ -284,9 +387,10 @@ export function MeinBoard({
                     <div key={todo.id} className="flex flex-col gap-1">
                       <span className="px-1 text-[11px] text-muted-foreground">Aus: {TODO_LANE_LABELS[todo.lane]}</span>
                       <TodoCard
-                        todo={todo}
+                        todo={shown(todo)}
                         showCategory
                         inArchive
+                        readOnly={readOnly}
                         onPatch={(patch) => patchTodo(todo.id, patch)}
                         onDelete={() => handleDelete(todo)}
                         onDragStart={(e) => e.preventDefault()}
@@ -300,7 +404,7 @@ export function MeinBoard({
 
           <div
             ref={boardRef}
-            className={cn("flex gap-4", showArchive && "hidden")}
+            className={cn("flex gap-4", (showArchive || showTracked) && "hidden")}
             style={boardHeight !== null ? { height: boardHeight } : undefined}
           >
             {TODO_LANES.map((lane) => {
@@ -335,8 +439,10 @@ export function MeinBoard({
                     {laneTodos.map((todo) => (
                       <TodoCard
                         key={todo.id}
-                        todo={todo}
+                        todo={shown(todo)}
                         showCategory={filter === "alle"}
+                        readOnly={readOnly}
+                        onAssign={canAssign && !readOnly ? () => setAssigning(todo) : undefined}
                         onPatch={(patch) => patchTodo(todo.id, patch)}
                         onDelete={() => handleDelete(todo)}
                         onDragStart={(e) => handleDragStart(e, todo.id)}
@@ -352,7 +458,16 @@ export function MeinBoard({
             open={dialogOpen}
             onOpenChange={setDialogOpen}
             defaultCategory={filter === "alle" ? "kunde" : filter}
-            onCreate={addTodo}
+            onCreate={handleCreate}
+            superiors={superiors}
+            subordinates={assignSubs}
+          />
+          <AssignTodoDialog
+            todo={assigning}
+            superiors={superiors}
+            subordinates={assignSubs}
+            onClose={() => setAssigning(null)}
+            onAssign={async (todo, target) => { if (me) await assignTodo(todo.id, { id: target.id, name: target.name }, me) }}
           />
         </>
       )}

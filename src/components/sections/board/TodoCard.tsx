@@ -3,7 +3,7 @@
 // Lane) — Drop-Zielberechnung (vor welcher Karte losgelassen wird) macht die Lane
 // selbst anhand von data-todo-id, nicht diese Komponente.
 import { useEffect, useRef, useState, type DragEvent } from "react"
-import { Archive, ArchiveRestore, CheckCircle2, Flag, Trash2 } from "lucide-react"
+import { Archive, ArchiveRestore, CheckCircle2, Flag, Trash2, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { dueState } from "@/lib/calc/todos"
 import { TODO_CATEGORY_LABELS, TODO_COLOR_LABELS, TODO_COLORS, type BoardTodo } from "@/types/dashboard"
@@ -28,7 +28,7 @@ function todayStr(): string {
 }
 
 export function TodoCard({
-  todo, showCategory, onPatch, onDelete, onDragStart, inArchive = false,
+  todo, showCategory, onPatch, onDelete, onDragStart, inArchive = false, readOnly = false, onAssign, footer,
 }: {
   todo: BoardTodo
   showCategory: boolean
@@ -37,6 +37,12 @@ export function TodoCard({
   onDragStart: (e: DragEvent<HTMLDivElement>) => void
   /** Im Archiv: statt Archivieren/Abhaken gibt es "Wiederherstellen". */
   inArchive?: boolean
+  /** Nur Ansicht (fremdes Board, verfolgte Zuweisung): nicht verschiebbar, nichts bearbeitbar. */
+  readOnly?: boolean
+  /** Öffnet den Zuweisen-Dialog; ohne Angabe gibt es kein Zuweisen-Symbol. */
+  onAssign?: () => void
+  /** Zusatzzeile unten (z. B. "Bei: Erik · Fertig"). */
+  footer?: string
 }) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(todo.title)
@@ -75,14 +81,26 @@ export function TodoCard({
   return (
     <div
       data-todo-id={todo.id}
-      draggable
+      draggable={!readOnly}
       onDragStart={onDragStart}
       className={cn(
-        "flex cursor-grab flex-col gap-2 rounded-md border border-l-4 p-3 text-sm shadow-sm active:cursor-grabbing",
+        "flex flex-col gap-2 rounded-md border border-l-4 p-3 text-sm shadow-sm",
+        !readOnly && "cursor-grab active:cursor-grabbing",
         state === "red" ? "bg-rose-50" : state === "orange" ? "bg-orange-50" : "bg-background",
         CARD_BORDER_CLASS[todo.color]
       )}
     >
+      {todo.assignedByName && (
+        <span
+          className={cn(
+            "w-fit rounded-full px-2 py-0.5 text-[11px] font-medium",
+            todo.assignedUnseen ? "bg-primary text-primary-foreground" : "bg-primary/15 text-foreground"
+          )}
+        >
+          {todo.assignedUnseen ? "Neu · " : ""}Von {todo.assignedByName}
+        </span>
+      )}
+
       {showCategory && (
         <span className="w-fit rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
           {TODO_CATEGORY_LABELS[todo.category]}
@@ -104,8 +122,9 @@ export function TodoCard({
       ) : (
         <button
           type="button"
+          disabled={readOnly}
           onClick={() => setEditingTitle(true)}
-          className="text-left font-medium leading-snug hover:underline"
+          className={cn("text-left font-medium leading-snug", !readOnly && "hover:underline")}
         >
           {todo.title}
         </button>
@@ -127,10 +146,13 @@ export function TodoCard({
       ) : (
         <button
           type="button"
+          disabled={readOnly}
           onClick={() => setEditingDescription(true)}
           className={cn(
-            "text-left text-xs leading-snug hover:underline",
-            todo.description ? "text-muted-foreground" : "text-muted-foreground/50 italic"
+            "text-left text-xs leading-snug",
+            !readOnly && "hover:underline",
+            todo.description ? "text-muted-foreground" : "text-muted-foreground/50 italic",
+            readOnly && !todo.description && "hidden"
           )}
         >
           {todo.description || "+ Beschreibung hinzufügen"}
@@ -140,6 +162,7 @@ export function TodoCard({
       <input
         type="date"
         aria-label="Fällig bis"
+        disabled={readOnly}
         value={todo.dueDate}
         onChange={(e) => onPatch({ dueDate: e.target.value })}
         className={cn(
@@ -152,7 +175,9 @@ export function TodoCard({
         )}
       />
 
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
+      {readOnly && footer && <p className="text-[11px] font-medium text-muted-foreground">{footer}</p>}
+
+      {!readOnly && <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
         <div className="flex gap-1.5">
           {TODO_COLORS.map((c) => (
             <button
@@ -182,6 +207,17 @@ export function TodoCard({
           >
             <Flag className="size-3.5" fill={todo.flagged ? "currentColor" : "none"} />
           </button>
+          {onAssign && !inArchive && (
+            <button
+              type="button"
+              aria-label="Zuweisen"
+              title="Einer Person zuweisen"
+              onClick={onAssign}
+              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <UserPlus className="size-3.5" />
+            </button>
+          )}
           {inArchive ? (
             <button
               type="button"
@@ -229,7 +265,7 @@ export function TodoCard({
             <Trash2 className="size-3.5" />
           </button>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

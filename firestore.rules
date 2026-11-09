@@ -2,7 +2,7 @@ rules_version = '2';
 
 // Rollenmodell (siehe Umbauplan "User-Accounts"):
 //  - Custom Claims am Auth-Token: role ("admin"|"lead"|"member"|"viewer"), employeeId.
-//    "viewer" = reiner Lesemodus: liest alles ausser dem persoenlichen Board (todos), schreibt nirgends.
+//    "viewer" = reiner Lesemodus: liest alles ausser den persoenlichen Boards (todos), schreibt nirgends.
 //    Gesetzt ausschliesslich von der Cloud Function inviteUser (Admin SDK).
 //  - employees/{id}.ancestors enthaelt die IDs aller Vorgesetzten (von
 //    onStructureChange berechnet). Zugriff: selbst, Vorgesetzter (ancestor) oder Admin.
@@ -42,6 +42,12 @@ service cloud.firestore {
     // Zugriff auf Daten, die einem Mitarbeiter gehoeren (self / Vorgesetzte / Admin).
     function canAccessEmployee(empId) {
       return isAdmin() || isSelf(empId) || isAncestor(empDoc(empId).data.ancestors);
+    }
+
+    // empId steht in meiner Linie: mein (in)direkter Mitarbeiter oder (in)direkter Vorgesetzter (nicht ich selbst).
+    function inMyChain(empId) {
+      return signedIn() && role() != 'viewer' && myEmp() != '' && myEmp() != empId
+        && (myEmp() in empDoc(empId).data.ancestors || empId in empDoc(myEmp()).data.ancestors);
     }
 
     // Lesen darf zusaetzlich der Lesemodus; Schreiben bleibt bei canAccessEmployee.
@@ -142,10 +148,23 @@ service cloud.firestore {
         allow read: if canReadEmployee(empId);
         allow write: if canAccessEmployee(empId);
       }
-      // Persoenliches Board: nur der Besitzer (auch Vorgesetzte und Admin nicht).
+      // Persoenliches Board: der Besitzer liest/schreibt, Vorgesetzte (Strukturbaum) lesen nur mit; der Admin
+      // hat keinen Sonderzugriff. Zuweisen: wer in der Linie des Besitzers steht (Vorgesetzte und Mitarbeiter),
+      // darf ein NEUES Todo anlegen, das auf ihn selbst als Absender (assignedById) zeigt.
       match /todos/{id} {
-        allow read, write: if isSelf(empId);
+        allow read: if isSelf(empId) || isAncestor(empDoc(empId).data.ancestors);
+        allow write: if isSelf(empId);
+        allow create: if inMyChain(empId)
+          && request.resource.data.get('assignedById', '') == myEmp()
+          && request.resource.data.get('assignedUnseen', false) == true;
       }
+    }
+
+    // Absender verfolgen ihre Zuweisungen (Collection-Group-Abfrage where assignedById == eigene ID),
+    // auch wenn der Empfaenger ueber ihnen steht.
+    match /{path=**}/todos/{id} {
+      allow read: if signedIn() && role() != 'viewer' && myEmp() != ''
+        && resource.data.get('assignedById', '') == myEmp();
     }
 
     // Finanzierungsfaelle: ownerId = Betreuer, ancestors = dessen Vorgesetzte

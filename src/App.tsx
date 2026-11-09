@@ -29,7 +29,7 @@ import { useBoardTodosDoc } from "@/hooks/useBoardTodosDoc"
 import { useMonthArchive } from "@/hooks/useMonthArchive"
 import { useFinancingStats } from "@/hooks/useFinancingStats"
 import { useToday } from "@/hooks/useToday"
-import { daysUntil, dueSoonTodos, dueState, hasOpenDueTodos } from "@/lib/calc/todos"
+import { daysUntil, dueSoonTodos, dueState, hasOpenDueTodos, hasUnseenAssigned } from "@/lib/calc/todos"
 import { announceCelebration } from "@/lib/celebrate"
 import { useCelebrations } from "@/hooks/useCelebrations"
 import { ConfettiRain } from "@/components/ConfettiRain"
@@ -131,7 +131,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const today = useToday()
   const dueSoon = dueSoonTodos(boardTodos.todos, today)
   // Rufzeichen auch schon, sobald das Banner "Bald fällige Todos" auf dem Dashboard erscheint
-  const boardAlert = dueSoon.length > 0 || hasOpenDueTodos(boardTodos.todos, today)
+  const boardAlert = dueSoon.length > 0 || hasOpenDueTodos(boardTodos.todos, today) || hasUnseenAssigned(boardTodos.todos)
   const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
   // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin sieht den ganzen Baum,
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
@@ -607,6 +607,11 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   patchTodo={boardTodos.patchTodo}
                   moveTodo={boardTodos.moveTodo}
                   removeTodo={boardTodos.removeTodo}
+                  assignTodo={boardTodos.assignTodo}
+                  addTodoFor={boardTodos.addTodoFor}
+                  employees={dashboard.employees}
+                  myId={auth.employeeId}
+                  myName={myName ?? ""}
                   isAdmin={seesAll}
                 />
               )}

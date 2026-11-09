@@ -1,11 +1,12 @@
 // "Mein Board" (persönliches Kanban): ein Dokument je Todo unter
 // employees/{eigeneId}/todos/{todoId}; laut firestore.rules nur für den Besitzer
-// lesbar/schreibbar (auch Vorgesetzte und Admin nicht). Kein localStorage-Cache
-// (mehrere Konten pro Browser).
+// lesbar/schreibbar; Vorgesetzte (Strukturbaum) dürfen mitlesen (Admin ohne Sonderrecht). Zuweisen: ein Todo
+// wandert per Batch auf das Board einer Person in der eigenen Linie (Vorgesetzte/Mitarbeiter).
+// Kein localStorage-Cache (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
-import { collection, deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore"
+import { collection, deleteDoc, doc, onSnapshot, setDoc, writeBatch } from "firebase/firestore"
 import { firestore } from "@/lib/firebase"
-import { reorderForMove, seedOrderByDue } from "@/lib/calc/todos"
+import { buildAssignedTodo, reorderForMove, seedOrderByDue } from "@/lib/calc/todos"
 import {
   type BoardTodo,
   type TodoCategory,
@@ -19,6 +20,9 @@ function newTodoId(): string {
     : `todo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+export interface TodoInit { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }
+export interface PersonRef { id: string; name: string }
+
 export interface UseBoardTodosDocResult {
   todos: BoardTodo[]
   addTodo: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
@@ -26,6 +30,10 @@ export interface UseBoardTodosDocResult {
   /** `seedByDue`: vorher die Fälligkeits-Reihenfolge der Ziel-Lane als eigene Reihenfolge übernehmen. */
   moveTodo: (id: string, lane: TodoLane, beforeId: string | null, seedByDue?: boolean) => void
   removeTodo: (id: string) => void
+  /** Todo an `target` übergeben (verschwindet hier, landet dort in "Todo"); `me` = Absender. */
+  assignTodo: (id: string, target: PersonRef, me: PersonRef) => Promise<void>
+  /** Neues Todo direkt auf dem Board von `target` anlegen. */
+  addTodoFor: (target: PersonRef, init: TodoInit, me: PersonRef) => Promise<void>
 }
 
 export function useBoardTodosDoc(employeeId: string | null = null): UseBoardTodosDocResult {
@@ -109,5 +117,40 @@ export function useBoardTodosDoc(employeeId: string | null = null): UseBoardTodo
     [commit]
   )
 
-  return { todos, addTodo, patchTodo, moveTodo, removeTodo }
+  const assignTodo = useCallback(
+    async (id: string, target: PersonRef, me: PersonRef) => {
+      const todo = latest.current.find((t) => t.id === id)
+      if (!todo || !firestore || !employeeId || !cloudReady.current || target.id === employeeId) return
+      const handed = buildAssignedTodo(todo, me, new Date().toISOString(), -Date.now())
+      const batch = writeBatch(firestore)
+      batch.set(doc(firestore, "employees", target.id, "todos", id), handed)
+      batch.delete(doc(firestore, "employees", employeeId, "todos", id))
+      await batch.commit()
+      setTodos((prev) => prev.filter((t) => t.id !== id))
+    },
+    [employeeId]
+  )
+
+  const addTodoFor = useCallback(
+    async (target: PersonRef, init: TodoInit, me: PersonRef) => {
+      if (!firestore) return
+      const base: BoardTodo = {
+        id: newTodoId(),
+        title: init.title,
+        description: init.description,
+        dueDate: init.dueDate,
+        lane: "todo",
+        category: init.category,
+        color: init.color,
+        flagged: false,
+        order: 0,
+        createdAt: new Date().toISOString(),
+      }
+      const todo = buildAssignedTodo(base, me, base.createdAt, -Date.now())
+      await setDoc(doc(firestore, "employees", target.id, "todos", todo.id), todo)
+    },
+    []
+  )
+
+  return { todos, addTodo, patchTodo, moveTodo, removeTodo, assignTodo, addTodoFor }
 }

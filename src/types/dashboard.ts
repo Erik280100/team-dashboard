@@ -134,6 +134,12 @@ export interface BoardTodo {
   /** Position innerhalb der Lane (aufsteigend). */
   order: number
   createdAt: string
+  /** Zugewiesen von (Mitarbeiter-ID/Name des Absenders); fehlt = selbst angelegt. */
+  assignedById?: string
+  assignedByName?: string
+  assignedAt?: string
+  /** Neu zugewiesen und vom Empfänger noch nicht gesehen. */
+  assignedUnseen?: boolean
 }
 
 /** employees/{id}/todos/{todoId} — ein Dokument je Todo. */

@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, it } from "vitest"
 import {
   assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing"
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"
+import { collectionGroup, doc, getDoc, getDocs, query, setDoc, updateDoc, deleteDoc, where } from "firebase/firestore"
 
 const emulator = process.env.FIRESTORE_EMULATOR_HOST
 const [host, port] = (emulator ?? "127.0.0.1:8080").split(":")
@@ -321,11 +321,46 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
   })
 
   describe("Todos (Mein Board)", () => {
-    it("nur der Besitzer — weder Vorgesetzte noch Admin", async () => {
+    it("Besitzer liest/schreibt; Vorgesetzte lesen nur; Fremde, Kollegen und Lesemodus nichts", async () => {
       await assertSucceeds(getDoc(doc(as("member", "m1"), "employees", "m1", "todos", "t1")))
       await assertSucceeds(setDoc(doc(as("member", "m1"), "employees", "m1", "todos", "t2"), { title: "n" }))
-      await assertFails(getDoc(doc(as("lead", "lead"), "employees", "m1", "todos", "t1")))
-      await assertFails(getDoc(doc(as("admin", "boss"), "employees", "m1", "todos", "t1")))
+      await assertSucceeds(getDoc(doc(as("lead", "lead"), "employees", "m1", "todos", "t1")))
+      await assertSucceeds(getDoc(doc(as("member", "boss"), "employees", "m1", "todos", "t1")))
+      await assertFails(setDoc(doc(as("lead", "lead"), "employees", "m1", "todos", "t1"), { title: "x" }))
+      await assertFails(deleteDoc(doc(as("lead", "lead"), "employees", "m1", "todos", "t1")))
+      await assertFails(getDoc(doc(as("member", "m2"), "employees", "m1", "todos", "t1")))
+      await assertFails(getDoc(doc(as("member", "other"), "employees", "m1", "todos", "t1")))
+      await assertFails(getDoc(doc(as("viewer"), "employees", "m1", "todos", "t1")))
+      // Admin-Rolle ohne Platz im Baum hat keinen Sonderzugriff
+      await assertFails(getDoc(doc(as("admin"), "employees", "m1", "todos", "t1")))
+    })
+
+    it("Zuweisen: nur neue Todos bei Personen in der eigenen Linie, mit eigener ID als Absender", async () => {
+      const t = (by: string) => ({ title: "z", assignedById: by, assignedUnseen: true })
+      // nach oben (m1 -> lead, boss) und nach unten (lead -> m1, boss -> m1)
+      await assertSucceeds(setDoc(doc(as("member", "m1"), "employees", "lead", "todos", "a1"), t("m1")))
+      await assertSucceeds(setDoc(doc(as("member", "m1"), "employees", "boss", "todos", "a2"), t("m1")))
+      await assertSucceeds(setDoc(doc(as("lead", "lead"), "employees", "m1", "todos", "a3"), t("lead")))
+      await assertSucceeds(setDoc(doc(as("member", "boss"), "employees", "m1", "todos", "a4"), t("boss")))
+      // Kollegen, fremde Struktur, falscher Absender, ohne Ungesehen-Markierung, Lesemodus
+      await assertFails(setDoc(doc(as("member", "m1"), "employees", "m2", "todos", "b1"), t("m1")))
+      await assertFails(setDoc(doc(as("member", "m1"), "employees", "other", "todos", "b2"), t("m1")))
+      await assertFails(setDoc(doc(as("member", "m1"), "employees", "lead", "todos", "b3"), t("m2")))
+      await assertFails(setDoc(doc(as("member", "m1"), "employees", "lead", "todos", "b4"), { title: "z", assignedById: "m1" }))
+      await assertFails(setDoc(doc(as("viewer"), "employees", "lead", "todos", "b5"), t("lead")))
+      // Bestehende Todos anderer lassen sich so nicht überschreiben
+      await assertFails(setDoc(doc(as("member", "m1"), "employees", "lead", "todos", "a1"), t("m1")))
+      await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), "employees", "lead", "todos", "own"), { title: "x" }))
+      await assertFails(setDoc(doc(as("member", "m1"), "employees", "lead", "todos", "own"), t("m1")))
+    })
+
+    it("Absender verfolgt seine Zuweisungen per Collection-Group-Abfrage (auch beim Vorgesetzten)", async () => {
+      await assertSucceeds(setDoc(doc(as("member", "m1"), "employees", "boss", "todos", "c1"), { title: "z", assignedById: "m1", assignedUnseen: true }))
+      const mine = query(collectionGroup(as("member", "m1"), "todos"), where("assignedById", "==", "m1"))
+      const snap = await assertSucceeds(getDocs(mine))
+      if (snap.size < 1) throw new Error("Zuweisung nicht gefunden")
+      await assertFails(getDocs(collectionGroup(as("member", "m1"), "todos")))
+      await assertFails(getDocs(query(collectionGroup(as("member", "m2"), "todos"), where("assignedById", "==", "m1"))))
     })
   })
 

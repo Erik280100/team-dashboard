@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import type { EmployeeMeta } from "@/lib/calc/employees"
+import { TargetOptions } from "@/components/sections/board/AssignTodoDialog"
 import {
   TODO_CATEGORIES, TODO_CATEGORY_LABELS, TODO_COLORS, TODO_COLOR_LABELS,
   type TodoCategory, type TodoColor,
@@ -16,14 +18,18 @@ import {
 import { COLOR_DOT_CLASS } from "@/components/sections/board/colors"
 
 export function NewTodoDialog({
-  open, onOpenChange, defaultCategory, onCreate,
+  open, onOpenChange, defaultCategory, onCreate, superiors = [], subordinates = [],
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Vorbelegte Kategorie (aktives Board), frei änderbar wenn "alle" aktiv ist. */
   defaultCategory: TodoCategory
-  onCreate: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }) => void
+  /** `target`: Person, für die das Todo angelegt wird; null = für mich. */
+  onCreate: (init: { title: string; description: string; dueDate: string; category: TodoCategory; color: TodoColor }, target: EmployeeMeta | null) => void
+  superiors?: EmployeeMeta[]
+  subordinates?: EmployeeMeta[]
 }) {
+  const [targetId, setTargetId] = useState("")
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -39,6 +45,7 @@ export function NewTodoDialog({
       setDueDate("")
       setCategory(defaultCategory)
       setColor("grau")
+      setTargetId("")
     }
   }, [open, defaultCategory])
 
@@ -46,7 +53,8 @@ export function NewTodoDialog({
     e.preventDefault()
     const trimmed = title.trim()
     if (!trimmed) return
-    onCreate({ title: trimmed, description: description.trim(), dueDate, category, color })
+    const target = [...superiors, ...subordinates].find((x) => x.id === targetId) ?? null
+    onCreate({ title: trimmed, description: description.trim(), dueDate, category, color }, target)
     onOpenChange(false)
   }
 
@@ -55,10 +63,24 @@ export function NewTodoDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Neues Todo</DialogTitle>
-          <DialogDescription>Wird oben in der Spalte "Todo" angelegt.</DialogDescription>
+          <DialogDescription>
+            {targetId
+              ? `Wird auf dem Board von ${[...superiors, ...subordinates].find((x) => x.id === targetId)?.name ?? ""} in der Spalte "Todo" angelegt.`
+              : 'Wird oben in der Spalte "Todo" angelegt.'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {superiors.length + subordinates.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="board-todo-for" className="text-xs font-semibold text-muted-foreground">Für</label>
+              <Select id="board-todo-for" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+                <option value="">Mich selbst</option>
+                <TargetOptions superiors={superiors} subordinates={subordinates} />
+              </Select>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label htmlFor="board-todo-title" className="text-xs font-semibold text-muted-foreground">Titel</label>
             <Input

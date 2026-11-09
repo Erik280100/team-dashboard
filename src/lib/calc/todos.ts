@@ -2,6 +2,7 @@
 // UI (MeinBoard.tsx) herausgezogen, damit sie unabhängig testbar ist (siehe
 // test/calc/todos.test.ts). Keine Legacy-Entsprechung, neues Feature.
 import type { BoardTodo, TodoCategory, TodoLane } from "@/types/dashboard"
+import type { EmployeeMeta } from "@/lib/calc/employees"
 
 export type BoardFilter = TodoCategory | "alle"
 
@@ -110,4 +111,42 @@ export function dueSoonTodos(todos: BoardTodo[], today: string): BoardTodo[] {
  */
 export function hasOpenDueTodos(todos: Pick<BoardTodo, "dueDate" | "lane" | "archived">[], today: string): boolean {
   return todos.some((t) => t.lane !== "fertig" && !t.archived && !!t.dueDate && t.dueDate <= today)
+}
+
+/** Alle (direkten und indirekten) Mitarbeiter von `myId`, nach Name sortiert. */
+export function boardSubordinates(employees: readonly EmployeeMeta[], myId: string | null): EmployeeMeta[] {
+  if (!myId) return []
+  return employees.filter((e) => e.id !== myId && e.ancestors.includes(myId)).sort((a, b) => a.name.localeCompare(b.name, "de"))
+}
+
+/** Personen, denen `myId` ein Todo zuweisen darf: die eigenen Vorgesetzten (direkt und indirekt) und alle Mitarbeiter darunter. */
+export function assignableEmployees(
+  employees: readonly EmployeeMeta[], myId: string | null,
+): { superiors: EmployeeMeta[]; subordinates: EmployeeMeta[] } {
+  const me = employees.find((e) => e.id === myId)
+  if (!myId || !me) return { superiors: [], subordinates: [] }
+  const superiors = employees
+    .filter((e) => e.id !== myId && me.ancestors.includes(e.id))
+    .sort((a, b) => a.name.localeCompare(b.name, "de"))
+  return { superiors, subordinates: boardSubordinates(employees, myId) }
+}
+
+/** Das Todo, wie es beim Empfänger landet: Lane "Todo" (oben), offen, mit Hinweis auf den Absender. */
+export function buildAssignedTodo(todo: BoardTodo, by: { id: string; name: string }, nowIso: string, order: number): BoardTodo {
+  return {
+    ...todo,
+    lane: "todo",
+    order,
+    completed: false,
+    archived: false,
+    assignedById: by.id,
+    assignedByName: by.name,
+    assignedAt: nowIso,
+    assignedUnseen: true,
+  }
+}
+
+/** Gibt es zugewiesene Todos, die der Empfänger noch nicht gesehen hat? (Rufzeichen bei "Mein Board".) */
+export function hasUnseenAssigned(todos: Pick<BoardTodo, "assignedUnseen" | "archived">[]): boolean {
+  return todos.some((t) => t.assignedUnseen === true && !t.archived)
 }
