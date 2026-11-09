@@ -25,6 +25,27 @@ export function Feld({
   )
 }
 
+export function SatzFeld({
+  label, value, onChange, suffix = "%", step = 0.1,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  suffix?: string
+  step?: number
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+      {label}
+      <div className="flex items-center gap-1.5">
+        <input type="number" step={step} value={value} onChange={(e) => onChange(e.target.value)}
+          className={cn(INPUT_CLASS, "w-24")} />
+        <span className="text-xs">{suffix}</span>
+      </div>
+    </label>
+  )
+}
+
 export function Regler({
   label, value, onChange, hint,
 }: {

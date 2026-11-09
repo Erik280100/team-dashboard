@@ -13,33 +13,12 @@ import {
   berechneTilgungsplan, effektivzinsPct, kreditFormatEUR, kreditFormatPct, type KreditSaetze,
 } from "@/lib/calc/kredit"
 import { berechneTilgungstraeger } from "@/lib/calc/tilgungstraeger"
-import { PillGroup } from "@/components/sections/rechner/fields"
+import { PillGroup, SatzFeld } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 const PERF_PRESETS = [3, 6, 9]
 
 const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
-
-function SatzFeld({
-  label, value, onChange, suffix = "%", step = 0.1,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  suffix?: string
-  step?: number
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-      {label}
-      <div className="flex items-center gap-1.5">
-        <input type="number" step={step} value={value} onChange={(e) => onChange(e.target.value)}
-          className={cn(INPUT_CLASS, "w-24")} />
-        <span className="text-xs">{suffix}</span>
-      </div>
-    </label>
-  )
-}
 
 export function KreditRechner() {
   const [kaufpreis, setKaufpreis] = useState("400000")

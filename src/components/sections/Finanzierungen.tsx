@@ -11,10 +11,13 @@ import type { RosterEntry } from "@/lib/calc/struktur"
 const KreditRechner = lazy(() => import("@/components/sections/rechner/KreditRechner").then((m) => ({ default: m.KreditRechner })))
 const ImmoPortfolioRechner = lazy(() => import("@/components/sections/rechner/ImmoPortfolioRechner").then((m) => ({ default: m.ImmoPortfolioRechner })))
 
-type FinanzierungenTab = "offen" | "rechner" | "immo" | "immoGmbh"
+const UmschuldungsRechner = lazy(() => import("@/components/sections/rechner/UmschuldungsRechner").then((m) => ({ default: m.UmschuldungsRechner })))
+
+type FinanzierungenTab = "offen" | "umschuldung" | "rechner" | "immo" | "immoGmbh"
 
 const TABS: { id: FinanzierungenTab; label: string; editorOnly?: boolean }[] = [
   { id: "offen", label: "Offene Abwicklungen" },
+  { id: "umschuldung", label: "Umschuldungsrechner" },
   { id: "rechner", label: "Finanzierungsrechner", editorOnly: true },
   { id: "immo", label: "Anlegerwohnungen", editorOnly: true },
   { id: "immoGmbh", label: "Anlegerwohnungen GmbH", editorOnly: true },
@@ -60,6 +63,7 @@ export function Finanzierungen({
           abwicklerNames={abwicklerNames}
         />
       )}
+      {activeTab === "umschuldung" && <UmschuldungsRechner />}
       {activeTab === "rechner" && <KreditRechner />}
       {activeTab === "immo" && <ImmoPortfolioRechner />}
       {activeTab === "immoGmbh" && <ImmoPortfolioRechner rechtsform="gmbh" />}

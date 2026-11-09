@@ -77,6 +77,20 @@ export function berechneKaufnebenkosten(
   return { positionen, summe: positionen.reduce((s, p) => s + p.betrag, 0) }
 }
 
+/** Kreditnebenkosten (Vertragserstellung, Pfandrecht inkl. NGS, ggf. Fixbetrag) auf Basis der Kreditsumme. */
+export function berechneKreditNebenkosten(
+  kreditbetrag: number, saetze: KreditSaetze = KREDIT_DEFAULTS
+): { positionen: KostenPosition[]; summe: number } {
+  const positionen: KostenPosition[] = [
+    { label: "Kreditvertragserstellung", betrag: kreditbetrag * (saetze.kreditvertragserstellungPct / 100), hinweis: `${saetze.kreditvertragserstellungPct.toLocaleString("de-AT")} % der Kreditsumme` },
+    { label: "Pfandrechtseintragung (inkl. Nebengebührensicherstellung)", betrag: kreditbetrag * (saetze.pfandrechtPct / 100) * (1 + saetze.nebengebuehrensicherstellungPct / 100), hinweis: `${saetze.pfandrechtPct.toLocaleString("de-AT")} % + ${saetze.nebengebuehrensicherstellungPct.toLocaleString("de-AT")} % Aufschlag` },
+  ]
+  if (saetze.sonstigeKreditNK > 0) {
+    positionen.push({ label: "Sonstige Kreditnebenkosten", betrag: saetze.sonstigeKreditNK, hinweis: "Fixbetrag" })
+  }
+  return { positionen, summe: positionen.reduce((s, p) => s + p.betrag, 0) }
+}
+
 export interface KreditbetragEingabe {
   kaufpreis: number
   eigenmittel: number
@@ -136,14 +150,7 @@ export function berechneKreditbetrag(eingabe: KreditbetragEingabe): Kreditbetrag
     kreditbetrag = Math.max(0, gesamtinvestitionOhneKreditNK - eigenmittel)
   }
 
-  const kreditNKPositionen: KostenPosition[] = [
-    { label: "Kreditvertragserstellung", betrag: kreditbetrag * (saetze.kreditvertragserstellungPct / 100), hinweis: `${saetze.kreditvertragserstellungPct.toLocaleString("de-AT")} % der Kreditsumme` },
-    { label: "Pfandrechtseintragung (inkl. Nebengebührensicherstellung)", betrag: kreditbetrag * (saetze.pfandrechtPct / 100) * (1 + saetze.nebengebuehrensicherstellungPct / 100), hinweis: `${saetze.pfandrechtPct.toLocaleString("de-AT")} % + ${saetze.nebengebuehrensicherstellungPct.toLocaleString("de-AT")} % Aufschlag` },
-  ]
-  if (saetze.sonstigeKreditNK > 0) {
-    kreditNKPositionen.push({ label: "Sonstige Kreditnebenkosten", betrag: saetze.sonstigeKreditNK, hinweis: "Fixbetrag" })
-  }
-  const kreditNKSumme = kreditNKPositionen.reduce((s, p) => s + p.betrag, 0)
+  const { positionen: kreditNKPositionen, summe: kreditNKSumme } = berechneKreditNebenkosten(kreditbetrag, saetze)
 
   const nettoAuszahlung = kreditbetrag - kreditNKSumme
   const gesamtinvestition = gesamtinvestitionOhneKreditNK + kreditNKSumme
