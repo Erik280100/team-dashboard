@@ -180,7 +180,7 @@ export function RenditeRechner() {
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
   const entnahmeAktiv = entnahmeJahreEff > 0
   const products: {
-    name: string; colorKey: RRProductKey; end: number; einbezahlt: number; disabled?: boolean
+    name: string; colorKey: RRProductKey; end: number; endVorKest?: number; einbezahlt: number; disabled?: boolean
     entnommenNetto?: number; reichtBisMonat?: number | null; maxEntnahme?: number
     effektivverzinsungPct?: number | null
   }[] = [
@@ -192,7 +192,7 @@ export function RenditeRechner() {
     },
     { name: "Fondssparer", colorKey: "fondssparer", end: 0, einbezahlt: 0, disabled: true },
     {
-      name: "Depot", colorKey: "fondsdepot", end: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt,
+      name: "Depot", colorKey: "fondsdepot", end: fondsdepotNachKestY[fondsdepotNachKestY.length - 1], endVorKest: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt,
       entnommenNetto: entnahmeAktiv ? fondsdepotVerlauf.entnommenNetto : undefined,
       reichtBisMonat: entnahmeAktiv ? fondsdepotVerlauf.reichtBisMonat : undefined,
       maxEntnahme: entnahmeAktiv ? depotMaxEntnahme : undefined,
@@ -439,7 +439,7 @@ export function RenditeRechner() {
                 <div className="mt-1 text-xl font-bold tabular-nums">{rrFormatEUR(p.end)}</div>
                 {p.colorKey === "fondsdepot" && (
                   <div className="text-[10.5px] text-muted-foreground">
-                    ohne KESt-Abzug · nach KESt: <span className="font-bold text-foreground">{rrFormatEUR(fondsdepotNachKestY[fondsdepotNachKestY.length - 1])}</span>
+                    ohne KESt-Abzug: <span className="font-bold text-foreground">{rrFormatEUR(p.endVorKest ?? p.end)}</span> (Endwert oben nach KESt)
                   </div>
                 )}
                 {p.effektivverzinsungPct != null && (
