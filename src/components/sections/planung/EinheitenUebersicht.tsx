@@ -86,7 +86,7 @@ export function EinheitenUebersicht({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h3 className="text-xs font-bold uppercase tracking-wide text-white/85">⚡ Einheiten je Person — {year}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">⚡ Einheiten je Person — {year}</h3>
         {hasTeams && (
           <div className="flex gap-2">
             <Pill active={!withTeam} onClick={() => setWithTeam(false)} className="px-3 py-1 text-xs">Einzelperson</Pill>

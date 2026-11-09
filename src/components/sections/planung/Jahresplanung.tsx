@@ -241,7 +241,7 @@ export function Jahresplanung({
       </section>
 
       <section>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white/85">🏁 Quartalsmeilensteine</h3>
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-foreground">🏁 Quartalsmeilensteine</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {QUARTER_LIST.map((q) => {
             const qData: PlanQuarterData = draft.quarters[q]
@@ -325,7 +325,7 @@ export function Jahresplanung({
 
       {groupYearActuals && (
         <section>
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white/85">👥 Jahres-Ist nach Führungskraft — {year}</h3>
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-foreground">👥 Jahres-Ist nach Führungskraft — {year}</h3>
           <div className={cn(DARK_TABLE.wrap, DARK_CARD)}>
             <table className={cn("min-w-[700px]", DARK_TABLE.table)}>
               <thead>
