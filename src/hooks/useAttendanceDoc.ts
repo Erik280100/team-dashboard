@@ -63,7 +63,9 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
     const entry = { ...getAttendanceEntry(latest.current, name), ...patch }
     const next = { ...latest.current, [name]: entry }
     setAttendance(next)
-    if (!attendanceReady.current) return
+    // Kein Warten auf "ready": Es wird nur das geänderte Feld per Merge geschrieben, ein veralteter Stand kann also
+    // nichts überschreiben. Ein Abbruch hier ließ die Anzeige zurückspringen, ohne dass etwas gespeichert wurde.
+    if (!attendanceReady.current) console.info("Anwesenheit: Stand noch nicht vollständig geladen, speichere trotzdem", name)
     const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
     if (!id) { console.warn(`Anwesenheit: kein Mitarbeiter-Dokument für "${name}"`); return }
     writeEmployeeSubDoc(id, "attendance", "current", { ...patch }, true).catch((err) =>

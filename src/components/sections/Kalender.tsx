@@ -200,10 +200,7 @@ export function Kalender({
                           label={`Training Samstag – ${name}`}
                           present={a.trainingSa}
                           reason={a.trainingSaReason}
-                          onToggle={(present) => setAttendanceEntry(name, present
-                            // Samstag angehakt -> Freitag automatisch abwesend
-                            ? { trainingSa: true, trainingSaReason: "", trainingFr: false }
-                            : { trainingSa: false })}
+                          onToggle={(present) => setAttendanceEntry(name, { trainingSa: present, ...(present ? { trainingSaReason: "" } : {}) })}
                           onReasonChange={(reason) => setAttendanceEntry(name, { trainingSaReason: reason })}
                         />
                       </td>
