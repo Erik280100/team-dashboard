@@ -22,7 +22,7 @@ export function Rechner({
   employees, abwicklerCandidates, planRates, defaultEmployee, canBookUnits, onApplyUnits,
 }: {
   /** Buchbare Mitarbeiter: man selbst und alle darunter. */
-  employees: { name: string; role: string; units: Record<PlanId, number> }[]
+  employees: { name: string; role: string; units: Record<PlanId, number>; stages?: Record<PlanId, string> }[]
   /** Alle Mitarbeiter (für die Abwickler-Auswahl bei „Investment (mit VB)“). */
   abwicklerCandidates: { name: string }[]
   /** Stufensätze: bestimmen den Multiplikator je Sparte aus der Stufe des gewählten Mitarbeiters. */

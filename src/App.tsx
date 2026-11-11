@@ -9,7 +9,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { AlarmClock, ChevronDown } from "lucide-react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
-import { isGstOrHigher, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
+import { isGstOrHigher, PLAN_IDS, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
+import { planStageOf } from "@/lib/calc/planStufen"
 import { applyMonthStats, mergeRosterWithRows, relabelRowsByRoster, rowsMatchedToRoster } from "@/lib/calc/team"
 import { ehAbwicklerOptions } from "@/lib/calc/eh"
 import type { UmsatzDraft } from "@/lib/calc/umsatz"
@@ -310,7 +311,11 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
     return out
   }, [dashboard.employees])
   const rechnerEmployees = useMemo(
-    () => merged.map((m) => ({ name: m.name, role: m.role, units: readPlanUnits(m) })),
+    () => merged.map((m) => ({
+      name: m.name, role: m.role, units: readPlanUnits(m),
+      // Trainees sind je Karriereplan getrennt eingestuft -> Satz der Sparte, nicht der Strukturbaum-Rolle.
+      stages: Object.fromEntries(PLAN_IDS.map((p) => [p, planStageOf(m, p)])) as Record<PlanId, string>,
+    })),
     [merged]
   )
 

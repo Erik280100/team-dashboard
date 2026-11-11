@@ -53,7 +53,7 @@ function round2(n: number): number {
 export function EhRechner({
   employees, abwicklerCandidates, planRates, defaultEmployee, canBook, onApplyUnits,
 }: {
-  employees: { name: string; role: string; units: Record<PlanId, number> }[]
+  employees: { name: string; role: string; units: Record<PlanId, number>; stages?: Record<PlanId, string> }[]
   abwicklerCandidates: { name: string }[]
   planRates: Record<PlanId, Record<string, number>>
   defaultEmployee?: string
@@ -90,7 +90,7 @@ export function EhRechner({
     setSelectedName(name)
     const emp = employees.find((e) => e.name === name)
     if (!emp) return
-    setMult(Object.fromEntries(EH_GROUPS.map((gr) => [gr.id, String(ehMultForRole(planRates, gr, emp.role))])) as Record<EhGroup["id"], string>)
+    setMult(Object.fromEntries(EH_GROUPS.map((gr) => [gr.id, String(ehMultForRole(planRates, gr, emp.stages?.[gr.plans[0]] ?? emp.role))])) as Record<EhGroup["id"], string>)
   }
 
   // Der Eingeloggte ist vorausgewählt, sobald die Mitarbeiterliste geladen ist (einmalig).
