@@ -573,7 +573,6 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                     orgPlanRates={view.planRates}
                     isEditor={auth.isEditor && !isArchive}
                     canEditRow={canEditRow}
-                    noBonusFor={auth.isAdmin ? undefined : myName}
                     myName={myName}
                     now={view.now}
                     planung={isArchive ? undefined : planung}

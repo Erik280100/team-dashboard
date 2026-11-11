@@ -62,12 +62,6 @@ service cloud.firestore {
         .hasAny(['managerId', 'ancestors', 'uid', 'accountPending', 'role', 'name', 'email', 'active', 'createdAt', 'monthStats']);
     }
 
-    // Den Bonus (€) setzen Vorgesetzte/Admin, nicht die Person selbst.
-    function bonusUntouchedOrManager() {
-      return myEmp() in resource.data.ancestors
-        || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['bonus']);
-    }
-
     // Plausibilitaet der Zahlen, die Mitarbeiter und Vorgesetzte selbst schreiben (Admin und Functions sind frei).
     // Bewusst knapp gehalten: Firestore bricht eine Regelauswertung bei mehr als 1000 Ausdruecken ab (= alles abgelehnt).
     function num(v) { return v is number && math.abs(v) < 10000000; }
@@ -123,7 +117,7 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
-        || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched() && bonusUntouchedOrManager()
+        || ((isSelf(empId) || isAncestor(resource.data.ancestors)) && lockedFieldsUntouched()
           && validEmployeeData(request.resource.data) && careerNotLoweredBySelf(empId));
 
       // Konto-Daten (uid, E-Mail, "wartet auf erste Anmeldung"): nur self/Vorgesetzte/Admin und der Lesemodus lesen,

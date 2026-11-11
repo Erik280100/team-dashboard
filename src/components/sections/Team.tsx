@@ -53,7 +53,6 @@ export function Team({
   orgPlanRates,
   isEditor,
   canEditRow = () => true,
-  noBonusFor,
   now,
   planung,
   avatars,
@@ -77,8 +76,6 @@ export function Team({
   canEditRow?: (name: string) => boolean
   /** Profilbilder je Name (nur Personen mit Bild); alle anderen zeigen ihre Initialen. */
   avatars?: Record<string, { id: string; version: number }>
-  /** Person, deren Bonus der Betrachter nicht setzen darf (er selbst, ausser Admin) — firestore.rules. */
-  noBonusFor?: string
   /** Referenzzeitpunkt für monthWeekProgress — im Archiv-Modus ein Tag nach
    * periodEnd (siehe archiveNow() in lib/calc/archive.ts), damit die
    * Rot/Grün-Einfärbung gegen den vollen Monatsplan bewertet statt gegen einen
@@ -461,7 +458,6 @@ export function Team({
           earnings={detailEarnings}
           stornoreserveRate={reserveRate}
           isEditor={isEditor && canEditRow(detailEntry.name)}
-          canEditBonus={detailEntry.name !== noBonusFor}
           onSave={(units, bonus) => saveEarnings(detailEntry, units, bonus)}
         />
       )}
