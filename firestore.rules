@@ -32,6 +32,7 @@ service cloud.firestore {
     function myEmp() { return request.auth.token.get('employeeId', ''); }
     function isAdmin() { return signedIn() && role() == 'admin'; }
     function isViewer() { return signedIn() && role() == 'viewer'; }
+    function isLeadRole() { return signedIn() && role() == 'lead'; }
     // Der Lesemodus hat in den Regeln keine eigene Identitaet: auch mit verknuepftem Mitarbeiter schreibt er nirgends.
     function isSelf(empId) { return signedIn() && role() != 'viewer' && myEmp() != '' && myEmp() == empId; }
     function isAncestor(ancestors) { return signedIn() && role() != 'viewer' && myEmp() != '' && myEmp() in ancestors; }
@@ -144,8 +145,9 @@ service cloud.firestore {
         allow read: if canReadEmployee(empId);
         allow write: if canAccessEmployee(empId);
       }
+      // Fuehrungskraefte lesen die Anwesenheit aller (Tab "Training": alle anwesenden Trainees einteilen).
       match /attendance/{id} {
-        allow read: if canReadEmployee(empId);
+        allow read: if canReadEmployee(empId) || isLeadRole();
         allow write: if canAccessEmployee(empId);
       }
       // Persoenliches Board: der Besitzer liest/schreibt, Vorgesetzte (Strukturbaum) lesen nur mit; der Admin
@@ -158,6 +160,17 @@ service cloud.firestore {
           && request.resource.data.get('assignedById', '') == myEmp()
           && request.resource.data.get('assignedUnseen', false) == true;
       }
+    }
+
+    // Training: Einteilung der anwesenden Trainees auf Fuehrungskraefte (Thema je FK, Trainee -> FK).
+    // Gemeinsames Dokument training/current; Fuehrungskraefte und Admin lesen/schreiben, der Lesemodus liest.
+    match /training/{docId} {
+      allow read: if isAdmin() || isViewer() || isLeadRole();
+      allow create, update: if (isAdmin() || isLeadRole())
+        && request.resource.data.keys().hasOnly(['topics', 'assignments'])
+        && request.resource.data.get('topics', {}) is map
+        && request.resource.data.get('assignments', {}) is map;
+      allow delete: if isAdmin() || isLeadRole();
     }
 
     // Absender verfolgen ihre Zuweisungen (Collection-Group-Abfrage where assignedById == eigene ID),

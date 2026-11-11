@@ -309,6 +309,27 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
     })
   })
 
+  describe("Training (Einteilung)", () => {
+    it("Führungskräfte lesen die Anwesenheit aller, schreiben sie aber nur in der eigenen Linie", async () => {
+      await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), "employees", "other", "attendance", "current"), { training: true }))
+      await assertSucceeds(getDoc(doc(as("lead", "lead"), "employees", "other", "attendance", "current")))
+      await assertFails(setDoc(doc(as("lead", "lead"), "employees", "other", "attendance", "current"), { training: false }))
+      await assertFails(getDoc(doc(as("member", "m1"), "employees", "other", "attendance", "current")))
+    })
+
+    it("training/current: Führungskraft und Admin schreiben, Lesemodus liest nur, Mitarbeiter nichts", async () => {
+      const data = { topics: { lead: "analyse" }, assignments: { m1: "lead" } }
+      await assertSucceeds(setDoc(doc(as("lead", "lead"), "training", "current"), data))
+      await assertSucceeds(setDoc(doc(as("admin"), "training", "current"), data, { merge: true }))
+      await assertSucceeds(getDoc(doc(as("viewer"), "training", "current")))
+      await assertFails(setDoc(doc(as("viewer"), "training", "current"), data))
+      await assertFails(getDoc(doc(as("member", "m1"), "training", "current")))
+      await assertFails(setDoc(doc(as("member", "m1"), "training", "current"), data))
+      await assertFails(setDoc(doc(as("lead", "lead"), "training", "current"), { ...data, extra: 1 }))
+      await assertFails(setDoc(doc(anon(), "training", "current"), data))
+    })
+  })
+
   describe("celebrations (Konfetti)", () => {
     it("Eingeloggte melden eine Buchung und lesen mit, ändern/löschen nicht, fremde Felder verboten", async () => {
       const db = as("member", "m1")

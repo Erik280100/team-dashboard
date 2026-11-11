@@ -1,7 +1,7 @@
 // Hauptnavigation — Äquivalent zur .sidebar-Nav aus der früheren Einzeldatei-App.
 import {
   LayoutDashboard, Users, Network, BarChart3, CalendarRange, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
-  KanbanSquare, UserCog, Settings, FilePlus2, ExternalLink, Receipt,
+  KanbanSquare, Dumbbell, UserCog, Settings, FilePlus2, ExternalLink, Receipt,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -17,6 +17,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; access?: "adm
   { id: "struktur", label: "Strukturbaum", icon: Network },
   { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
   { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
+  { id: "training", label: "Training", icon: Dumbbell, access: "lead" },
   { id: "statistik", label: "Statistik", icon: BarChart3, access: "lead" },
   { id: "konten", label: "Konten", icon: UserCog, access: "admin" },
 ]

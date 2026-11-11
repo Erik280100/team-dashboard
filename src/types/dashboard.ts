@@ -28,6 +28,24 @@ export interface AttendanceEntry {
   monatsauftaktReason: string
 }
 
+/** Themen beim Training — je Führungskraft eines. */
+export const TRAINING_TOPICS = [
+  { id: "telefonieren", label: "Telefonieren" },
+  { id: "analyse", label: "Analyse" },
+  { id: "beratung", label: "Beratung" },
+  { id: "empfehlungen", label: "Empfehlungen" },
+] as const
+
+export type TrainingTopic = (typeof TRAINING_TOPICS)[number]["id"]
+
+/** training/current — Schlüssel sind Mitarbeiter-IDs. */
+export interface TrainingDoc {
+  /** Führungskraft -> Thema */
+  topics: Record<string, TrainingTopic>
+  /** Trainee -> Führungskraft */
+  assignments: Record<string, string>
+}
+
 /** finova/attendance */
 export interface AttendanceDoc {
   entries: Record<string, AttendanceEntry>

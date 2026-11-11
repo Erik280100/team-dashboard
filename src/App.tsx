@@ -23,6 +23,7 @@ import { useHashSection, SECTION_IDS, type SectionId } from "@/hooks/useHashSect
 import { useDashboardDoc } from "@/hooks/useDashboardDoc"
 import { useAttendanceDoc } from "@/hooks/useAttendanceDoc"
 import { useOrgChartDoc } from "@/hooks/useOrgChartDoc"
+import { useTrainingDoc } from "@/hooks/useTrainingDoc"
 import { usePlanungDoc } from "@/hooks/usePlanungDoc"
 import { useUmsaetzeDoc } from "@/hooks/useUmsaetzeDoc"
 import { useFinanzierungenDoc } from "@/hooks/useFinanzierungenDoc"
@@ -51,6 +52,7 @@ const Rechner = lazy(() => import("@/components/sections/Rechner").then((m) => (
 const Karriere = lazy(() => import("@/components/sections/Karriere").then((m) => ({ default: m.Karriere })))
 const Guide = lazy(() => import("@/components/sections/Guide").then((m) => ({ default: m.Guide })))
 const Kalender = lazy(() => import("@/components/sections/Kalender").then((m) => ({ default: m.Kalender })))
+const Training = lazy(() => import("@/components/sections/Training").then((m) => ({ default: m.Training })))
 const Finanzierungen = lazy(() => import("@/components/sections/Finanzierungen").then((m) => ({ default: m.Finanzierungen })))
 const Partner = lazy(() => import("@/components/sections/Partner").then((m) => ({ default: m.Partner })))
 const MeinBoard = lazy(() => import("@/components/sections/MeinBoard").then((m) => ({ default: m.MeinBoard })))
@@ -72,6 +74,7 @@ const SECTION_LABELS: Record<SectionId, string> = {
   karriere: "Karrierepläne",
   guide: "Guide",
   kalender: "Anwesenheitsliste",
+  training: "Training",
   finanzierungen: "Finanzierungen",
   partner: "Partner",
   board: "Mein Board",
@@ -124,6 +127,13 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   )
   const attendance = useAttendanceDoc(accessibleEmployees)
   const orgChart = useOrgChartDoc(auth.isAdmin, auth.employeeId)
+  // Training-Tab (nur Führungskräfte, Admin, Lesemodus): Anwesenheit ALLER Personen + gemeinsame Einteilung.
+  // Die Abos laufen nur, solange der Tab offen ist.
+  const canSeeTraining = auth.isAdmin || auth.isViewer || auth.isLead
+  const trainingActive = canSeeTraining && section === "training"
+  const trainingEmployees = useMemo(() => (trainingActive ? dashboard.employees : []), [trainingActive, dashboard.employees])
+  const trainingAttendance = useAttendanceDoc(trainingEmployees)
+  const training = useTrainingDoc(trainingActive)
   const planung = usePlanungDoc(accessibleEmployees)
   const umsaetze = useUmsaetzeDoc(auth, dashboard.employees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
@@ -592,6 +602,19 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   setAttendanceEntry={attendance.setAttendanceEntry}
                   resetAttendance={attendance.resetAttendance}
                   isEditor={auth.isEditor}
+                />
+              )}
+              {section === id && id === "training" && canSeeTraining && (
+                <Training
+                  roster={allRoster}
+                  employees={dashboard.employees}
+                  attendance={trainingAttendance.attendance}
+                  topics={training.topics}
+                  assignments={training.assignments}
+                  setTopic={training.setTopic}
+                  assign={training.assign}
+                  reset={training.reset}
+                  canEdit={auth.isAdmin || auth.isLead}
                 />
               )}
               {section === id && id === "finanzierungen" && (

@@ -53,6 +53,10 @@ export function employeesCollection(): CollectionReference | null {
 export function employeeDocRef(id: string): DocumentReference | null {
   return firestore ? doc(firestore, "employees", id) : null
 }
+/** training/current: Thema je Führungskraft + Zuteilung der Trainees */
+export function trainingDocRef(): DocumentReference | null {
+  return firestore ? doc(firestore, "training", "current") : null
+}
 /** org/{name}: structure | teamGoal | archiveIndex */
 export function orgDocRef(name: string): DocumentReference | null {
   return firestore ? doc(firestore, "org", name) : null
