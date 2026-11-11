@@ -166,7 +166,7 @@ export function Kalender({
                       key={name}
                       className={cn(
                         "border-b border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]",
-                        (!a.seminar || !a.trainingFr || !a.trainingSa || !a.monatsauftakt) && "shadow-[inset_3px_0_0_rgba(226,104,91,.7)]"
+                        (!a.seminar || !(a.trainingFr || a.trainingSa) || !a.monatsauftakt) && "shadow-[inset_3px_0_0_rgba(226,104,91,.7)]"
                       )}
                     >
                       <td className="px-4 py-3">
@@ -200,7 +200,10 @@ export function Kalender({
                           label={`Training Samstag – ${name}`}
                           present={a.trainingSa}
                           reason={a.trainingSaReason}
-                          onToggle={(present) => setAttendanceEntry(name, { trainingSa: present, ...(present ? { trainingSaReason: "" } : {}) })}
+                          onToggle={(present) => setAttendanceEntry(name, present
+                            // Samstag angehakt -> Freitag automatisch abwesend
+                            ? { trainingSa: true, trainingSaReason: "", trainingFr: false }
+                            : { trainingSa: false })}
                           onReasonChange={(reason) => setAttendanceEntry(name, { trainingSaReason: reason })}
                         />
                       </td>

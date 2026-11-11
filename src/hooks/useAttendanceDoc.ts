@@ -16,11 +16,12 @@ export function getAttendanceEntry(
   return {
     seminar: e && e.seminar !== undefined ? !!e.seminar : true,
     seminarReason: (e && e.seminarReason) || "",
-    // Freitag/Samstag getrennt; ältere Einträge kennen nur das gemeinsame "training" (dient als Vorgabe für beide Tage).
+    // Freitag/Samstag getrennt. Standard: Freitag anwesend, Samstag nicht. Ältere Einträge kennen nur das gemeinsame
+    // "training" — es gilt als Vorgabe für den Freitag.
     trainingFr: e && e.trainingFr !== undefined ? !!e.trainingFr : e && e.training !== undefined ? !!e.training : true,
     trainingFrReason: (e && (e.trainingFrReason || e.trainingReason)) || "",
-    trainingSa: e && e.trainingSa !== undefined ? !!e.trainingSa : e && e.training !== undefined ? !!e.training : true,
-    trainingSaReason: (e && (e.trainingSaReason || e.trainingReason)) || "",
+    trainingSa: e && e.trainingSa !== undefined ? !!e.trainingSa : false,
+    trainingSaReason: (e && e.trainingSaReason) || "",
     monatsauftakt: e && e.monatsauftakt !== undefined ? !!e.monatsauftakt : true,
     monatsauftaktReason: (e && e.monatsauftaktReason) || "",
   }
