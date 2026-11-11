@@ -63,6 +63,25 @@ const Statistik = lazy(() => import("@/components/sections/Statistik").then((m) 
 const Planung = lazy(() => import("@/components/sections/Planung").then((m) => ({ default: m.Planung })))
 const Umsatz = lazy(() => import("@/components/sections/Umsatz").then((m) => ({ default: m.Umsatz })))
 
+/**
+ * Alle Sektionen kurz nach dem Start im Hintergrund vorladen. Jeder Deploy auf GitHub Pages ersetzt alle Dateien;
+ * ein schon offener Tab kennt die Teile einer noch nie geöffneten Sektion dann nicht mehr (404) und würde beim
+ * Wechsel dorthin komplett neu laden (siehe ErrorBoundary). Vorgeladen ist der Wechsel immer ohne Nachladen.
+ */
+function preloadSections() {
+  const loaders = [
+    () => import("@/components/sections/Overview"), () => import("@/components/sections/Team"),
+    () => import("@/components/sections/Rechner"), () => import("@/components/sections/Karriere"),
+    () => import("@/components/sections/Guide"), () => import("@/components/sections/Kalender"),
+    () => import("@/components/sections/Training"), () => import("@/components/sections/Finanzierungen"),
+    () => import("@/components/sections/Partner"), () => import("@/components/sections/MeinBoard"),
+    () => import("@/components/sections/Konten"), () => import("@/components/sections/Einstellungen"),
+    () => import("@/components/sections/struktur/StrukturBaum"), () => import("@/components/sections/Statistik"),
+    () => import("@/components/sections/Planung"), () => import("@/components/sections/Umsatz"),
+  ]
+  for (const load of loaders) load().catch(() => { /* nur Vorladen — beim echten Öffnen greift die normale Fehlerbehandlung */ })
+}
+
 const SECTION_LABELS: Record<SectionId, string> = {
   overview: "Dashboard",
   team: "Mitarbeiter",
@@ -110,6 +129,10 @@ function ArchiveStatusCard({
 function AppShell({ auth }: { auth: UseAuthResult }) {
   const confirm = useConfirm()
   const { section, navigateTo } = useHashSection()
+  useEffect(() => {
+    const id = window.setTimeout(preloadSections, 1500) // erst nachdem die erste Sektion angezeigt wird
+    return () => window.clearTimeout(id)
+  }, [])
   const dashboard = useDashboardDoc(auth)
   // Alle Eingeloggten sehen alle Mitarbeiter (dashboard.employees); Controlling, Anwesenheit und Einheiten
   // gehören aber nur der Person selbst und ihren Vorgesetzten — die Regeln erzwingen das, hier die passenden Listen.
