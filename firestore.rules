@@ -158,8 +158,9 @@ service cloud.firestore {
 
     // Training: Einteilung der anwesenden Trainees auf Fuehrungskraefte (Thema je FK, Trainee -> FK).
     // Gemeinsames Dokument training/{fr|sa}; Fuehrungskraefte und Admin lesen/schreiben, der Lesemodus liest.
+    // Alle Eingeloggten lesen das Ergebnis (Trainees sehen, bei welcher Fuehrungskraft wer eingeteilt ist).
     match /training/{docId} {
-      allow read: if isAdmin() || isViewer() || isLeadRole();
+      allow read: if signedIn();
       allow create, update: if (isAdmin() || isLeadRole())
         && request.resource.data.keys().hasOnly(['topics', 'assignments'])
         && request.resource.data.get('topics', {}) is map

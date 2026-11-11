@@ -1,6 +1,7 @@
 // Training — anwesende Trainees (Anwesenheitsliste, Spalten „Training Freitag/Samstag“) auf die anwesenden Führungskräfte
 // verteilen; jede Führungskraft bekommt ein Thema (Telefonieren, Analyse, Beratung, Empfehlungen).
-// Nur für Führungskräfte und Admin sichtbar (Sidebar + App.tsx + firestore.rules).
+// Führungskräfte und Admin (fullView) sehen und bearbeiten alles; alle anderen (Trainees) sehen nur das Ergebnis der
+// Einteilung: bei welcher Führungskraft (mit Thema) welcher Trainee ist.
 import { useMemo } from "react"
 import { GraduationCap, UserCheck, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -30,7 +31,7 @@ function Avatar({ name }: { name: string }) {
 }
 
 export function Training({
-  day, onDayChange, roster, employees, attendance, topics, assignments, setTopic, assign, reset, canEdit,
+  day, onDayChange, roster, employees, attendance, topics, assignments, setTopic, assign, reset, canEdit, fullView,
 }: {
   /** Trainingstag: Freitag oder Samstag (je Tag eigene Anwesenheit und eigene Einteilung). */
   day: TrainingDay
@@ -46,6 +47,8 @@ export function Training({
   assign: (traineeId: string, fkId: string | null) => void
   reset: () => void
   canEdit: boolean
+  /** true: Anwesenheit aller ist geladen (Führungskräfte, Admin, Lesemodus). false: nur das Ergebnis der Einteilung zeigen. */
+  fullView: boolean
 }) {
   const confirm = useConfirm()
 
@@ -53,6 +56,15 @@ export function Training({
     const ids = idByName(employees)
     const leads: Person[] = []
     const trainees: Person[] = []
+    const byName = (a: Person, b: Person) => a.name.localeCompare(b.name, "de")
+    if (!fullView) {
+      // Ergebnisansicht ohne Anwesenheitsdaten: Führungskräfte = alle mit Thema oder zugeteilten Trainees, Trainees = alle Zugeteilten.
+      const nameById = new Map(employees.map((e) => [e.id, e.name]))
+      const fkIds = new Set([...Object.keys(topics), ...Object.values(assignments)])
+      for (const id of fkIds) { const name = nameById.get(id); if (name) leads.push({ id, name }) }
+      for (const id of Object.keys(assignments)) { const name = nameById.get(id); if (name) trainees.push({ id, name }) }
+      return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
+    }
     for (const r of roster) {
       const a = getAttendanceEntry(attendance, r.name)
       if (!(day === "fr" ? a.trainingFr : a.trainingSa)) continue
@@ -60,9 +72,8 @@ export function Training({
       if (!id) continue
       ;(isLeadRole(r.role) ? leads : trainees).push({ id, name: r.name })
     }
-    const byName = (a: Person, b: Person) => a.name.localeCompare(b.name, "de")
     return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
-  }, [roster, employees, attendance, day])
+  }, [roster, employees, attendance, day, fullView, topics, assignments])
 
   const leadIds = useMemo(() => new Set(leads.map((l) => l.id)), [leads])
   // Zuteilungen auf nicht (mehr) anwesende Führungskräfte zählen nicht.
@@ -87,6 +98,7 @@ export function Training({
 
   // Render-Funktion statt Komponente: sonst würde das Select bei jedem Render neu gemountet (Fokusverlust).
   function fkSelect(trainee: Person, current: string | null, width: string) {
+    if (!fullView) return null
     return (
       <Select
         aria-label={`Führungskraft für ${trainee.name}`}
@@ -107,7 +119,9 @@ export function Training({
         eyebrow="Team"
         title="Training"
         badge={`${trainees.length} Trainees · ${leads.length} Führungskräfte`}
-        description="Es werden alle angezeigt, die in der Anwesenheitsliste beim gewählten Trainingstag angehakt sind. Jede Führungskraft bekommt ein Thema, die Trainees werden ihr zugeteilt. Freitag und Samstag werden getrennt eingeteilt."
+        description={fullView
+          ? "Es werden alle angezeigt, die in der Anwesenheitsliste beim gewählten Trainingstag angehakt sind. Jede Führungskraft bekommt ein Thema, die Trainees werden ihr zugeteilt. Freitag und Samstag werden getrennt eingeteilt."
+          : "So sind die Trainees für den gewählten Trainingstag auf die Führungskräfte verteilt. Freitag und Samstag werden getrennt eingeteilt."}
         actions={
           <>
             <div role="tablist" aria-label="Trainingstag" className="flex rounded-full border border-white/25 p-0.5">
@@ -140,25 +154,30 @@ export function Training({
           </>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-3">
-          <KpiTile icon={GraduationCap} label="Trainees" value={trainees.length} sub="anwesend" />
-          <KpiTile icon={UserCheck} label="Führungskräfte" value={leads.length} sub="anwesend" />
-          <KpiTile icon={Users} label="Nicht zugeteilt" value={unassigned.length} sub="Trainees" />
+        <div className={cn("grid gap-3", fullView ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+          <KpiTile icon={GraduationCap} label="Trainees" value={trainees.length} sub={fullView ? "anwesend" : "eingeteilt"} />
+          <KpiTile icon={UserCheck} label="Führungskräfte" value={leads.length} sub={fullView ? "anwesend" : "mit Einteilung"} />
+          {fullView && <KpiTile icon={Users} label="Nicht zugeteilt" value={unassigned.length} sub="Trainees" />}
         </div>
       </SectionHero>
 
-      {trainees.length === 0 && (
+      {fullView && trainees.length === 0 && (
         <div className={cn("rounded-xl border py-8 text-center text-sm text-white/90", DARK_CARD)}>
           Keine Trainees für diesen Trainingstag angemeldet.
         </div>
       )}
-      {leads.length === 0 && (
+      {fullView && leads.length === 0 && (
         <div className={cn("rounded-xl border py-8 text-center text-sm text-white/90", DARK_CARD)}>
           Keine Führungskraft anwesend.
         </div>
       )}
+      {!fullView && leads.length === 0 && (
+        <div className={cn("rounded-xl border py-8 text-center text-sm text-white/90", DARK_CARD)}>
+          Für diesen Trainingstag gibt es noch keine Einteilung.
+        </div>
+      )}
 
-      {unassigned.length > 0 && (
+      {fullView && unassigned.length > 0 && (
         <div className={cn("rounded-xl border p-4", DARK_CARD)}>
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/90">Nicht zugeteilt ({unassigned.length})</h3>
           <ul className="flex flex-col gap-2">
@@ -188,6 +207,9 @@ export function Training({
                     <div className="text-xs text-white/70">{mine.length} Trainee{mine.length === 1 ? "" : "s"}</div>
                   </div>
                 </div>
+                {!fullView ? (
+                  <div className="text-sm font-medium text-[#64DDA3]">{topicLabel(topics[l.id]) ?? "Kein Thema"}</div>
+                ) : (
                 <Select
                   aria-label={`Thema ${l.name}`}
                   value={topics[l.id] ?? ""}
@@ -200,6 +222,7 @@ export function Training({
                     <option key={t.id} className={DARK_OPTION} value={t.id}>{t.label}</option>
                   ))}
                 </Select>
+                )}
                 {mine.length === 0 ? (
                   <p className="text-xs text-white/60">Noch keine Trainees zugeteilt.</p>
                 ) : (

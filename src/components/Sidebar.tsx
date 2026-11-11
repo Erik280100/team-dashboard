@@ -17,7 +17,7 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; access?: "adm
   { id: "struktur", label: "Strukturbaum", icon: Network },
   { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
   { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
-  { id: "training", label: "Training", icon: Dumbbell, access: "lead" },
+  { id: "training", label: "Training", icon: Dumbbell },
   { id: "statistik", label: "Statistik", icon: BarChart3, access: "lead" },
   { id: "konten", label: "Konten", icon: UserCog, access: "admin" },
 ]

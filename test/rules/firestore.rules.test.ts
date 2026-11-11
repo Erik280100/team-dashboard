@@ -323,7 +323,7 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
       await assertSucceeds(setDoc(doc(as("admin"), "training", "fr"), data, { merge: true }))
       await assertSucceeds(getDoc(doc(as("viewer"), "training", "fr")))
       await assertFails(setDoc(doc(as("viewer"), "training", "fr"), data))
-      await assertFails(getDoc(doc(as("member", "m1"), "training", "fr")))
+      await assertSucceeds(getDoc(doc(as("member", "m1"), "training", "fr"))) // Ergebnis der Einteilung dürfen alle lesen
       await assertFails(setDoc(doc(as("member", "m1"), "training", "fr"), data))
       await assertFails(setDoc(doc(as("lead", "lead"), "training", "fr"), { ...data, extra: 1 }))
       await assertFails(setDoc(doc(anon(), "training", "fr"), data))

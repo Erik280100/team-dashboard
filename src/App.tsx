@@ -153,8 +153,10 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   // Training-Tab (nur Führungskräfte, Admin, Lesemodus): Anwesenheit ALLER Personen + gemeinsame Einteilung.
   // Die Abos laufen nur, solange der Tab offen ist.
   const canSeeTraining = auth.isAdmin || auth.isViewer || auth.isLead
-  const trainingActive = canSeeTraining && section === "training"
-  const trainingEmployees = useMemo(() => (trainingActive ? dashboard.employees : []), [trainingActive, dashboard.employees])
+  // Trainees sehen nur das Ergebnis der Einteilung (training/{fr|sa}); die Anwesenheit aller laden nur canSeeTraining.
+  const trainingActive = section === "training"
+  const trainingAttendanceActive = canSeeTraining && trainingActive
+  const trainingEmployees = useMemo(() => (trainingAttendanceActive ? dashboard.employees : []), [trainingAttendanceActive, dashboard.employees])
   const trainingAttendance = useAttendanceDoc(trainingEmployees)
   const [trainingDay, setTrainingDay] = useState<TrainingDay>("fr")
   const training = useTrainingDoc(trainingActive, trainingDay)
@@ -627,7 +629,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   isEditor={auth.isEditor}
                 />
               )}
-              {section === id && id === "training" && canSeeTraining && (
+              {section === id && id === "training" && (
                 <Training
                   day={trainingDay}
                   onDayChange={setTrainingDay}
@@ -640,6 +642,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   assign={training.assign}
                   reset={training.reset}
                   canEdit={auth.isAdmin || auth.isLead}
+                  fullView={canSeeTraining}
                 />
               )}
               {section === id && id === "finanzierungen" && (
