@@ -62,9 +62,13 @@ export function subscribeEmployeeDocs<T>(
     const ref = employeeSubDocRef(e.id, sub, key)
     if (!ref) return () => {}
     return onSnapshot(ref, { includeMetadataChanges: true }, (snap) => {
-      if (snap.metadata.hasPendingWrites) return
       if (snap.exists()) entries.set(e.id, strip<T>(snap.data(), metaKey))
       else entries.delete(e.id)
+      // Eigene, noch unbestätigte Schreibvorgänge nicht ausgeben (die UI zeigt sie schon optimistisch) — aber den Stand
+      // merken: Sonst hielte `entries` den alten Wert, und der nächste Snapshot eines ANDEREN Mitarbeiters (emit() gibt
+      // immer alle aus) würde die optimistische Anzeige auf den alten Stand zurücksetzen. Lehnt der Server ab,
+      // liefert Firestore den Serverstand erneut.
+      if (snap.metadata.hasPendingWrites) return
       if (!snap.metadata.fromCache) confirmed.add(e.id)
       emit()
     }, onError)
