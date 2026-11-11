@@ -16,8 +16,11 @@ export function getAttendanceEntry(
   return {
     seminar: e && e.seminar !== undefined ? !!e.seminar : true,
     seminarReason: (e && e.seminarReason) || "",
-    training: e && e.training !== undefined ? !!e.training : true,
-    trainingReason: (e && e.trainingReason) || "",
+    // Freitag/Samstag getrennt; ältere Einträge kennen nur das gemeinsame "training" (dient als Vorgabe für beide Tage).
+    trainingFr: e && e.trainingFr !== undefined ? !!e.trainingFr : e && e.training !== undefined ? !!e.training : true,
+    trainingFrReason: (e && (e.trainingFrReason || e.trainingReason)) || "",
+    trainingSa: e && e.trainingSa !== undefined ? !!e.trainingSa : e && e.training !== undefined ? !!e.training : true,
+    trainingSaReason: (e && (e.trainingSaReason || e.trainingReason)) || "",
     monatsauftakt: e && e.monatsauftakt !== undefined ? !!e.monatsauftakt : true,
     monatsauftaktReason: (e && e.monatsauftaktReason) || "",
   }

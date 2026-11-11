@@ -1,11 +1,11 @@
-// Training-Einteilung: Dokument training/current (Thema je Führungskraft, Trainee -> Führungskraft).
+// Training-Einteilung je Trainingstag: Dokument training/fr bzw. training/sa (Thema je Führungskraft, Trainee -> Führungskraft).
 // Lesen/Schreiben: Führungskräfte und Admin, Lesemodus nur lesen (siehe firestore.rules).
 // Geschrieben wird feldgenau (merge), damit zwei Führungskräfte, die gleichzeitig einteilen, einander nicht überschreiben.
 // Kein localStorage-Cache (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { deleteField, onSnapshot, setDoc } from "firebase/firestore"
 import { trainingDocRef } from "@/lib/firebase"
-import type { TrainingDoc, TrainingTopic } from "@/types/dashboard"
+import type { TrainingDay, TrainingDoc, TrainingTopic } from "@/types/dashboard"
 
 const EMPTY: TrainingDoc = { topics: {}, assignments: {} }
 
@@ -18,14 +18,17 @@ export interface UseTrainingDocResult extends TrainingDoc {
   reset: () => void
 }
 
-export function useTrainingDoc(enabled: boolean): UseTrainingDocResult {
+export function useTrainingDoc(enabled: boolean, day: TrainingDay): UseTrainingDocResult {
   const [doc, setDocState] = useState<TrainingDoc>(EMPTY)
   const ready = useRef(false)
+  const dayRef = useRef(day)
+  dayRef.current = day
 
   useEffect(() => {
     ready.current = false
-    if (!enabled) { setDocState(EMPTY); return }
-    const ref = trainingDocRef()
+    setDocState(EMPTY) // beim Tageswechsel nicht kurz die Einteilung des anderen Tages zeigen
+    if (!enabled) return
+    const ref = trainingDocRef(day)
     if (!ref) return
     return onSnapshot(
       ref,
@@ -39,10 +42,10 @@ export function useTrainingDoc(enabled: boolean): UseTrainingDocResult {
       },
       (err) => console.warn("Training: Cloud-Verbindung fehlgeschlagen", err)
     )
-  }, [enabled])
+  }, [enabled, day])
 
   const write = useCallback((data: Record<string, unknown>, merge = true) => {
-    const ref = trainingDocRef()
+    const ref = trainingDocRef(dayRef.current)
     if (!ref || !ready.current) return
     (merge ? setDoc(ref, data, { merge: true }) : setDoc(ref, data)).catch((err) =>
       console.warn("Training: Cloud-Speichern fehlgeschlagen", err)

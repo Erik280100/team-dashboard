@@ -1,4 +1,4 @@
-// Training — anwesende Trainees (Anwesenheitsliste, Spalte „Training“) auf die anwesenden Führungskräfte
+// Training — anwesende Trainees (Anwesenheitsliste, Spalten „Training Freitag/Samstag“) auf die anwesenden Führungskräfte
 // verteilen; jede Führungskraft bekommt ein Thema (Telefonieren, Analyse, Beratung, Empfehlungen).
 // Nur für Führungskräfte und Admin sichtbar (Sidebar + App.tsx + firestore.rules).
 import { useMemo } from "react"
@@ -11,7 +11,7 @@ import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
 import { isLeadRole, type RosterEntry } from "@/lib/calc/struktur"
 import { getAttendanceEntry } from "@/hooks/useAttendanceDoc"
 import { useConfirm } from "@/hooks/useConfirm"
-import { TRAINING_TOPICS, type AttendanceEntry, type TrainingTopic } from "@/types/dashboard"
+import { TRAINING_DAYS, TRAINING_TOPICS, type AttendanceEntry, type TrainingDay, type TrainingTopic } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
 interface Person {
@@ -30,8 +30,11 @@ function Avatar({ name }: { name: string }) {
 }
 
 export function Training({
-  roster, employees, attendance, topics, assignments, setTopic, assign, reset, canEdit,
+  day, onDayChange, roster, employees, attendance, topics, assignments, setTopic, assign, reset, canEdit,
 }: {
+  /** Trainingstag: Freitag oder Samstag (je Tag eigene Anwesenheit und eigene Einteilung). */
+  day: TrainingDay
+  onDayChange: (day: TrainingDay) => void
   /** Voller Strukturbaum-Roster (Rolle + Name). */
   roster: RosterEntry[]
   employees: readonly EmployeeMeta[]
@@ -51,14 +54,15 @@ export function Training({
     const leads: Person[] = []
     const trainees: Person[] = []
     for (const r of roster) {
-      if (!getAttendanceEntry(attendance, r.name).training) continue
+      const a = getAttendanceEntry(attendance, r.name)
+      if (!(day === "fr" ? a.trainingFr : a.trainingSa)) continue
       const id = ids.get(r.name.trim().toLowerCase())
       if (!id) continue
       ;(isLeadRole(r.role) ? leads : trainees).push({ id, name: r.name })
     }
     const byName = (a: Person, b: Person) => a.name.localeCompare(b.name, "de")
     return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
-  }, [roster, employees, attendance])
+  }, [roster, employees, attendance, day])
 
   const leadIds = useMemo(() => new Set(leads.map((l) => l.id)), [leads])
   // Zuteilungen auf nicht (mehr) anwesende Führungskräfte zählen nicht.
@@ -66,7 +70,8 @@ export function Training({
   const unassigned = trainees.filter((t) => !validFk(t))
 
   async function onReset() {
-    if (!(await confirm("Einteilung (Themen und Zuteilungen) wirklich zurücksetzen?"))) return
+    const dayLabel = TRAINING_DAYS.find((d) => d.id === day)?.label
+    if (!(await confirm(`Einteilung für ${dayLabel} (Themen und Zuteilungen) wirklich zurücksetzen?`))) return
     reset()
   }
 
@@ -102,18 +107,37 @@ export function Training({
         eyebrow="Team"
         title="Training"
         badge={`${trainees.length} Trainees · ${leads.length} Führungskräfte`}
-        description="Es werden alle angezeigt, die in der Anwesenheitsliste beim Training angehakt sind. Jede Führungskraft bekommt ein Thema, die Trainees werden ihr zugeteilt."
+        description="Es werden alle angezeigt, die in der Anwesenheitsliste beim gewählten Trainingstag angehakt sind. Jede Führungskraft bekommt ein Thema, die Trainees werden ihr zugeteilt. Freitag und Samstag werden getrennt eingeteilt."
         actions={
-          canEdit && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
-              onClick={onReset}
-            >
-              Einteilung zurücksetzen
-            </Button>
-          )
+          <>
+            <div role="tablist" aria-label="Trainingstag" className="flex rounded-full border border-white/25 p-0.5">
+              {TRAINING_DAYS.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={day === d.id}
+                  onClick={() => onDayChange(d.id)}
+                  className={cn(
+                    "rounded-full px-4 py-1 text-sm font-semibold transition-colors",
+                    day === d.id ? "bg-[#64DDA3] text-[#0f2633]" : "text-white/80 hover:bg-white/10"
+                  )}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                onClick={onReset}
+              >
+                Einteilung zurücksetzen
+              </Button>
+            )}
+          </>
         }
       >
         <div className="grid gap-3 sm:grid-cols-3">
@@ -125,7 +149,7 @@ export function Training({
 
       {trainees.length === 0 && (
         <div className={cn("rounded-xl border py-8 text-center text-sm text-white/90", DARK_CARD)}>
-          Keine Trainees beim Training angemeldet.
+          Keine Trainees für diesen Trainingstag angemeldet.
         </div>
       )}
       {leads.length === 0 && (

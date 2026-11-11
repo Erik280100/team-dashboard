@@ -71,15 +71,17 @@ export function Kalender({
 
   const counts = useMemo(() => {
     let seminar = 0
-    let training = 0
+    let trainingFr = 0
+    let trainingSa = 0
     let monatsauftakt = 0
     employeeRoster.forEach(({ name }) => {
       const a = getAttendanceEntry(attendance, name)
       if (a.seminar) seminar++
-      if (a.training) training++
+      if (a.trainingFr) trainingFr++
+      if (a.trainingSa) trainingSa++
       if (a.monatsauftakt) monatsauftakt++
     })
-    return { seminar, training, monatsauftakt }
+    return { seminar, trainingFr, trainingSa, monatsauftakt }
   }, [employeeRoster, attendance])
   const total = employeeRoster.length
   const pctOfTotal = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0)
@@ -121,14 +123,18 @@ export function Kalender({
           </>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-2">
             <KpiTile icon={Presentation} label="Seminar" value={`${counts.seminar} / ${total}`} sub="anwesend" />
             <MintBar pct={pctOfTotal(counts.seminar)} />
           </div>
           <div className="flex flex-col gap-2">
-            <KpiTile icon={GraduationCap} label="Training" value={`${counts.training} / ${total}`} sub="anwesend" />
-            <MintBar pct={pctOfTotal(counts.training)} />
+            <KpiTile icon={GraduationCap} label="Training Freitag" value={`${counts.trainingFr} / ${total}`} sub="anwesend" />
+            <MintBar pct={pctOfTotal(counts.trainingFr)} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <KpiTile icon={GraduationCap} label="Training Samstag" value={`${counts.trainingSa} / ${total}`} sub="anwesend" />
+            <MintBar pct={pctOfTotal(counts.trainingSa)} />
           </div>
           <div className="flex flex-col gap-2">
             <KpiTile icon={CalendarCheck} label="Monatsauftakt" value={`${counts.monatsauftakt} / ${total}`} sub="anwesend" />
@@ -142,12 +148,13 @@ export function Kalender({
           <div className="py-8 text-center text-sm text-white/90">Noch keine Mitarbeiter angelegt.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse text-sm">
+            <table className="w-full min-w-[720px] border-collapse text-sm">
               <thead>
                 <tr className="border-b-2 border-white/25 text-left text-[11px] font-bold uppercase tracking-wide text-white/90">
                   <th className="px-4 py-3">Mitarbeiter</th>
                   <th className="px-4 py-3">Seminar</th>
-                  <th className="px-4 py-3">Training</th>
+                  <th className="px-4 py-3">Training Freitag</th>
+                  <th className="px-4 py-3">Training Samstag</th>
                   <th className="px-4 py-3">Monatsauftakt</th>
                 </tr>
               </thead>
@@ -159,7 +166,7 @@ export function Kalender({
                       key={name}
                       className={cn(
                         "border-b border-white/15 transition-colors even:bg-white/[.04] hover:bg-white/[.08]",
-                        (!a.seminar || !a.training || !a.monatsauftakt) && "shadow-[inset_3px_0_0_rgba(226,104,91,.7)]"
+                        (!a.seminar || !a.trainingFr || !a.trainingSa || !a.monatsauftakt) && "shadow-[inset_3px_0_0_rgba(226,104,91,.7)]"
                       )}
                     >
                       <td className="px-4 py-3">
@@ -181,11 +188,20 @@ export function Kalender({
                       </td>
                       <td className="px-4 py-3">
                         <AttendanceToggle
-                          label={`Training – ${name}`}
-                          present={a.training}
-                          reason={a.trainingReason}
-                          onToggle={(present) => setAttendanceEntry(name, { training: present, ...(present ? { trainingReason: "" } : {}) })}
-                          onReasonChange={(reason) => setAttendanceEntry(name, { trainingReason: reason })}
+                          label={`Training Freitag – ${name}`}
+                          present={a.trainingFr}
+                          reason={a.trainingFrReason}
+                          onToggle={(present) => setAttendanceEntry(name, { trainingFr: present, ...(present ? { trainingFrReason: "" } : {}) })}
+                          onReasonChange={(reason) => setAttendanceEntry(name, { trainingFrReason: reason })}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <AttendanceToggle
+                          label={`Training Samstag – ${name}`}
+                          present={a.trainingSa}
+                          reason={a.trainingSaReason}
+                          onToggle={(present) => setAttendanceEntry(name, { trainingSa: present, ...(present ? { trainingSaReason: "" } : {}) })}
+                          onReasonChange={(reason) => setAttendanceEntry(name, { trainingSaReason: reason })}
                         />
                       </td>
                       <td className="px-4 py-3">

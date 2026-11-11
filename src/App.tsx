@@ -43,7 +43,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ChangePasswordPage } from "@/components/ChangePasswordPage"
 import type { MonthKey } from "@/types/archive"
-import type { OrgChartDoc } from "@/types/dashboard"
+import type { OrgChartDoc, TrainingDay } from "@/types/dashboard"
 
 // Sektionen außer dem Dashboard werden erst beim Öffnen geladen (kleineres Start-Paket).
 const Overview = lazy(() => import("@/components/sections/Overview").then((m) => ({ default: m.Overview })))
@@ -133,7 +133,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const trainingActive = canSeeTraining && section === "training"
   const trainingEmployees = useMemo(() => (trainingActive ? dashboard.employees : []), [trainingActive, dashboard.employees])
   const trainingAttendance = useAttendanceDoc(trainingEmployees)
-  const training = useTrainingDoc(trainingActive)
+  const [trainingDay, setTrainingDay] = useState<TrainingDay>("fr")
+  const training = useTrainingDoc(trainingActive, trainingDay)
   const planung = usePlanungDoc(accessibleEmployees)
   const umsaetze = useUmsaetzeDoc(auth, dashboard.employees)
   const finanzierungen = useFinanzierungenDoc(auth, dashboard.employees)
@@ -606,6 +607,8 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
               )}
               {section === id && id === "training" && canSeeTraining && (
                 <Training
+                  day={trainingDay}
+                  onDayChange={setTrainingDay}
                   roster={allRoster}
                   employees={dashboard.employees}
                   attendance={trainingAttendance.attendance}

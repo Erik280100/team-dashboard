@@ -22,8 +22,14 @@ export interface DashboardDoc {
 export interface AttendanceEntry {
   seminar: boolean
   seminarReason: string
-  training: boolean
-  trainingReason: string
+  /** Training Freitag / Samstag (getrennt abgehakt). */
+  trainingFr: boolean
+  trainingFrReason: string
+  trainingSa: boolean
+  trainingSaReason: string
+  /** Altfeld aus der Zeit vor der Aufteilung auf Freitag/Samstag — dient nur noch als Vorgabe, solange der Tag nicht gesetzt ist. */
+  training?: boolean
+  trainingReason?: string
   monatsauftakt: boolean
   monatsauftaktReason: string
 }
@@ -38,7 +44,15 @@ export const TRAINING_TOPICS = [
 
 export type TrainingTopic = (typeof TRAINING_TOPICS)[number]["id"]
 
-/** training/current — Schlüssel sind Mitarbeiter-IDs. */
+/** Trainingstage — je Tag eine eigene Einteilung (Dokument training/{fr|sa}). */
+export const TRAINING_DAYS = [
+  { id: "fr", label: "Freitag" },
+  { id: "sa", label: "Samstag" },
+] as const
+
+export type TrainingDay = (typeof TRAINING_DAYS)[number]["id"]
+
+/** training/{fr|sa} — Schlüssel sind Mitarbeiter-IDs. */
 export interface TrainingDoc {
   /** Führungskraft -> Thema */
   topics: Record<string, TrainingTopic>
