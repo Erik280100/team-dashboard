@@ -167,7 +167,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   const dueSoon = dueSoonTodos(boardTodos.todos, today)
   // Rufzeichen auch schon, sobald das Banner "Bald fällige Todos" auf dem Dashboard erscheint
   const boardAlert = dueSoon.length > 0 || hasOpenDueTodos(boardTodos.todos, today) || hasUnseenAssigned(boardTodos.todos)
-  const archive = useMonthArchive(auth.isAdmin, dashboard.employees)
+  const archive = useMonthArchive(auth.isAdmin, dashboard.employees, auth.isViewer)
   // Controlling, Anwesenheit, Finanzierungen und Rechner-Auswahl: Admin sieht den ganzen Baum,
   // alle anderen nur den Teilbaum ab dem eigenen Knoten. Dashboard, Mitarbeiter und Strukturbaum zeigen den ganzen Baum.
   const seesAll = auth.isAdmin || auth.isViewer // Lesemodus sieht wie der Admin den ganzen Baum (schreiben darf nur der Admin)

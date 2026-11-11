@@ -52,7 +52,9 @@ export interface UseMonthArchiveResult {
   closing: boolean
 }
 
-export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeMeta[] = []): UseMonthArchiveResult {
+export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeMeta[] = [], hideBonus = false): UseMonthArchiveResult {
+  const hideBonusRef = useRef(hideBonus) // Lesemodus: Boni der archivierten Monate ausblenden
+  hideBonusRef.current = hideBonus
   const employeesRef = useRef(employees)
   employeesRef.current = employees
   const [index, setIndex] = useState<ArchiveIndexEntry[]>([])
@@ -112,7 +114,7 @@ export function useMonthArchive(isEditor: boolean, employees: readonly EmployeeM
       const rowDocs: Record<string, unknown>[] = []
       const all = await getDocs(collection(firestore, "snapshots", month, "employees"))
       all.forEach((d) => rowDocs.push(d.data()))
-      const data = { ...(snap.data() as Omit<MonthSnapshot, "rows">), rows: rowDocs.map(employeeDocToRow) } as MonthSnapshot
+      const data = { ...(snap.data() as Omit<MonthSnapshot, "rows">), rows: rowDocs.map((d) => (hideBonusRef.current ? { ...employeeDocToRow(d), bonus: 0 } : employeeDocToRow(d))) } as MonthSnapshot
       cacheRef.current.set(month, data)
       setSnapshotStatus((s) => ({ ...s, [month]: "ready" }))
       bumpCacheVersion((n) => n + 1)

@@ -100,7 +100,12 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
     () => Object.values(stored).map((s) => s.meta).sort((a, b) => a.name.localeCompare(b.name, "de")),
     [stored]
   )
-  const rows = useMemo(() => employees.map((m) => stored[m.id].row), [employees, stored])
+  // Lesemodus (viewer): Boni werden ausgeblendet, damit keine €-Beträge inkl. Bonus erscheinen.
+  const hideBonus = account.role === "viewer"
+  const rows = useMemo(
+    () => employees.map((m) => (hideBonus ? { ...stored[m.id].row, bonus: 0 } : stored[m.id].row)),
+    [employees, stored, hideBonus]
+  )
 
   const latest = useRef({ rows, employees, teamGoal, history })
   latest.current = { rows, employees, teamGoal, history }
