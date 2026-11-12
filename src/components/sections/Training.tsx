@@ -1,6 +1,6 @@
 // Training — anwesende Trainees (Anwesenheitsliste, Spalten „Training Freitag/Samstag“) bekommen je ein Thema
 // (z. B. Analyse, Beratung/Verkauf); jedes Thema wird einer anwesenden Führungskraft (Trainer) zugeteilt. Die Trainees
-// werden nach ihrer direkten Führungskraft (Strukturbaum) gruppiert: eine Kachel je direkter Führungskraft.
+// werden nach ihrer zuständigen Führungskraft (nächste Führungskraft nach oben im Strukturbaum) gruppiert: eine Kachel je Führungskraft.
 // Führungskräfte und Admin (fullView) sehen und bearbeiten alles; alle anderen (Trainees) sehen nur das Ergebnis der
 // Einteilung (Trainee, Thema, Trainer).
 import { useMemo } from "react"
@@ -19,12 +19,12 @@ import { cn } from "@/lib/utils"
 interface Person {
   id: string
   name: string
-  /** Direkte Führungskraft laut Strukturbaum. */
+  /** Zuständige Führungskraft laut Strukturbaum (nächste Führungskraft nach oben). */
   manager: string | null
 }
 
 const topicLabel = (t: TrainingTopic | undefined) => TRAINING_TOPICS.find((x) => x.id === t)?.label
-const NO_MANAGER = "Ohne direkte Führungskraft"
+const NO_MANAGER = "Ohne Führungskraft"
 
 function Avatar({ name }: { name: string }) {
   return (
@@ -61,8 +61,22 @@ export function Training({
   const { leads, trainees } = useMemo(() => {
     const ids = idByName(employees)
     const nameById = new Map(employees.map((e) => [e.id, e.name]))
-    const managerByName = new Map(roster.map((r) => [r.name.trim().toLowerCase(), r.managerName]))
-    const managerOf = (name: string) => managerByName.get(name.trim().toLowerCase()) ?? null
+    // Zuständige Führungskraft = nächste Person nach oben im Strukturbaum mit Führungskraft-Rolle (Trainees ohne Führungsrolle überspringen).
+    const entryByName = new Map(roster.map((r) => [r.name.trim().toLowerCase(), r]))
+    const managerOf = (name: string): string | null => {
+      const seen = new Set<string>()
+      let cur = entryByName.get(name.trim().toLowerCase())
+      while (cur?.managerName) {
+        const key = cur.managerName.trim().toLowerCase()
+        if (seen.has(key)) return null
+        seen.add(key)
+        const up = entryByName.get(key)
+        if (!up) return cur.managerName
+        if (isLeadRole(up.role)) return up.name
+        cur = up
+      }
+      return null
+    }
     const leads: { id: string; name: string }[] = []
     const trainees: Person[] = []
     const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "de")
@@ -78,7 +92,7 @@ export function Training({
       const id = ids.get(r.name.trim().toLowerCase())
       if (!id) continue
       if (isLeadRole(r.role)) leads.push({ id, name: r.name })
-      else trainees.push({ id, name: r.name, manager: r.managerName })
+      else trainees.push({ id, name: r.name, manager: managerOf(r.name) })
     }
     return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
   }, [roster, employees, attendance, day, fullView, assignments, topics])
@@ -134,8 +148,8 @@ export function Training({
         title="Training"
         badge={`${trainees.length} Trainees · ${leads.length} Führungskräfte`}
         description={fullView
-          ? "Es werden alle angezeigt, die in der Anwesenheitsliste beim gewählten Trainingstag angehakt sind. Jedes Thema wird einer Führungskraft zugeteilt, jeder Trainee bekommt ein Thema. Die Trainees sind nach ihrer direkten Führungskraft gruppiert. Freitag und Samstag werden getrennt eingeteilt."
-          : "So sind die Trainees für den gewählten Trainingstag eingeteilt (Thema und Trainer), gruppiert nach ihrer direkten Führungskraft. Freitag und Samstag werden getrennt eingeteilt."}
+          ? "Es werden alle angezeigt, die in der Anwesenheitsliste beim gewählten Trainingstag angehakt sind. Jedes Thema wird einer Führungskraft zugeteilt, jeder Trainee bekommt ein Thema. Die Trainees sind nach ihrer Führungskraft gruppiert. Freitag und Samstag werden getrennt eingeteilt."
+          : "So sind die Trainees für den gewählten Trainingstag eingeteilt (Thema und Trainer), gruppiert nach ihrer Führungskraft. Freitag und Samstag werden getrennt eingeteilt."}
         actions={
           <>
             <div role="tablist" aria-label="Trainingstag" className="flex rounded-full border border-white/25 p-0.5">
