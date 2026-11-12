@@ -1,4 +1,4 @@
-// Training-Einteilung je Trainingstag: Dokument training/fr bzw. training/sa (Thema je Führungskraft, Trainee -> Führungskraft).
+// Training-Einteilung je Trainingstag: Dokument training/fr bzw. training/sa (Thema je Trainee, Trainee -> Führungskraft).
 // Lesen/Schreiben: Führungskräfte und Admin, Lesemodus nur lesen (siehe firestore.rules).
 // Geschrieben wird feldgenau (merge), damit zwei Führungskräfte, die gleichzeitig einteilen, einander nicht überschreiben.
 // Kein localStorage-Cache (mehrere Konten pro Browser).
@@ -10,8 +10,8 @@ import type { TrainingDay, TrainingDoc, TrainingTopic } from "@/types/dashboard"
 const EMPTY: TrainingDoc = { topics: {}, assignments: {} }
 
 export interface UseTrainingDocResult extends TrainingDoc {
-  /** Thema einer Führungskraft setzen (null = entfernen). */
-  setTopic: (fkId: string, topic: TrainingTopic | null) => void
+  /** Thema eines Trainees setzen (null = entfernen). */
+  setTopic: (traineeId: string, topic: TrainingTopic | null) => void
   /** Trainee einer Führungskraft zuteilen (null = Zuteilung aufheben). */
   assign: (traineeId: string, fkId: string | null) => void
   /** Gesamte Einteilung (Themen und Zuteilungen) löschen. */

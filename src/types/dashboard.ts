@@ -34,12 +34,14 @@ export interface AttendanceEntry {
   monatsauftaktReason: string
 }
 
-/** Themen beim Training — je Führungskraft eines. */
+/** Themen beim Training — je Trainee eines, alphabetisch nach Label sortiert (id „beratung“ bleibt wegen gespeicherter Daten). */
 export const TRAINING_TOPICS = [
-  { id: "telefonieren", label: "Telefonieren" },
   { id: "analyse", label: "Analyse" },
-  { id: "beratung", label: "Beratung" },
+  { id: "beratung", label: "Beratung/Verkauf" },
   { id: "empfehlungen", label: "Empfehlungen" },
+  { id: "telefonieren-bekannte", label: "Telefonieren Bekannte" },
+  { id: "telefonieren-empfehlungen", label: "Telefonieren Empfehlungen" },
+  { id: "vorverkauf-at", label: "Vorverkauf AT" },
 ] as const
 
 export type TrainingTopic = (typeof TRAINING_TOPICS)[number]["id"]

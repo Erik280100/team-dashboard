@@ -1,5 +1,5 @@
 // Training — anwesende Trainees (Anwesenheitsliste, Spalten „Training Freitag/Samstag“) auf die anwesenden Führungskräfte
-// verteilen; jede Führungskraft bekommt ein Thema (Telefonieren, Analyse, Beratung, Empfehlungen).
+// verteilen; jeder Trainee bekommt ein Thema (Telefonieren, Analyse, Beratung, Empfehlungen).
 // Führungskräfte und Admin (fullView) sehen und bearbeiten alles; alle anderen (Trainees) sehen nur das Ergebnis der
 // Einteilung: bei welcher Führungskraft (mit Thema) welcher Trainee ist.
 import { useMemo } from "react"
@@ -58,9 +58,9 @@ export function Training({
     const trainees: Person[] = []
     const byName = (a: Person, b: Person) => a.name.localeCompare(b.name, "de")
     if (!fullView) {
-      // Ergebnisansicht ohne Anwesenheitsdaten: Führungskräfte = alle mit Thema oder zugeteilten Trainees, Trainees = alle Zugeteilten.
+      // Ergebnisansicht ohne Anwesenheitsdaten: Führungskräfte = alle mit zugeteilten Trainees, Trainees = alle Zugeteilten.
       const nameById = new Map(employees.map((e) => [e.id, e.name]))
-      const fkIds = new Set([...Object.keys(topics), ...Object.values(assignments)])
+      const fkIds = new Set(Object.values(assignments))
       for (const id of fkIds) { const name = nameById.get(id); if (name) leads.push({ id, name }) }
       for (const id of Object.keys(assignments)) { const name = nameById.get(id); if (name) trainees.push({ id, name }) }
       return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
@@ -73,7 +73,7 @@ export function Training({
       ;(isLeadRole(r.role) ? leads : trainees).push({ id, name: r.name })
     }
     return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
-  }, [roster, employees, attendance, day, fullView, topics, assignments])
+  }, [roster, employees, attendance, day, fullView, assignments])
 
   const leadIds = useMemo(() => new Set(leads.map((l) => l.id)), [leads])
   // Zuteilungen auf nicht (mehr) anwesende Führungskräfte zählen nicht.
@@ -90,7 +90,7 @@ export function Training({
     <>
       {leads.map((l) => (
         <option key={l.id} className={DARK_OPTION} value={l.id}>
-          {l.name}{topicLabel(topics[l.id]) ? ` – ${topicLabel(topics[l.id])}` : ""}
+          {l.name}
         </option>
       ))}
     </>
@@ -113,6 +113,27 @@ export function Training({
     )
   }
 
+  function topicSelect(trainee: Person, width: string) {
+    if (!fullView) {
+      const label = topicLabel(topics[trainee.id])
+      return label ? <span className="text-xs font-medium text-[#64DDA3]">{label}</span> : null
+    }
+    return (
+      <Select
+        aria-label={`Thema für ${trainee.name}`}
+        value={topics[trainee.id] ?? ""}
+        disabled={!canEdit}
+        onChange={(e) => setTopic(trainee.id, (e.target.value || null) as TrainingTopic | null)}
+        className={cn("h-8 text-xs", width, DARK_SELECT)}
+      >
+        <option className={DARK_OPTION} value="">Thema wählen…</option>
+        {TRAINING_TOPICS.map((t) => (
+          <option key={t.id} className={DARK_OPTION} value={t.id}>{t.label}</option>
+        ))}
+      </Select>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <SectionHero
@@ -120,8 +141,8 @@ export function Training({
         title="Training"
         badge={`${trainees.length} Trainees · ${leads.length} Führungskräfte`}
         description={fullView
-          ? "Es werden alle angezeigt, die in der Anwesenheitsliste beim gewählten Trainingstag angehakt sind. Jede Führungskraft bekommt ein Thema, die Trainees werden ihr zugeteilt. Freitag und Samstag werden getrennt eingeteilt."
-          : "So sind die Trainees für den gewählten Trainingstag auf die Führungskräfte verteilt. Freitag und Samstag werden getrennt eingeteilt."}
+          ? "Es werden alle angezeigt, die in der Anwesenheitsliste beim gewählten Trainingstag angehakt sind. Jeder Trainee bekommt ein Thema und wird einer Führungskraft zugeteilt. Freitag und Samstag werden getrennt eingeteilt."
+          : "So sind die Trainees (mit ihrem Thema) für den gewählten Trainingstag auf die Führungskräfte verteilt. Freitag und Samstag werden getrennt eingeteilt."}
         actions={
           <>
             <div role="tablist" aria-label="Trainingstag" className="flex rounded-full border border-white/25 p-0.5">
@@ -178,79 +199,63 @@ export function Training({
       )}
 
       {fullView && unassigned.length > 0 && (
-        <div className={cn("rounded-xl border p-4", DARK_CARD)}>
+        <section className={cn("rounded-xl border p-4", DARK_CARD)}>
           <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/90">Nicht zugeteilt ({unassigned.length})</h3>
-          <ul className="flex flex-col gap-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {unassigned.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+              <div key={t.id} className="flex flex-col gap-2 rounded-lg border border-white/15 bg-white/5 p-3">
+                <div className="flex items-center gap-2">
                   <Avatar name={t.name} />
-                  <span className="font-semibold">{t.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{t.name}</span>
                 </div>
-                {fkSelect(t, null, "w-56")}
-              </li>
+                {topicSelect(t, "w-full")}
+                {fkSelect(t, null, "w-full")}
+              </div>
             ))}
-          </ul>
-        </div>
+          </div>
+        </section>
       )}
 
-      {leads.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {leads.map((l) => {
-            const mine = trainees.filter((t) => validFk(t) === l.id)
-            return (
-              <div key={l.id} className={cn("flex flex-col gap-3 rounded-xl border p-4", DARK_CARD)}>
-                <div className="flex items-center gap-3">
-                  <Avatar name={l.name} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{l.name}</div>
-                    <div className="text-xs text-white/70">{mine.length} Trainee{mine.length === 1 ? "" : "s"}</div>
-                  </div>
-                </div>
-                {!fullView ? (
-                  <div className="text-sm font-medium text-[#64DDA3]">{topicLabel(topics[l.id]) ?? "Kein Thema"}</div>
-                ) : (
-                <Select
-                  aria-label={`Thema ${l.name}`}
-                  value={topics[l.id] ?? ""}
-                  disabled={!canEdit}
-                  onChange={(e) => setTopic(l.id, (e.target.value || null) as TrainingTopic | null)}
-                  className={cn("h-8 text-xs", DARK_SELECT)}
-                >
-                  <option className={DARK_OPTION} value="">Thema wählen…</option>
-                  {TRAINING_TOPICS.map((t) => (
-                    <option key={t.id} className={DARK_OPTION} value={t.id}>{t.label}</option>
-                  ))}
-                </Select>
-                )}
-                {mine.length === 0 ? (
-                  <p className="text-xs text-white/60">Noch keine Trainees zugeteilt.</p>
-                ) : (
-                  <ul className="flex flex-col gap-2">
-                    {mine.map((t) => (
-                      <li key={t.id} className="flex items-center gap-2">
-                        <Avatar name={t.name} />
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.name}</span>
-                        {fkSelect(t, l.id, "w-36")}
-                        {canEdit && (
-                          <button
-                            type="button"
-                            aria-label={`${t.name} entfernen`}
-                            onClick={() => assign(t.id, null)}
-                            className="rounded-md p-1 text-white/70 hover:bg-white/10 hover:text-white"
-                          >
-                            <X aria-hidden="true" className="size-4" />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+      {leads.map((l) => {
+        const mine = trainees.filter((t) => validFk(t) === l.id)
+        return (
+          <section key={l.id} className={cn("flex flex-col gap-3 rounded-xl border p-4", DARK_CARD)}>
+            <div className="flex items-center gap-3">
+              <Avatar name={l.name} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-semibold">{l.name}</div>
+                <div className="text-xs text-white/70">{mine.length} Trainee{mine.length === 1 ? "" : "s"}</div>
               </div>
-            )
-          })}
-        </div>
-      )}
+            </div>
+            {mine.length === 0 ? (
+              <p className="text-xs text-white/60">Noch keine Trainees zugeteilt.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {mine.map((t) => (
+                  <div key={t.id} className="flex flex-col gap-2 rounded-lg border border-white/15 bg-white/5 p-3">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={t.name} />
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{t.name}</span>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          aria-label={`${t.name} entfernen`}
+                          onClick={() => assign(t.id, null)}
+                          className="rounded-md p-1 text-white/70 hover:bg-white/10 hover:text-white"
+                        >
+                          <X aria-hidden="true" className="size-4" />
+                        </button>
+                      )}
+                    </div>
+                    {topicSelect(t, "w-full")}
+                    {fkSelect(t, l.id, "w-full")}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )
+      })}
     </div>
   )
 }

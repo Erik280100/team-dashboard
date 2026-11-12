@@ -73,12 +73,19 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
     )
   }, [])
 
-  /** Setzt alle sichtbaren Anwesenheits-Einträge auf die Defaults zurück (leere Dokumente). */
+  /** Setzt bei allen sichtbaren Mitarbeitern alle Anwesenheiten (Seminar, Training Fr/Sa, Monatsauftakt) auf „nicht anwesend“. */
   const resetAttendance = useCallback(() => {
-    setAttendance({})
-    if (!attendanceReady.current) return
+    const absent: AttendanceEntry = {
+      seminar: false, seminarReason: "",
+      trainingFr: false, trainingFrReason: "",
+      trainingSa: false, trainingSaReason: "",
+      monatsauftakt: false, monatsauftaktReason: "",
+    }
+    const next: Record<string, AttendanceEntry> = {}
+    for (const e of employeesRef.current) next[e.name] = { ...absent }
+    setAttendance(next)
     for (const e of employeesRef.current) {
-      writeEmployeeSubDoc(e.id, "attendance", "current", {}).catch((err) =>
+      writeEmployeeSubDoc(e.id, "attendance", "current", { ...absent }).catch((err) =>
         console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)
       )
     }

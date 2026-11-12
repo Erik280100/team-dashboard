@@ -87,7 +87,7 @@ export function Kalender({
   const pctOfTotal = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0)
 
   async function onResetAttendance() {
-    const ok = await confirm("Anwesenheitsliste wirklich für alle zurücksetzen?")
+    const ok = await confirm("Wirklich alle auf „nicht anwesend“ zurücksetzen?")
     if (!ok) return
     resetAttendance()
   }
