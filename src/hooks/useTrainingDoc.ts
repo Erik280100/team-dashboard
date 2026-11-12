@@ -1,4 +1,4 @@
-// Training-Einteilung je Trainingstag: Dokument training/fr bzw. training/sa (Thema je Trainee, Trainee -> Führungskraft).
+// Training-Einteilung je Trainingstag: Dokument training/fr bzw. training/sa (topics: Trainee -> Thema, assignments: Thema -> Führungskraft/Trainer).
 // Lesen/Schreiben: Führungskräfte und Admin, Lesemodus nur lesen (siehe firestore.rules).
 // Geschrieben wird feldgenau (merge), damit zwei Führungskräfte, die gleichzeitig einteilen, einander nicht überschreiben.
 // Kein localStorage-Cache (mehrere Konten pro Browser).
@@ -12,8 +12,8 @@ const EMPTY: TrainingDoc = { topics: {}, assignments: {} }
 export interface UseTrainingDocResult extends TrainingDoc {
   /** Thema eines Trainees setzen (null = entfernen). */
   setTopic: (traineeId: string, topic: TrainingTopic | null) => void
-  /** Trainee einer Führungskraft zuteilen (null = Zuteilung aufheben). */
-  assign: (traineeId: string, fkId: string | null) => void
+  /** Thema einer Führungskraft (Trainer) zuteilen (null = Zuteilung aufheben). */
+  assign: (topic: TrainingTopic, fkId: string | null) => void
   /** Gesamte Einteilung (Themen und Zuteilungen) löschen. */
   reset: () => void
 }
@@ -52,24 +52,24 @@ export function useTrainingDoc(enabled: boolean, day: TrainingDay): UseTrainingD
     )
   }, [])
 
-  const setTopic = useCallback((fkId: string, topic: TrainingTopic | null) => {
+  const setTopic = useCallback((traineeId: string, topic: TrainingTopic | null) => {
     setDocState((d) => {
       const topics = { ...d.topics }
-      if (topic) topics[fkId] = topic
-      else delete topics[fkId]
+      if (topic) topics[traineeId] = topic
+      else delete topics[traineeId]
       return { ...d, topics }
     })
-    write({ topics: { [fkId]: topic ?? deleteField() } })
+    write({ topics: { [traineeId]: topic ?? deleteField() } })
   }, [write])
 
-  const assign = useCallback((traineeId: string, fkId: string | null) => {
+  const assign = useCallback((topic: TrainingTopic, fkId: string | null) => {
     setDocState((d) => {
       const assignments = { ...d.assignments }
-      if (fkId) assignments[traineeId] = fkId
-      else delete assignments[traineeId]
+      if (fkId) assignments[topic] = fkId
+      else delete assignments[topic]
       return { ...d, assignments }
     })
-    write({ assignments: { [traineeId]: fkId ?? deleteField() } })
+    write({ assignments: { [topic]: fkId ?? deleteField() } })
   }, [write])
 
   const reset = useCallback(() => {
