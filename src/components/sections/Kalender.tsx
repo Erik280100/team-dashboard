@@ -64,10 +64,14 @@ export function Kalender({
   const [sort, setSort] = useState<AttendanceSort>("name")
   const confirm = useConfirm()
 
+  const [filter, setFilter] = useState("")
+
   const sortedRoster = useMemo(() => {
-    if (sort === "name") return [...employeeRoster].sort((a, b) => a.name.localeCompare(b.name, "de"))
-    return employeeRoster // "struktur": Roster-Vorordnung (Baum-Vorordnung) unverändert lassen
-  }, [employeeRoster, sort])
+    const q = filter.trim().toLowerCase()
+    const list = q ? employeeRoster.filter((r) => r.name.toLowerCase().includes(q)) : employeeRoster
+    if (sort === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name, "de"))
+    return list // "struktur": Roster-Vorordnung (Baum-Vorordnung) unverändert lassen
+  }, [employeeRoster, sort, filter])
 
   const counts = useMemo(() => {
     let seminar = 0
@@ -101,6 +105,14 @@ export function Kalender({
         description="Jede·r kann hier selbst an-/abhaken. Bei Abwesenheit bitte kurz den Absagegrund eintragen. Personen mit Status „Kommt vielleicht“ werden hier nicht angezeigt."
         actions={
           <>
+            <input
+              type="search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Name suchen…"
+              aria-label="Anwesenheitsliste nach Name filtern"
+              className={cn("h-9 w-48 rounded-md border px-3 text-sm outline-none focus-visible:border-[#64DDA3]", DARK_INPUT)}
+            />
             <Select
               aria-label="Anwesenheitsliste sortieren"
               value={sort}
@@ -159,6 +171,9 @@ export function Kalender({
                 </tr>
               </thead>
               <tbody>
+                {sortedRoster.length === 0 && (
+                  <tr><td colSpan={5} className="px-4 py-6 text-center text-white/80">Kein Treffer für „{filter}“.</td></tr>
+                )}
                 {sortedRoster.map(({ name }) => {
                   const a = getAttendanceEntry(attendance, name)
                   return (
