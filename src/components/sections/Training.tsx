@@ -26,6 +26,25 @@ interface Person {
 const topicLabel = (t: TrainingTopic | undefined) => TRAINING_TOPICS.find((x) => x.id === t)?.label
 const NO_MANAGER = "Ohne Führungskraft"
 
+// Je Thema eine feste Farbe (Chip, Rand, Hintergrund), damit gleiche Themen überall sofort erkennbar sind.
+const TOPIC_COLORS: Record<TrainingTopic, { chip: string; card: string; dot: string }> = {
+  analyse: { chip: "bg-sky-400/20 text-sky-200 border-sky-400/50", card: "border-sky-400/50 bg-sky-400/10", dot: "bg-sky-400" },
+  beratung: { chip: "bg-amber-400/20 text-amber-200 border-amber-400/50", card: "border-amber-400/50 bg-amber-400/10", dot: "bg-amber-400" },
+  empfehlungen: { chip: "bg-fuchsia-400/20 text-fuchsia-200 border-fuchsia-400/50", card: "border-fuchsia-400/50 bg-fuchsia-400/10", dot: "bg-fuchsia-400" },
+  "telefonieren-bekannte": { chip: "bg-emerald-400/20 text-emerald-200 border-emerald-400/50", card: "border-emerald-400/50 bg-emerald-400/10", dot: "bg-emerald-400" },
+  "telefonieren-empfehlungen": { chip: "bg-orange-400/20 text-orange-200 border-orange-400/50", card: "border-orange-400/50 bg-orange-400/10", dot: "bg-orange-400" },
+  "vorverkauf-at": { chip: "bg-violet-400/20 text-violet-200 border-violet-400/50", card: "border-violet-400/50 bg-violet-400/10", dot: "bg-violet-400" },
+}
+
+function TopicChip({ topic }: { topic: TrainingTopic }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-semibold", TOPIC_COLORS[topic].chip)}>
+      <span className={cn("size-2 rounded-full", TOPIC_COLORS[topic].dot)} />
+      {topicLabel(topic)}
+    </span>
+  )
+}
+
 function Avatar({ name }: { name: string }) {
   return (
     <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#64DDA3]/15 text-xs font-bold text-[#64DDA3]">
@@ -213,9 +232,11 @@ export function Training({
               const count = trainees.filter((t) => topics[t.id] === tp.id).length
               const current = assignments[tp.id] && leadName.has(assignments[tp.id]) ? assignments[tp.id] : ""
               return (
-                <div key={tp.id} className="flex flex-col gap-2 rounded-lg border border-white/15 bg-white/5 p-3">
+                <div key={tp.id} className={cn("flex flex-col gap-2 rounded-lg border p-3", TOPIC_COLORS[tp.id].card)}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold">{tp.label}</span>
+                    <span className="flex items-center gap-1.5 text-sm font-semibold">
+                      <span className={cn("size-2.5 rounded-full", TOPIC_COLORS[tp.id].dot)} />{tp.label}
+                    </span>
                     <span className="text-xs text-white/70">{count} Trainee{count === 1 ? "" : "s"}</span>
                   </div>
                   <Select
@@ -230,6 +251,37 @@ export function Training({
                       <option key={l.id} className={DARK_OPTION} value={l.id}>{l.name}</option>
                     ))}
                   </Select>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {trainees.length > 0 && (
+        <section className={cn("rounded-xl border p-4", DARK_CARD)}>
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-white/90">Einteilung nach Thema</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {TRAINING_TOPICS.map((tp) => {
+              const members = trainees.filter((t) => topics[t.id] === tp.id)
+              if (members.length === 0) return null
+              const trainerId = assignments[tp.id]
+              const trainerName = trainerId ? leadName.get(trainerId) ?? null : null
+              return (
+                <div key={tp.id} className={cn("flex flex-col gap-2 rounded-lg border p-3", TOPIC_COLORS[tp.id].card)}>
+                  <TopicChip topic={tp.id} />
+                  <div className="flex items-center gap-2 rounded-md bg-black/20 px-2 py-1.5">
+                    <UserCheck className="size-4 shrink-0 text-[#64DDA3]" />
+                    <div className="min-w-0 text-sm">
+                      <div className="text-[10px] uppercase tracking-wide text-white/60">Trainer</div>
+                      <div className="truncate font-bold">{trainerName ?? "Noch nicht zugeteilt"}</div>
+                    </div>
+                  </div>
+                  <ul className="flex flex-col gap-0.5 text-sm">
+                    {members.map((m) => (
+                      <li key={m.id} className="truncate">{m.name}</li>
+                    ))}
+                  </ul>
                 </div>
               )
             })}
@@ -256,14 +308,15 @@ export function Training({
                       <Avatar name={t.name} />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{t.name}</div>
-                        {!fullView && (
-                          <div className="text-xs text-[#64DDA3]">
-                            {topicLabel(topics[t.id]) ?? "Kein Thema"}{trainer ? ` · ${trainer}` : ""}
-                          </div>
-                        )}
-                        {fullView && topics[t.id] && (
-                          <div className="text-xs text-white/70">{trainer ? `Trainer: ${trainer}` : "Noch kein Trainer"}</div>
-                        )}
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                          {topics[t.id] ? <TopicChip topic={topics[t.id]} /> : <span className="text-xs text-white/60">Kein Thema</span>}
+                          {topics[t.id] && (
+                            <span className="inline-flex items-center gap-1 text-xs text-white/80">
+                              <UserCheck className="size-3.5 text-[#64DDA3]" />
+                              {trainer ? <>Trainer: <b className="font-semibold text-white">{trainer}</b></> : "Noch kein Trainer"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {topicSelect(t)}
                     </li>
