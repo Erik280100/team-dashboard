@@ -4,7 +4,7 @@
 // Kein localStorage-Cache (mehrere Konten pro Browser).
 import { useCallback, useEffect, useRef, useState } from "react"
 import { subscribeEmployeeDocs, writeEmployeeSubDoc } from "@/lib/employeeSubdocs"
-import { idByName, type EmployeeMeta } from "@/lib/calc/employees"
+import type { EmployeeMeta } from "@/lib/calc/employees"
 import type { AttendanceEntry } from "@/types/dashboard"
 
 /** Fehlende Felder eines Eintrags mit denselben Defaults wie getAttendanceEntry() füllen. */
@@ -66,11 +66,17 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
     // Kein Warten auf "ready": Es wird nur das geänderte Feld per Merge geschrieben, ein veralteter Stand kann also
     // nichts überschreiben. Ein Abbruch hier ließ die Anzeige zurückspringen, ohne dass etwas gespeichert wurde.
     if (!attendanceReady.current) console.info("Anwesenheit: Stand noch nicht vollständig geladen, speichere trotzdem", name)
-    const id = idByName(employeesRef.current).get(name.trim().toLowerCase())
-    if (!id) { console.warn(`Anwesenheit: kein Mitarbeiter-Dokument für "${name}"`); return }
-    writeEmployeeSubDoc(id, "attendance", "current", { ...patch }, true).catch((err) =>
-      console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)
-    )
+    // Alle Mitarbeiter-Dokumente mit diesem Namen beschreiben: Gibt es einen Namen doppelt, zeigt die Anzeige ein anderes
+    // Dokument als das zuerst gefundene — der Haken sprang dann zurück, obwohl gespeichert wurde.
+    const key = name.trim().toLowerCase()
+    const ids = employeesRef.current.filter((e) => e.name.trim().toLowerCase() === key).map((e) => e.id)
+    if (ids.length === 0) { console.warn(`Anwesenheit: kein Mitarbeiter-Dokument für "${name}"`); return }
+    if (ids.length > 1) console.warn(`Anwesenheit: Name "${name}" gibt es ${ids.length}x als Mitarbeiter`, ids)
+    for (const id of ids) {
+      writeEmployeeSubDoc(id, "attendance", "current", { ...patch }, true).catch((err) =>
+        console.warn("Anwesenheit: Cloud-Speichern fehlgeschlagen", err)
+      )
+    }
   }, [])
 
   /** Setzt bei allen sichtbaren Mitarbeitern alle Anwesenheiten (Seminar, Training Fr/Sa, Monatsauftakt) auf „nicht anwesend“. */
