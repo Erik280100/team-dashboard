@@ -12,7 +12,7 @@ import { FieldPath, increment, onSnapshot, setDoc, updateDoc, writeBatch } from 
 import { employeeDocRef, employeesCollection, firestore, orgDocRef } from "@/lib/firebase"
 import { recordSnapshot, type HistoryEntry } from "@/lib/calc/format"
 import {
-  diffRowWrites, employeeDocToRow, employeeMetaOf, idByName, type EmployeeMeta,
+  diffRowWrites, dropInactiveDuplicates, employeeDocToRow, employeeMetaOf, idByName, type EmployeeMeta,
 } from "@/lib/calc/employees"
 import { newRowFor } from "@/lib/calc/team"
 import { applyUnitDelta, unitBookingOps } from "@/lib/calc/verguetung"
@@ -97,7 +97,7 @@ export function useDashboardDoc(account: AccountInfo): UseDashboardDocResult {
   }, [])
 
   const employees = useMemo(
-    () => Object.values(stored).map((s) => s.meta).sort((a, b) => a.name.localeCompare(b.name, "de")),
+    () => dropInactiveDuplicates(Object.values(stored).map((s) => s.meta)).sort((a, b) => a.name.localeCompare(b.name, "de")),
     [stored]
   )
   // Lesemodus (viewer): Boni werden ausgeblendet, damit keine €-Beträge inkl. Bonus erscheinen.

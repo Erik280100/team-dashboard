@@ -12,6 +12,18 @@ export interface EmployeeMeta {
   ancestors: string[]
   /** Zeitstempel des letzten Profilbild-Uploads (storage: avatars/{id}.webp); fehlt = kein Bild. */
   avatarVersion?: number
+  /** Aus dem Strukturbaum entfernt (employees/{id}.active === false); das Dokument bleibt für die Historie erhalten. */
+  inactive?: boolean
+}
+
+/**
+ * Entfernt inaktive Mitarbeiter, deren Name auch bei einem aktiven Mitarbeiter vorkommt (z. B. nach Entfernen und
+ * Neuanlegen im Strukturbaum). Sonst gäbe es denselben Namen doppelt und Zuordnungen per Name träfen das falsche Dokument.
+ * Ehemalige ohne gleichnamigen aktiven Nachfolger bleiben erhalten.
+ */
+export function dropInactiveDuplicates<T extends EmployeeMeta>(list: readonly T[]): T[] {
+  const activeNames = new Set(list.filter((e) => !e.inactive).map((e) => norm(e.name)))
+  return list.filter((e) => !e.inactive || !activeNames.has(norm(e.name)))
 }
 
 /** Kontodaten (employees/{id}/private/account) — nur self/Vorgesetzte/Admin lesbar, daher nicht Teil von EmployeeMeta. */
@@ -41,6 +53,7 @@ export function employeeMetaOf(id: string, data: Record<string, unknown>): Emplo
     managerId: typeof data.managerId === "string" ? data.managerId : null,
     ancestors: Array.isArray(data.ancestors) ? data.ancestors.map(String) : [],
     ...(typeof data.avatarVersion === "number" ? { avatarVersion: data.avatarVersion } : {}),
+    ...(data.active === false ? { inactive: true } : {}),
   }
 }
 
