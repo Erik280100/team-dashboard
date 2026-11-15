@@ -1,14 +1,14 @@
 // Pensionsrechner — Pensionslücke und nötige Investition (Einmalerlag bzw. Sparplan).
 // Rechenlogik: src/lib/calc/pension.ts
 import "@/lib/chartSetup"
-import { useMemo, useRef, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { Bar } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
   ENTNAHME_BIS_ALTER, ERWERBSBEGINN_ALTER, KOSTEN_PA, PENSION_PROFILE, berechnePension,
-  type PensionResult, type RisikoProfil,
+  type PensionInput, type PensionResult, type RisikoProfil,
 } from "@/lib/calc/pension"
 import { RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR } from "@/lib/calc/rendite"
 import { MERKUR_DYNAMIK_WIRKSAMKEIT } from "@/lib/calc/merkurFlv"
@@ -50,7 +50,10 @@ export function PensionsRechner() {
   const [wunsch, setWunsch] = useState("4000")
   const [inflation, setInflation] = useState("2")
   const ergebnisRef = useRef<HTMLDivElement>(null)
-  const [berechnet, setBerechnet] = useState(false)
+  // Ergebnis erst nach Klick auf „Berechnen“: Eingaben werden dabei als Schnappschuss übernommen.
+  const [ein, setEin] = useState<PensionInput | null>(null)
+  const [klicks, setKlicks] = useState(0)
+  const [fehlerZeigen, setFehlerZeigen] = useState(false)
   const [entnahmeBis, setEntnahmeBis] = useState(String(ENTNAHME_BIS_ALTER))
   const [profil, setProfil] = useState<RisikoProfil>("ausgewogen")
 
@@ -70,24 +73,30 @@ export function PensionsRechner() {
     : nettoN <= 0 ? "Bitte ein Nettoeinkommen angeben."
     : null
 
-  const r = useMemo(
-    () => fehler ? null : berechnePension({
-      alter: alterN, pensionsalter: pensionsalterN, nettoMonat: nettoN, wunschPension: wunschN,
-      inflation: inflationN, profil, entnahmeBis: entnahmeBisN,
-    }),
-    [fehler, alterN, pensionsalterN, nettoN, wunschN, inflationN, profil, entnahmeBisN]
-  )
+  const aktuell: PensionInput = {
+    alter: alterN, pensionsalter: pensionsalterN, nettoMonat: nettoN, wunschPension: wunschN,
+    inflation: inflationN, profil, entnahmeBis: entnahmeBisN,
+  }
+  const r = useMemo(() => (ein ? berechnePension(ein) : null), [ein])
+  const geaendert = ein !== null && JSON.stringify(ein) !== JSON.stringify(aktuell)
 
   function berechnen(e: FormEvent) {
     e.preventDefault()
-    setBerechnet(true)
-    ergebnisRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    setFehlerZeigen(true)
+    if (fehler) { setEin(null); return }
+    setEin(aktuell)
+    setKlicks((k) => k + 1)
   }
 
-  const chartData = r && {
+  // Nach dem Berechnen zum Ergebnis scrollen (Element existiert erst nach dem Rendern).
+  useEffect(() => {
+    if (klicks > 0) ergebnisRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [klicks])
+
+  const chartData = r && ein && {
     labels: ["Staatliche Pension", "Pensionslücke", "Gewünschte Pension"],
     datasets: [{
-      data: [r.staatNetto, [r.staatNetto, Math.max(wunschN, r.staatNetto)] as [number, number], wunschN],
+      data: [r.staatNetto, [r.staatNetto, Math.max(ein.wunschPension, r.staatNetto)] as [number, number], ein.wunschPension],
       backgroundColor: [COLOR_STAAT, COLOR_LUECKE, COLOR_WUNSCH],
       borderRadius: 8,
       borderSkipped: false as const,
@@ -165,18 +174,20 @@ export function PensionsRechner() {
               Berechnen
             </button>
             <span className="text-[10.5px] text-muted-foreground">
-              {berechnet ? "Ergebnis aktualisiert — das Ergebnis passt sich bei jeder Änderung automatisch an." : "Das Ergebnis passt sich bei jeder Änderung automatisch an."}
+              {geaendert
+                ? "Eingaben geändert — auf „Berechnen“ klicken, um das Ergebnis zu aktualisieren."
+                : ein ? "Ergebnis ist aktuell." : "Eingaben prüfen und auf „Berechnen“ klicken."}
             </span>
           </div>
          </form>
         </CardContent>
       </Card>
 
-      {fehler && (
+      {fehlerZeigen && fehler && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">{fehler}</div>
       )}
 
-      {r && chartData && (
+      {r && ein && chartData && (
         <div ref={ergebnisRef} className="flex scroll-mt-4 flex-col gap-4">
           <Card>
             <CardContent className="flex flex-col items-center gap-1">
@@ -186,7 +197,7 @@ export function PensionsRechner() {
               <div className="text-4xl font-bold tabular-nums" style={{ color: r.luecke > 0 ? COLOR_LUECKE : COLOR_STAAT }}>
                 {rrFormatEUR(r.luecke)}
               </div>
-              <div className="text-sm text-muted-foreground">gegenüber {rrFormatEUR(wunschN)} / Monat (Wunschpension)</div>
+              <div className="text-sm text-muted-foreground">gegenüber {rrFormatEUR(ein!.wunschPension)} / Monat (Wunschpension)</div>
               <div className="mt-3 h-[300px] w-full">
                 <Bar
                   data={chartData}
@@ -222,8 +233,8 @@ export function PensionsRechner() {
           {r.luecke > 0 ? (
             <div className="flex flex-col gap-3">
               {[
-                { name: "Depot", color: "#08899f", einmal: r.einmalerlag, start: r.sparplanStart, ende: r.sparplanEnde, g: inflationN },
-                { name: "FLV (Merkur)", color: RR_PRODUCT_COLORS.flv.line, einmal: r.flv.einmalerlag, start: r.flv.sparplanStart, ende: r.flv.sparplanEnde, g: inflationN * MERKUR_DYNAMIK_WIRKSAMKEIT },
+                { name: "Depot", color: "#08899f", einmal: r.einmalerlag, start: r.sparplanStart, ende: r.sparplanEnde, g: ein!.inflation },
+                { name: "FLV (Merkur)", color: RR_PRODUCT_COLORS.flv.line, einmal: r.flv.einmalerlag, start: r.flv.sparplanStart, ende: r.flv.sparplanEnde, g: ein!.inflation * MERKUR_DYNAMIK_WIRKSAMKEIT },
               ].map((p) => (
                 <div key={p.name} className="grid gap-3 sm:grid-cols-2">
                   <Card style={{ backgroundColor: p.color }}>
@@ -258,7 +269,7 @@ export function PensionsRechner() {
               <Zeile label="Staatliche Pension brutto" value={`${rrFormatEUR(r.staatBrutto)} / Monat`} />
               <Zeile label="Staatliche Pension netto" value={`${rrFormatEUR(r.staatNetto)} / Monat`} />
               <Zeile label={`Lücke bei Pensionsantritt (in ${r.jahre} J., nominal)`} value={`${rrFormatEUR(r.lueckeNominal)} / Monat`} />
-              <Zeile label={`Kapitalbedarf mit ${pensionsalterN}`} value={rrFormatEUR(r.kapitalBedarf)} />
+              <Zeile label={`Kapitalbedarf mit ${ein!.pensionsalter}`} value={rrFormatEUR(r.kapitalBedarf)} />
               <Zeile label="Rendite nach Kosten" value={`${(r.nettoRendite * 100).toFixed(2).replace(".", ",")} % p.a.`} />
             </CardContent>
           </Card>
