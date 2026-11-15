@@ -87,12 +87,13 @@ export function RenditeRechner() {
   const [perfPreset, setPerfPreset] = useState<number | null>(6)
   const [customPerf, setCustomPerf] = useState("")
   const [provider, setProvider] = useState<Provider>("merkur")
-  const ageRenditeNum = 2 // feste agE-/Dividendenrendite (% p.a.), nicht mehr editierbar
+  const [ageRendite, setAgeRendite] = useState("0.5")
   const [entnahmeEnabled, setEntnahmeEnabled] = useState(false)
   const [entnahmeJahre, setEntnahmeJahre] = useState("20")
   const [entnahmeMonatEingabe, setEntnahmeMonatEingabe] = useState("1000")
 
   const monatNum = Number(monat) || 0
+  const ageRenditeNum = Number(ageRendite) || 0
 
   const perf = (customPerf !== "" && !isNaN(parseFloat(customPerf)) ? parseFloat(customPerf) : perfPreset ?? 6) / 100
   const jahreMin = 1
@@ -303,7 +304,13 @@ export function RenditeRechner() {
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">Kosten je Einzelkauforder</span><span>{RR_FLATEX_ORDER_EUR.toFixed(2).replace(".", ",")} €</span></div>
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">TER</span><span>{RR_FLATEX_TER_PA_PCT.toFixed(2).replace(".", ",")} % p. a.</span></div>
             </div>
-            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %), agE-Annahme 2 % p. a.</div>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              agE-/Dividendenrendite (% p.a.)
+              <input type="number" min={0} step={0.1} value={ageRendite}
+                onChange={(e) => setAgeRendite(e.target.value)}
+                className="h-8 w-32 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+            </label>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %)</div>
           </CardContent>
         </Card>
 
