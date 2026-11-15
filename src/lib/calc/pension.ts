@@ -6,6 +6,9 @@
 //  4. Kapitalbedarf = Barwert einer inflationsindexierten Entnahme bis ENTNAHME_BIS_ALTER
 //  5. Einmalerlag heute bzw. Sparplan (jährlich um die Inflation dynamisiert)
 import { rrRate } from "./rendite"
+import {
+  MERKUR_DYNAMIK_WIRKSAMKEIT, MERKUR_ERTRAGSAUFSCHLAG_PA, simulateMerkurFLVEinmal, simulateMerkurFLVPraemie,
+} from "./merkurFlv"
 
 export type RisikoProfil = "konservativ" | "ausgewogen" | "gewinnorientiert"
 
@@ -127,6 +130,20 @@ export type PensionResult = {
   einmalerlag: number
   sparplanStart: number
   sparplanEnde: number
+  /** Summe aller Sparplan-Einzahlungen bis Pensionsantritt (Depot). */
+  sparplanSumme: number
+  /** Dieselbe Lücke, finanziert über die Merkur-FLV (Kostenstruktur/Formeln des Renditerechners). */
+  flv: PensionFlvResult
+}
+
+export type PensionFlvResult = {
+  /** Effektive Jahresrendite der Entnahmephase (Fondsertrag + Fondsrabatte, KESt-frei, ohne weitere Kosten). */
+  nettoRenditeEntnahme: number
+  kapitalBedarf: number // bei Pensionsantritt
+  einmalerlag: number
+  sparplanStart: number
+  sparplanEnde: number
+  sparplanSumme: number
 }
 
 /** Staatliche Pension (brutto/netto, je Monat bei 14 Bezügen) aus dem Nettoeinkommen. */
@@ -170,6 +187,46 @@ export function sparplanFaktor(monate: number, infl: number, bruttoPa: number): 
   return fv
 }
 
+/** Summe einer Sparplan-Einzahlung (Startrate `start`, jährlich um `g` steigend) über `jahre` Jahre. */
+export function sparplanSumme(start: number, jahre: number, g: number): number {
+  let sum = 0
+  for (let m = 0; m < jahre * 12; m++) sum += start * Math.pow(1 + g, Math.floor(m / 12))
+  return sum
+}
+
+/** Kapital bei Pensionsantritt für die FLV: gleiche indexierte Entnahme wie beim Depot, aber mit dem
+ *  Merkur-Modell der Entnahmephase (Verzinsung perf + Ertragsaufschlag, keine weiteren Kosten, KESt-frei). */
+export function kapitalBedarfFlv(startMonat: number, monate: number, infl: number, perf: number): number {
+  const r = rrRate(perf + MERKUR_ERTRAGSAUFSCHLAG_PA)
+  let pv = 0
+  for (let m = 0; m < monate; m++) {
+    pv += startMonat * Math.pow(1 + infl, Math.floor(m / 12)) / Math.pow(1 + r, m)
+  }
+  return pv
+}
+
+/** FLV: Einmalerlag (Merkur-Einmaltopf) und Sparplan (kalibrierter Merkur-Prämientopf mit Dynamik =
+ *  Inflation), jeweils so bestimmt, dass das Kapital bei Pensionsantritt dem Bedarf entspricht. */
+export function berechneFlv(
+  lueckeNominal: number, jahre: number, entnahmeMonate: number, infl: number, perf: number
+): PensionFlvResult {
+  const nettoRenditeEntnahme = Math.pow(1 + rrRate(perf + MERKUR_ERTRAGSAUFSCHLAG_PA), 12) - 1
+  const bedarf = lueckeNominal > 0 ? kapitalBedarfFlv(lueckeNominal, entnahmeMonate, infl, perf) : 0
+  if (bedarf <= 0 || jahre <= 0) {
+    return { nettoRenditeEntnahme, kapitalBedarf: bedarf, einmalerlag: 0, sparplanStart: 0, sparplanEnde: 0, sparplanSumme: 0 }
+  }
+  const months = jahre * 12
+  const einmalerlag = bisektion((x) => simulateMerkurFLVEinmal(x, jahre, perf)[months], bedarf, bedarf * 1.5 + 100)
+  const sparplanStart = bisektion((x) => simulateMerkurFLVPraemie(x, jahre, perf, infl)[months], bedarf, bedarf)
+  // wirksame Prämiensteigerung (siehe MERKUR_DYNAMIK_WIRKSAMKEIT)
+  const gEff = infl * MERKUR_DYNAMIK_WIRKSAMKEIT
+  return {
+    nettoRenditeEntnahme, kapitalBedarf: bedarf, einmalerlag, sparplanStart,
+    sparplanEnde: sparplanStart * Math.pow(1 + gEff, Math.max(0, jahre - 1)),
+    sparplanSumme: sparplanSumme(sparplanStart, jahre, gEff),
+  }
+}
+
 export function berechnePension(inp: PensionInput): PensionResult {
   const jahre = Math.max(0, inp.pensionsalter - inp.alter)
   const brutto = PENSION_PROFILE[inp.profil].rendite
@@ -188,8 +245,11 @@ export function berechnePension(inp: PensionInput): PensionResult {
   const sparplanStart = faktor > 0 ? bedarf / faktor : 0
   const sparplanEnde = sparplanStart * Math.pow(1 + inp.inflation, Math.max(0, jahre - 1))
 
+  const flv = berechneFlv(lueckeNominal, jahre, entnahmeMonate, inp.inflation, brutto)
+
   return {
     jahre, nettoRendite, bruttoMonat, staatBrutto, staatNetto, luecke, lueckeNominal,
     kapitalBedarf: bedarf, einmalerlag, sparplanStart, sparplanEnde,
+    sparplanSumme: sparplanSumme(sparplanStart, jahre, inp.inflation), flv,
   }
 }

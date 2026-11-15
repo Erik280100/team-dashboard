@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { simulateMerkurFLVEinmal, simulateMerkurFLVPraemie } from "../../src/lib/calc/merkurFlv"
 import { berechnePension, bruttoAusNetto, nettoAusBrutto } from "../../src/lib/calc/pension"
 
 const BASE = {
@@ -46,5 +47,30 @@ describe("Pensionsrechner", () => {
     expect(r.luecke).toBe(0)
     expect(r.einmalerlag).toBe(0)
     expect(r.sparplanStart).toBe(0)
+  })
+
+  it("FLV: Einmalerlag und Sparplan treffen den Kapitalbedarf (Merkur-Modell)", () => {
+    const r = berechnePension(BASE)
+    const perf = 0.075
+    const einmal = simulateMerkurFLVEinmal(r.flv.einmalerlag, r.jahre, perf)[r.jahre * 12]
+    const spar = simulateMerkurFLVPraemie(r.flv.sparplanStart, r.jahre, perf, BASE.inflation)[r.jahre * 12]
+    expect(einmal).toBeCloseTo(r.flv.kapitalBedarf, 0)
+    expect(spar).toBeCloseTo(r.flv.kapitalBedarf, 0)
+    expect(r.flv.sparplanEnde).toBeGreaterThan(r.flv.sparplanStart)
+    expect(r.flv.sparplanSumme).toBeGreaterThan(r.flv.sparplanStart * r.jahre * 12)
+  })
+
+  it("FLV: höhere Rendite senkt Einmalerlag und Sparplan", () => {
+    const k = berechnePension({ ...BASE, profil: "konservativ" }).flv
+    const g = berechnePension(BASE).flv
+    expect(g.einmalerlag).toBeLessThan(k.einmalerlag)
+    expect(g.sparplanStart).toBeLessThan(k.sparplanStart)
+  })
+
+  it("FLV: keine Lücke ergibt 0", () => {
+    const f = berechnePension({ ...BASE, wunschPension: 1000 }).flv
+    expect(f.einmalerlag).toBe(0)
+    expect(f.sparplanStart).toBe(0)
+    expect(f.kapitalBedarf).toBe(0)
   })
 })
