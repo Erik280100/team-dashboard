@@ -56,6 +56,7 @@ export function PensionsRechner() {
   const [fehlerZeigen, setFehlerZeigen] = useState(false)
   const [entnahmeBis, setEntnahmeBis] = useState(String(ENTNAHME_BIS_ALTER))
   const [profil, setProfil] = useState<RisikoProfil>("ausgewogen")
+  const [eigeneRendite, setEigeneRendite] = useState("")
 
   const alterN = Math.round(Number(alter) || 0)
   const pensionsalterN = Math.round(Number(pensionsalter) || 0)
@@ -64,6 +65,9 @@ export function PensionsRechner() {
   const inflationN = Math.max(0, Number(inflation.replace(",", ".")) || 0) / 100
 
   const entnahmeBisN = Math.round(Number(entnahmeBis) || 0)
+  // Eigene Rendite (Textfeld) überschreibt das Risikoprofil, sobald etwas eingetragen ist.
+  const eigeneRenditeAktiv = eigeneRendite.trim() !== ""
+  const eigeneRenditeN = Number(eigeneRendite.replace(",", "."))
 
   const fehler =
     alterN < 16 || alterN > 80 ? "Bitte ein aktuelles Alter zwischen 16 und 80 angeben."
@@ -71,11 +75,14 @@ export function PensionsRechner() {
     : entnahmeBisN > 110 ? "Die Lebenserwartung darf höchstens 110 Jahre betragen."
     : pensionsalterN >= entnahmeBisN ? `Das Pensionsalter muss unter der Lebenserwartung (${entnahmeBisN}) liegen.`
     : nettoN <= 0 ? "Bitte ein Nettoeinkommen angeben."
+    : eigeneRenditeAktiv && (!Number.isFinite(eigeneRenditeN) || eigeneRenditeN < 0 || eigeneRenditeN > 20)
+      ? "Die eigene Rendite muss zwischen 0 und 20 % p.a. liegen."
     : null
 
   const aktuell: PensionInput = {
     alter: alterN, pensionsalter: pensionsalterN, nettoMonat: nettoN, wunschPension: wunschN,
     inflation: inflationN, profil, entnahmeBis: entnahmeBisN,
+    rendite: eigeneRenditeAktiv ? eigeneRenditeN / 100 : undefined,
   }
   const r = useMemo(() => (ein ? berechnePension(ein) : null), [ein])
   const geaendert = ein !== null && JSON.stringify(ein) !== JSON.stringify(aktuell)
@@ -150,13 +157,13 @@ export function PensionsRechner() {
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="text-xs text-muted-foreground">Risikoprofil</div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {(Object.keys(PENSION_PROFILE) as RisikoProfil[]).map((k) => (
                 <button
-                  key={k} type="button" onClick={() => setProfil(k)}
+                  key={k} type="button" onClick={() => { setProfil(k); setEigeneRendite("") }}
                   className={cn(
                     "rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
-                    profil === k
+                    profil === k && !eigeneRenditeAktiv
                       ? "border-transparent bg-primary text-primary-foreground"
                       : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
                   )}
@@ -164,6 +171,11 @@ export function PensionsRechner() {
                   {PENSION_PROFILE[k].label} · {fmtPct(PENSION_PROFILE[k].rendite)} p.a.
                 </button>
               ))}
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                oder eigene Rendite (% p.a.)
+                <input type="number" min={0} max={20} step={0.1} placeholder="z. B. 5,5" value={eigeneRendite}
+                  onChange={(e) => setEigeneRendite(e.target.value)} className={INPUT_CLS} />
+              </label>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">

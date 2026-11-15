@@ -73,4 +73,12 @@ describe("Pensionsrechner", () => {
     expect(f.sparplanStart).toBe(0)
     expect(f.kapitalBedarf).toBe(0)
   })
+
+  it("eigene Rendite überschreibt das Risikoprofil", () => {
+    const a = berechnePension({ ...BASE, rendite: 0.06 })
+    const b = berechnePension({ ...BASE, profil: "ausgewogen" })
+    expect(a.einmalerlag).toBeCloseTo(b.einmalerlag, 6)
+    expect(a.flv.einmalerlag).toBeCloseTo(b.flv.einmalerlag, 6)
+    expect(berechnePension({ ...BASE, rendite: 0.04 }).einmalerlag).toBeGreaterThan(b.einmalerlag)
+  })
 })

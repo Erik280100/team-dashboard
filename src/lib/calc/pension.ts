@@ -116,6 +116,8 @@ export type PensionInput = {
   profil: RisikoProfil
   /** Ende der Entnahmephase (Lebenserwartung), Default ENTNAHME_BIS_ALTER. */
   entnahmeBis?: number
+  /** Eigene Bruttorendite p.a. (z. B. 0.055); überschreibt die Rendite des Risikoprofils. */
+  rendite?: number
 }
 
 export type PensionResult = {
@@ -229,7 +231,7 @@ export function berechneFlv(
 
 export function berechnePension(inp: PensionInput): PensionResult {
   const jahre = Math.max(0, inp.pensionsalter - inp.alter)
-  const brutto = PENSION_PROFILE[inp.profil].rendite
+  const brutto = inp.rendite ?? PENSION_PROFILE[inp.profil].rendite
   const accum = wachstumsfaktoren(jahre * 12, brutto)
   // effektive Jahresrendite nach Kosten (Anzeige)
   const nettoRendite = jahre > 0 ? Math.pow(accum[jahre * 12], 1 / jahre) - 1 : brutto
