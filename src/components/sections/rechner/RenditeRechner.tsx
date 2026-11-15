@@ -11,7 +11,6 @@ import {
   type Provider, type RRProductKey, type RRVerlauf,
 } from "@/lib/calc/rendite"
 import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
-import { merkurKostenZeilen } from "@/lib/calc/merkurFlv"
 
 const PERF_PRESETS = [3, 6, 9]
 
@@ -299,11 +298,6 @@ export function RenditeRechner() {
         <Card style={productCardStyle("fondsdepot")}>
           <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondsdepot" />Depot</h3>
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Depot</span><span>flatex</span></div>
-              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Kosten je Einzelkauforder</span><span>{RR_FLATEX_ORDER_EUR.toFixed(2).replace(".", ",")} €</span></div>
-              <div className="flex justify-between text-xs"><span className="text-muted-foreground">TER</span><span>{RR_FLATEX_TER_PA_PCT.toFixed(2).replace(".", ",")} % p. a.</span></div>
-            </div>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground">
               agE-/Dividendenrendite (% p.a.)
               <input type="number" min={0} step={0.1} value={ageRendite}
@@ -341,15 +335,7 @@ export function RenditeRechner() {
               options={[{ value: "merkur", label: "Merkur" }, { value: "helvetia", label: "Helvetia", disabled: true }]}
               onChange={setProvider}
             />
-            <div className="flex flex-col gap-1">
-              {merkurKostenZeilen(monatNum, jahreClamped).map(([label, val]) => (
-                <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
-              ))}
-            </div>
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-frei</div>
-            <div className="text-[10.5px] text-muted-foreground">
-              Sparprämie kalibriert auf echte Merkur-Angebote (Stand 08/2026, zwei Fonds, Annahme 6 % p.a.)
-            </div>
           </CardContent>
         </Card>
       </div>
