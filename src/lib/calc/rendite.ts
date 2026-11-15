@@ -205,7 +205,9 @@ export function simulateFondsdepotVerlauf(
   entnahmeJahre = 0,
   entnahmeMonat = 0,
   /** Fixgebühr in € je monatlicher Kauforder (wird von der Sparrate abgezogen). */
-  orderGebuehr = 0
+  orderGebuehr = 0,
+  /** Abrechnungsintervall der laufenden Depotgebühr in Monaten (1 = monatlich, 3 = quartalsweise). */
+  gebuehrIntervallMonate = 1
 ): RRVerlauf {
   const months = jahre * 12
   const r = rrRate(perf)
@@ -245,7 +247,7 @@ export function simulateFondsdepotVerlauf(
     depot += net
     cumNetto += net
     depot *= 1 + r
-    depot -= depot * (depotgebuehrPa / 100 / 12)
+    if (m % gebuehrIntervallMonate === 0) depot -= depot * (depotgebuehrPa / 100 * gebuehrIntervallMonate / 12)
     if (depot < 0) depot = 0
     values.push(depot)
     valuesNachKest.push(depot)
@@ -272,7 +274,7 @@ export function simulateFondsdepotVerlauf(
     if (depot < 0) depot = 0
 
     depot *= 1 + r
-    depot -= depot * (depotgebuehrPa / 100 / 12)
+    if (m % gebuehrIntervallMonate === 0) depot -= depot * (depotgebuehrPa / 100 * gebuehrIntervallMonate / 12)
     if (depot < 0) depot = 0
     values.push(depot)
     valuesNachKest.push(depot)

@@ -11,6 +11,7 @@ import {
   type Provider, type RRProductKey, type RRVerlauf,
 } from "@/lib/calc/rendite"
 import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
+import { simulateFrootsVerlauf } from "@/lib/calc/froots"
 
 const PERF_PRESETS = [3, 6, 9]
 
@@ -116,8 +117,8 @@ export function RenditeRechner() {
   const jahreGesamt = jahreClamped + entnahmeJahreEff
 
   const {
-    years, einbezahlt, flvY, fondssparerY, fondsdepotY, fondsdepotNachKestY, vvY,
-    flvVerlauf, fondsdepotVerlauf, flvMaxEntnahme, depotMaxEntnahme,
+    years, einbezahlt, flvY, fondssparerY, fondsdepotY, fondsdepotNachKestY, vvY, vvNachKestY,
+    flvVerlauf, fondsdepotVerlauf, vvVerlauf, flvMaxEntnahme, depotMaxEntnahme, vvMaxEntnahme,
   } = useMemo(() => {
     const flvVerlauf: RRVerlauf = simulateFLVVerlauf(
       provider, monatNum, 0, jahreClamped, perf, waPctEff, entnahmeJahreEff, entnahmeMonatNum
@@ -127,10 +128,14 @@ export function RenditeRechner() {
       entnahmeJahreEff, entnahmeMonatNum, RR_FLATEX_ORDER_EUR
     )
 
+    const vvVerlauf: RRVerlauf = simulateFrootsVerlauf(
+      monatNum, 0, jahreClamped, perf, ageRenditeNum, waPctEff, entnahmeJahreEff, entnahmeMonatNum
+    )
+
     const years: number[] = []
     const einbezahlt: number[] = []
     const flvY: number[] = [], fondssparerY: number[] = [], fondsdepotY: number[] = [], vvY: number[] = []
-    const fondsdepotNachKestY: number[] = []
+    const fondsdepotNachKestY: number[] = [], vvNachKestY: number[] = []
     for (let y = 0; y <= jahreGesamt; y++) {
       years.push(y)
       einbezahlt.push(monatNum * 12 * Math.min(y, jahreClamped))
@@ -139,9 +144,10 @@ export function RenditeRechner() {
       // Karte/Tabelle: Wert ohne KESt-Abzug auf den unversteuerten Gewinn; Grafik: laufend nach KESt
       fondsdepotY.push((fondsdepotVerlauf.valuesVorKest ?? fondsdepotVerlauf.values)[idx])
       fondsdepotNachKestY.push((fondsdepotVerlauf.valuesNachKest ?? fondsdepotVerlauf.values)[idx])
-      // Fondssparer & Vermögensverwaltung vorübergehend deaktiviert (ausgegraut, Werte auf 0)
+      vvY.push((vvVerlauf.valuesVorKest ?? vvVerlauf.values)[idx])
+      vvNachKestY.push((vvVerlauf.valuesNachKest ?? vvVerlauf.values)[idx])
+      // Fondssparer vorübergehend deaktiviert (ausgegraut, Werte auf 0)
       fondssparerY.push(0)
-      vvY.push(0)
     }
 
     // Größte Monatsentnahme, die exakt bis zum Ende der Entnahmezeit trägt (Obergrenze: das am
@@ -162,10 +168,16 @@ export function RenditeRechner() {
           fondsdepotVerlauf.values[ansparIdx]
         )
       : 0
+    const vvMaxEntnahme = entnahmeJahreEff > 0
+      ? rrMaxEntnahme(
+          (x) => simulateFrootsVerlauf(monatNum, 0, jahreClamped, perf, ageRenditeNum, waPctEff, entnahmeJahreEff, x),
+          vvVerlauf.values[ansparIdx]
+        )
+      : 0
 
     return {
-      years, einbezahlt, flvY, fondssparerY, fondsdepotY, fondsdepotNachKestY, vvY,
-      flvVerlauf, fondsdepotVerlauf, flvMaxEntnahme, depotMaxEntnahme,
+      years, einbezahlt, flvY, fondssparerY, fondsdepotY, fondsdepotNachKestY, vvY, vvNachKestY,
+      flvVerlauf, fondsdepotVerlauf, vvVerlauf, flvMaxEntnahme, depotMaxEntnahme, vvMaxEntnahme,
     }
   }, [
     provider, monatNum, jahreClamped, perf, waPctEff,
@@ -192,7 +204,12 @@ export function RenditeRechner() {
       reichtBisMonat: entnahmeAktiv ? fondsdepotVerlauf.reichtBisMonat : undefined,
       maxEntnahme: entnahmeAktiv ? depotMaxEntnahme : undefined,
     },
-    { name: "Vermögensverwaltung", colorKey: "vv", end: 0, einbezahlt: 0, disabled: true },
+    {
+      name: "Vermögensverwaltung", colorKey: "vv", end: vvNachKestY[vvNachKestY.length - 1], endVorKest: vvY[vvY.length - 1], einbezahlt: finalEinbezahlt,
+      entnommenNetto: entnahmeAktiv ? vvVerlauf.entnommenNetto : undefined,
+      reichtBisMonat: entnahmeAktiv ? vvVerlauf.reichtBisMonat : undefined,
+      maxEntnahme: entnahmeAktiv ? vvMaxEntnahme : undefined,
+    },
   ]
 
   // react-chartjs-2 liest die `plugins`-Prop nur beim allerersten Mount des Charts ein — ein
@@ -308,12 +325,11 @@ export function RenditeRechner() {
           </CardContent>
         </Card>
 
-        <Card style={productCardStyle("vv")} className="pointer-events-none opacity-40 grayscale">
-          <CardContent className="flex flex-col gap-2">
+        <Card style={productCardStyle("vv")}>
+          <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>—</span></div>
-            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>—</span></div>
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">Vorübergehend deaktiviert</div>
+            <div className="text-[10.5px] text-muted-foreground">Nutzt die agE-/Dividendenrendite des Depots.</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %)</div>
           </CardContent>
         </Card>
 
@@ -351,7 +367,7 @@ export function RenditeRechner() {
                   { label: "FLV", data: flvY, borderColor: RR_PRODUCT_COLORS.flv.line, backgroundColor: RR_PRODUCT_COLORS.flv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
                   { label: "Fondssparer (deaktiviert)", data: fondssparerY, borderColor: "#B9C2C4", backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
                   { label: "Depot (nach KESt)", data: fondsdepotNachKestY, borderColor: RR_PRODUCT_COLORS.fondsdepot.line, backgroundColor: RR_PRODUCT_COLORS.fondsdepot.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Vermögensverwaltung (deaktiviert)", data: vvY, borderColor: "#B9C2C4", backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+                  { label: "Vermögensverwaltung (nach KESt)", data: vvNachKestY, borderColor: RR_PRODUCT_COLORS.vv.line, backgroundColor: RR_PRODUCT_COLORS.vv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
                   { label: "Einbezahlt*", data: einbezahlt, borderColor: "#8FA1A6", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0 },
                 ],
               }}
@@ -366,7 +382,10 @@ export function RenditeRechner() {
                       label: (ctx) => `${ctx.dataset.label}: ${rrFormatEUR(ctx.parsed.y as number)}`,
                       afterBody: (items) => {
                         const i = items[0]?.dataIndex
-                        return i == null ? "" : `Depot ohne KESt-Abzug: ${rrFormatEUR(fondsdepotY[i])}`
+                        return i == null ? [] : [
+                          `Depot ohne KESt-Abzug: ${rrFormatEUR(fondsdepotY[i])}`,
+                          `Vermögensverwaltung ohne KESt-Abzug: ${rrFormatEUR(vvY[i])}`,
+                        ]
                       },
                     },
                   },
@@ -410,7 +429,7 @@ export function RenditeRechner() {
                   <ProductDot colorKey={p.colorKey} />{p.name}
                 </div>
                 <div className="mt-1 text-xl font-bold tabular-nums">{rrFormatEUR(p.end)}</div>
-                {p.colorKey === "fondsdepot" && (
+                {(p.colorKey === "fondsdepot" || p.colorKey === "vv") && (
                   <div className="text-[10.5px] text-muted-foreground">
                     ohne KESt-Abzug: <span className="font-bold text-foreground">{rrFormatEUR(p.endVorKest ?? p.end)}</span> (Endwert oben nach KESt)
                   </div>
@@ -471,7 +490,8 @@ export function RenditeRechner() {
                   <th className="px-2 py-1.5 text-muted-foreground/40">Fondssparer</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot (ohne KESt)</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot (nach KESt)</th>
-                  <th className="px-2 py-1.5 text-muted-foreground/40">VV</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV (ohne KESt)</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV (nach KESt)</th>
                 </tr>
               </thead>
               <tbody>
@@ -493,7 +513,8 @@ export function RenditeRechner() {
                       <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(fondssparerY[i])}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotY[i])}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotNachKestY[i])}</td>
-                      <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(vvY[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(vvY[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(vvNachKestY[i])}</td>
                     </tr>
                   )
                 })}

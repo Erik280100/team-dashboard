@@ -8,6 +8,7 @@
 //     dasselbe Kapital (die FLV wird bei Ablauf ausbezahlt und wie das Depot weiter angelegt)
 //  5. Einmalerlag heute bzw. Sparplan (jährlich um die Inflation dynamisiert)
 import { rrRate } from "./rendite"
+import { KOSTEN_PA, KOSTEN_INTERVALL_MONATE, wachstumsfaktoren } from "./froots"
 import {
   MERKUR_DYNAMIK_WIRKSAMKEIT, simulateMerkurFLVEinmal, simulateMerkurFLVPraemie,
 } from "./merkurFlv"
@@ -20,10 +21,8 @@ export const PENSION_PROFILE: Record<RisikoProfil, { label: string; rendite: num
   gewinnorientiert: { label: "Gewinnorientiert", rendite: 0.075 },
 }
 
-/** Kosten des froots-Depots auf das veranlagte Kapital (p.a., inkl. Servicegebühr; froots-Website rechnet mit 1,0 %),
- *  quartalsweise vom Kapital abgebucht; in der Pension mindern sie die Rendite des weiter investierten Kapitals. */
-export const KOSTEN_PA = 0.0209
-export const KOSTEN_INTERVALL_MONATE = 3
+// KOSTEN_PA, KOSTEN_INTERVALL_MONATE und wachstumsfaktoren() liegen in froots.ts (gemeinsam mit dem Renditerechner).
+export { KOSTEN_PA, KOSTEN_INTERVALL_MONATE, wachstumsfaktoren }
 /** Ende des Entnahmezeitraums (Lebenserwartung als Planungshorizont). */
 export const ENTNAHME_BIS_ALTER = 90
 /** Beginn der Erwerbstätigkeit für die Zahl der Versicherungsjahre. */
@@ -171,18 +170,6 @@ export function staatlichePension(nettoMonat: number, pensionsalter: number) {
   const jahre = Math.max(0, pensionsalter - ERWERBSBEGINN_ALTER)
   const staatBrutto = Math.min(bruttoMonat, HBG_MONAT) * PK_PROZENT * jahre
   return { bruttoMonat, staatBrutto, staatNetto: pensionNettoAusBrutto(staatBrutto) }
-}
-
-/** Kumulierter Wachstumsfaktor je Monat m (0..monate): monatliche Bruttoverzinsung; alle
- *  KOSTEN_INTERVALL_MONATE Monate werden KOSTEN_PA/4 des Kapitals abgebucht. */
-export function wachstumsfaktoren(monate: number, bruttoPa: number, kostenPa = KOSTEN_PA): number[] {
-  const g = rrRate(bruttoPa) + 1
-  const fee = 1 - kostenPa * KOSTEN_INTERVALL_MONATE / 12
-  const cum = [1]
-  for (let m = 1; m <= monate; m++) {
-    cum.push(cum[m - 1] * g * (m % KOSTEN_INTERVALL_MONATE === 0 ? fee : 1))
-  }
-  return cum
 }
 
 /** Kapital bei Pensionsantritt, das eine monatliche Entnahme `startMonat` (jährlich um `infl` steigend)
