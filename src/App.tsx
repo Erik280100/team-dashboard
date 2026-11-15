@@ -613,6 +613,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   planRates={withDefaultPlanRates(orgChart.planRates)}
                   defaultEmployee={myName}
                   canBookUnits={auth.ready && !!auth.user && !auth.isViewer}
+                  canSeePension={canSeeTraining}
                   onApplyUnits={applyUnitsToEmployee}
                 />
               )}

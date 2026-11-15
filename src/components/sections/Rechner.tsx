@@ -6,20 +6,22 @@ import { EhRechner } from "@/components/sections/rechner/EhRechner"
 import { UmdrehRechner } from "@/components/sections/rechner/UmdrehRechner"
 import { RenditeRechner } from "@/components/sections/rechner/RenditeRechner"
 import { InvestVsWohnungRechner } from "@/components/sections/rechner/InvestVsWohnungRechner"
+import { PensionsRechner } from "@/components/sections/rechner/PensionsRechner"
 import type { PlanId } from "@/lib/calc/struktur"
 import type { UmsatzDraft } from "@/lib/calc/umsatz"
 
-type RechnerTab = "eh" | "umdreh" | "rendite" | "investVsWohnung"
+type RechnerTab = "eh" | "umdreh" | "rendite" | "investVsWohnung" | "pension"
 
 const TABS: { id: RechnerTab; label: string }[] = [
   { id: "eh", label: "EH-Rechner" },
   { id: "umdreh", label: "Umdrehrechner" },
   { id: "rendite", label: "Renditerechner" },
   { id: "investVsWohnung", label: "Invest vs. Anlegerwohnung" },
+  { id: "pension", label: "Pensionsrechner" },
 ]
 
 export function Rechner({
-  employees, abwicklerCandidates, planRates, defaultEmployee, canBookUnits, onApplyUnits,
+  employees, abwicklerCandidates, planRates, defaultEmployee, canBookUnits, canSeePension, onApplyUnits,
 }: {
   /** Buchbare Mitarbeiter: man selbst und alle darunter. */
   employees: { name: string; role: string; units: Record<PlanId, number>; stages?: Record<PlanId, string> }[]
@@ -32,10 +34,12 @@ export function Rechner({
   /** Jeder (auch ohne echten Login, via automatischem anonymem Auth) darf im
    * EH-Rechner Einheiten auf sich buchen — siehe useAuth.ts. */
   canBookUnits: boolean
+  /** Pensionsrechner nur für Führungskräfte (Admin, Führungskraft, Lesemodus) sichtbar. */
+  canSeePension: boolean
   onApplyUnits: (name: string, units: Record<PlanId, number>, abwickler?: string, sales?: UmsatzDraft[]) => void
 }) {
   const [tab, setTab] = useState<RechnerTab>("eh")
-  const visibleTabs = TABS
+  const visibleTabs = TABS.filter((t) => t.id !== "pension" || canSeePension)
   const activeTab = tab
 
   return (
@@ -51,6 +55,7 @@ export function Rechner({
       {activeTab === "umdreh" && <UmdrehRechner />}
       {activeTab === "rendite" && <RenditeRechner />}
       {activeTab === "investVsWohnung" && <InvestVsWohnungRechner />}
+      {activeTab === "pension" && canSeePension && <PensionsRechner />}
     </div>
   )
 }
