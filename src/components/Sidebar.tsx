@@ -164,7 +164,7 @@ export function Sidebar({
             className="flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <Receipt aria-hidden="true" className="size-4 shrink-0" />
-            Steuerviech
+            Steuersoftware
             <ExternalLink aria-hidden="true" className="ml-auto size-3.5 shrink-0 opacity-60" />
           </a>
           {LOWER_ITEMS.map(renderItem)}
