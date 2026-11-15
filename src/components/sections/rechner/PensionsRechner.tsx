@@ -7,7 +7,7 @@ import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
-  ENTNAHME_BIS_ALTER, ERWERBSBEGINN_ALTER, KONTO_ZINS_DEFAULT, KOSTEN_PA, PENSION_PROFILE, berechnePension,
+  ENTNAHME_BIS_ALTER, ERWERBSBEGINN_ALTER, FLV_VERSICHERUNGSSTEUER, KOSTEN_PA, PENSION_PROFILE, berechnePension,
   type PensionInput, type RisikoProfil,
 } from "@/lib/calc/pension"
 import { RR_PRODUCT_COLORS, rrFormatEUR } from "@/lib/calc/rendite"
@@ -56,7 +56,6 @@ export function PensionsRechner() {
   const [entnahmeBis, setEntnahmeBis] = useState(String(ENTNAHME_BIS_ALTER))
   const [profil, setProfil] = useState<RisikoProfil>("ausgewogen")
   const [eigeneRendite, setEigeneRendite] = useState("")
-  const [kontoZins, setKontoZins] = useState(String(KONTO_ZINS_DEFAULT * 100))
 
   const alterN = Math.round(Number(alter) || 0)
   const pensionsalterN = Math.round(Number(pensionsalter) || 0)
@@ -68,7 +67,6 @@ export function PensionsRechner() {
   // Eigene Rendite (Textfeld) überschreibt das Risikoprofil, sobald etwas eingetragen ist.
   const eigeneRenditeAktiv = eigeneRendite.trim() !== ""
   const eigeneRenditeN = Number(eigeneRendite.replace(",", "."))
-  const kontoZinsN = Number(kontoZins.replace(",", "."))
 
   const fehler =
     alterN < 16 || alterN > 80 ? "Bitte ein aktuelles Alter zwischen 16 und 80 angeben."
@@ -76,7 +74,6 @@ export function PensionsRechner() {
     : entnahmeBisN > 110 ? "Die Lebenserwartung darf höchstens 110 Jahre betragen."
     : pensionsalterN >= entnahmeBisN ? `Das Pensionsalter muss unter der Lebenserwartung (${entnahmeBisN}) liegen.`
     : nettoN <= 0 ? "Bitte ein Nettoeinkommen angeben."
-    : !Number.isFinite(kontoZinsN) || kontoZinsN < 0 || kontoZinsN > 10 ? "Die Kontoverzinsung in der Entnahmephase muss zwischen 0 und 10 % p.a. liegen."
     : eigeneRenditeAktiv && (!Number.isFinite(eigeneRenditeN) || eigeneRenditeN < 0 || eigeneRenditeN > 20)
       ? "Die eigene Rendite muss zwischen 0 und 20 % p.a. liegen."
     : null
@@ -85,7 +82,6 @@ export function PensionsRechner() {
     alter: alterN, pensionsalter: pensionsalterN, nettoMonat: nettoN, wunschPension: wunschN,
     inflation: inflationN, profil, entnahmeBis: entnahmeBisN,
     rendite: eigeneRenditeAktiv ? eigeneRenditeN / 100 : undefined,
-    kontoZins: kontoZinsN / 100,
   }
   const r = useMemo(() => (ein ? berechnePension(ein) : null), [ein])
   const geaendert = ein !== null && JSON.stringify(ein) !== JSON.stringify(aktuell)
@@ -156,11 +152,6 @@ export function PensionsRechner() {
               Lebenserwartung (Entnahme bis Alter)
               <input type="number" min={60} max={110} step={1} value={entnahmeBis}
                 onChange={(e) => setEntnahmeBis(e.target.value)} className={INPUT_CLS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Verzinsung Konto in der Entnahme (% p.a.)
-              <input type="number" min={0} max={10} step={0.1} value={kontoZins}
-                onChange={(e) => setKontoZins(e.target.value)} className={INPUT_CLS} />
             </label>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -249,6 +240,35 @@ export function PensionsRechner() {
             </CardContent>
           </Card>
 
+          <details className="group rounded-lg border border-border bg-card px-4 py-3">
+            <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Verwendete Annahmen
+            </summary>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                ["Jahre bis Pension", String(r.jahre)],
+                ["Pensionslaufzeit", `${r.entnahmeJahre} Jahre (bis ${ein.entnahmeBis ?? ENTNAHME_BIS_ALTER})`],
+                ["Geschätztes Bruttoeinkommen", `${rrFormatEUR(r.bruttoJahr)} / Jahr`],
+                [`Nominale Rendite (${eigeneRenditeAktiv ? "eigene" : PENSION_PROFILE[ein.profil].label})`, fmtPct(ein.rendite ?? PENSION_PROFILE[ein.profil].rendite)],
+                ["Inflation", fmtPct(ein.inflation)],
+                ["Kosten Depot", `${fmtPct(KOSTEN_PA)} p.a.`],
+                ["Rendite Depot in der Pension", `${fmtPct(r.entnahmeRendite)} p.a.`],
+                ["Rendite FLV in der Pension", `${fmtPct(r.flv.entnahmeRendite)} p.a.`],
+                ["Staatliche Pension nominal", `${rrFormatEUR(r.staatNettoNominal)} / Monat`],
+                ["Gewünschte Pension nominal", `${rrFormatEUR(r.wunschNominal)} / Monat`],
+                ["Lücke nominal", `${rrFormatEUR(r.lueckeNominal)} / Monat`],
+                ["Vermögen bei Pensionsantritt (Depot)", `${rrFormatEUR(r.kapitalBedarf / Math.pow(1 + ein.inflation, r.jahre))} real · ${rrFormatEUR(r.kapitalBedarf)} nominell`],
+                ["Vermögen bei Pensionsantritt (FLV)", `${rrFormatEUR(r.flv.kapitalBedarf / Math.pow(1 + ein.inflation, r.jahre))} real · ${rrFormatEUR(r.flv.kapitalBedarf)} nominell`],
+                ["Versicherungssteuer (FLV)", fmtPct(FLV_VERSICHERUNGSSTEUER)],
+                ["KESt", "0 %"],
+              ].map(([k, v]) => (
+                <span key={k} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+                  {k}: <strong className="text-foreground">{v}</strong>
+                </span>
+              ))}
+            </div>
+          </details>
+
           <h3 className="text-sm font-semibold text-[#0b1f2a]">So schließt du deine Pensionslücke</h3>
           {r.luecke > 0 ? (
             <div className="flex flex-col gap-3">
@@ -287,9 +307,10 @@ export function PensionsRechner() {
         Die Pensionsberechnung beruht auf Annahmen und Schätzungen. Grundlage: Pensionskonto-Logik der PVA
         (1,78 % × Beitragsgrundlage × 14, Versicherungsbeginn mit {ERWERBSBEGINN_ALTER} Jahren), Steuertarif §33 EStG 2026,
         SV-Beitrag Angestellte 18,12 %, KV-Beitrag Pension 6 %, Höchstbeitragsgrundlage 6.930 €/Monat,
-        Pensionistenabsetzbetrag 1.020 €. Allen Berechnungen liegen Kosten von {fmtPct(KOSTEN_PA)} p.a. auf das veranlagte Kapital
-        (quartalsweise abgerechnet) in der Ansparphase zugrunde. Ab Pensionsantritt wird das Kapital ausgezahlt und auf einem kostenfreien Konto
-        (Verzinsung {fmtPct(kontoZinsN / 100)} p.a.) bis zum Alter {entnahmeBisN} (Standard: {ENTNAHME_BIS_ALTER}) verbraucht — für Depot und FLV gleich. Tatsächliche Werte können erheblich abweichen —
+        Pensionistenabsetzbetrag 1.020 €. Dem Depot (froots) liegen Kosten von {fmtPct(KOSTEN_PA)} p.a. auf das veranlagte Kapital
+        (quartalsweise abgerechnet) zugrunde. Ab Pensionsantritt bleibt das Kapital investiert und wird bis zum Alter {entnahmeBisN}
+        (Standard: {ENTNAHME_BIS_ALTER}) inflationsindexiert verbraucht; beim Depot verzinst es sich mit Rendite abzüglich Kosten, bei der FLV wie in der
+        Entnahmephase des Renditerechners. Tatsächliche Werte können erheblich abweichen —
         entscheidend ist dein individueller Versicherungsverlauf. Diese Berechnung ersetzt keine Pensionsauskunft der PVA und
         stellt keine Anlage-, Steuer- oder Rechtsberatung dar. Die konkrete steuerliche Behandlung hängt von deinen persönlichen
         Verhältnissen ab und kann künftig Änderungen unterworfen sein. Wertpapierdienstleister &amp; Versicherungsvermittler sind
@@ -300,7 +321,7 @@ export function PensionsRechner() {
         Merkur-Angebote, Stand 08/2026, zwei Fonds, Annahme 6 % p.a.; Einmalerlag mit Abschluss-/Verwaltungskosten, Prämiendynamik
         so angesetzt, dass die Sparrate wirksam wie beim Depot um die Inflation steigt). Die FLV ist KESt-frei. Das Depot ist hier
         ohne KESt, Ausgabeaufschlag und Depotgebühr des Renditerechners gerechnet, sondern mit den oben genannten
-        {" "}{fmtPct(KOSTEN_PA)} p.a. Die Ergebnisse hängen stark von den Kostenannahmen ab und sind keine Produktempfehlung.
+        {" "}{fmtPct(KOSTEN_PA)} p.a. (Annahme des froots-Pensionsrechners; ohne die Servicegebühr der Vermittlung). Die Ergebnisse hängen stark von den Kostenannahmen ab und sind keine Produktempfehlung.
       </p>
     </div>
   )

@@ -12,14 +12,14 @@ describe("Pensionsrechner", () => {
     expect(nettoAusBrutto(bruttoAusNetto(3000))).toBeCloseTo(3000, 1)
   })
 
-  it("Beispiel 30/65/3.000/4.000/2 %/7,5 % mit 2,09 % Kosten p.a. (quartalsweise)", () => {
+  it("Beispiel 30/65/3.000/4.000/2 %/7,5 % mit 1,0 % Kosten p.a., Kapital bleibt in der Pension investiert", () => {
     const r = berechnePension(BASE)
     expect(r.staatNetto).toBeGreaterThan(2200)
     expect(r.staatNetto).toBeLessThan(2600)
-    expect(r.einmalerlag).toBeGreaterThan(130000)
-    expect(r.einmalerlag).toBeLessThan(160000)
-    expect(r.sparplanStart).toBeGreaterThan(520)
-    expect(r.sparplanStart).toBeLessThan(640)
+    expect(r.einmalerlag).toBeGreaterThan(55000)
+    expect(r.einmalerlag).toBeLessThan(66000)
+    expect(r.sparplanStart).toBeGreaterThan(260)
+    expect(r.sparplanStart).toBeLessThan(300)
   })
 
   it("höhere Rendite senkt Einmalerlag und Sparplan", () => {
@@ -54,8 +54,8 @@ describe("Pensionsrechner", () => {
     const perf = 0.075
     const einmal = simulateMerkurFLVEinmal(r.flv.einmalerlag, r.jahre, perf)[r.jahre * 12]
     const spar = simulateMerkurFLVPraemie(r.flv.sparplanStart, r.jahre, perf, BASE.inflation / 0.912)[r.jahre * 12]
-    expect(einmal).toBeCloseTo(r.kapitalBedarf, 0)
-    expect(spar).toBeCloseTo(r.kapitalBedarf, 0)
+    expect(einmal).toBeCloseTo(r.flv.kapitalBedarf, 0)
+    expect(spar).toBeCloseTo(r.flv.kapitalBedarf, 0)
     expect(r.flv.sparplanEnde).toBeGreaterThan(r.flv.sparplanStart)
     expect(r.flv.sparplanSumme).toBeGreaterThan(r.flv.sparplanStart * r.jahre * 12 * 0.99)
   })
@@ -82,15 +82,15 @@ describe("Pensionsrechner", () => {
     expect(berechnePension({ ...BASE, rendite: 0.04 }).einmalerlag).toBeGreaterThan(b.einmalerlag)
   })
 
-  it("Depot und FLV benötigen bei Pensionsantritt dasselbe Kapital (kostenfreies Konto)", () => {
+  it("Kapital bleibt in der Pension investiert: FLV (Merkur-Verzinsung) braucht weniger als das Depot (Rendite abzüglich 1,0 % Kosten)", () => {
     const r = berechnePension(BASE)
-    expect(r.kapitalBedarf).toBeGreaterThan(0)
-    expect(simulateMerkurFLVEinmal(r.flv.einmalerlag, r.jahre, 0.075)[r.jahre * 12]).toBeCloseTo(r.kapitalBedarf, 0)
+    expect(r.kapitalBedarf).toBeGreaterThan(r.flv.kapitalBedarf)
+    expect(simulateMerkurFLVEinmal(r.flv.einmalerlag, r.jahre, 0.075)[r.jahre * 12]).toBeCloseTo(r.flv.kapitalBedarf, 0)
   })
 
-  it("höhere Kontoverzinsung in der Entnahme senkt den Kapitalbedarf", () => {
-    const a = berechnePension({ ...BASE, kontoZins: 0.01 })
-    const b = berechnePension({ ...BASE, kontoZins: 0.04 })
+  it("höhere Rendite senkt den Kapitalbedarf in der Entnahme (Depot und FLV)", () => {
+    const a = berechnePension({ ...BASE, rendite: 0.05 })
+    const b = berechnePension({ ...BASE, rendite: 0.07 })
     expect(b.kapitalBedarf).toBeLessThan(a.kapitalBedarf)
     expect(b.flv.einmalerlag).toBeLessThan(a.flv.einmalerlag)
   })
@@ -101,6 +101,6 @@ describe("Pensionsrechner", () => {
     expect(r.sparplanEnde / r.sparplanStart).toBeCloseTo(faktor, 6)
     expect(r.flv.sparplanEnde / r.flv.sparplanStart).toBeCloseTo(faktor, 6)
     const spar = simulateMerkurFLVPraemie(r.flv.sparplanStart, r.jahre, 0.075, BASE.inflation / 0.912)[r.jahre * 12]
-    expect(spar).toBeCloseTo(r.kapitalBedarf, 0)
+    expect(spar).toBeCloseTo(r.flv.kapitalBedarf, 0)
   })
 })
