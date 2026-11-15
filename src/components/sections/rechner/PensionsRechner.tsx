@@ -252,13 +252,11 @@ export function PensionsRechner() {
                 [`Nominale Rendite (${eigeneRenditeAktiv ? "eigene" : PENSION_PROFILE[ein.profil].label})`, fmtPct(ein.rendite ?? PENSION_PROFILE[ein.profil].rendite)],
                 ["Inflation", fmtPct(ein.inflation)],
                 ["Kosten Depot", `${fmtPct(KOSTEN_PA)} p.a.`],
-                ["Rendite Depot in der Pension", `${fmtPct(r.entnahmeRendite)} p.a.`],
-                ["Rendite FLV in der Pension", `${fmtPct(r.flv.entnahmeRendite)} p.a.`],
+                ["Rendite in der Pension (Depot und FLV)", `${fmtPct(r.entnahmeRendite)} p.a.`],
                 ["Staatliche Pension nominal", `${rrFormatEUR(r.staatNettoNominal)} / Monat`],
                 ["Gewünschte Pension nominal", `${rrFormatEUR(r.wunschNominal)} / Monat`],
                 ["Lücke nominal", `${rrFormatEUR(r.lueckeNominal)} / Monat`],
-                ["Vermögen bei Pensionsantritt (Depot)", `${rrFormatEUR(r.kapitalBedarf / Math.pow(1 + ein.inflation, r.jahre))} real · ${rrFormatEUR(r.kapitalBedarf)} nominell`],
-                ["Vermögen bei Pensionsantritt (FLV)", `${rrFormatEUR(r.flv.kapitalBedarf / Math.pow(1 + ein.inflation, r.jahre))} real · ${rrFormatEUR(r.flv.kapitalBedarf)} nominell`],
+                ["Vermögen bei Pensionsantritt", `${rrFormatEUR(r.kapitalBedarf / Math.pow(1 + ein.inflation, r.jahre))} real · ${rrFormatEUR(r.kapitalBedarf)} nominell`],
                 ["Versicherungssteuer (FLV)", fmtPct(FLV_VERSICHERUNGSSTEUER)],
                 ["KESt", "0 %"],
               ].map(([k, v]) => (
@@ -309,8 +307,8 @@ export function PensionsRechner() {
         SV-Beitrag Angestellte 18,12 %, KV-Beitrag Pension 6 %, Höchstbeitragsgrundlage 6.930 €/Monat,
         Pensionistenabsetzbetrag 1.020 €. Dem Depot (froots) liegen Kosten von {fmtPct(KOSTEN_PA)} p.a. auf das veranlagte Kapital
         (quartalsweise abgerechnet) zugrunde. Ab Pensionsantritt bleibt das Kapital investiert und wird bis zum Alter {entnahmeBisN}
-        (Standard: {ENTNAHME_BIS_ALTER}) inflationsindexiert verbraucht; beim Depot verzinst es sich mit Rendite abzüglich Kosten, bei der FLV wie in der
-        Entnahmephase des Renditerechners. Tatsächliche Werte können erheblich abweichen —
+        (Standard: {ENTNAHME_BIS_ALTER}) inflationsindexiert verbraucht und verzinst sich mit Rendite abzüglich Kosten. Die FLV wird bei Ablauf ausbezahlt und danach
+        wie das Depot weiter angelegt, daher brauchen beide bei Pensionsantritt dasselbe Kapital. Tatsächliche Werte können erheblich abweichen —
         entscheidend ist dein individueller Versicherungsverlauf. Diese Berechnung ersetzt keine Pensionsauskunft der PVA und
         stellt keine Anlage-, Steuer- oder Rechtsberatung dar. Die konkrete steuerliche Behandlung hängt von deinen persönlichen
         Verhältnissen ab und kann künftig Änderungen unterworfen sein. Wertpapierdienstleister &amp; Versicherungsvermittler sind

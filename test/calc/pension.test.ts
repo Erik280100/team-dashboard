@@ -82,9 +82,9 @@ describe("Pensionsrechner", () => {
     expect(berechnePension({ ...BASE, rendite: 0.04 }).einmalerlag).toBeGreaterThan(b.einmalerlag)
   })
 
-  it("Kapital bleibt in der Pension investiert: FLV (Merkur-Verzinsung) braucht weniger als das Depot (Rendite abzüglich 2,09 % Kosten)", () => {
+  it("Depot und FLV brauchen bei Pensionsantritt dasselbe Kapital", () => {
     const r = berechnePension(BASE)
-    expect(r.kapitalBedarf).toBeGreaterThan(r.flv.kapitalBedarf)
+    expect(r.flv.kapitalBedarf).toBe(r.kapitalBedarf)
     expect(simulateMerkurFLVEinmal(r.flv.einmalerlag, r.jahre, 0.075)[r.jahre * 12]).toBeCloseTo(r.flv.kapitalBedarf, 0)
   })
 

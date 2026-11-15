@@ -4,12 +4,12 @@
 //  2. Staatliche Pension nach Pensionskonto-Logik (1,78 % je Versicherungsjahr)
 //  3. Pensionslücke (real, heutige Kaufkraft) → nominal bei Pensionsantritt
 //  4. Kapitalbedarf = Barwert einer inflationsindexierten Entnahme bis ENTNAHME_BIS_ALTER; das Kapital bleibt
-//     in der Pension investiert (Depot: Rendite abzüglich Kosten wie im froots-Pensionsrechner,
-//     FLV: Verzinsung wie in der Merkur-Entnahmephase des Renditerechners)
+//     in der Pension investiert (Rendite abzüglich Depot-Kosten); Depot und FLV brauchen bei Pensionsantritt
+//     dasselbe Kapital (die FLV wird bei Ablauf ausbezahlt und wie das Depot weiter angelegt)
 //  5. Einmalerlag heute bzw. Sparplan (jährlich um die Inflation dynamisiert)
 import { rrRate } from "./rendite"
 import {
-  MERKUR_DYNAMIK_WIRKSAMKEIT, MERKUR_ERTRAGSAUFSCHLAG_PA, simulateMerkurFLVEinmal, simulateMerkurFLVPraemie,
+  MERKUR_DYNAMIK_WIRKSAMKEIT, simulateMerkurFLVEinmal, simulateMerkurFLVPraemie,
 } from "./merkurFlv"
 
 export type RisikoProfil = "konservativ" | "ausgewogen" | "gewinnorientiert"
@@ -126,10 +126,8 @@ export type PensionInput = {
 }
 
 export type PensionFlvResult = {
-  /** Kapitalbedarf bei Pensionsantritt (die FLV bleibt in der Pension mit `entnahmeRendite` investiert). */
+  /** Kapitalbedarf bei Pensionsantritt (identisch mit dem Depot: Auszahlung bei Ablauf, danach gleiche Anlage). */
   kapitalBedarf: number
-  /** Verzinsung der FLV in der Entnahmephase (p.a.). */
-  entnahmeRendite: number
   einmalerlag: number
   sparplanStart: number
   sparplanEnde: number
@@ -221,16 +219,15 @@ export function sparplanSumme(start: number, jahre: number, g: number): number {
  *  um `infl` pro Jahr: Merkur setzt eine nominale Dynamik nur zu MERKUR_DYNAMIK_WIRKSAMKEIT um, daher wird sie
  *  entsprechend höher angesetzt, damit beide Varianten dieselbe Einzahlungsentwicklung haben. */
 export function berechneFlv(bedarf: number, jahre: number, infl: number, perf: number): PensionFlvResult {
-  const entnahmeRendite = perf + MERKUR_ERTRAGSAUFSCHLAG_PA
   if (bedarf <= 0 || jahre <= 0) {
-    return { kapitalBedarf: bedarf, entnahmeRendite, einmalerlag: 0, sparplanStart: 0, sparplanEnde: 0, sparplanSumme: 0, renditeAnsparphase: 0 }
+    return { kapitalBedarf: bedarf, einmalerlag: 0, sparplanStart: 0, sparplanEnde: 0, sparplanSumme: 0, renditeAnsparphase: 0 }
   }
   const months = jahre * 12
   const einmalerlag = bisektion((x) => simulateMerkurFLVEinmal(x, jahre, perf)[months], bedarf, bedarf * 1.5 + 100)
   const waNominal = infl / MERKUR_DYNAMIK_WIRKSAMKEIT
   const sparplanStart = bisektion((x) => simulateMerkurFLVPraemie(x, jahre, perf, waNominal)[months], bedarf, bedarf)
   return {
-    kapitalBedarf: bedarf, entnahmeRendite,
+    kapitalBedarf: bedarf,
     einmalerlag, sparplanStart,
     sparplanEnde: sparplanStart * Math.pow(1 + infl, Math.max(0, jahre - 1)),
     sparplanSumme: sparplanSumme(sparplanStart, jahre, infl),
@@ -252,10 +249,6 @@ export function berechnePension(inp: PensionInput): PensionResult {
   const entnahmeMonate = Math.max(0, ((inp.entnahmeBis ?? ENTNAHME_BIS_ALTER) - inp.pensionsalter) * 12)
   const entnahmeRendite = brutto - KOSTEN_PA
   const bedarf = luecke > 0 ? kapitalBedarf(lueckeNominal, entnahmeMonate, inp.inflation, entnahmeRendite) : 0
-  // FLV: Entnahme-Verzinsung wie simulateMerkurFLVEntnahme (laufende Kosten stecken in der Sparprämien-Quote)
-  const bedarfFlv = luecke > 0
-    ? kapitalBedarf(lueckeNominal, entnahmeMonate, inp.inflation, brutto + MERKUR_ERTRAGSAUFSCHLAG_PA)
-    : 0
   const einmalerlag = bedarf / accum[jahre * 12]
   const faktor = sparplanFaktor(jahre * 12, inp.inflation, brutto)
   const sparplanStart = faktor > 0 ? bedarf / faktor : 0
@@ -268,6 +261,6 @@ export function berechnePension(inp: PensionInput): PensionResult {
     wunschNominal: inp.wunschPension * Math.pow(1 + inp.inflation, jahre),
     entnahmeJahre: entnahmeMonate / 12, einmalerlag, sparplanStart, sparplanEnde,
     sparplanSumme: sparplanSumme(sparplanStart, jahre, inp.inflation),
-    flv: berechneFlv(bedarfFlv, jahre, inp.inflation, brutto),
+    flv: berechneFlv(bedarf, jahre, inp.inflation, brutto),
   }
 }
