@@ -11,6 +11,7 @@ import {
   type PensionResult, type RisikoProfil,
 } from "@/lib/calc/pension"
 import { RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR } from "@/lib/calc/rendite"
+import { MERKUR_DYNAMIK_WIRKSAMKEIT } from "@/lib/calc/merkurFlv"
 
 const COLOR_STAAT = "#155767"
 const COLOR_LUECKE = "#A32A48"
@@ -219,22 +220,29 @@ export function PensionsRechner() {
 
           <h3 className="text-sm font-semibold text-[#155767]">So schließt du deine Pensionslücke</h3>
           {r.luecke > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Card style={{ backgroundColor: "#08899f" }}>
-                <CardContent>
-                  <div className="text-xs font-semibold text-white/90">Einmalerlag heute (Depot)</div>
-                  <div className="mt-1 text-2xl font-bold tabular-nums text-white">{rrFormatEUR(r.einmalerlag)}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent>
-                  <div className="text-xs font-semibold text-muted-foreground">Sparplan monatlich bis Pensionsantritt (Depot)</div>
-                  <div className="mt-1 text-2xl font-bold tabular-nums">{rrFormatEUR(r.sparplanStart)}</div>
-                  <div className="text-[10.5px] text-muted-foreground">
-                    steigt jährlich um {fmtPct(inflationN)} auf {rrFormatEUR(r.sparplanEnde)} im letzten Jahr
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="flex flex-col gap-3">
+              {[
+                { name: "Depot", color: "#08899f", einmal: r.einmalerlag, start: r.sparplanStart, ende: r.sparplanEnde, g: inflationN },
+                { name: "FLV (Merkur)", color: RR_PRODUCT_COLORS.flv.line, einmal: r.flv.einmalerlag, start: r.flv.sparplanStart, ende: r.flv.sparplanEnde, g: inflationN * MERKUR_DYNAMIK_WIRKSAMKEIT },
+              ].map((p) => (
+                <div key={p.name} className="grid gap-3 sm:grid-cols-2">
+                  <Card style={{ backgroundColor: p.color }}>
+                    <CardContent>
+                      <div className="text-xs font-semibold text-white/90">Einmalerlag heute ({p.name})</div>
+                      <div className="mt-1 text-2xl font-bold tabular-nums text-white">{rrFormatEUR(p.einmal)}</div>
+                    </CardContent>
+                  </Card>
+                  <Card style={{ borderTopColor: p.color, borderTopWidth: 3 }}>
+                    <CardContent>
+                      <div className="text-xs font-semibold text-muted-foreground">Sparplan monatlich bis Pensionsantritt ({p.name})</div>
+                      <div className="mt-1 text-2xl font-bold tabular-nums">{rrFormatEUR(p.start)}</div>
+                      <div className="text-[10.5px] text-muted-foreground">
+                        steigt jährlich um {fmtPct(p.g)} auf {rrFormatEUR(p.ende)} im letzten Jahr
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="rounded-lg border bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
