@@ -321,7 +321,7 @@ export function PensionsRechner() {
         Merkur-Angebote, Stand 08/2026, zwei Fonds, Annahme 6 % p.a.; Einmalerlag mit Abschluss-/Verwaltungskosten, Prämiendynamik
         so angesetzt, dass die Sparrate wirksam wie beim Depot um die Inflation steigt). Die FLV ist KESt-frei. Das Depot ist hier
         ohne KESt, Ausgabeaufschlag und Depotgebühr des Renditerechners gerechnet, sondern mit den oben genannten
-        {" "}{fmtPct(KOSTEN_PA)} p.a. (Annahme des froots-Pensionsrechners; ohne die Servicegebühr der Vermittlung). Die Ergebnisse hängen stark von den Kostenannahmen ab und sind keine Produktempfehlung.
+        {" "}{fmtPct(KOSTEN_PA)} p.a. (inkl. Servicegebühr der Vermittlung). Die Ergebnisse hängen stark von den Kostenannahmen ab und sind keine Produktempfehlung.
       </p>
     </div>
   )

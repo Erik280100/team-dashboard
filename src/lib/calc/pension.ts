@@ -20,9 +20,9 @@ export const PENSION_PROFILE: Record<RisikoProfil, { label: string; rendite: num
   gewinnorientiert: { label: "Gewinnorientiert", rendite: 0.075 },
 }
 
-/** Kosten des froots-Depots auf das veranlagte Kapital (p.a., wie im froots-Pensionsrechner),
+/** Kosten des froots-Depots auf das veranlagte Kapital (p.a., inkl. Servicegebühr; froots-Website rechnet mit 1,0 %),
  *  quartalsweise vom Kapital abgebucht; in der Pension mindern sie die Rendite des weiter investierten Kapitals. */
-export const KOSTEN_PA = 0.01
+export const KOSTEN_PA = 0.0209
 export const KOSTEN_INTERVALL_MONATE = 3
 /** Ende des Entnahmezeitraums (Lebenserwartung als Planungshorizont). */
 export const ENTNAHME_BIS_ALTER = 90

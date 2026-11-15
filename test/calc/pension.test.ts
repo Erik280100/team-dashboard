@@ -12,14 +12,14 @@ describe("Pensionsrechner", () => {
     expect(nettoAusBrutto(bruttoAusNetto(3000))).toBeCloseTo(3000, 1)
   })
 
-  it("Beispiel 30/65/3.000/4.000/2 %/7,5 % mit 1,0 % Kosten p.a., Kapital bleibt in der Pension investiert", () => {
+  it("Beispiel 30/65/3.000/4.000/2 %/7,5 % mit 2,09 % Kosten p.a., Kapital bleibt in der Pension investiert", () => {
     const r = berechnePension(BASE)
     expect(r.staatNetto).toBeGreaterThan(2200)
     expect(r.staatNetto).toBeLessThan(2600)
-    expect(r.einmalerlag).toBeGreaterThan(55000)
-    expect(r.einmalerlag).toBeLessThan(66000)
-    expect(r.sparplanStart).toBeGreaterThan(260)
-    expect(r.sparplanStart).toBeLessThan(300)
+    expect(r.einmalerlag).toBeGreaterThan(90000)
+    expect(r.einmalerlag).toBeLessThan(108000)
+    expect(r.sparplanStart).toBeGreaterThan(360)
+    expect(r.sparplanStart).toBeLessThan(430)
   })
 
   it("höhere Rendite senkt Einmalerlag und Sparplan", () => {
@@ -82,7 +82,7 @@ describe("Pensionsrechner", () => {
     expect(berechnePension({ ...BASE, rendite: 0.04 }).einmalerlag).toBeGreaterThan(b.einmalerlag)
   })
 
-  it("Kapital bleibt in der Pension investiert: FLV (Merkur-Verzinsung) braucht weniger als das Depot (Rendite abzüglich 1,0 % Kosten)", () => {
+  it("Kapital bleibt in der Pension investiert: FLV (Merkur-Verzinsung) braucht weniger als das Depot (Rendite abzüglich 2,09 % Kosten)", () => {
     const r = berechnePension(BASE)
     expect(r.kapitalBedarf).toBeGreaterThan(r.flv.kapitalBedarf)
     expect(simulateMerkurFLVEinmal(r.flv.einmalerlag, r.jahre, 0.075)[r.jahre * 12]).toBeCloseTo(r.flv.kapitalBedarf, 0)
