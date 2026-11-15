@@ -6,7 +6,7 @@ import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
-  RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR, rrMaxEntnahme,
+  RR_FLATEX_ORDER_EUR, RR_FLATEX_TER_PA_PCT, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR, rrMaxEntnahme,
   simulateFLVVerlauf, simulateFondsdepotVerlauf,
   type Provider, type RRProductKey, type RRVerlauf,
 } from "@/lib/calc/rendite"
@@ -87,17 +87,12 @@ export function RenditeRechner() {
   const [perfPreset, setPerfPreset] = useState<number | null>(6)
   const [customPerf, setCustomPerf] = useState("")
   const [provider, setProvider] = useState<Provider>("merkur")
-  const [ausgabeaufschlag, setAusgabeaufschlag] = useState("5")
-  const [depotgebuehr, setDepotgebuehr] = useState("1.45")
-  const [ageRendite, setAgeRendite] = useState("2")
+  const ageRenditeNum = 2 // feste agE-/Dividendenrendite (% p.a.), nicht mehr editierbar
   const [entnahmeEnabled, setEntnahmeEnabled] = useState(false)
   const [entnahmeJahre, setEntnahmeJahre] = useState("20")
   const [entnahmeMonatEingabe, setEntnahmeMonatEingabe] = useState("1000")
 
   const monatNum = Number(monat) || 0
-  const ausgabeaufschlagNum = Number(ausgabeaufschlag) || 0
-  const depotgebuehrNum = Number(depotgebuehr) || 0
-  const ageRenditeNum = Number(ageRendite) || 0
 
   const perf = (customPerf !== "" && !isNaN(parseFloat(customPerf)) ? parseFloat(customPerf) : perfPreset ?? 6) / 100
   const jahreMin = 1
@@ -128,8 +123,8 @@ export function RenditeRechner() {
       provider, monatNum, 0, jahreClamped, perf, waPctEff, entnahmeJahreEff, entnahmeMonatNum
     )
     const fondsdepotVerlauf: RRVerlauf = simulateFondsdepotVerlauf(
-      monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff,
-      entnahmeJahreEff, entnahmeMonatNum
+      monatNum, 0, jahreClamped, perf, 0, RR_FLATEX_TER_PA_PCT, ageRenditeNum, 0, waPctEff,
+      entnahmeJahreEff, entnahmeMonatNum, RR_FLATEX_ORDER_EUR
     )
 
     const years: number[] = []
@@ -161,8 +156,8 @@ export function RenditeRechner() {
     const depotMaxEntnahme = entnahmeJahreEff > 0
       ? rrMaxEntnahme(
           (x) => simulateFondsdepotVerlauf(
-            monatNum, 0, jahreClamped, perf, ausgabeaufschlagNum, depotgebuehrNum, ageRenditeNum, 0, waPctEff,
-            entnahmeJahreEff, x
+            monatNum, 0, jahreClamped, perf, 0, RR_FLATEX_TER_PA_PCT, ageRenditeNum, 0, waPctEff,
+            entnahmeJahreEff, x, RR_FLATEX_ORDER_EUR
           ),
           fondsdepotVerlauf.values[ansparIdx]
         )
@@ -173,7 +168,7 @@ export function RenditeRechner() {
       flvVerlauf, fondsdepotVerlauf, flvMaxEntnahme, depotMaxEntnahme,
     }
   }, [
-    provider, monatNum, jahreClamped, perf, waPctEff, ausgabeaufschlagNum, depotgebuehrNum,
+    provider, monatNum, jahreClamped, perf, waPctEff,
     ageRenditeNum, jahreGesamt, entnahmeJahreEff, entnahmeMonatNum,
   ])
 
@@ -303,27 +298,12 @@ export function RenditeRechner() {
         <Card style={productCardStyle("fondsdepot")}>
           <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondsdepot" />Depot</h3>
-            <div className="grid grid-cols-3 gap-3">
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Ausgabeaufschlag (%)
-                <input type="number" min={0} step={0.1} value={ausgabeaufschlag}
-                  onChange={(e) => setAusgabeaufschlag(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Depotgebühr / TER (% p.a.)
-                <input type="number" min={0} step={0.05} value={depotgebuehr}
-                  onChange={(e) => setDepotgebuehr(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                agE-/Dividendenrendite (% p.a.)
-                <input type="number" min={0} step={0.1} value={ageRendite}
-                  onChange={(e) => setAgeRendite(e.target.value)}
-                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
-              </label>
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Depot</span><span>flatex</span></div>
+              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Kosten je Einzelkauforder</span><span>{RR_FLATEX_ORDER_EUR.toFixed(2).replace(".", ",")} €</span></div>
+              <div className="flex justify-between text-xs"><span className="text-muted-foreground">TER</span><span>{RR_FLATEX_TER_PA_PCT.toFixed(2).replace(".", ",")} % p. a.</span></div>
             </div>
-            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %), agE-Annahme 2 % p. a.</div>
           </CardContent>
         </Card>
 

@@ -14,6 +14,11 @@ import { simulateMerkurFLVEinmal, simulateMerkurFLVEntnahme, simulateMerkurFLVPr
 
 export const RR_KEST = 0.275
 
+// Depot ist fix auf flatex abgestimmt: Gebühr je Einzelkauforder (Sparplanrate = 1 Order/Monat)
+// und laufende Fondskosten (TER) — im Renditerechner nicht mehr editierbar.
+export const RR_FLATEX_ORDER_EUR = 5.9
+export const RR_FLATEX_TER_PA_PCT = 0.8
+
 // Ergebnis einer Simulation mit optionaler Entnahmephase (siehe simulate*Verlauf-Funktionen
 // unten). entnommenNetto ist die tatsächlich ausbezahlte (Netto-)Summe über die Entnahmezeit;
 // reichtBisMonat ist der erste Monat (durchgezählt ab Start der Ansparphase), in dem die
@@ -198,7 +203,9 @@ export function simulateFondsdepotVerlauf(
   einmalFixFee = 0,
   waPct = 0,
   entnahmeJahre = 0,
-  entnahmeMonat = 0
+  entnahmeMonat = 0,
+  /** Fixgebühr in € je monatlicher Kauforder (wird von der Sparrate abgezogen). */
+  orderGebuehr = 0
 ): RRVerlauf {
   const months = jahre * 12
   const r = rrRate(perf)
@@ -234,7 +241,7 @@ export function simulateFondsdepotVerlauf(
 
   for (let m = 1; m <= months; m++) {
     const monatAngepasst = waRateMonthly > 0 ? monat * Math.pow(1 + waRateMonthly, m - 1) : monat
-    const net = monatAngepasst * (1 - aa)
+    const net = Math.max(0, monatAngepasst * (1 - aa) - orderGebuehr)
     depot += net
     cumNetto += net
     depot *= 1 + r
