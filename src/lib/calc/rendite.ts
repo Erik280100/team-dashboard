@@ -33,7 +33,7 @@ export type RRVerlauf = {
 // Hochrechnungsergebnis-Kachel verwendet (siehe RenditeRechner.tsx).
 export type RRProductKey = "flv" | "fondssparer" | "fondsdepot" | "vv"
 export const RR_PRODUCT_COLORS: Record<RRProductKey, { line: string; fill: string; tint: string }> = {
-  flv: { line: "#155767", fill: "rgba(21,87,103,.08)", tint: "rgba(21,87,103,.05)" },
+  flv: { line: "#3FCB8E", fill: "rgba(63,203,142,.10)", tint: "rgba(63,203,142,.06)" },
   fondssparer: { line: "#5B9BD5", fill: "rgba(91,155,213,.08)", tint: "rgba(91,155,213,.06)" },
   fondsdepot: { line: "#B07CC6", fill: "rgba(176,124,198,.08)", tint: "rgba(176,124,198,.06)" },
   vv: { line: "#E7A94C", fill: "rgba(231,169,76,.08)", tint: "rgba(231,169,76,.06)" },

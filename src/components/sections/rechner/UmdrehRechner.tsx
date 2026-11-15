@@ -30,7 +30,7 @@ function DiffValue({ value, onDark }: { value: number; onDark?: boolean }) {
     <span
       className={cn(
         "font-semibold",
-        value < 0 ? (onDark ? "text-[#E2685B]" : "text-destructive") : value > 0 ? "text-[#155767]" : undefined,
+        value < 0 ? (onDark ? "text-[#E2685B]" : "text-destructive") : value > 0 ? "text-[#64DDA3]" : undefined,
         onDark && value >= 0 && "text-[#64DDA3]"
       )}
     >
@@ -65,7 +65,7 @@ export function UmdrehRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
+      <div className="calc-info px-4 py-3 text-sm">
         <strong>Umdrehrechner:</strong> Vergleicht den Verdienst bei Storno eines Altvertrags mit dem Verdienst bei finova.
       </div>
 
@@ -117,7 +117,7 @@ export function UmdrehRechner() {
       </Card>
 
       {inputs.stornoActive && (
-        <div className="rounded-lg border bg-amber-50 px-4 py-2 text-xs text-amber-900">
+        <div className="calc-warn px-4 py-2 text-xs">
           Hinweis: Die Stornoreserve (15%) wurde berücksichtigt — alle angezeigten Beträge sind
           bereits um die einbehaltene Stornoreserve reduziert.
         </div>

@@ -372,3 +372,64 @@
   font-weight: 800;
   font-style: italic;
 }
+
+/* Rechner im dunklen Dashboard-Look (Navy-Verlauf wie Übersicht/EH-Rechner): Karten innerhalb von
+   .calc-dark werden dunkel, und alle Theme-Variablen darin zeigen auf helle Schrift/transparente Felder,
+   damit die bestehenden Utility-Klassen (bg-background, border-input, text-muted-foreground …) ohne
+   Umbau der Rechner-Komponenten passen. Text außerhalb von Karten bleibt auf dem hellen Seitengrund. */
+.calc-dark [data-slot="card"] {
+  --foreground: #ffffff;
+  --card-foreground: #ffffff;
+  --muted-foreground: rgba(255, 255, 255, 0.78);
+  --background: rgba(255, 255, 255, 0.1);
+  --card: rgba(255, 255, 255, 0.06);
+  --muted: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.14);
+  --input: rgba(255, 255, 255, 0.32);
+  --accent: rgba(255, 255, 255, 0.1);
+  --accent-foreground: #ffffff;
+  color-scheme: dark;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(160deg, #16323f 0%, #0b1f2a 100%);
+}
+.calc-dark [data-slot="card"] ::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+.calc-dark [data-slot="card"] select option {
+  color: #0b1f2a;
+}
+.calc-dark [data-slot="card"] .text-blue-900,
+.calc-dark [data-slot="card"] .text-amber-900,
+.calc-dark [data-slot="card"] .text-emerald-900 {
+  color: inherit;
+}
+
+/* Hinweis-Boxen (früher bg-blue-50 / bg-amber-50 / bg-emerald-50) im dunklen Look. */
+.calc-info,
+.calc-warn,
+.calc-ok {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(160deg, #16323f 0%, #0b1f2a 100%);
+}
+.calc-info strong,
+.calc-warn strong,
+.calc-ok strong {
+  color: #ffffff;
+}
+.calc-info {
+  border-left: 3px solid #64dda3;
+}
+.calc-warn {
+  border-left: 3px solid #e7a94c;
+}
+.calc-ok {
+  border-left: 3px solid #3fcb8e;
+}
+/* Deaktivierte Karten (grayscale + opacity-40) bleiben dunkel statt auf hellem Grund zu verblassen. */
+.calc-dark [data-slot="card"].grayscale {
+  opacity: 0.7;
+  filter: grayscale(1) brightness(0.8);
+}

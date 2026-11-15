@@ -82,7 +82,7 @@ export function InvestVsWohnungRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
+      <div className="calc-info px-4 py-3 text-sm">
         <strong>Invest vs. Anlegerwohnung:</strong> Vergleicht dieselben Eigenmittel im Depot mit einer fremdfinanzierten Anlegerwohnung über denselben Zeitraum.
       </div>
 
@@ -354,7 +354,7 @@ export function InvestVsWohnungRechner() {
       {warnungen.length > 0 && (
         <div className="flex flex-col gap-2">
           {warnungen.map((w) => (
-            <div key={w} className="rounded-lg border bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <div key={w} className="calc-warn px-3 py-2 text-xs">
               {w}
             </div>
           ))}

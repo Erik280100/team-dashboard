@@ -7,7 +7,7 @@
 //  5. Einmalerlag heute bzw. Sparplan (jährlich um die Inflation dynamisiert)
 import { rrRate } from "./rendite"
 import {
-  MERKUR_DYNAMIK_WIRKSAMKEIT, MERKUR_ERTRAGSAUFSCHLAG_PA, simulateMerkurFLVEinmal, simulateMerkurFLVPraemie,
+  MERKUR_DYNAMIK_WIRKSAMKEIT, simulateMerkurFLVEinmal, simulateMerkurFLVPraemie,
 } from "./merkurFlv"
 
 export type RisikoProfil = "konservativ" | "ausgewogen" | "gewinnorientiert"
@@ -25,6 +25,8 @@ export const KOSTEN_INTERVALL_MONATE = 3
 export const ENTNAHME_BIS_ALTER = 90
 /** Beginn der Erwerbstätigkeit für die Zahl der Versicherungsjahre. */
 export const ERWERBSBEGINN_ALTER = 25
+/** Standard-Verzinsung des Kontos, auf das das Kapital bei Pensionsantritt ausgezahlt wird. */
+export const KONTO_ZINS_DEFAULT = 0.02
 
 export const PK_PROZENT = 0.0178 // Pensionskonto: Gutschrift je Jahr
 export const SV_SATZ = 0.1812 // SV Angestellte
@@ -118,17 +120,30 @@ export type PensionInput = {
   entnahmeBis?: number
   /** Eigene Bruttorendite p.a. (z. B. 0.055); überschreibt die Rendite des Risikoprofils. */
   rendite?: number
+  /** Verzinsung des Kontos in der Entnahmephase (p.a.), Default KONTO_ZINS_DEFAULT. Gilt für Depot und FLV gleich. */
+  kontoZins?: number
+}
+
+export type PensionFlvResult = {
+  einmalerlag: number
+  sparplanStart: number
+  sparplanEnde: number
+  sparplanSumme: number
+  /** Effektive Jahresrendite des Einmalerlags über die Ansparphase (nach allen Kosten). */
+  renditeAnsparphase: number
 }
 
 export type PensionResult = {
   jahre: number // bis Pensionsantritt
-  nettoRendite: number // p.a. nach Kosten
+  /** Effektive Jahresrendite des Depots in der Ansparphase (nach Kosten). */
+  nettoRendite: number
   bruttoMonat: number // geschätztes Monatsbrutto
   staatBrutto: number
   staatNetto: number // Monatswert (14×), heutige Kaufkraft
   luecke: number // heutige Kaufkraft
   lueckeNominal: number // bei Pensionsantritt
-  kapitalBedarf: number // bei Pensionsantritt
+  /** Kapital bei Pensionsantritt — für Depot und FLV identisch (Auszahlung auf ein kostenfreies Konto). */
+  kapitalBedarf: number
   einmalerlag: number
   sparplanStart: number
   sparplanEnde: number
@@ -136,16 +151,6 @@ export type PensionResult = {
   sparplanSumme: number
   /** Dieselbe Lücke, finanziert über die Merkur-FLV (Kostenstruktur/Formeln des Renditerechners). */
   flv: PensionFlvResult
-}
-
-export type PensionFlvResult = {
-  /** Effektive Jahresrendite der Entnahmephase (Fondsertrag + Fondsrabatte, KESt-frei, ohne weitere Kosten). */
-  nettoRenditeEntnahme: number
-  kapitalBedarf: number // bei Pensionsantritt
-  einmalerlag: number
-  sparplanStart: number
-  sparplanEnde: number
-  sparplanSumme: number
 }
 
 /** Staatliche Pension (brutto/netto, je Monat bei 14 Bezügen) aus dem Nettoeinkommen. */
@@ -158,9 +163,9 @@ export function staatlichePension(nettoMonat: number, pensionsalter: number) {
 
 /** Kumulierter Wachstumsfaktor je Monat m (0..monate): monatliche Bruttoverzinsung; alle
  *  KOSTEN_INTERVALL_MONATE Monate werden KOSTEN_PA/4 des Kapitals abgebucht. */
-export function wachstumsfaktoren(monate: number, bruttoPa: number): number[] {
+export function wachstumsfaktoren(monate: number, bruttoPa: number, kostenPa = KOSTEN_PA): number[] {
   const g = rrRate(bruttoPa) + 1
-  const fee = 1 - KOSTEN_PA * KOSTEN_INTERVALL_MONATE / 12
+  const fee = 1 - kostenPa * KOSTEN_INTERVALL_MONATE / 12
   const cum = [1]
   for (let m = 1; m <= monate; m++) {
     cum.push(cum[m - 1] * g * (m % KOSTEN_INTERVALL_MONATE === 0 ? fee : 1))
@@ -169,22 +174,23 @@ export function wachstumsfaktoren(monate: number, bruttoPa: number): number[] {
 }
 
 /** Kapital bei Pensionsantritt, das eine monatliche Entnahme `startMonat` (jährlich um `infl` steigend)
- *  über `monate` Monate trägt. Entnahme jeweils zu Monatsbeginn. */
-export function kapitalBedarf(startMonat: number, monate: number, infl: number, bruttoPa: number): number {
-  const cum = wachstumsfaktoren(monate, bruttoPa)
+ *  über `monate` Monate trägt, wenn es auf einem kostenfreien Konto mit `kontoZinsPa` liegt (Entnahme zu
+ *  Monatsbeginn). Für Depot und FLV gleich: ab Pensionsantritt fallen keine Produktkosten mehr an. */
+export function kapitalBedarf(startMonat: number, monate: number, infl: number, kontoZinsPa: number): number {
+  const r = rrRate(kontoZinsPa)
   let pv = 0
   for (let m = 0; m < monate; m++) {
-    pv += startMonat * Math.pow(1 + infl, Math.floor(m / 12)) / cum[m]
+    pv += startMonat * Math.pow(1 + infl, Math.floor(m / 12)) / Math.pow(1 + r, m)
   }
   return pv
 }
 
-/** Endwert einer Sparrate 1 € (Start), die jährlich um `infl` steigt; Einzahlung zu Monatsbeginn. */
-export function sparplanFaktor(monate: number, infl: number, bruttoPa: number): number {
+/** Endwert einer Sparrate 1 € (Start), die jährlich um `g` steigt; Einzahlung zu Monatsbeginn. */
+export function sparplanFaktor(monate: number, g: number, bruttoPa: number): number {
   const cum = wachstumsfaktoren(monate, bruttoPa)
   let fv = 0
   for (let m = 0; m < monate; m++) {
-    fv += Math.pow(1 + infl, Math.floor(m / 12)) * cum[monate] / cum[m]
+    fv += Math.pow(1 + g, Math.floor(m / 12)) * cum[monate] / cum[m]
   }
   return fv
 }
@@ -196,36 +202,23 @@ export function sparplanSumme(start: number, jahre: number, g: number): number {
   return sum
 }
 
-/** Kapital bei Pensionsantritt für die FLV: gleiche indexierte Entnahme wie beim Depot, aber mit dem
- *  Merkur-Modell der Entnahmephase (Verzinsung perf + Ertragsaufschlag, keine weiteren Kosten, KESt-frei). */
-export function kapitalBedarfFlv(startMonat: number, monate: number, infl: number, perf: number): number {
-  const r = rrRate(perf + MERKUR_ERTRAGSAUFSCHLAG_PA)
-  let pv = 0
-  for (let m = 0; m < monate; m++) {
-    pv += startMonat * Math.pow(1 + infl, Math.floor(m / 12)) / Math.pow(1 + r, m)
-  }
-  return pv
-}
-
-/** FLV: Einmalerlag (Merkur-Einmaltopf) und Sparplan (kalibrierter Merkur-Prämientopf mit Dynamik =
- *  Inflation), jeweils so bestimmt, dass das Kapital bei Pensionsantritt dem Bedarf entspricht. */
-export function berechneFlv(
-  lueckeNominal: number, jahre: number, entnahmeMonate: number, infl: number, perf: number
-): PensionFlvResult {
-  const nettoRenditeEntnahme = Math.pow(1 + rrRate(perf + MERKUR_ERTRAGSAUFSCHLAG_PA), 12) - 1
-  const bedarf = lueckeNominal > 0 ? kapitalBedarfFlv(lueckeNominal, entnahmeMonate, infl, perf) : 0
+/** FLV: Einmalerlag (Merkur-Einmaltopf) und Sparplan (kalibrierter Merkur-Prämientopf), jeweils so bestimmt,
+ *  dass das Kapital bei Pensionsantritt dem Bedarf entspricht. Der Sparplan steigt — wie beim Depot — wirksam
+ *  um `infl` pro Jahr: Merkur setzt eine nominale Dynamik nur zu MERKUR_DYNAMIK_WIRKSAMKEIT um, daher wird sie
+ *  entsprechend höher angesetzt, damit beide Varianten dieselbe Einzahlungsentwicklung haben. */
+export function berechneFlv(bedarf: number, jahre: number, infl: number, perf: number): PensionFlvResult {
   if (bedarf <= 0 || jahre <= 0) {
-    return { nettoRenditeEntnahme, kapitalBedarf: bedarf, einmalerlag: 0, sparplanStart: 0, sparplanEnde: 0, sparplanSumme: 0 }
+    return { einmalerlag: 0, sparplanStart: 0, sparplanEnde: 0, sparplanSumme: 0, renditeAnsparphase: 0 }
   }
   const months = jahre * 12
   const einmalerlag = bisektion((x) => simulateMerkurFLVEinmal(x, jahre, perf)[months], bedarf, bedarf * 1.5 + 100)
-  const sparplanStart = bisektion((x) => simulateMerkurFLVPraemie(x, jahre, perf, infl)[months], bedarf, bedarf)
-  // wirksame Prämiensteigerung (siehe MERKUR_DYNAMIK_WIRKSAMKEIT)
-  const gEff = infl * MERKUR_DYNAMIK_WIRKSAMKEIT
+  const waNominal = infl / MERKUR_DYNAMIK_WIRKSAMKEIT
+  const sparplanStart = bisektion((x) => simulateMerkurFLVPraemie(x, jahre, perf, waNominal)[months], bedarf, bedarf)
   return {
-    nettoRenditeEntnahme, kapitalBedarf: bedarf, einmalerlag, sparplanStart,
-    sparplanEnde: sparplanStart * Math.pow(1 + gEff, Math.max(0, jahre - 1)),
-    sparplanSumme: sparplanSumme(sparplanStart, jahre, gEff),
+    einmalerlag, sparplanStart,
+    sparplanEnde: sparplanStart * Math.pow(1 + infl, Math.max(0, jahre - 1)),
+    sparplanSumme: sparplanSumme(sparplanStart, jahre, infl),
+    renditeAnsparphase: Math.pow(bedarf / einmalerlag, 1 / jahre) - 1,
   }
 }
 
@@ -241,17 +234,16 @@ export function berechnePension(inp: PensionInput): PensionResult {
   const lueckeNominal = luecke * Math.pow(1 + inp.inflation, jahre)
 
   const entnahmeMonate = Math.max(0, ((inp.entnahmeBis ?? ENTNAHME_BIS_ALTER) - inp.pensionsalter) * 12)
-  const bedarf = luecke > 0 ? kapitalBedarf(lueckeNominal, entnahmeMonate, inp.inflation, brutto) : 0
+  const bedarf = luecke > 0 ? kapitalBedarf(lueckeNominal, entnahmeMonate, inp.inflation, inp.kontoZins ?? KONTO_ZINS_DEFAULT) : 0
   const einmalerlag = bedarf / accum[jahre * 12]
   const faktor = sparplanFaktor(jahre * 12, inp.inflation, brutto)
   const sparplanStart = faktor > 0 ? bedarf / faktor : 0
   const sparplanEnde = sparplanStart * Math.pow(1 + inp.inflation, Math.max(0, jahre - 1))
 
-  const flv = berechneFlv(lueckeNominal, jahre, entnahmeMonate, inp.inflation, brutto)
-
   return {
     jahre, nettoRendite, bruttoMonat, staatBrutto, staatNetto, luecke, lueckeNominal,
     kapitalBedarf: bedarf, einmalerlag, sparplanStart, sparplanEnde,
-    sparplanSumme: sparplanSumme(sparplanStart, jahre, inp.inflation), flv,
+    sparplanSumme: sparplanSumme(sparplanStart, jahre, inp.inflation),
+    flv: berechneFlv(bedarf, jahre, inp.inflation, brutto),
   }
 }

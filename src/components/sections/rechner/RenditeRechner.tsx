@@ -1,5 +1,5 @@
 // Renditerechner — Äquivalent zu initRenditeRechner() aus der früheren Einzeldatei-App.
-import "@/lib/chartSetup"
+import { DARK_GRID, DARK_LEGEND, DARK_TICK } from "@/lib/chartSetup"
 import { useMemo, useRef, useState, type CSSProperties } from "react"
 import { Line } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
@@ -223,7 +223,7 @@ export function RenditeRechner() {
       ctx.lineTo(x, chartArea.bottom)
       ctx.stroke()
       ctx.setLineDash([])
-      ctx.fillStyle = "#5B6B6E"
+      ctx.fillStyle = "#9FB3AF"
       ctx.font = "10px sans-serif"
       ctx.textAlign = "left"
       ctx.fillText("Entnahmestart", x + 4, chartArea.top + 12)
@@ -233,7 +233,7 @@ export function RenditeRechner() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-blue-50 px-4 py-3 text-sm text-blue-900">
+      <div className="calc-info px-4 py-3 text-sm">
         <strong>Renditerechner:</strong> Vergleicht vier Anlageprodukte über die gewählte Laufzeit inklusive Kosten und KESt.
         {" "}Bei aktivierter Entnahmephase ist die Monatsentnahme netto in der Hand gemeint — beim Depot wird die KESt auf
         den Gewinnanteil dafür zusätzlich aus dem Depot entnommen (Brutto-Hochrechnung), die FLV ist KESt-frei. Das
@@ -323,7 +323,7 @@ export function RenditeRechner() {
                   className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
               </label>
             </div>
-            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %) — agE-Rendite gilt auch für die VV</div>
           </CardContent>
         </Card>
 
@@ -332,7 +332,7 @@ export function RenditeRechner() {
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Setup-Kosten</span><span>—</span></div>
             <div className="flex justify-between text-xs"><span className="text-muted-foreground">Laufende Kosten</span><span>—</span></div>
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">Vorübergehend deaktiviert</div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">Vorübergehend deaktiviert</div>
           </CardContent>
         </Card>
 
@@ -342,7 +342,7 @@ export function RenditeRechner() {
             {fondssparerKostenZeilen(jahreClamped).map(([label]) => (
               <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>—</span></div>
             ))}
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">Vorübergehend deaktiviert</div>
+            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">Vorübergehend deaktiviert</div>
           </CardContent>
         </Card>
 
@@ -359,7 +359,7 @@ export function RenditeRechner() {
                 <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>{val}</span></div>
               ))}
             </div>
-            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#155767]">KESt-frei</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-frei</div>
             <div className="text-[10.5px] text-muted-foreground">
               Sparprämie kalibriert auf echte Merkur-Angebote (Stand 08/2026, zwei Fonds, Annahme 6 % p.a.)
             </div>
@@ -387,7 +387,7 @@ export function RenditeRechner() {
                 maintainAspectRatio: false,
                 interaction: { mode: "index", intersect: false },
                 plugins: {
-                  legend: { position: "top", labels: { boxWidth: 12, font: { size: 11 } } },
+                  legend: DARK_LEGEND,
                   tooltip: {
                     callbacks: {
                       label: (ctx) => `${ctx.dataset.label}: ${rrFormatEUR(ctx.parsed.y as number)}`,
@@ -399,8 +399,8 @@ export function RenditeRechner() {
                   },
                 },
                 scales: {
-                  x: { grid: { display: false }, title: { display: true, text: "Jahre" } },
-                  y: { beginAtZero: true, ticks: { callback: (val) => rrFormatAxis(Number(val)) } },
+                  x: { grid: { display: false }, ticks: DARK_TICK, title: { display: true, text: "Jahre", color: "#9FB3AF" } },
+                  y: { beginAtZero: true, grid: { color: DARK_GRID }, ticks: { ...DARK_TICK, callback: (val) => rrFormatAxis(Number(val)) } },
                 },
               }}
               plugins={[entnahmeMarkerPlugin]}
@@ -458,7 +458,7 @@ export function RenditeRechner() {
                         Kapital reicht bis Jahr {Math.ceil((p.reichtBisMonat as number) / 12)}
                       </div>
                     ) : (
-                      <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
+                      <div className={cn("text-xs font-bold", positive ? "text-[#64DDA3]" : "text-destructive")}>
                         {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
                       </div>
                     )}
@@ -470,7 +470,7 @@ export function RenditeRechner() {
                     </div>
                   </>
                 ) : (
-                  <div className={cn("text-xs font-bold", positive ? "text-[#155767]" : "text-destructive")}>
+                  <div className={cn("text-xs font-bold", positive ? "text-[#64DDA3]" : "text-destructive")}>
                     {positive ? "+" : ""}{rrFormatEUR(diff)} ggü. Einbezahlt
                   </div>
                 )}

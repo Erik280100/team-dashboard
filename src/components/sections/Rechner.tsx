@@ -43,7 +43,7 @@ export function Rechner({
   const activeTab = tab
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="calc-dark flex flex-col gap-4">
       <PillTabs tabs={visibleTabs} value={activeTab} onChange={setTab} />
 
       {activeTab === "eh" && (
