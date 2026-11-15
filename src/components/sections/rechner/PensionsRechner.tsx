@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import {
   ENTNAHME_BIS_ALTER, ERWERBSBEGINN_ALTER, KONTO_ZINS_DEFAULT, KOSTEN_PA, PENSION_PROFILE, berechnePension,
-  type PensionInput, type PensionResult, type RisikoProfil,
+  type PensionInput, type RisikoProfil,
 } from "@/lib/calc/pension"
 import { RR_PRODUCT_COLORS, rrFormatEUR } from "@/lib/calc/rendite"
 
@@ -280,19 +280,6 @@ export function PensionsRechner() {
               Deine geschätzte staatliche Pension deckt die Wunschpension — es ist keine zusätzliche Vorsorge nötig.
             </div>
           )}
-
-          {r.luecke > 0 && <DepotVsFlv r={r} />}
-
-          <Card>
-            <CardContent className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
-              <Zeile label={`Geschätztes Brutto (14×)`} value={`${rrFormatEUR(r.bruttoMonat)} / Monat`} />
-              <Zeile label="Staatliche Pension brutto" value={`${rrFormatEUR(r.staatBrutto)} / Monat`} />
-              <Zeile label="Staatliche Pension netto" value={`${rrFormatEUR(r.staatNetto)} / Monat`} />
-              <Zeile label={`Lücke bei Pensionsantritt (in ${r.jahre} J., nominal)`} value={`${rrFormatEUR(r.lueckeNominal)} / Monat`} />
-              <Zeile label={`Kapitalbedarf mit ${ein!.pensionsalter} (Depot und FLV)`} value={rrFormatEUR(r.kapitalBedarf)} />
-              <Zeile label="Depot: Rendite nach Kosten (Ansparphase)" value={`${(r.nettoRendite * 100).toFixed(2).replace(".", ",")} % p.a.`} />
-            </CardContent>
-          </Card>
         </div>
       )}
 
@@ -315,76 +302,6 @@ export function PensionsRechner() {
         ohne KESt, Ausgabeaufschlag und Depotgebühr des Renditerechners gerechnet, sondern mit den oben genannten
         {" "}{fmtPct(KOSTEN_PA)} p.a. Die Ergebnisse hängen stark von den Kostenannahmen ab und sind keine Produktempfehlung.
       </p>
-    </div>
-  )
-}
-
-type Vergleichszeile = { label: string; depot: number; flv: number; fmt?: (n: number) => string; niedrigerIstBesser?: boolean }
-
-function DepotVsFlv({ r }: { r: PensionResult }) {
-  const pct = (n: number) => (n * 100).toFixed(2).replace(".", ",") + " %"
-  const zeilen: Vergleichszeile[] = [
-    { label: "Einmalerlag heute", depot: r.einmalerlag, flv: r.flv.einmalerlag, niedrigerIstBesser: true },
-    { label: "Sparplan monatlich (Startrate)", depot: r.sparplanStart, flv: r.flv.sparplanStart, niedrigerIstBesser: true },
-    { label: "Sparplan im letzten Jahr", depot: r.sparplanEnde, flv: r.flv.sparplanEnde, niedrigerIstBesser: true },
-    { label: "Summe aller Sparplan-Einzahlungen", depot: r.sparplanSumme, flv: r.flv.sparplanSumme, niedrigerIstBesser: true },
-    { label: "Effektive Rendite Ansparphase (Einmalerlag)", depot: r.nettoRendite, flv: r.flv.renditeAnsparphase, fmt: pct },
-  ]
-  const ersparnis = r.einmalerlag - r.flv.einmalerlag
-  const ersparnisSparplan = r.sparplanStart - r.flv.sparplanStart
-  const guenstiger = ersparnis >= 0 ? "FLV" : "Depot"
-  return (
-    <Card>
-      <CardContent className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-[#64DDA3]">Depot vs. FLV (Merkur)</h3>
-        <div className="text-xs text-muted-foreground">
-          Gleiche Pensionslücke, gleiches Kapital bei Pensionsantritt ({rrFormatEUR(r.kapitalBedarf)}, danach kostenfreies Konto) und gleich steigende Sparrate — einmal über ein Depot mit {fmtPct(KOSTEN_PA)} p.a. Kosten, einmal über die Merkur-FLV mit der Kostenstruktur des Renditerechners. Verglichen wird also nur die Ansparphase.
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs font-semibold text-muted-foreground">
-                <th className="px-2 py-1.5">&nbsp;</th>
-                <th className="px-2 py-1.5 text-right" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot</th>
-                <th className="px-2 py-1.5 text-right" style={{ color: RR_PRODUCT_COLORS.flv.line }}>FLV</th>
-                <th className="px-2 py-1.5 text-right">Differenz (FLV − Depot)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {zeilen.map((z) => {
-                const f = z.fmt ?? rrFormatEUR
-                const diff = z.flv - z.depot
-                const flvBesser = z.niedrigerIstBesser ? diff < 0 : diff > 0
-                const gleich = Math.abs(diff) < 1e-9
-                return (
-                  <tr key={z.label} className="border-b last:border-0">
-                    <td className="px-2 py-1.5">{z.label}</td>
-                    <td className={cn("px-2 py-1.5 text-right tabular-nums", !gleich && !flvBesser && "font-bold")}>{f(z.depot)}</td>
-                    <td className={cn("px-2 py-1.5 text-right tabular-nums", !gleich && flvBesser && "font-bold")}>{f(z.flv)}</td>
-                    <td className={cn("px-2 py-1.5 text-right tabular-nums", flvBesser ? "text-[#64DDA3]" : "text-destructive")}>
-                      {diff > 0 ? "+" : ""}{z.fmt ? pct(diff) : rrFormatEUR(diff)}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs">
-          Beim Einmalerlag ist <strong>{guenstiger}</strong> um <strong>{rrFormatEUR(Math.abs(ersparnis))}</strong> günstiger,
-          beim Sparplan um <strong>{rrFormatEUR(Math.abs(ersparnisSparplan))}</strong> pro Monat
-          ({ersparnisSparplan >= 0 ? "FLV" : "Depot"}).
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function Zeile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-3">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold tabular-nums">{value}</span>
     </div>
   )
 }
