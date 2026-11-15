@@ -30,6 +30,7 @@ const LOWER_ITEMS: typeof NAV_ITEMS = [
 
 /** Externer Link (öffnet in neuem Tab, nie "aktive Seite"), steht unten bei "Mein Board". */
 const ANALYSE_URL = "https://finova.anyconcept.ai/finanzanalyse/home"
+const STEUERVIECH_URL = "https://steuerviech.at/"
 
 export function Sidebar({
   section,
@@ -153,6 +154,17 @@ export function Sidebar({
           >
             <FilePlus2 aria-hidden="true" className="size-4 shrink-0" />
             Neue Analyse starten
+            <ExternalLink aria-hidden="true" className="ml-auto size-3.5 shrink-0 opacity-60" />
+          </a>
+          <a
+            href={STEUERVIECH_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            className="flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-medium text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          >
+            <Receipt aria-hidden="true" className="size-4 shrink-0" />
+            Steuerviech
             <ExternalLink aria-hidden="true" className="ml-auto size-3.5 shrink-0 opacity-60" />
           </a>
           {LOWER_ITEMS.map(renderItem)}
