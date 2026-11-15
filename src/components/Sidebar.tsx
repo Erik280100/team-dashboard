@@ -92,7 +92,7 @@ export function Sidebar({
       <nav
         aria-label="Hauptnavigation"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 -translate-x-full flex-col gap-1 border-r bg-sidebar p-4 text-sidebar-foreground transition-transform duration-200 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 -translate-x-full flex-col gap-1 overflow-y-auto overscroll-contain border-r bg-sidebar p-4 text-sidebar-foreground transition-transform duration-200 ease-in-out",
           "lg:static lg:z-auto lg:translate-x-0",
           open && "translate-x-0"
         )}
