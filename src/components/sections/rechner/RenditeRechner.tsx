@@ -10,7 +10,7 @@ import {
   simulateFLVVerlauf, simulateFondsdepotVerlauf,
   type Provider, type RRProductKey, type RRVerlauf,
 } from "@/lib/calc/rendite"
-import { fondssparerKostenZeilen } from "@/lib/calc/fondssparer"
+import { simulateFondssparerVerlauf } from "@/lib/calc/fondssparer"
 import { simulateFrootsVerlauf } from "@/lib/calc/froots"
 
 const PERF_PRESETS = [3, 6, 9]
@@ -79,7 +79,7 @@ function Stepper({
   )
 }
 
-export function RenditeRechner() {
+export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermögensverwaltung sind nur für Admins sichtbar. */ isAdmin?: boolean }) {
   const [monat, setMonat] = useState("200")
   const [jahre, setJahre] = useState("20")
   const [waEnabled, setWaEnabled] = useState(false)
@@ -118,7 +118,7 @@ export function RenditeRechner() {
 
   const {
     years, einbezahlt, flvY, fondssparerY, fondsdepotY, fondsdepotNachKestY, vvY, vvNachKestY,
-    flvVerlauf, fondsdepotVerlauf, vvVerlauf, flvMaxEntnahme, depotMaxEntnahme, vvMaxEntnahme,
+    flvVerlauf, fondsdepotVerlauf, vvVerlauf, fondssparerVerlauf, flvMaxEntnahme, depotMaxEntnahme, vvMaxEntnahme, fondssparerMaxEntnahme,
   } = useMemo(() => {
     const flvVerlauf: RRVerlauf = simulateFLVVerlauf(
       provider, monatNum, 0, jahreClamped, perf, waPctEff, entnahmeJahreEff, entnahmeMonatNum
@@ -128,6 +128,9 @@ export function RenditeRechner() {
       entnahmeJahreEff, entnahmeMonatNum, RR_FLATEX_ORDER_EUR
     )
 
+    const fondssparerVerlauf: RRVerlauf = simulateFondssparerVerlauf(
+      monatNum, jahreClamped, perf, waPctEff, entnahmeJahreEff, entnahmeMonatNum
+    )
     const vvVerlauf: RRVerlauf = simulateFrootsVerlauf(
       monatNum, 0, jahreClamped, perf, ageRenditeNum, waPctEff, entnahmeJahreEff, entnahmeMonatNum
     )
@@ -146,8 +149,7 @@ export function RenditeRechner() {
       fondsdepotNachKestY.push((fondsdepotVerlauf.valuesNachKest ?? fondsdepotVerlauf.values)[idx])
       vvY.push((vvVerlauf.valuesVorKest ?? vvVerlauf.values)[idx])
       vvNachKestY.push((vvVerlauf.valuesNachKest ?? vvVerlauf.values)[idx])
-      // Fondssparer vorübergehend deaktiviert (ausgegraut, Werte auf 0)
-      fondssparerY.push(0)
+      fondssparerY.push(fondssparerVerlauf.values[idx])
     }
 
     // Größte Monatsentnahme, die exakt bis zum Ende der Entnahmezeit trägt (Obergrenze: das am
@@ -168,6 +170,12 @@ export function RenditeRechner() {
           fondsdepotVerlauf.values[ansparIdx]
         )
       : 0
+    const fondssparerMaxEntnahme = entnahmeJahreEff > 0
+      ? rrMaxEntnahme(
+          (x) => simulateFondssparerVerlauf(monatNum, jahreClamped, perf, waPctEff, entnahmeJahreEff, x),
+          fondssparerVerlauf.values[ansparIdx]
+        )
+      : 0
     const vvMaxEntnahme = entnahmeJahreEff > 0
       ? rrMaxEntnahme(
           (x) => simulateFrootsVerlauf(monatNum, 0, jahreClamped, perf, ageRenditeNum, waPctEff, entnahmeJahreEff, x),
@@ -177,7 +185,7 @@ export function RenditeRechner() {
 
     return {
       years, einbezahlt, flvY, fondssparerY, fondsdepotY, fondsdepotNachKestY, vvY, vvNachKestY,
-      flvVerlauf, fondsdepotVerlauf, vvVerlauf, flvMaxEntnahme, depotMaxEntnahme, vvMaxEntnahme,
+      flvVerlauf, fondsdepotVerlauf, vvVerlauf, fondssparerVerlauf, flvMaxEntnahme, depotMaxEntnahme, vvMaxEntnahme, fondssparerMaxEntnahme,
     }
   }, [
     provider, monatNum, jahreClamped, perf, waPctEff,
@@ -187,7 +195,7 @@ export function RenditeRechner() {
   const finalEinbezahlt = einbezahlt[einbezahlt.length - 1]
   const entnahmeAktiv = entnahmeJahreEff > 0
   const products: {
-    name: string; colorKey: RRProductKey; end: number; endVorKest?: number; einbezahlt: number; disabled?: boolean
+    name: string; colorKey: RRProductKey; end: number; endVorKest?: number; einbezahlt: number; disabled?: boolean; adminOnly?: boolean
     entnommenNetto?: number; reichtBisMonat?: number | null; maxEntnahme?: number
     effektivverzinsungPct?: number | null
   }[] = [
@@ -197,7 +205,12 @@ export function RenditeRechner() {
       reichtBisMonat: entnahmeAktiv ? flvVerlauf.reichtBisMonat : undefined,
       maxEntnahme: entnahmeAktiv ? flvMaxEntnahme : undefined,
     },
-    { name: "Fondssparer", colorKey: "fondssparer", end: 0, einbezahlt: 0, disabled: true },
+    {
+      name: "Fondssparer", colorKey: "fondssparer", end: fondssparerY[fondssparerY.length - 1], einbezahlt: finalEinbezahlt, adminOnly: true,
+      entnommenNetto: entnahmeAktiv ? fondssparerVerlauf.entnommenNetto : undefined,
+      reichtBisMonat: entnahmeAktiv ? fondssparerVerlauf.reichtBisMonat : undefined,
+      maxEntnahme: entnahmeAktiv ? fondssparerMaxEntnahme : undefined,
+    },
     {
       name: "Depot", colorKey: "fondsdepot", end: fondsdepotNachKestY[fondsdepotNachKestY.length - 1], endVorKest: fondsdepotY[fondsdepotY.length - 1], einbezahlt: finalEinbezahlt,
       entnommenNetto: entnahmeAktiv ? fondsdepotVerlauf.entnommenNetto : undefined,
@@ -205,12 +218,13 @@ export function RenditeRechner() {
       maxEntnahme: entnahmeAktiv ? depotMaxEntnahme : undefined,
     },
     {
-      name: "Vermögensverwaltung", colorKey: "vv", end: vvNachKestY[vvNachKestY.length - 1], endVorKest: vvY[vvY.length - 1], einbezahlt: finalEinbezahlt,
+      name: "Vermögensverwaltung", colorKey: "vv", end: vvNachKestY[vvNachKestY.length - 1], endVorKest: vvY[vvY.length - 1], einbezahlt: finalEinbezahlt, adminOnly: true,
       entnommenNetto: entnahmeAktiv ? vvVerlauf.entnommenNetto : undefined,
       reichtBisMonat: entnahmeAktiv ? vvVerlauf.reichtBisMonat : undefined,
       maxEntnahme: entnahmeAktiv ? vvMaxEntnahme : undefined,
     },
   ]
+  const visibleProducts = products.filter((p) => isAdmin || !p.adminOnly)
 
   // react-chartjs-2 liest die `plugins`-Prop nur beim allerersten Mount des Charts ein — ein
   // Plugin, das per Closure direkt auf entnahmeAktiv/jahreClamped zugreift, würde für immer die
@@ -325,23 +339,20 @@ export function RenditeRechner() {
           </CardContent>
         </Card>
 
-        <Card style={productCardStyle("vv")}>
+        {isAdmin && <Card style={productCardStyle("vv")}>
           <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="vv" />Vermögensverwaltung</h3>
             <div className="text-[10.5px] text-muted-foreground">Nutzt die agE-/Dividendenrendite des Depots.</div>
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %)</div>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card style={productCardStyle("fondssparer")} className="pointer-events-none opacity-40 grayscale">
-          <CardContent className="flex flex-col gap-2">
+        {isAdmin && <Card style={productCardStyle("fondssparer")}>
+          <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondssparer" />Fondssparer</h3>
-            {fondssparerKostenZeilen(jahreClamped).map(([label]) => (
-              <div key={label} className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span>—</span></div>
-            ))}
-            <div className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">Vorübergehend deaktiviert</div>
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-frei</div>
           </CardContent>
-        </Card>
+        </Card>}
 
         <Card style={productCardStyle("flv")}>
           <CardContent className="flex flex-col gap-3">
@@ -365,9 +376,9 @@ export function RenditeRechner() {
                 labels: years,
                 datasets: [
                   { label: "FLV", data: flvY, borderColor: RR_PRODUCT_COLORS.flv.line, backgroundColor: RR_PRODUCT_COLORS.flv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Fondssparer (deaktiviert)", data: fondssparerY, borderColor: "#B9C2C4", backgroundColor: "transparent", borderWidth: 1.5, pointRadius: 0, tension: 0.2 },
+                  ...(isAdmin ? [{ label: "Fondssparer", data: fondssparerY, borderColor: RR_PRODUCT_COLORS.fondssparer.line, backgroundColor: RR_PRODUCT_COLORS.fondssparer.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] : []),
                   { label: "Depot (nach KESt)", data: fondsdepotNachKestY, borderColor: RR_PRODUCT_COLORS.fondsdepot.line, backgroundColor: RR_PRODUCT_COLORS.fondsdepot.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
-                  { label: "Vermögensverwaltung (nach KESt)", data: vvNachKestY, borderColor: RR_PRODUCT_COLORS.vv.line, backgroundColor: RR_PRODUCT_COLORS.vv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 },
+                  ...(isAdmin ? [{ label: "Vermögensverwaltung (nach KESt)", data: vvNachKestY, borderColor: RR_PRODUCT_COLORS.vv.line, backgroundColor: RR_PRODUCT_COLORS.vv.fill, borderWidth: 2.5, pointRadius: 0, tension: 0.2 }] : []),
                   { label: "Einbezahlt*", data: einbezahlt, borderColor: "#8FA1A6", borderDash: [5, 4], borderWidth: 2, pointRadius: 0, tension: 0 },
                 ],
               }}
@@ -384,7 +395,8 @@ export function RenditeRechner() {
                         const i = items[0]?.dataIndex
                         return i == null ? [] : [
                           `Depot ohne KESt-Abzug: ${rrFormatEUR(fondsdepotY[i])}`,
-                          `Vermögensverwaltung ohne KESt-Abzug: ${rrFormatEUR(vvY[i])}`,
+                          ...(isAdmin ? [`Vermögensverwaltung ohne KESt-Abzug: ${rrFormatEUR(vvY[i])}`,
+                          ] : []),
                         ]
                       },
                     },
@@ -404,7 +416,7 @@ export function RenditeRechner() {
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {products.map((p) => {
+        {visibleProducts.map((p) => {
           const diff = p.end - p.einbezahlt
           const positive = diff >= 0
           const color = RR_PRODUCT_COLORS[p.colorKey]
@@ -487,11 +499,11 @@ export function RenditeRechner() {
                   <th className="px-2 py-1.5">Jahr</th>
                   <th className="px-2 py-1.5">Einbezahlt</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.flv.line }}>FLV</th>
-                  <th className="px-2 py-1.5 text-muted-foreground/40">Fondssparer</th>
+                  {isAdmin && <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondssparer.line }}>Fondssparer</th>}
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot (ohne KESt)</th>
                   <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.fondsdepot.line }}>Depot (nach KESt)</th>
-                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV (ohne KESt)</th>
-                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV (nach KESt)</th>
+                  {isAdmin && <><th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV (ohne KESt)</th>
+                  <th className="px-2 py-1.5" style={{ color: RR_PRODUCT_COLORS.vv.line }}>VV (nach KESt)</th></>}
                 </tr>
               </thead>
               <tbody>
@@ -510,11 +522,11 @@ export function RenditeRechner() {
                       <td className="px-2 py-1.5">{y}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(einbezahlt[i])}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(flvY[i])}</td>
-                      <td className="px-2 py-1.5 tabular-nums text-muted-foreground/40">{rrFormatEUR(fondssparerY[i])}</td>
+                      {isAdmin && <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondssparerY[i])}</td>}
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotY[i])}</td>
                       <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(fondsdepotNachKestY[i])}</td>
-                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(vvY[i])}</td>
-                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(vvNachKestY[i])}</td>
+                      {isAdmin && <><td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(vvY[i])}</td>
+                      <td className="px-2 py-1.5 tabular-nums">{rrFormatEUR(vvNachKestY[i])}</td></>}
                     </tr>
                   )
                 })}

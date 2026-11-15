@@ -21,7 +21,7 @@ const TABS: { id: RechnerTab; label: string }[] = [
 ]
 
 export function Rechner({
-  employees, abwicklerCandidates, planRates, defaultEmployee, canBookUnits, canSeePension, onApplyUnits,
+  employees, abwicklerCandidates, planRates, defaultEmployee, canBookUnits, canSeePension, isAdmin = false, onApplyUnits,
 }: {
   /** Buchbare Mitarbeiter: man selbst und alle darunter. */
   employees: { name: string; role: string; units: Record<PlanId, number>; stages?: Record<PlanId, string> }[]
@@ -36,6 +36,8 @@ export function Rechner({
   canBookUnits: boolean
   /** Pensionsrechner nur für Führungskräfte (Admin, Führungskraft, Lesemodus) sichtbar. */
   canSeePension: boolean
+  /** Fondssparer und Vermögensverwaltung im Renditerechner nur für Admins. */
+  isAdmin?: boolean
   onApplyUnits: (name: string, units: Record<PlanId, number>, abwickler?: string, sales?: UmsatzDraft[]) => void
 }) {
   const [tab, setTab] = useState<RechnerTab>("eh")
@@ -53,7 +55,7 @@ export function Rechner({
         />
       )}
       {activeTab === "umdreh" && <UmdrehRechner />}
-      {activeTab === "rendite" && <RenditeRechner />}
+      {activeTab === "rendite" && <RenditeRechner isAdmin={isAdmin} />}
       {activeTab === "investVsWohnung" && <InvestVsWohnungRechner />}
       {activeTab === "pension" && canSeePension && <PensionsRechner />}
     </div>

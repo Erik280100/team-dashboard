@@ -614,6 +614,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   defaultEmployee={myName}
                   canBookUnits={auth.ready && !!auth.user && !auth.isViewer}
                   canSeePension={canSeeTraining}
+                  isAdmin={auth.isAdmin}
                   onApplyUnits={applyUnitsToEmployee}
                 />
               )}
