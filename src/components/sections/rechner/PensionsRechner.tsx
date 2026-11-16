@@ -6,7 +6,7 @@ import { Bar } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { Feld, INPUT_CLASS, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
+import { Feld, LABEL_CLASS, FELD_GRID, EinheitInput } from "@/components/sections/rechner/fields"
 import {
   ENTNAHME_BIS_ALTER, ERWERBSBEGINN_ALTER, FLV_VERSICHERUNGSSTEUER, KOSTEN_PA, PENSION_PROFILE, berechnePension,
   type PensionInput, type RisikoProfil,
@@ -121,12 +121,12 @@ export function PensionsRechner() {
          <form className="flex flex-col gap-4" onSubmit={berechnen}>
           <h3 className="text-sm font-semibold">Eingaben</h3>
           <div className={FELD_GRID}>
-            <Feld label="Aktuelles Alter" value={alter} onChange={setAlter} min={16} max={80} step={1} stepper />
-            <Feld label="Gewünschtes Pensionsalter" value={pensionsalter} onChange={setPensionsalter} min={50} max={ENTNAHME_BIS_ALTER - 1} step={1} stepper />
-            <Feld label="Aktuelles Nettoeinkommen (€/Monat)" value={netto} onChange={setNetto} min={0} step={100} stepper />
-            <Feld label="Gewünschte Pension (€/Monat)" value={wunsch} onChange={setWunsch} min={0} step={100} stepper />
-            <Feld label="Inflation (% p.a.)" value={inflation} onChange={setInflation} min={0} step={0.1} stepper />
-            <Feld label="Lebenserwartung (Entnahme bis Alter)" value={entnahmeBis} onChange={setEntnahmeBis} min={60} max={110} step={1} stepper />
+            <Feld label="Aktuelles Alter" value={alter} onChange={setAlter} min={16} max={80} step={1} />
+            <Feld label="Gewünschtes Pensionsalter" value={pensionsalter} onChange={setPensionsalter} min={50} max={ENTNAHME_BIS_ALTER - 1} step={1} />
+            <Feld label="Aktuelles Nettoeinkommen" suffix="€/Monat" value={netto} onChange={setNetto} min={0} step={100} />
+            <Feld label="Gewünschte Pension" suffix="€/Monat" value={wunsch} onChange={setWunsch} min={0} step={100} />
+            <Feld label="Inflation" suffix="% p.a." value={inflation} onChange={setInflation} min={0} step={0.1} />
+            <Feld label="Lebenserwartung (Entnahme bis Alter)" value={entnahmeBis} onChange={setEntnahmeBis} min={60} max={110} step={1} />
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="text-xs text-muted-foreground">Risikoprofil</div>
@@ -145,9 +145,9 @@ export function PensionsRechner() {
                 </button>
               ))}
               <label className={cn("flex items-center gap-2", LABEL_CLASS)}>
-                oder eigene Rendite (% p.a.)
-                <input type="number" min={0} max={20} step={0.1} placeholder="z. B. 5,5" value={eigeneRendite}
-                  onChange={(e) => setEigeneRendite(e.target.value)} className={INPUT_CLASS} />
+                oder eigene Rendite
+                <EinheitInput min={0} max={20} step={0.1} placeholder="z. B. 5,5" value={eigeneRendite}
+                  onChange={(v) => setEigeneRendite(v)} einheit="% p.a." />
               </label>
             </div>
           </div>

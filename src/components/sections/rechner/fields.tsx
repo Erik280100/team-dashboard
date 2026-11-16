@@ -1,46 +1,35 @@
 import { cn } from "@/lib/utils"
 
 // Gemeinsame Bausteine der Rechner-Oberflächen (Eingabefeld, Regler, Ergebniszeile, Zahlen-Parser).
-export const INPUT_CLASS = "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm tabular-nums text-center shadow-sm transition-colors focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:opacity-40 disabled:cursor-not-allowed"
-export const LABEL_CLASS = "text-[11px] leading-4 font-medium uppercase tracking-wider text-muted-foreground"
+export const INPUT_CLASS = "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm tabular-nums text-left shadow-sm transition-colors focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:opacity-40 disabled:cursor-not-allowed"
+export const LABEL_CLASS = "text-sm font-semibold leading-5 text-foreground"
 
-// Einheitliches Raster für alle Eingabe-Formulare: 1 Spalte mobil, 2 ab sm, 3 ab lg – gleiche Abstände überall.
-export const FELD_GRID = "grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3"
+// Einheitliches Raster für alle Eingabe-Formulare: 1 Spalte mobil, 2 ab sm – gleiche Abstände überall.
+export const FELD_GRID = "grid gap-x-8 gap-y-5 sm:grid-cols-2"
 
-function decimals(step: number) {
-  const s = String(step)
-  const i = s.indexOf(".")
-  return i < 0 ? 0 : s.length - i - 1
-}
-
-// Zahlenfeld mit runden −/+ Buttons (für die Hauptwerte eines Rechners).
-export function Stepper({
-  value, onChange, step = 1, min = 0, max, disabled, id, className,
+// Eingabefeld mit Einheit (€, %, Jahre …) rechts innen im Feld.
+export function EinheitInput({
+  value, onChange, einheit, step, min, max, disabled, placeholder, id, className, onFocus,
 }: {
   value: string
   onChange: (v: string) => void
+  einheit?: string
   step?: number
   min?: number
   max?: number
   disabled?: boolean
+  placeholder?: string
   id?: string
   className?: string
+  onFocus?: React.FocusEventHandler<HTMLInputElement>
 }) {
-  const num = Number(String(value).replace(",", ".")) || 0
-  const d = decimals(step)
-  const set = (n: number) => {
-    let v = n
-    if (min !== undefined) v = Math.max(min, v)
-    if (max !== undefined) v = Math.min(max, v)
-    onChange(String(+v.toFixed(d)))
-  }
-  const btn = "flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold leading-none text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <button type="button" aria-label="Verringern" disabled={disabled} className={btn} onClick={() => set(num - step)}>−</button>
-      <input id={id} type="number" min={min} max={max} step={step} value={value} disabled={disabled}
-        onChange={(e) => onChange(e.target.value)} className={cn(INPUT_CLASS, "min-w-0 flex-1")} />
-      <button type="button" aria-label="Erhöhen" disabled={disabled} className={btn} onClick={() => set(num + step)}>+</button>
+    <div className={cn("relative w-full min-w-0", className)}>
+      <input id={id} type="number" min={min} max={max} step={step} value={value} disabled={disabled} placeholder={placeholder} onFocus={onFocus}
+        onChange={(e) => onChange(e.target.value)} className={cn(INPUT_CLASS, einheit && "pr-16")} />
+      {einheit && (
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">{einheit}</span>
+      )}
     </div>
   )
 }
@@ -70,7 +59,7 @@ export function Zelle({
 }
 
 export function Feld({
-  label, value, onChange, suffix, step = 1, min, max, className, stepper,
+  label, value, onChange, suffix, step = 1, min, max, className,
 }: {
   label: string
   value: string
@@ -80,19 +69,11 @@ export function Feld({
   min?: number
   max?: number
   className?: string
-  stepper?: boolean
 }) {
   return (
     <label className={cn("flex min-w-0 flex-col gap-1.5", LABEL_CLASS, className)}>
       {label}
-      <div className="flex items-center gap-2">
-        {stepper ? (
-          <Stepper value={value} onChange={onChange} step={step} min={min ?? 0} max={max} className="flex-1" />
-        ) : (
-          <input type="number" min={min} max={max} step={step} value={value} onChange={(e) => onChange(e.target.value)} className={cn(INPUT_CLASS, "min-w-0 flex-1")} />
-        )}
-        {suffix && <span className="text-xs normal-case tracking-normal">{suffix}</span>}
-      </div>
+      <EinheitInput value={value} onChange={onChange} einheit={suffix} step={step} min={min} max={max} />
     </label>
   )
 }
@@ -109,11 +90,7 @@ export function SatzFeld({
   return (
     <label className={cn("flex min-w-0 flex-col gap-1.5", LABEL_CLASS)}>
       {label}
-      <div className="flex items-center gap-2">
-        <input type="number" step={step} value={value} onChange={(e) => onChange(e.target.value)}
-          className={cn(INPUT_CLASS, "min-w-0 flex-1")} />
-        <span className="text-xs normal-case tracking-normal">{suffix}</span>
-      </div>
+      <EinheitInput value={value} onChange={onChange} einheit={suffix} step={step} />
     </label>
   )
 }

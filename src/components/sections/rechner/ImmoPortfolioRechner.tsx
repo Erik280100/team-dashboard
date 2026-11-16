@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { KAUFPREIS_MINDESTGRENZE, simuliereImmoPortfolio, type ImmoPortfolioEingabe } from "@/lib/calc/immoPortfolio"
-import { PillGroup, INPUT_CLASS, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
+import { PillGroup, INPUT_CLASS, LABEL_CLASS, FELD_GRID, EinheitInput } from "@/components/sections/rechner/fields"
 
 const WERTZUWACHS_PRESETS = [2, 3, 4]
 const UMSCHULDUNG_PRESETS = [3, 5, 7]
@@ -28,12 +28,9 @@ function Feld({
   className?: string
 }) {
   return (
-    <label className={cn("flex flex-col gap-1.5", LABEL_CLASS, className)}>
+    <label className={cn("flex min-w-0 flex-col gap-1.5", LABEL_CLASS, className)}>
       {label}
-      <div className="flex items-center gap-1.5">
-        <input type="number" step={step} value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_CLASS} />
-        {suffix && <span className="text-xs">{suffix}</span>}
-      </div>
+      <EinheitInput value={value} onChange={onChange} einheit={suffix} step={step} />
     </label>
   )
 }
@@ -323,8 +320,8 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Start &amp; Sparen</h3>
           <div className={FELD_GRID}>
-            <Feld label="Aktuelle Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} />
-            <Feld label="Sparbetrag (€/Monat)" value={sparbetragMonat} onChange={setSparbetragMonat} step={50} />
+            <Feld label="Aktuelle Eigenmittel" suffix="€" value={eigenmittel} onChange={setEigenmittel} step={1000} />
+            <Feld label="Sparbetrag" suffix="€/Monat" value={sparbetragMonat} onChange={setSparbetragMonat} step={50} />
             <Feld
               label={istGmbh ? "Guthabenzinsen (% p.a. — ungekürzt, KöSt-pflichtig statt KESt)" : "Guthabenzinsen, brutto (% p.a. — 25 % KESt wird automatisch abgezogen)"}
               value={guthabenzinsPct} onChange={setGuthabenzinsPct} step={0.1} suffix="%"
@@ -367,15 +364,15 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Wohnung &amp; Finanzierung (gilt für jeden künftigen Kauf)</h3>
           <div className={FELD_GRID}>
-            <Feld label="Kaufpreis heute (€)" value={kaufpreisReferenz} onChange={setKaufpreisReferenz} step={5000} />
+            <Feld label="Kaufpreis heute" suffix="€" value={kaufpreisReferenz} onChange={setKaufpreisReferenz} step={5000} />
             <Feld label="Wohnfläche (m²)" value={wohnflaecheM2} onChange={setWohnflaecheM2} step={1} suffix="m²" />
             <Feld label="Beleihung beim Kauf (% vom Kaufpreis)" value={ltvKaufPct} onChange={setLtvKaufPct} step={1} suffix="%" />
             <Feld label="Sollzinssatz (% p.a.)" value={zinssatzPct} onChange={setZinssatzPct} step={0.05} suffix="%" />
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Laufzeit (Jahre)
+              Laufzeit
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" min={1} max={40} step={1} value={laufzeitJahre}
-                  onChange={(e) => setLaufzeitJahre(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput min={1} max={40} step={1} value={laufzeitJahre}
+                  onChange={(v) => setLaufzeitJahre(v)} einheit="Jahre" />
                 <PillGroup value={String(laufzeitClamped) as never}
                   options={LAUFZEIT_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} J` }))}
                   onChange={(v) => setLaufzeitJahre(v)} />
@@ -417,7 +414,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Miete &amp; Kosten (pro Wohnung, außer wo anders angegeben)</h3>
           <div className={FELD_GRID}>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
+            <div className={cn("flex min-w-0 flex-col gap-1.5 sm:col-span-2", LABEL_CLASS)}>
               Nettomiete (ohne Betriebskosten, exkl. 10 % USt auf Wohnraumvermietung)
               <div className="flex flex-wrap items-center gap-2">
                 <PillGroup value={mietModus} onChange={setMietModus}
@@ -429,9 +426,9 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
             </div>
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
             <Feld label="Leerstand/Mietausfall (%)" value={leerstandPct} onChange={setLeerstandPct} step={0.5} suffix="%" />
-            <Feld label="Hausverwaltung (€/Monat)" value={hausverwaltungMonat} onChange={setHausverwaltungMonat} step={5} />
+            <Feld label="Hausverwaltung" suffix="€/Monat" value={hausverwaltungMonat} onChange={setHausverwaltungMonat} step={5} />
             <Feld label="Instandhaltung (€/m²/Monat)" value={instandhaltungProM2Monat} onChange={setInstandhaltungProM2Monat} step={0.1} />
-            <Feld label="Sonstige Kosten (€/Monat)" value={sonstigeKostenMonat} onChange={setSonstigeKostenMonat} step={5} />
+            <Feld label="Sonstige Kosten" suffix="€/Monat" value={sonstigeKostenMonat} onChange={setSonstigeKostenMonat} step={5} />
             <label className="flex items-center gap-1.5 text-sm sm:col-span-2">
               <input type="checkbox" checked={befristet} onChange={(e) => setBefristet(e.target.checked)} className="size-4" />
               Befristet vermietet (−25 % Befristungsabschlag auf die Anfangsmiete künftiger Käufe)
@@ -445,18 +442,18 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
           <h3 className="text-sm font-semibold">Wertentwicklung, Umschuldung &amp; Steuer</h3>
           <div className={FELD_GRID}>
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Wertzuwachs Immobilien (% p.a.)
+              Wertzuwachs Immobilien
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" step={0.1} value={wertzuwachsPct} onChange={(e) => setWertzuwachsPct(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput step={0.1} value={wertzuwachsPct} onChange={(v) => setWertzuwachsPct(v)} einheit="% p.a." />
                 <PillGroup value={wertzuwachsPct as never}
                   options={WERTZUWACHS_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                   onChange={(v) => setWertzuwachsPct(v)} />
               </div>
             </label>
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Umschuldung alle (Jahre)
+              Umschuldung alle
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" min={1} step={1} value={umschuldungAlleJahre} onChange={(e) => setUmschuldungAlleJahre(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput min={1} step={1} value={umschuldungAlleJahre} onChange={(v) => setUmschuldungAlleJahre(v)} einheit="Jahre" />
                 <PillGroup value={umschuldungAlleJahre as never}
                   options={UMSCHULDUNG_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} J` }))}
                   onChange={(v) => setUmschuldungAlleJahre(v)} />
@@ -510,10 +507,10 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
           {bestandOffen && (
             <div className={FELD_GRID}>
               <Feld label="Anzahl" value={bestandAnzahl} onChange={setBestandAnzahl} step={1} />
-              <Feld label="Gesamter Verkehrswert (€)" value={bestandWert} onChange={setBestandWert} step={5000} />
-              <Feld label="Gesamte Restschuld (€)" value={bestandRestschuld} onChange={setBestandRestschuld} step={5000} />
-              <Feld label="Gesamte Rate (€/Monat)" value={bestandRateMonat} onChange={setBestandRateMonat} step={50} />
-              <Feld label="Gesamte Miete (€/Monat)" value={bestandMieteMonat} onChange={setBestandMieteMonat} step={50} />
+              <Feld label="Gesamter Verkehrswert" suffix="€" value={bestandWert} onChange={setBestandWert} step={5000} />
+              <Feld label="Gesamte Restschuld" suffix="€" value={bestandRestschuld} onChange={setBestandRestschuld} step={5000} />
+              <Feld label="Gesamte Rate" suffix="€/Monat" value={bestandRateMonat} onChange={setBestandRateMonat} step={50} />
+              <Feld label="Gesamte Miete" suffix="€/Monat" value={bestandMieteMonat} onChange={setBestandMieteMonat} step={50} />
               <Feld label="Restlaufzeit der Kredite (Jahre)" value={bestandRestlaufzeitJahre} onChange={setBestandRestlaufzeitJahre} step={1} suffix="J" />
               <Feld label="Historische Anschaffungskosten gesamt (€) — Basis für AfA & ImmoESt" value={bestandAnschaffungskosten} onChange={setBestandAnschaffungskosten} step={5000} />
               <Feld label="Davon bereits abgeschriebene Jahre" value={bestandAfaJahreVerbraucht} onChange={setBestandAfaJahreVerbraucht} step={1} suffix="J" />
@@ -559,7 +556,7 @@ export function ImmoPortfolioRechner({ rechtsform = "privat" }: { rechtsform?: "
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">AfA (steuerliche Abschreibung)</h4>
                 <div className={FELD_GRID}>
-                  <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
+                  <label className={cn("flex min-w-0 flex-col gap-1.5 sm:col-span-2", LABEL_CLASS)}>
                     Gebäudeanteil am Kaufpreis
                     <div className="flex flex-wrap items-center gap-2">
                       <input type="number" step={1} value={String(saetze.gebaeudeanteilPct)}

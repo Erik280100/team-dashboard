@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { berechneInvestVsWohnung, type InvestVsWohnungEingabe } from "@/lib/calc/investVsWohnung"
-import { Feld, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
+import { Feld, ZeilePos, PillGroup, LABEL_CLASS, FELD_GRID, EinheitInput } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 const DEPOT_RENDITE_PRESETS = [5, 6, 7]
@@ -90,12 +90,12 @@ export function InvestVsWohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eigenmittel &amp; Zeitraum</h3>
           <div className={FELD_GRID}>
-            <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} min={0} stepper />
+            <Feld label="Eigenmittel" suffix="€" value={eigenmittel} onChange={setEigenmittel} step={1000} min={0} />
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Anlagehorizont (Jahre)
+              Anlagehorizont
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" min={1} max={40} step={1} value={horizontJahre}
-                  onChange={(e) => setHorizontJahre(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput min={1} max={40} step={1} value={horizontJahre}
+                  onChange={(v) => setHorizontJahre(v)} einheit="Jahre" />
                 <span className="text-xs">J</span>
               </div>
             </label>
@@ -108,9 +108,9 @@ export function InvestVsWohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Szenario A — Depot</h3>
           <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-            Rendite (% p.a.)
+            Rendite
             <div className="flex flex-wrap items-center gap-2">
-              <input type="number" min={0} step={0.1} value={depotRenditePa} onChange={(e) => setDepotRenditePa(e.target.value)} className={INPUT_CLASS} />
+              <EinheitInput min={0} step={0.1} value={depotRenditePa} onChange={(v) => setDepotRenditePa(v)} einheit="% p.a." />
               <PillGroup value={depotRenditePa as never}
                 options={DEPOT_RENDITE_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                 onChange={(v) => setDepotRenditePa(v)} />
@@ -130,15 +130,15 @@ export function InvestVsWohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Szenario B — Anlegerwohnung</h3>
           <div className={FELD_GRID}>
-            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} stepper />
-            <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} stepper />
+            <Feld label="Kaufpreis" suffix="€" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} />
+            <Feld label="Miete" suffix="€/Monat" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} />
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
             <Feld label="Leerstand/Mietausfall (%)" value={leerstandPct} onChange={setLeerstandPct} step={0.5} suffix="%" min={0} />
-            <Feld label="Bewirtschaftung (€/Monat, heute)" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
-              Wertsteigerung Immobilie (% p.a.)
+            <Feld label="Bewirtschaftung (heute)" suffix="€/Monat" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />
+            <label className={cn("flex min-w-0 flex-col gap-1.5 sm:col-span-2", LABEL_CLASS)}>
+              Wertsteigerung Immobilie
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" step={0.1} value={wertsteigerungPct} onChange={(e) => setWertsteigerungPct(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput step={0.1} value={wertsteigerungPct} onChange={(v) => setWertsteigerungPct(v)} einheit="% p.a." />
                 <PillGroup value={wertsteigerungPct as never}
                   options={WERTSTEIGERUNG_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                   onChange={(v) => setWertsteigerungPct(v)} />
@@ -163,10 +163,10 @@ export function InvestVsWohnungRechner() {
           <h3 className="text-sm font-semibold">Kredit</h3>
           <div className={FELD_GRID}>
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Laufzeit (Jahre)
+              Laufzeit
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" min={5} max={40} step={1} value={kreditLaufzeitJahre}
-                  onChange={(e) => setKreditLaufzeitJahre(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput min={5} max={40} step={1} value={kreditLaufzeitJahre}
+                  onChange={(v) => setKreditLaufzeitJahre(v)} einheit="Jahre" />
                 <PillGroup value={String(kreditLaufzeitClamped) as never}
                   options={LAUFZEIT_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} J` }))}
                   onChange={(v) => setKreditLaufzeitJahre(v)} />
@@ -191,10 +191,10 @@ export function InvestVsWohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Steuer &amp; Verkauf</h3>
           <div className={FELD_GRID}>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
-              Grenzsteuersatz (%)
+            <label className={cn("flex min-w-0 flex-col gap-1.5 sm:col-span-2", LABEL_CLASS)}>
+              Grenzsteuersatz
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" step={1} value={grenzsteuersatzPct} onChange={(e) => setGrenzsteuersatzPct(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput step={1} value={grenzsteuersatzPct} onChange={(v) => setGrenzsteuersatzPct(v)} einheit="%" />
                 <PillGroup value={grenzsteuersatzPct as never}
                   options={GRENZSTEUER_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                   onChange={(v) => setGrenzsteuersatzPct(v)} />
@@ -202,9 +202,9 @@ export function InvestVsWohnungRechner() {
             </label>
             <Feld label="Verkaufskosten (%)" value={verkaufskostenPct} onChange={setVerkaufskostenPct} step={0.5} suffix="%" min={0} />
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              ImmoESt-Satz (%)
-              <input type="number" min={0} step={1} value={immoEstPct}
-                onChange={(e) => setImmoEstPct(e.target.value)} className={INPUT_CLASS} />
+              ImmoESt-Satz
+              <EinheitInput min={0} step={1} value={immoEstPct}
+                onChange={(v) => setImmoEstPct(v)} einheit="%" />
             </label>
           </div>
           <p className="text-xs text-muted-foreground">

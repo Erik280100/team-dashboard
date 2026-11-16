@@ -13,7 +13,7 @@ import {
   berechneTilgungsplan, effektivzinsPct, kreditFormatEUR, kreditFormatPct, type KreditSaetze,
 } from "@/lib/calc/kredit"
 import { berechneTilgungstraeger } from "@/lib/calc/tilgungstraeger"
-import { Feld, INPUT_CLASS, PillGroup, SatzFeld, FELD_GRID, Zelle, Stepper } from "@/components/sections/rechner/fields"
+import { Feld, PillGroup, SatzFeld, FELD_GRID, Zelle, EinheitInput } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 const PERF_PRESETS = [3, 6, 9]
@@ -148,13 +148,13 @@ export function KreditRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
           <div className={FELD_GRID}>
-            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} min={0} step={1000} stepper />
-            <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} min={0} step={1000} stepper />
-            <Feld label="Sollzinssatz (% p.a.)" value={zinssatz} onChange={setZinssatz} min={0} max={20} step={0.05} stepper />
-            <Zelle label="Laufzeit (Jahre)">
-              <Stepper value={laufzeit} onChange={setLaufzeit} step={1} min={1} max={40} />
+            <Feld label="Kaufpreis" suffix="€" value={kaufpreis} onChange={setKaufpreis} min={0} step={1000} />
+            <Feld label="Eigenmittel" suffix="€" value={eigenmittel} onChange={setEigenmittel} min={0} step={1000} />
+            <Feld label="Sollzinssatz" suffix="% p.a." value={zinssatz} onChange={setZinssatz} min={0} max={20} step={0.05} />
+            <Zelle label="Laufzeit">
+              <EinheitInput value={laufzeit} onChange={setLaufzeit} step={1} min={1} max={40} einheit="Jahre" />
             </Zelle>
-            <Zelle label="Laufzeit-Vorauswahl" className="sm:col-span-2 lg:col-span-2">
+            <Zelle label="Laufzeit-Vorauswahl">
               <PillGroup fill value={String(laufzeitClamped) as never}
                 options={LAUFZEIT_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} Jahre` }))}
                 onChange={(v) => setLaufzeit(String(v))} />
@@ -183,19 +183,18 @@ export function KreditRechner() {
             </p>
           </div>
           <div className={FELD_GRID}>
-            <Feld label="Sparrate (€/Monat)" value={sparrate} onChange={setSparrate} min={0} step={25} stepper />
-            <Zelle label="Dynamik p.a. (%)" check={{ checked: dynamikAn, onChange: setDynamikAn }}>
-              <Stepper value={dynamikPct} onChange={setDynamikPct} step={0.5} min={0} disabled={!dynamikAn} />
+            <Feld label="Sparrate" suffix="€/Monat" value={sparrate} onChange={setSparrate} min={0} step={25} />
+            <Zelle label="Dynamik p.a." check={{ checked: dynamikAn, onChange: setDynamikAn }}>
+              <EinheitInput value={dynamikPct} onChange={setDynamikPct} step={0.5} min={0} einheit="%" disabled={!dynamikAn} />
             </Zelle>
-            <Zelle label="Performance (% p.a.)">
+            <Zelle label="Performance">
               <PillGroup fill
                 value={perfPreset === null ? ("" as never) : (String(perfPreset) as never)}
                 options={PERF_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                 onChange={(v) => selectPerfPreset(Number(v))} />
             </Zelle>
-            <Zelle label="Eigene Performance (% p.a.)">
-              <input type="number" step={0.1} placeholder="z. B. 5,5" value={customPerf}
-                onChange={(e) => onCustomPerf(e.target.value)} className={INPUT_CLASS} />
+            <Zelle label="Eigene Performance">
+              <EinheitInput step={0.1} placeholder="z. B. 5,5" value={customPerf} onChange={onCustomPerf} einheit="% p.a." />
             </Zelle>
           </div>
           <p className="text-xs text-muted-foreground">

@@ -6,7 +6,7 @@ import { useConfirm } from "@/hooks/useConfirm"
 import { calcUmdreh, UM_EH_ALT, UM_EH_NEU } from "@/lib/calc/umdreh"
 import { ehFormatEUR } from "@/lib/calc/eh"
 import { cn } from "@/lib/utils"
-import { INPUT_CLASS, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
+import { INPUT_CLASS, LABEL_CLASS, FELD_GRID, EinheitInput } from "@/components/sections/rechner/fields"
 
 // Zahlenfelder werden als Rohtext gehalten, damit das Inputfeld auch leer sein
 // kann — bei der Berechnung wird ein leeres Feld intern als 0 behandelt.
@@ -75,11 +75,11 @@ export function UmdrehRechner() {
           <h3 className="text-sm font-semibold">Eingabe</h3>
           <div className={FELD_GRID}>
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Prämie (€)
-              <input type="number" min={0} step={10} value={inputs.praemie}
+              Prämie
+              <EinheitInput min={0} step={10} value={inputs.praemie}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => set("praemie", e.target.value)}
-                className={INPUT_CLASS} />
+                onChange={(v) => set("praemie", v)}
+                einheit="€" />
             </label>
             {([
               ["Einheiten alt", "ehAlt"],

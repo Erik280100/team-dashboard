@@ -5,7 +5,7 @@ import { Line } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { INPUT_CLASS, LABEL_CLASS, Stepper, FELD_GRID, Zelle } from "@/components/sections/rechner/fields"
+import { LABEL_CLASS, FELD_GRID, Zelle, EinheitInput } from "@/components/sections/rechner/fields"
 import {
   RR_FLATEX_ORDER_EUR, RR_FLATEX_TER_PA_PCT, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR, rrMaxEntnahme,
   simulateFLVVerlauf, simulateFondsdepotVerlauf,
@@ -248,23 +248,22 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
           <div className={FELD_GRID}>
-            <Zelle label="Monatliche Einzahlung (€)">
-              <Stepper id="rrMonat" value={monat} onChange={setMonat} step={25} />
+            <Zelle label="Monatliche Einzahlung">
+              <EinheitInput id="rrMonat" value={monat} onChange={setMonat} step={25} min={0} einheit="€" />
             </Zelle>
-            <Zelle label="Laufzeit (Jahre)">
-              <Stepper value={jahre} onChange={setJahre} step={1} min={jahreMin} max={jahreMax} />
+            <Zelle label="Laufzeit">
+              <EinheitInput value={jahre} onChange={setJahre} step={1} min={jahreMin} max={jahreMax} einheit="Jahre" />
             </Zelle>
-            <Zelle label="Wertanpassung p.a. (%)" check={{ checked: waEnabled, onChange: setWaEnabled }}>
-              <Stepper value={waPct} onChange={setWaPct} step={0.5} disabled={!waEnabled} />
+            <Zelle label="Wertanpassung p.a." check={{ checked: waEnabled, onChange: setWaEnabled }}>
+              <EinheitInput value={waPct} onChange={setWaPct} step={0.5} min={0} einheit="%" disabled={!waEnabled} />
             </Zelle>
-            <Zelle label="Entnahmephase · Dauer (Jahre)" check={{ checked: entnahmeEnabled, onChange: setEntnahmeEnabled }}>
-              <Stepper id="rrEntnahmeJahre" value={entnahmeJahre} onChange={setEntnahmeJahre} step={1} min={1} max={50} disabled={!entnahmeEnabled} />
+            <Zelle label="Entnahmephase · Dauer" check={{ checked: entnahmeEnabled, onChange: setEntnahmeEnabled }}>
+              <EinheitInput id="rrEntnahmeJahre" value={entnahmeJahre} onChange={setEntnahmeJahre} step={1} min={1} max={50} einheit="Jahre" disabled={!entnahmeEnabled} />
             </Zelle>
-            <Zelle label="Monatliche Entnahme (€, netto)">
-              <Stepper id="rrEntnahmeMonat" value={entnahmeMonatEingabe} onChange={setEntnahmeMonatEingabe} step={100} disabled={!entnahmeEnabled} />
+            <Zelle label="Monatliche Entnahme (netto)">
+              <EinheitInput id="rrEntnahmeMonat" value={entnahmeMonatEingabe} onChange={setEntnahmeMonatEingabe} step={100} min={0} einheit="€" disabled={!entnahmeEnabled} />
             </Zelle>
-            <div className="hidden lg:block" aria-hidden />
-            <Zelle label="Performance (% p.a.)">
+            <Zelle label="Performance">
               <ToggleGroup
                 fill
                 value={perfPreset === null ? ("" as never) : (String(perfPreset) as never)}
@@ -272,9 +271,8 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
                 onChange={(v) => selectPerfPreset(Number(v))}
               />
             </Zelle>
-            <Zelle label="Eigene Performance (% p.a.)">
-              <input type="number" step={0.1} placeholder="z. B. 5,5" value={customPerf}
-                onChange={(e) => onCustomPerf(e.target.value)} className={INPUT_CLASS} />
+            <Zelle label="Eigene Performance">
+              <EinheitInput step={0.1} placeholder="z. B. 5,5" value={customPerf} onChange={onCustomPerf} einheit="% p.a." />
             </Zelle>
           </div>
         </CardContent>
@@ -285,10 +283,10 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
           <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondsdepot" />Depot</h3>
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              agE-/Dividendenrendite (% p.a.)
-              <input type="number" min={0} step={0.1} value={ageRendite}
-                onChange={(e) => setAgeRendite(e.target.value)}
-                className={INPUT_CLASS} />
+              agE-/Dividendenrendite
+              <EinheitInput min={0} step={0.1} value={ageRendite}
+                onChange={(v) => setAgeRendite(v)}
+                einheit="% p.a." />
             </label>
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %)</div>
           </CardContent>

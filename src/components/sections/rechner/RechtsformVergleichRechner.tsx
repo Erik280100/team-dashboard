@@ -21,7 +21,7 @@ import {
   CY_KOEST_SATZ_OPTIONEN, DEFAULTS_ZYPERN, berechneDreiWegeSchwellenreihe, berechneZypernGruendungsVergleich,
   berechneZypernLtd, type ZypernSpezifischeEingabe,
 } from "@/lib/calc/zypernLtd"
-import { Feld, Regler, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
+import { Feld, Regler, ZeilePos, PillGroup, LABEL_CLASS, FELD_GRID, EinheitInput } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 const MIETE_PRESETS: { value: string; label: string }[] = [
@@ -145,21 +145,21 @@ export function RechtsformVergleichRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Betriebsdaten (für alle drei Rechtsformen gleich)</h3>
           <div className={FELD_GRID}>
-            <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} stepper />
-            <Feld label="Betriebsausgaben ohne SV/AfA/Gehalt (€/Jahr)" value={betriebsausgaben} onChange={setBetriebsausgaben} step={500} min={0} />
-            <Feld label="Sonstige AfA — Büro, Geräte etc. (€/Jahr)" value={sonstigeAfaJahr} onChange={setSonstigeAfaJahr} step={100} min={0} />
+            <Feld label="Umsatz" suffix="€/Jahr" value={umsatz} onChange={setUmsatz} step={1000} min={0} />
+            <Feld label="Betriebsausgaben ohne SV/AfA/Gehalt" suffix="€/Jahr" value={betriebsausgaben} onChange={setBetriebsausgaben} step={500} min={0} />
+            <Feld label="Sonstige AfA — Büro, Geräte etc." suffix="€/Jahr" value={sonstigeAfaJahr} onChange={setSonstigeAfaJahr} step={100} min={0} />
           </div>
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Auto (AfA-relevant)</h4>
             <div className={FELD_GRID}>
-              <Feld label="Anschaffungswert (€)" value={autoAnschaffungswert} onChange={setAutoAnschaffungswert} step={1000} min={0} />
-              <Feld label="Nutzungsdauer (Jahre, min. 8)" value={autoNutzungsdauerJahre} onChange={setAutoNutzungsdauerJahre} step={1} min={8} />
+              <Feld label="Anschaffungswert" suffix="€" value={autoAnschaffungswert} onChange={setAutoAnschaffungswert} step={1000} min={0} />
+              <Feld label="Nutzungsdauer (min. 8)" suffix="Jahre" value={autoNutzungsdauerJahre} onChange={setAutoNutzungsdauerJahre} step={1} min={8} />
               <Feld label="Privater Nutzungsanteil (%)" value={autoPrivatanteilPct} onChange={setAutoPrivatanteilPct} step={5} suffix="%" min={0} />
               <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Jährliche AfA (gedeckelt bei 40.000 € Anschaffungswert)
                 <div className="text-sm text-foreground">{kreditFormatEUR(autoAfaJaehrlich(n(autoAnschaffungswert), n(autoNutzungsdauerJahre)))}/Jahr</div>
               </div>
-              <Feld label="Laufende Kfz-Kosten — Treibstoff, Versicherung, Service (€/Jahr)" value={kfzLaufendeKostenJahr} onChange={setKfzLaufendeKostenJahr} step={100} min={0} className="sm:col-span-2" />
+              <Feld label="Laufende Kfz-Kosten — Treibstoff, Versicherung, Service" suffix="€/Jahr" value={kfzLaufendeKostenJahr} onChange={setKfzLaufendeKostenJahr} step={100} min={0} className="sm:col-span-2" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               Beim Einzelunternehmer werden AfA und laufende Kfz-Kosten um den Privatanteil gekürzt. Bei GmbH
@@ -174,7 +174,7 @@ export function RechtsformVergleichRechner() {
           </label>
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Anlagehorizont für den thesaurierten (nicht entnommenen) Gewinn</h4>
-            <Feld label="Anlagehorizont (Jahre)" value={anlagehorizontJahre} onChange={setAnlagehorizontJahre} step={1} min={0} className="max-w-[10rem]" />
+            <Feld label="Anlagehorizont" suffix="Jahre" value={anlagehorizontJahre} onChange={setAnlagehorizontJahre} step={1} min={0} className="max-w-[10rem]" />
             <p className="mt-2 text-xs text-muted-foreground">
               Wie viele Jahre der im Unternehmen verbleibende Gewinn verzinst liegen bleibt, bevor er (bzw. der
               Einzelunternehmer-Vergleich) betrachtet wird — die Zinssätze dafür stellst du unten bei GmbH bzw.
@@ -188,7 +188,7 @@ export function RechtsformVergleichRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">GmbH-spezifisch</h3>
           <div className={FELD_GRID}>
-            <Feld label="Geschäftsführer-Gehalt, brutto bar (€/Jahr)" value={gfGehaltBrutto} onChange={setGfGehaltBrutto} step={1000} min={0} />
+            <Feld label="Geschäftsführer-Gehalt, brutto bar" suffix="€/Jahr" value={gfGehaltBrutto} onChange={setGfGehaltBrutto} step={1000} min={0} />
             <Regler
               label="Ausschüttungsquote vom Gewinn nach KöSt"
               value={ausschuettungsquotePct}
@@ -206,9 +206,9 @@ export function RechtsformVergleichRechner() {
           {kostenOffen && (
             <div className={FELD_GRID}>
               <Feld label="DZ-Satz (Landeskammer-Anteil)" value={dzSatzPct} onChange={setDzSatzPct} step={0.01} suffix="%" min={0} />
-              <Feld label="StB-Mehrkosten ggü. EÜR (€/Jahr)" value={stbMehrkostenJahr} onChange={setStbMehrkostenJahr} step={100} min={0} />
-              <Feld label="Firmenbuch-Offenlegung (€/Jahr)" value={offenlegungJahr} onChange={setOffenlegungJahr} step={10} min={0} />
-              <Feld label="Einmalige Gründungskosten (€)" value={gruendungskostenEinmalig} onChange={setGruendungskostenEinmalig} step={100} min={0} />
+              <Feld label="StB-Mehrkosten ggü. EÜR" suffix="€/Jahr" value={stbMehrkostenJahr} onChange={setStbMehrkostenJahr} step={100} min={0} />
+              <Feld label="Firmenbuch-Offenlegung" suffix="€/Jahr" value={offenlegungJahr} onChange={setOffenlegungJahr} step={10} min={0} />
+              <Feld label="Einmalige Gründungskosten" suffix="€" value={gruendungskostenEinmalig} onChange={setGruendungskostenEinmalig} step={100} min={0} />
             </div>
           )}
         </CardContent>
@@ -236,7 +236,7 @@ export function RechtsformVergleichRechner() {
           )}
 
           <div className={FELD_GRID}>
-            <Feld label="Direktor-Gehalt, brutto bar (€/Jahr)" value={direktorGehaltBrutto} onChange={setDirektorGehaltBrutto} step={1000} min={0} />
+            <Feld label="Direktor-Gehalt, brutto bar" suffix="€/Jahr" value={direktorGehaltBrutto} onChange={setDirektorGehaltBrutto} step={1000} min={0} />
             <Regler
               label="Ausschüttungsquote vom Gewinn nach KöSt"
               value={zypernAusschuettungsquotePct}
@@ -258,13 +258,13 @@ export function RechtsformVergleichRechner() {
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Wohnen (2 Personen)</h4>
             <div className={FELD_GRID}>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-                Miete Zypern (€/Monat)
+                Miete Zypern
                 <div className="flex flex-wrap items-center gap-2">
-                  <input type="number" min={0} step={50} value={mieteZypernMonat} onChange={(e) => setMieteZypernMonat(e.target.value)} className={INPUT_CLASS} />
+                  <EinheitInput min={0} step={50} value={mieteZypernMonat} onChange={(v) => setMieteZypernMonat(v)} einheit="€/Monat" />
                   <PillGroup value={mieteZypernMonat as never} options={MIETE_PRESETS as never} onChange={(v) => setMieteZypernMonat(v)} />
                 </div>
               </label>
-              <Feld label="Vergleichsmiete Österreich, die dadurch wegfällt (€/Monat)" value={mieteOesterreichVergleichMonat} onChange={setMieteOesterreichVergleichMonat} step={50} min={0} />
+              <Feld label="Vergleichsmiete Österreich, die dadurch wegfällt" suffix="€/Monat" value={mieteOesterreichVergleichMonat} onChange={setMieteOesterreichVergleichMonat} step={50} min={0} />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
               Nur die Differenz zählt — wer sowieso irgendwo wohnen muss, für den ist die österreichische
@@ -280,11 +280,11 @@ export function RechtsformVergleichRechner() {
           </button>
           {zypernKostenOffen && (
             <div className={FELD_GRID}>
-              <Feld label="Buchhaltung (€/Jahr)" value={buchhaltungJahr} onChange={setBuchhaltungJahr} step={100} min={0} />
-              <Feld label="Pflicht-Audit/Review (€/Jahr)" value={auditJahr} onChange={setAuditJahr} step={100} min={0} />
-              <Feld label="Registered Office &amp; Secretary (€/Jahr)" value={registeredOfficeJahr} onChange={setRegisteredOfficeJahr} step={100} min={0} />
-              <Feld label="Einmalige Gründungskosten (€)" value={zypernGruendungskostenEinmalig} onChange={setZypernGruendungskostenEinmalig} step={100} min={0} />
-              <Feld label="Einmalige Umzugskosten (€, 2 Personen)" value={umzugskostenEinmalig} onChange={setUmzugskostenEinmalig} step={100} min={0} />
+              <Feld label="Buchhaltung" suffix="€/Jahr" value={buchhaltungJahr} onChange={setBuchhaltungJahr} step={100} min={0} />
+              <Feld label="Pflicht-Audit/Review" suffix="€/Jahr" value={auditJahr} onChange={setAuditJahr} step={100} min={0} />
+              <Feld label="Registered Office &amp; Secretary" suffix="€/Jahr" value={registeredOfficeJahr} onChange={setRegisteredOfficeJahr} step={100} min={0} />
+              <Feld label="Einmalige Gründungskosten" suffix="€" value={zypernGruendungskostenEinmalig} onChange={setZypernGruendungskostenEinmalig} step={100} min={0} />
+              <Feld label="Einmalige Umzugskosten (2 Personen)" suffix="€" value={umzugskostenEinmalig} onChange={setUmzugskostenEinmalig} step={100} min={0} />
             </div>
           )}
 

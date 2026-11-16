@@ -88,7 +88,7 @@ export function HoldingImmobilienRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Kapitalherkunft</h3>
           <div className={FELD_GRID}>
-            <Feld label="Verfügbarer Gewinn vor Steuer (€)" value={verfuegbarerGewinnVorSteuer} onChange={setVerfuegbarerGewinnVorSteuer} step={5000} min={0} stepper />
+            <Feld label="Verfügbarer Gewinn vor Steuer" suffix="€" value={verfuegbarerGewinnVorSteuer} onChange={setVerfuegbarerGewinnVorSteuer} step={5000} min={0} />
             <Feld label="Grenzsteuersatz Einzelunternehmer (%)" value={euGrenzsteuersatzPct} onChange={setEuGrenzsteuersatzPct} step={1} suffix="%" min={0} />
             <Feld label="Grenzsteuersatz auf laufende Vermietungseinkünfte, privat (%)" value={grenzsteuersatzVermietungPct} onChange={setGrenzsteuersatzVermietungPct} step={1} suffix="%" min={0} />
           </div>
@@ -107,17 +107,17 @@ export function HoldingImmobilienRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Immobilie (zur Vermietung)</h3>
           <div className={FELD_GRID}>
-            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} stepper />
-            <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} stepper />
+            <Feld label="Kaufpreis" suffix="€" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} />
+            <Feld label="Miete" suffix="€/Monat" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} />
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
             <Feld label="Leerstand/Mietausfall (%)" value={leerstandPct} onChange={setLeerstandPct} step={0.5} suffix="%" min={0} />
-            <Feld label="Bewirtschaftung (€/Monat, heute)" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />
+            <Feld label="Bewirtschaftung (heute)" suffix="€/Monat" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />
             <Feld label="Wertsteigerung (% p.a.)" value={wertsteigerungPct} onChange={setWertsteigerungPct} step={0.1} suffix="%" />
-            <Feld label="Anlagehorizont bis Verkauf (Jahre)" value={horizontJahre} onChange={setHorizontJahre} step={1} min={1} />
+            <Feld label="Anlagehorizont bis Verkauf" suffix="Jahre" value={horizontJahre} onChange={setHorizontJahre} step={1} min={1} />
             <Feld label="Verkaufskosten (%)" value={verkaufskostenPct} onChange={setVerkaufskostenPct} step={0.5} suffix="%" min={0} />
           </div>
           <div className={FELD_GRID}>
-            <Feld label="Kreditlaufzeit (Jahre)" value={kreditLaufzeitJahre} onChange={setKreditLaufzeitJahre} step={1} min={5} />
+            <Feld label="Kreditlaufzeit" suffix="Jahre" value={kreditLaufzeitJahre} onChange={setKreditLaufzeitJahre} step={1} min={5} />
             <Feld label="Sollzinssatz (% p.a.)" value={kreditZinsPct} onChange={setKreditZinsPct} step={0.05} suffix="%" min={0} />
           </div>
           <div className="flex flex-wrap gap-6">
@@ -166,8 +166,8 @@ export function HoldingImmobilienRechner() {
           </p>
           {ueberHolding && (
             <div className={FELD_GRID}>
-              <Feld label="Zusätzliche Fixkosten Holding/Immo-GmbH (€/Jahr)" value={holdingFixkostenJahr} onChange={setHoldingFixkostenJahr} step={100} min={0} />
-              <Feld label="Einmalige Gründungskosten (€)" value={holdingGruendungskostenEinmalig} onChange={setHoldingGruendungskostenEinmalig} step={100} min={0} />
+              <Feld label="Zusätzliche Fixkosten Holding/Immo-GmbH" suffix="€/Jahr" value={holdingFixkostenJahr} onChange={setHoldingFixkostenJahr} step={100} min={0} />
+              <Feld label="Einmalige Gründungskosten" suffix="€" value={holdingGruendungskostenEinmalig} onChange={setHoldingGruendungskostenEinmalig} step={100} min={0} />
             </div>
           )}
         </CardContent>

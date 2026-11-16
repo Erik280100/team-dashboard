@@ -69,8 +69,8 @@ export function AnlegerwohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
           <div className={FELD_GRID}>
-            <Feld label="Nettokaufpreis" value={kaufpreis} onChange={setKaufpreis} suffix="€" step={1000} stepper />
-            <Feld label="Größe" value={groesse} onChange={setGroesse} suffix="m²" stepper />
+            <Feld label="Nettokaufpreis" value={kaufpreis} onChange={setKaufpreis} suffix="€" step={1000} />
+            <Feld label="Größe" value={groesse} onChange={setGroesse} suffix="m²" />
             <Feld label="Netto-Miete / m²" value={mieteM2} onChange={setMieteM2} suffix="€" step={0.1} />
             <Feld label="Maximaler Kreditbetrag" value={maxKredit} onChange={setMaxKredit} suffix="%" />
             <Feld label="Kreditlaufzeit" value={laufzeit} onChange={setLaufzeit} suffix="J." />

@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { VFE_DEFAULT_PCT, berechneUmschuldung } from "@/lib/calc/umschuldung"
-import { INPUT_CLASS, SatzFeld, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
+import { SatzFeld, LABEL_CLASS, FELD_GRID, EinheitInput } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 
@@ -86,24 +86,24 @@ export function UmschuldungsRechner() {
             <h3 className="text-sm font-semibold">Bestehender Kredit</h3>
             <div className={FELD_GRID}>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-                Noch offener Betrag (€)
-                <input type="number" min={0} step={1000} value={restschuld}
-                  onChange={(e) => setRestschuld(e.target.value)} className={INPUT_CLASS} />
+                Noch offener Betrag
+                <EinheitInput min={0} step={1000} value={restschuld}
+                  onChange={(v) => setRestschuld(v)} einheit="€" />
               </label>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-                Sollzinssatz (% p.a.)
-                <input type="number" min={0} max={20} step={0.05} value={zinsAlt}
-                  onChange={(e) => setZinsAlt(e.target.value)} className={INPUT_CLASS} />
+                Sollzinssatz
+                <EinheitInput min={0} max={20} step={0.05} value={zinsAlt}
+                  onChange={(v) => setZinsAlt(v)} einheit="% p.a." />
               </label>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-                Restlaufzeit (Jahre)
-                <input type="number" min={0} max={40} step={1} value={restJahre}
-                  onChange={(e) => setRestJahre(e.target.value)} className={INPUT_CLASS} />
+                Restlaufzeit
+                <EinheitInput min={0} max={40} step={1} value={restJahre}
+                  onChange={(v) => setRestJahre(v)} einheit="Jahre" />
               </label>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 zusätzliche Monate
-                <input type="number" min={0} max={11} step={1} value={restMonate}
-                  onChange={(e) => setRestMonate(e.target.value)} className={INPUT_CLASS} />
+                <EinheitInput min={0} max={11} step={1} value={restMonate}
+                  onChange={(v) => setRestMonate(v)} einheit="Monate" />
               </label>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -118,16 +118,16 @@ export function UmschuldungsRechner() {
             <h3 className="text-sm font-semibold">Neuer Kredit</h3>
             <div className={FELD_GRID}>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-                Sollzinssatz (% p.a.)
-                <input type="number" min={0} max={20} step={0.05} value={zinsNeu}
-                  onChange={(e) => setZinsNeu(e.target.value)} className={INPUT_CLASS} />
+                Sollzinssatz
+                <EinheitInput min={0} max={20} step={0.05} value={zinsNeu}
+                  onChange={(v) => setZinsNeu(v)} einheit="% p.a." />
               </label>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-                Laufzeit (Jahre)
-                <input type="number" min={1} max={40} step={1}
+                Laufzeit
+                <EinheitInput min={1} max={40} step={1}
                   value={laufzeitNeu ?? String(Math.round(restJahreExakt * 10) / 10)}
-                  onChange={(e) => setLaufzeitNeu(e.target.value)}
-                  className={INPUT_CLASS} />
+                  onChange={(v) => setLaufzeitNeu(v)}
+                  einheit="Jahre" />
               </label>
             </div>
             <div className="flex flex-wrap gap-1.5">
