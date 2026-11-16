@@ -11,6 +11,7 @@ import type { RosterEntry } from "@/lib/calc/struktur"
 const KreditRechner = lazy(() => import("@/components/sections/rechner/KreditRechner").then((m) => ({ default: m.KreditRechner })))
 const ImmoPortfolioRechner = lazy(() => import("@/components/sections/rechner/ImmoPortfolioRechner").then((m) => ({ default: m.ImmoPortfolioRechner })))
 
+const AnlegerwohnungRechner = lazy(() => import("@/components/sections/rechner/AnlegerwohnungRechner").then((m) => ({ default: m.AnlegerwohnungRechner })))
 const UmschuldungsRechner = lazy(() => import("@/components/sections/rechner/UmschuldungsRechner").then((m) => ({ default: m.UmschuldungsRechner })))
 
 type FinanzierungenTab = "offen" | "umschuldung" | "rechner" | "immo" | "immoGmbh"
@@ -65,7 +66,7 @@ export function Finanzierungen({
       )}
       {activeTab === "umschuldung" && <UmschuldungsRechner />}
       {activeTab === "rechner" && <KreditRechner />}
-      {activeTab === "immo" && <ImmoPortfolioRechner />}
+      {activeTab === "immo" && <AnlegerwohnungRechner />}
       {activeTab === "immoGmbh" && <ImmoPortfolioRechner rechtsform="gmbh" />}
     </div>
   )
