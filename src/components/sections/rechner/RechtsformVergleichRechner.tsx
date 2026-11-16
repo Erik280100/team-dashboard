@@ -21,7 +21,7 @@ import {
   CY_KOEST_SATZ_OPTIONEN, DEFAULTS_ZYPERN, berechneDreiWegeSchwellenreihe, berechneZypernGruendungsVergleich,
   berechneZypernLtd, type ZypernSpezifischeEingabe,
 } from "@/lib/calc/zypernLtd"
-import { Feld, Regler, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS } from "@/components/sections/rechner/fields"
+import { Feld, Regler, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 const MIETE_PRESETS: { value: string; label: string }[] = [
@@ -144,14 +144,14 @@ export function RechtsformVergleichRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Betriebsdaten (für alle drei Rechtsformen gleich)</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={FELD_GRID}>
             <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} stepper />
             <Feld label="Betriebsausgaben ohne SV/AfA/Gehalt (€/Jahr)" value={betriebsausgaben} onChange={setBetriebsausgaben} step={500} min={0} />
             <Feld label="Sonstige AfA — Büro, Geräte etc. (€/Jahr)" value={sonstigeAfaJahr} onChange={setSonstigeAfaJahr} step={100} min={0} />
           </div>
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Auto (AfA-relevant)</h4>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={FELD_GRID}>
               <Feld label="Anschaffungswert (€)" value={autoAnschaffungswert} onChange={setAutoAnschaffungswert} step={1000} min={0} />
               <Feld label="Nutzungsdauer (Jahre, min. 8)" value={autoNutzungsdauerJahre} onChange={setAutoNutzungsdauerJahre} step={1} min={8} />
               <Feld label="Privater Nutzungsanteil (%)" value={autoPrivatanteilPct} onChange={setAutoPrivatanteilPct} step={5} suffix="%" min={0} />
@@ -187,7 +187,7 @@ export function RechtsformVergleichRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">GmbH-spezifisch</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={FELD_GRID}>
             <Feld label="Geschäftsführer-Gehalt, brutto bar (€/Jahr)" value={gfGehaltBrutto} onChange={setGfGehaltBrutto} step={1000} min={0} />
             <Regler
               label="Ausschüttungsquote vom Gewinn nach KöSt"
@@ -204,7 +204,7 @@ export function RechtsformVergleichRechner() {
             Kostensätze anpassen
           </button>
           {kostenOffen && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={FELD_GRID}>
               <Feld label="DZ-Satz (Landeskammer-Anteil)" value={dzSatzPct} onChange={setDzSatzPct} step={0.01} suffix="%" min={0} />
               <Feld label="StB-Mehrkosten ggü. EÜR (€/Jahr)" value={stbMehrkostenJahr} onChange={setStbMehrkostenJahr} step={100} min={0} />
               <Feld label="Firmenbuch-Offenlegung (€/Jahr)" value={offenlegungJahr} onChange={setOffenlegungJahr} step={10} min={0} />
@@ -235,7 +235,7 @@ export function RechtsformVergleichRechner() {
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={FELD_GRID}>
             <Feld label="Direktor-Gehalt, brutto bar (€/Jahr)" value={direktorGehaltBrutto} onChange={setDirektorGehaltBrutto} step={1000} min={0} />
             <Regler
               label="Ausschüttungsquote vom Gewinn nach KöSt"
@@ -256,11 +256,11 @@ export function RechtsformVergleichRechner() {
 
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Wohnen (2 Personen)</h4>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={FELD_GRID}>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Miete Zypern (€/Monat)
                 <div className="flex flex-wrap items-center gap-2">
-                  <input type="number" min={0} step={50} value={mieteZypernMonat} onChange={(e) => setMieteZypernMonat(e.target.value)} className={cn(INPUT_CLASS, "w-24")} />
+                  <input type="number" min={0} step={50} value={mieteZypernMonat} onChange={(e) => setMieteZypernMonat(e.target.value)} className={INPUT_CLASS} />
                   <PillGroup value={mieteZypernMonat as never} options={MIETE_PRESETS as never} onChange={(v) => setMieteZypernMonat(v)} />
                 </div>
               </label>
@@ -279,7 +279,7 @@ export function RechtsformVergleichRechner() {
             Kostensätze anpassen
           </button>
           {zypernKostenOffen && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className={FELD_GRID}>
               <Feld label="Buchhaltung (€/Jahr)" value={buchhaltungJahr} onChange={setBuchhaltungJahr} step={100} min={0} />
               <Feld label="Pflicht-Audit/Review (€/Jahr)" value={auditJahr} onChange={setAuditJahr} step={100} min={0} />
               <Feld label="Registered Office &amp; Secretary (€/Jahr)" value={registeredOfficeJahr} onChange={setRegisteredOfficeJahr} step={100} min={0} />

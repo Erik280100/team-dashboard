@@ -11,7 +11,7 @@ import {
   autoAfaJaehrlich, berechneEu, berechneGmbh, berechneGruendungsVergleich, berechneSchwellenreihe,
   type GemeinsameEingabe, type GmbhSpezifischeEingabe,
 } from "@/lib/calc/gmbhVsEu"
-import { Feld, Regler, ZeilePos, LABEL_CLASS } from "@/components/sections/rechner/fields"
+import { Feld, Regler, ZeilePos, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 export function EuVsGmbhRechner() {
@@ -93,14 +93,14 @@ export function EuVsGmbhRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Betriebsdaten (für beide Rechtsformen gleich)</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={FELD_GRID}>
             <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} stepper />
             <Feld label="Betriebsausgaben ohne SV/AfA/Gehalt (€/Jahr)" value={betriebsausgaben} onChange={setBetriebsausgaben} step={500} min={0} />
             <Feld label="Sonstige AfA — Büro, Geräte etc. (€/Jahr)" value={sonstigeAfaJahr} onChange={setSonstigeAfaJahr} step={100} min={0} />
           </div>
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Auto (AfA-relevant)</h4>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={FELD_GRID}>
               <Feld label="Anschaffungswert (€)" value={autoAnschaffungswert} onChange={setAutoAnschaffungswert} step={1000} min={0} />
               <Feld label="Nutzungsdauer (Jahre, min. 8)" value={autoNutzungsdauerJahre} onChange={setAutoNutzungsdauerJahre} step={1} min={8} />
               <Feld label="Privater Nutzungsanteil (%)" value={autoPrivatanteilPct} onChange={setAutoPrivatanteilPct} step={5} suffix="%" min={0} />
@@ -127,7 +127,7 @@ export function EuVsGmbhRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">GmbH-spezifisch</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={FELD_GRID}>
             <Feld label="Geschäftsführer-Gehalt, brutto bar (€/Jahr)" value={gfGehaltBrutto} onChange={setGfGehaltBrutto} step={1000} min={0} />
             <Regler
               label="Ausschüttungsquote vom Gewinn nach KöSt"
@@ -138,7 +138,7 @@ export function EuVsGmbhRechner() {
           </div>
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Verzinsung des nicht entnommenen (thesaurierten) Gewinns</h4>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={FELD_GRID}>
               <Feld label="Zinssatz auf thesaurierten Gewinn (%/Jahr)" value={verzinsungThesaurierungPct} onChange={setVerzinsungThesaurierungPct} step={0.5} suffix="%" min={0} />
               <Feld label="Anlagehorizont (Jahre)" value={anlagehorizontJahre} onChange={setAnlagehorizontJahre} step={1} min={0} />
             </div>
@@ -156,7 +156,7 @@ export function EuVsGmbhRechner() {
             Kostensätze anpassen
           </button>
           {kostenOffen && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className={FELD_GRID}>
               <Feld label="DZ-Satz (Landeskammer-Anteil)" value={dzSatzPct} onChange={setDzSatzPct} step={0.01} suffix="%" min={0} />
               <Feld label="StB-Mehrkosten ggü. EÜR (€/Jahr)" value={stbMehrkostenJahr} onChange={setStbMehrkostenJahr} step={100} min={0} />
               <Feld label="Firmenbuch-Offenlegung (€/Jahr)" value={offenlegungJahr} onChange={setOffenlegungJahr} step={10} min={0} />

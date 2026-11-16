@@ -142,7 +142,7 @@ export function EhRechner({
                   {it.gLabel} ({it.gUnit})
                   <input
                     type="number" min={0} step={1} max={it.gMax}
-                    className={cn("h-11 w-24 px-3 text-base text-center tabular-nums", EH_INPUT)}
+                    className={cn("h-9 w-24 px-3 text-sm text-center tabular-nums", EH_INPUT)}
                     value={g[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setG((s) => ({ ...s, [it.id]: e.target.value }))}
@@ -152,13 +152,13 @@ export function EhRechner({
                 <div />
               )}
               {it.disabled ? (
-                <input type="text" disabled value={it.disabledNote} className="h-11 w-32 rounded-lg border border-white/15 bg-white/5 px-3 text-base text-white/70" />
+                <input type="text" disabled value={it.disabledNote} className="h-9 w-32 rounded-lg border border-white/15 bg-white/5 px-3 text-sm text-white/70" />
               ) : (
                 <label className="flex flex-col gap-1 text-xs text-white/90">
                   {it.jLabel}
                   <input
                     type="number" min={0} step={10}
-                    className={cn("h-11 w-32 px-3 text-base text-center tabular-nums", EH_INPUT)}
+                    className={cn("h-9 w-32 px-3 text-sm text-center tabular-nums", EH_INPUT)}
                     value={j[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setJ((s) => ({ ...s, [it.id]: e.target.value }))}

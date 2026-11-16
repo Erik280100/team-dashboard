@@ -6,7 +6,7 @@ import { Bar } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { Feld, INPUT_CLASS, LABEL_CLASS } from "@/components/sections/rechner/fields"
+import { Feld, INPUT_CLASS, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
 import {
   ENTNAHME_BIS_ALTER, ERWERBSBEGINN_ALTER, FLV_VERSICHERUNGSSTEUER, KOSTEN_PA, PENSION_PROFILE, berechnePension,
   type PensionInput, type RisikoProfil,
@@ -120,7 +120,7 @@ export function PensionsRechner() {
         <CardContent>
          <form className="flex flex-col gap-4" onSubmit={berechnen}>
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={FELD_GRID}>
             <Feld label="Aktuelles Alter" value={alter} onChange={setAlter} min={16} max={80} step={1} stepper />
             <Feld label="Gewünschtes Pensionsalter" value={pensionsalter} onChange={setPensionsalter} min={50} max={ENTNAHME_BIS_ALTER - 1} step={1} stepper />
             <Feld label="Aktuelles Nettoeinkommen (€/Monat)" value={netto} onChange={setNetto} min={0} step={100} stepper />
@@ -147,7 +147,7 @@ export function PensionsRechner() {
               <label className={cn("flex items-center gap-2", LABEL_CLASS)}>
                 oder eigene Rendite (% p.a.)
                 <input type="number" min={0} max={20} step={0.1} placeholder="z. B. 5,5" value={eigeneRendite}
-                  onChange={(e) => setEigeneRendite(e.target.value)} className={cn(INPUT_CLASS, "w-32")} />
+                  onChange={(e) => setEigeneRendite(e.target.value)} className={INPUT_CLASS} />
               </label>
             </div>
           </div>

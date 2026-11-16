@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { kreditFormatPct } from "@/lib/calc/kredit"
 import { KAUFNEBENKOSTEN_DEFAULTS, berechneAnlegerwohnung, type KaufnebenkostenSaetze } from "@/lib/calc/anlegerwohnung"
-import { Feld, SatzFeld, ZeilePos } from "@/components/sections/rechner/fields"
+import { Feld, SatzFeld, ZeilePos, FELD_GRID } from "@/components/sections/rechner/fields"
 
 const eur = (n: number) => Math.round(n).toLocaleString("de-AT") + " €"
 const pct = (n: number) => n.toLocaleString("de-AT", { maximumFractionDigits: 2 })
@@ -68,7 +68,7 @@ export function AnlegerwohnungRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={FELD_GRID}>
             <Feld label="Nettokaufpreis" value={kaufpreis} onChange={setKaufpreis} suffix="€" step={1000} stepper />
             <Feld label="Größe" value={groesse} onChange={setGroesse} suffix="m²" stepper />
             <Feld label="Netto-Miete / m²" value={mieteM2} onChange={setMieteM2} suffix="€" step={0.1} />
@@ -112,7 +112,7 @@ export function AnlegerwohnungRechner() {
               </button>
               {nkOffen && (
                 <div className="mt-3 flex flex-col gap-3">
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className={FELD_GRID}>
                     <SatzFeld label="Kaufvertrag (netto)" value={nk.kaufvertragPct} onChange={setNkFeld("kaufvertragPct")} step={0.05} />
                     <SatzFeld label="Notar (pauschal)" value={nk.notar} onChange={setNkFeld("notar")} suffix="€" step={100} />
                     <SatzFeld label="Eintragungsgebühren" value={nk.eintragungPct} onChange={setNkFeld("eintragungPct")} />

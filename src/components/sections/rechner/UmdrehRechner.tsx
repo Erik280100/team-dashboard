@@ -6,7 +6,7 @@ import { useConfirm } from "@/hooks/useConfirm"
 import { calcUmdreh, UM_EH_ALT, UM_EH_NEU } from "@/lib/calc/umdreh"
 import { ehFormatEUR } from "@/lib/calc/eh"
 import { cn } from "@/lib/utils"
-import { INPUT_CLASS, LABEL_CLASS } from "@/components/sections/rechner/fields"
+import { INPUT_CLASS, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
 
 // Zahlenfelder werden als Rohtext gehalten, damit das Inputfeld auch leer sein
 // kann — bei der Berechnung wird ein leeres Feld intern als 0 behandelt.
@@ -73,7 +73,7 @@ export function UmdrehRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingabe</h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className={FELD_GRID}>
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Prämie (€)
               <input type="number" min={0} step={10} value={inputs.praemie}
@@ -94,7 +94,7 @@ export function UmdrehRechner() {
               </label>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className={FELD_GRID}>
             {([
               ["Berater-Stufe alt (€/EH)", "beraterAlt"],
               ["Berater-Stufe neu (€/EH)", "beraterNeu"],

@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { VFE_DEFAULT_PCT, berechneUmschuldung } from "@/lib/calc/umschuldung"
-import { INPUT_CLASS, SatzFeld, LABEL_CLASS } from "@/components/sections/rechner/fields"
+import { INPUT_CLASS, SatzFeld, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 
@@ -84,7 +84,7 @@ export function UmschuldungsRechner() {
         <Card>
           <CardContent className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold">Bestehender Kredit</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={FELD_GRID}>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Noch offener Betrag (€)
                 <input type="number" min={0} step={1000} value={restschuld}
@@ -116,7 +116,7 @@ export function UmschuldungsRechner() {
         <Card>
           <CardContent className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold">Neuer Kredit</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={FELD_GRID}>
               <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Sollzinssatz (% p.a.)
                 <input type="number" min={0} max={20} step={0.05} value={zinsNeu}
@@ -127,7 +127,7 @@ export function UmschuldungsRechner() {
                 <input type="number" min={1} max={40} step={1}
                   value={laufzeitNeu ?? String(Math.round(restJahreExakt * 10) / 10)}
                   onChange={(e) => setLaufzeitNeu(e.target.value)}
-                  className={cn(INPUT_CLASS, "w-24")} />
+                  className={INPUT_CLASS} />
               </label>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -175,7 +175,7 @@ export function UmschuldungsRechner() {
           </button>
           {saetzeOffen && (
             <div className="flex flex-col gap-3">
-              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <div className={FELD_GRID}>
                 <SatzFeld label="Vorfälligkeitsentschädigung" value={vfePct} onChange={setVfePct} />
                 <SatzFeld label="Kreditvertragserstellung" value={String(saetze.kreditvertragserstellungPct)} onChange={satzSetter("kreditvertragserstellungPct")} />
                 <SatzFeld label="Pfandrechtseintragung" value={String(saetze.pfandrechtPct)} onChange={satzSetter("pfandrechtPct")} />

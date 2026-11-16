@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { berechneInvestVsWohnung, type InvestVsWohnungEingabe } from "@/lib/calc/investVsWohnung"
-import { Feld, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS } from "@/components/sections/rechner/fields"
+import { Feld, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS, FELD_GRID } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 const DEPOT_RENDITE_PRESETS = [5, 6, 7]
@@ -89,13 +89,13 @@ export function InvestVsWohnungRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eigenmittel &amp; Zeitraum</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={FELD_GRID}>
             <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} min={0} stepper />
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Anlagehorizont (Jahre)
               <div className="flex flex-wrap items-center gap-2">
                 <input type="number" min={1} max={40} step={1} value={horizontJahre}
-                  onChange={(e) => setHorizontJahre(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
+                  onChange={(e) => setHorizontJahre(e.target.value)} className={INPUT_CLASS} />
                 <span className="text-xs">J</span>
               </div>
             </label>
@@ -110,7 +110,7 @@ export function InvestVsWohnungRechner() {
           <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
             Rendite (% p.a.)
             <div className="flex flex-wrap items-center gap-2">
-              <input type="number" min={0} step={0.1} value={depotRenditePa} onChange={(e) => setDepotRenditePa(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
+              <input type="number" min={0} step={0.1} value={depotRenditePa} onChange={(e) => setDepotRenditePa(e.target.value)} className={INPUT_CLASS} />
               <PillGroup value={depotRenditePa as never}
                 options={DEPOT_RENDITE_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                 onChange={(v) => setDepotRenditePa(v)} />
@@ -129,7 +129,7 @@ export function InvestVsWohnungRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Szenario B — Anlegerwohnung</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={FELD_GRID}>
             <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} stepper />
             <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} stepper />
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
@@ -138,7 +138,7 @@ export function InvestVsWohnungRechner() {
             <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
               Wertsteigerung Immobilie (% p.a.)
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" step={0.1} value={wertsteigerungPct} onChange={(e) => setWertsteigerungPct(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
+                <input type="number" step={0.1} value={wertsteigerungPct} onChange={(e) => setWertsteigerungPct(e.target.value)} className={INPUT_CLASS} />
                 <PillGroup value={wertsteigerungPct as never}
                   options={WERTSTEIGERUNG_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                   onChange={(v) => setWertsteigerungPct(v)} />
@@ -161,12 +161,12 @@ export function InvestVsWohnungRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Kredit</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={FELD_GRID}>
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Laufzeit (Jahre)
               <div className="flex flex-wrap items-center gap-2">
                 <input type="number" min={5} max={40} step={1} value={kreditLaufzeitJahre}
-                  onChange={(e) => setKreditLaufzeitJahre(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
+                  onChange={(e) => setKreditLaufzeitJahre(e.target.value)} className={INPUT_CLASS} />
                 <PillGroup value={String(kreditLaufzeitClamped) as never}
                   options={LAUFZEIT_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} J` }))}
                   onChange={(v) => setKreditLaufzeitJahre(v)} />
@@ -190,11 +190,11 @@ export function InvestVsWohnungRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Steuer &amp; Verkauf</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={FELD_GRID}>
             <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
               Grenzsteuersatz (%)
               <div className="flex flex-wrap items-center gap-2">
-                <input type="number" step={1} value={grenzsteuersatzPct} onChange={(e) => setGrenzsteuersatzPct(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
+                <input type="number" step={1} value={grenzsteuersatzPct} onChange={(e) => setGrenzsteuersatzPct(e.target.value)} className={INPUT_CLASS} />
                 <PillGroup value={grenzsteuersatzPct as never}
                   options={GRENZSTEUER_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
                   onChange={(v) => setGrenzsteuersatzPct(v)} />
@@ -204,7 +204,7 @@ export function InvestVsWohnungRechner() {
             <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               ImmoESt-Satz (%)
               <input type="number" min={0} step={1} value={immoEstPct}
-                onChange={(e) => setImmoEstPct(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
+                onChange={(e) => setImmoEstPct(e.target.value)} className={INPUT_CLASS} />
             </label>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -227,7 +227,7 @@ export function InvestVsWohnungRechner() {
             <div className="flex flex-col gap-4">
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Kaufnebenkosten (vom Kaufpreis)</h4>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <div className={FELD_GRID}>
                   <Feld label="Grunderwerbsteuer" value={String(saetze.grunderwerbsteuerPct)} onChange={satzSetter("grunderwerbsteuerPct")} suffix="%" step={0.1} />
                   <Feld label="Grundbucheintragung" value={String(saetze.grundbuchEintragungPct)} onChange={satzSetter("grundbuchEintragungPct")} suffix="%" step={0.1} />
                   <Feld label="Vertragserrichtung (netto)" value={String(saetze.vertragserrichtungPct)} onChange={satzSetter("vertragserrichtungPct")} suffix="%" step={0.1} />
@@ -237,7 +237,7 @@ export function InvestVsWohnungRechner() {
               </div>
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Kreditnebenkosten (von der Kreditsumme)</h4>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <div className={FELD_GRID}>
                   <Feld label="Kreditvertragserstellung" value={String(saetze.kreditvertragserstellungPct)} onChange={satzSetter("kreditvertragserstellungPct")} suffix="%" step={0.1} />
                   <Feld label="Pfandrechtseintragung" value={String(saetze.pfandrechtPct)} onChange={satzSetter("pfandrechtPct")} suffix="%" step={0.1} />
                   <Feld label="Nebengebührensicherstellung" value={String(saetze.nebengebuehrensicherstellungPct)} onChange={satzSetter("nebengebuehrensicherstellungPct")} suffix="%" step={1} />
@@ -246,7 +246,7 @@ export function InvestVsWohnungRechner() {
               </div>
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">AfA (steuerliche Abschreibung)</h4>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <div className={FELD_GRID}>
                   <Feld label="Gebäudeanteil am Kaufpreis" value={String(saetze.gebaeudeanteilPct)} onChange={satzSetter("gebaeudeanteilPct")} suffix="%" step={1} />
                   <Feld label="AfA-Satz (linear, ab 3. Jahr)" value={String(saetze.afaSatzPct)} onChange={satzSetter("afaSatzPct")} suffix="%" step={0.1} />
                 </div>

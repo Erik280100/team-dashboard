@@ -5,7 +5,7 @@ import { Line } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { INPUT_CLASS, LABEL_CLASS, Stepper } from "@/components/sections/rechner/fields"
+import { INPUT_CLASS, LABEL_CLASS, Stepper, FELD_GRID, Zelle } from "@/components/sections/rechner/fields"
 import {
   RR_FLATEX_ORDER_EUR, RR_FLATEX_TER_PA_PCT, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR, rrMaxEntnahme,
   simulateFLVVerlauf, simulateFondsdepotVerlauf,
@@ -17,14 +17,15 @@ import { simulateFrootsVerlauf } from "@/lib/calc/froots"
 const PERF_PRESETS = [3, 6, 9]
 
 function ToggleGroup<T extends string>({
-  options, value, onChange,
+  options, value, onChange, fill,
 }: {
   options: { value: T; label: string; disabled?: boolean }[]
   value: T
   onChange: (v: T) => void
+  fill?: boolean
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className={cn("flex gap-1.5", fill ? "h-10" : "flex-wrap")}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -33,6 +34,7 @@ function ToggleGroup<T extends string>({
           onClick={() => onChange(o.value)}
           className={cn(
             "rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+            fill && "flex-1",
             o.disabled
               ? "cursor-not-allowed border-border bg-card text-muted-foreground/40"
               : value === o.value
@@ -245,58 +247,35 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              <label htmlFor="rrMonat">Monatliche Einzahlung (€)</label>
+          <div className={FELD_GRID}>
+            <Zelle label="Monatliche Einzahlung (€)">
               <Stepper id="rrMonat" value={monat} onChange={setMonat} step={25} />
-            </div>
-            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Laufzeit (Jahre)
-              <input type="number" min={jahreMin} max={jahreMax} step={1} value={jahre}
-                onChange={(e) => setJahre(e.target.value)}
-                className={cn(INPUT_CLASS, "w-28")} />
-            </label>
-            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              <label className="flex items-center gap-1.5">
-                <input type="checkbox" checked={waEnabled} onChange={(e) => setWaEnabled(e.target.checked)} className="size-4" />
-                Wertanpassung p.a. (%)
-              </label>
-              <input type="number" min={0} step={0.5} value={waPct} disabled={!waEnabled}
-                onChange={(e) => setWaPct(e.target.value)}
-                className={cn(INPUT_CLASS, "w-28")} />
-            </div>
-            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              <label className="flex items-center gap-1.5">
-                <input type="checkbox" checked={entnahmeEnabled}
-                  onChange={(e) => setEntnahmeEnabled(e.target.checked)} className="size-4 disabled:opacity-50" />
-                Entnahmephase
-              </label>
-              <label className="flex flex-col gap-1" htmlFor="rrEntnahmeJahre">
-                Entnahmedauer (Jahre)
-                <input id="rrEntnahmeJahre" type="number" min={1} max={50} step={1} value={entnahmeJahre}
-                  disabled={!entnahmeEnabled}
-                  onChange={(e) => setEntnahmeJahre(e.target.value)}
-                  className={cn(INPUT_CLASS, "w-28")} />
-              </label>
-            </div>
-            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              <label htmlFor="rrEntnahmeMonat">Monatliche Entnahme (€, netto)</label>
-              <Stepper id="rrEntnahmeMonat" value={entnahmeMonatEingabe} onChange={setEntnahmeMonatEingabe} step={100}
-                disabled={!entnahmeEnabled} />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-end gap-4">
-            <ToggleGroup
-              value={perfPreset === null ? ("" as never) : (String(perfPreset) as never)}
-              options={PERF_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
-              onChange={(v) => selectPerfPreset(Number(v))}
-            />
-            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Eigene Performance (% p.a.)
+            </Zelle>
+            <Zelle label="Laufzeit (Jahre)">
+              <Stepper value={jahre} onChange={setJahre} step={1} min={jahreMin} max={jahreMax} />
+            </Zelle>
+            <Zelle label="Wertanpassung p.a. (%)" check={{ checked: waEnabled, onChange: setWaEnabled }}>
+              <Stepper value={waPct} onChange={setWaPct} step={0.5} disabled={!waEnabled} />
+            </Zelle>
+            <Zelle label="Entnahmephase · Dauer (Jahre)" check={{ checked: entnahmeEnabled, onChange: setEntnahmeEnabled }}>
+              <Stepper id="rrEntnahmeJahre" value={entnahmeJahre} onChange={setEntnahmeJahre} step={1} min={1} max={50} disabled={!entnahmeEnabled} />
+            </Zelle>
+            <Zelle label="Monatliche Entnahme (€, netto)">
+              <Stepper id="rrEntnahmeMonat" value={entnahmeMonatEingabe} onChange={setEntnahmeMonatEingabe} step={100} disabled={!entnahmeEnabled} />
+            </Zelle>
+            <div className="hidden lg:block" aria-hidden />
+            <Zelle label="Performance (% p.a.)">
+              <ToggleGroup
+                fill
+                value={perfPreset === null ? ("" as never) : (String(perfPreset) as never)}
+                options={PERF_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
+                onChange={(v) => selectPerfPreset(Number(v))}
+              />
+            </Zelle>
+            <Zelle label="Eigene Performance (% p.a.)">
               <input type="number" step={0.1} placeholder="z. B. 5,5" value={customPerf}
-                onChange={(e) => onCustomPerf(e.target.value)}
-                className={cn(INPUT_CLASS, "w-36")} />
-            </label>
+                onChange={(e) => onCustomPerf(e.target.value)} className={INPUT_CLASS} />
+            </Zelle>
           </div>
         </CardContent>
       </Card>
@@ -309,7 +288,7 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
               agE-/Dividendenrendite (% p.a.)
               <input type="number" min={0} step={0.1} value={ageRendite}
                 onChange={(e) => setAgeRendite(e.target.value)}
-                className={cn(INPUT_CLASS, "w-36")} />
+                className={INPUT_CLASS} />
             </label>
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %)</div>
           </CardContent>

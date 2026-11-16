@@ -12,7 +12,7 @@ import {
   DEFAULTS_HOLDING_IMMO, GMBH_AUSSCHUETTUNG_EFFEKTIV_SATZ, berechneHoldingImmobilien, type HoldingImmoEingabe,
 } from "@/lib/calc/holdingImmobilien"
 import { KOEST_SATZ } from "@/lib/calc/gmbhVsEu"
-import { Feld, ZeilePos } from "@/components/sections/rechner/fields"
+import { Feld, ZeilePos, FELD_GRID } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 export function HoldingImmobilienRechner() {
@@ -87,7 +87,7 @@ export function HoldingImmobilienRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Kapitalherkunft</h3>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className={FELD_GRID}>
             <Feld label="Verfügbarer Gewinn vor Steuer (€)" value={verfuegbarerGewinnVorSteuer} onChange={setVerfuegbarerGewinnVorSteuer} step={5000} min={0} stepper />
             <Feld label="Grenzsteuersatz Einzelunternehmer (%)" value={euGrenzsteuersatzPct} onChange={setEuGrenzsteuersatzPct} step={1} suffix="%" min={0} />
             <Feld label="Grenzsteuersatz auf laufende Vermietungseinkünfte, privat (%)" value={grenzsteuersatzVermietungPct} onChange={setGrenzsteuersatzVermietungPct} step={1} suffix="%" min={0} />
@@ -106,7 +106,7 @@ export function HoldingImmobilienRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Immobilie (zur Vermietung)</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={FELD_GRID}>
             <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} stepper />
             <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} stepper />
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
@@ -116,7 +116,7 @@ export function HoldingImmobilienRechner() {
             <Feld label="Anlagehorizont bis Verkauf (Jahre)" value={horizontJahre} onChange={setHorizontJahre} step={1} min={1} />
             <Feld label="Verkaufskosten (%)" value={verkaufskostenPct} onChange={setVerkaufskostenPct} step={0.5} suffix="%" min={0} />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={FELD_GRID}>
             <Feld label="Kreditlaufzeit (Jahre)" value={kreditLaufzeitJahre} onChange={setKreditLaufzeitJahre} step={1} min={5} />
             <Feld label="Sollzinssatz (% p.a.)" value={kreditZinsPct} onChange={setKreditZinsPct} step={0.05} suffix="%" min={0} />
           </div>
@@ -137,7 +137,7 @@ export function HoldingImmobilienRechner() {
             Kaufneben-/AfA-Sätze anpassen
           </button>
           {saetzeOffen && (
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div className={FELD_GRID}>
               <Feld label="Grunderwerbsteuer" value={String(saetze.grunderwerbsteuerPct)} onChange={satzSetter("grunderwerbsteuerPct")} suffix="%" step={0.1} />
               <Feld label="Grundbucheintragung" value={String(saetze.grundbuchEintragungPct)} onChange={satzSetter("grundbuchEintragungPct")} suffix="%" step={0.1} />
               <Feld label="Vertragserrichtung (netto)" value={String(saetze.vertragserrichtungPct)} onChange={satzSetter("vertragserrichtungPct")} suffix="%" step={0.1} />
@@ -165,7 +165,7 @@ export function HoldingImmobilienRechner() {
             Gesellschaft (eigene Bilanz, eigener Jahresabschluss, ggf. eigene Gründungskosten).
           </p>
           {ueberHolding && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={FELD_GRID}>
               <Feld label="Zusätzliche Fixkosten Holding/Immo-GmbH (€/Jahr)" value={holdingFixkostenJahr} onChange={setHoldingFixkostenJahr} step={100} min={0} />
               <Feld label="Einmalige Gründungskosten (€)" value={holdingGruendungskostenEinmalig} onChange={setHoldingGruendungskostenEinmalig} step={100} min={0} />
             </div>

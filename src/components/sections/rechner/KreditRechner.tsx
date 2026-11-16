@@ -13,7 +13,7 @@ import {
   berechneTilgungsplan, effektivzinsPct, kreditFormatEUR, kreditFormatPct, type KreditSaetze,
 } from "@/lib/calc/kredit"
 import { berechneTilgungstraeger } from "@/lib/calc/tilgungstraeger"
-import { Feld, INPUT_CLASS, LABEL_CLASS, PillGroup, SatzFeld } from "@/components/sections/rechner/fields"
+import { Feld, INPUT_CLASS, PillGroup, SatzFeld, FELD_GRID, Zelle, Stepper } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 const PERF_PRESETS = [3, 6, 9]
@@ -147,31 +147,18 @@ export function KreditRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={FELD_GRID}>
             <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} min={0} step={1000} stepper />
             <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} min={0} step={1000} stepper />
             <Feld label="Sollzinssatz (% p.a.)" value={zinssatz} onChange={setZinssatz} min={0} max={20} step={0.05} stepper />
-            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              Laufzeit (Jahre)
-              <div className="flex flex-wrap items-center gap-2">
-                <input type="number" min={1} max={40} step={1} value={laufzeit}
-                  onChange={(e) => setLaufzeit(e.target.value)}
-                  className={cn(INPUT_CLASS, "w-24")} />
-                <div className="flex flex-wrap gap-1.5">
-                  {LAUFZEIT_PRESETS.map((p) => (
-                    <button key={p} type="button" onClick={() => setLaufzeit(String(p))}
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs font-bold transition-colors",
-                        laufzeitClamped === p
-                          ? "border-transparent bg-primary text-primary-foreground"
-                          : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                      )}>
-                      {p} J
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </label>
+            <Zelle label="Laufzeit (Jahre)">
+              <Stepper value={laufzeit} onChange={setLaufzeit} step={1} min={1} max={40} />
+            </Zelle>
+            <Zelle label="Laufzeit-Vorauswahl" className="sm:col-span-2 lg:col-span-2">
+              <PillGroup fill value={String(laufzeitClamped) as never}
+                options={LAUFZEIT_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} Jahre` }))}
+                onChange={(v) => setLaufzeit(String(v))} />
+            </Zelle>
           </div>
           <div className="flex flex-wrap gap-6">
             <label className="flex items-center gap-1.5 text-sm">
@@ -195,29 +182,21 @@ export function KreditRechner() {
               wie der Kredit. Zeigt, ab wann das Guthaben die Restschuld übersteigt.
             </p>
           </div>
-          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={FELD_GRID}>
             <Feld label="Sparrate (€/Monat)" value={sparrate} onChange={setSparrate} min={0} step={25} stepper />
-            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
-              <span className="flex items-center gap-1.5">
-                <input type="checkbox" checked={dynamikAn} onChange={(e) => setDynamikAn(e.target.checked)} className="size-4" />
-                Dynamik p.a. (%)
-              </span>
-              <input type="number" min={0} step={0.5} value={dynamikPct} disabled={!dynamikAn}
-                onChange={(e) => setDynamikPct(e.target.value)}
-                className={cn(INPUT_CLASS, "w-28")} />
-            </label>
-            <label className={cn("flex flex-col gap-1.5 sm:col-span-2 lg:col-span-2", LABEL_CLASS)}>
-              Performance (% p.a.)
-              <div className="flex flex-wrap items-end gap-3">
-                <PillGroup
-                  value={perfPreset === null ? ("" as never) : (String(perfPreset) as never)}
-                  options={PERF_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
-                  onChange={(v) => selectPerfPreset(Number(v))}
-                />
-                <input type="number" step={0.1} placeholder="eigene, z. B. 5,5" value={customPerf}
-                  onChange={(e) => onCustomPerf(e.target.value)} className={cn(INPUT_CLASS, "w-40")} />
-              </div>
-            </label>
+            <Zelle label="Dynamik p.a. (%)" check={{ checked: dynamikAn, onChange: setDynamikAn }}>
+              <Stepper value={dynamikPct} onChange={setDynamikPct} step={0.5} min={0} disabled={!dynamikAn} />
+            </Zelle>
+            <Zelle label="Performance (% p.a.)">
+              <PillGroup fill
+                value={perfPreset === null ? ("" as never) : (String(perfPreset) as never)}
+                options={PERF_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
+                onChange={(v) => selectPerfPreset(Number(v))} />
+            </Zelle>
+            <Zelle label="Eigene Performance (% p.a.)">
+              <input type="number" step={0.1} placeholder="z. B. 5,5" value={customPerf}
+                onChange={(e) => onCustomPerf(e.target.value)} className={INPUT_CLASS} />
+            </Zelle>
           </div>
           <p className="text-xs text-muted-foreground">
             Laufzeit wird automatisch vom Kredit übernommen:{" "}
@@ -248,7 +227,7 @@ export function KreditRechner() {
             <div className="flex flex-col gap-4">
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Kaufnebenkosten (vom Kaufpreis)</h4>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <div className={FELD_GRID}>
                   <SatzFeld label="Grunderwerbsteuer" value={String(saetze.grunderwerbsteuerPct)} onChange={satzSetter("grunderwerbsteuerPct")} />
                   <SatzFeld label="Grundbucheintragung" value={String(saetze.grundbuchEintragungPct)} onChange={satzSetter("grundbuchEintragungPct")} />
                   <SatzFeld label="Vertragserrichtung (netto)" value={String(saetze.vertragserrichtungPct)} onChange={satzSetter("vertragserrichtungPct")} />
@@ -259,7 +238,7 @@ export function KreditRechner() {
               </div>
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Kreditnebenkosten (von der Kreditsumme)</h4>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <div className={FELD_GRID}>
                   <SatzFeld label="Kreditvertragserstellung" value={String(saetze.kreditvertragserstellungPct)} onChange={satzSetter("kreditvertragserstellungPct")} />
                   <SatzFeld label="Pfandrechtseintragung" value={String(saetze.pfandrechtPct)} onChange={satzSetter("pfandrechtPct")} />
                   <SatzFeld label="Nebengebührensicherstellung" value={String(saetze.nebengebuehrensicherstellungPct)} onChange={satzSetter("nebengebuehrensicherstellungPct")} />
@@ -268,7 +247,7 @@ export function KreditRechner() {
               </div>
               <div>
                 <h4 className="mb-2 text-xs font-semibold text-muted-foreground">AfA (steuerliche Abschreibung)</h4>
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <div className={FELD_GRID}>
                   <SatzFeld label="Gebäudeanteil am Kaufpreis" value={String(saetze.gebaeudeanteilPct)} onChange={satzSetter("gebaeudeanteilPct")} />
                   <SatzFeld label="AfA-Satz (linear, ab 3. Jahr)" value={String(saetze.afaSatzPct)} onChange={satzSetter("afaSatzPct")} />
                 </div>
