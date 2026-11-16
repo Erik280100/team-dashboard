@@ -284,15 +284,26 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
   )
   const dashRoster = useMemo(() => sbRoster(dashTree), [dashTree])
   const dashRows = useMemo(() => rowsMatchedToRoster(dashRoster, view.rows), [dashRoster, view.rows])
-  // Der gespeicherte Verlauf ist die Summe aller Mitarbeiter; für "Mein Team" gibt es keinen Teamverlauf —
-  // dort zählt nur der heutige Stand des Teams (Ziel-Linie und Prognose rechnen daraus).
+  // Der gespeicherte Verlauf ist die Summe aller Mitarbeiter, neuere Einträge enthalten zusätzlich das Ist je Person (`by`).
+  // Für "Mein Team": Einträge mit `by` werden exakt über die Teammitglieder summiert; ältere Einträge ohne Personenwerte
+  // werden mit dem heutigen Anteil des Teams am Gesamt-Ist skaliert (Näherung). Der heutige Punkt ist immer der echte Stand.
   const dashHistory = useMemo(() => {
     if (!teamScope) return view.history
+    const names = dashRows.map((r) => r.name.trim().toLowerCase())
+    const teamNow = dashRows.reduce((s, r) => s + (Number(r.ist) || 0), 0)
+    const totalNow = view.rows.reduce((s, r) => s + (Number(r.ist) || 0), 0)
+    const share = totalNow > 0 ? teamNow / totalNow : 0
     const today = toISODate(new Date())
     const { periodStart, periodEnd } = view.teamGoal
     const date = today > periodEnd ? periodEnd : today < periodStart ? periodStart : today
-    return [{ date, ist: dashRows.reduce((s, r) => s + (Number(r.ist) || 0), 0) }]
-  }, [teamScope, view.history, view.teamGoal, dashRows])
+    const past = view.history
+      .filter((h) => h.date !== date)
+      .map((h) => ({
+        date: h.date,
+        ist: h.by ? names.reduce((s, n) => s + (h.by?.[n] ?? 0), 0) : Math.round(h.ist * share),
+      }))
+    return [...past, { date, ist: teamNow }]
+  }, [teamScope, view.history, view.rows, view.teamGoal, dashRows])
   // Die Jahreswerte im Dashboard stammen aus den archivierten Monatssummen (alle Mitarbeiter). Für "Mein Team" werden
   // sie aus den Monats-Snapshots nur über die Teammitglieder neu gerechnet.
   const archiveMonths = useMemo(() => archive.index.map((e) => e.month), [archive.index])

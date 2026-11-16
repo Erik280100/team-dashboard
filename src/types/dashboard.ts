@@ -10,6 +10,7 @@ export type { EmployeeRow, TeamGoal }
 export interface HistoryEntry {
   date: string
   ist: number
+  by?: Record<string, number>
 }
 
 /** Dashboard-Daten: rows aus employees/{id}, teamGoal und history aus org/teamGoal. */

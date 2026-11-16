@@ -197,6 +197,8 @@ export function migrateRows(list: EmployeeRow[]): EmployeeRow[] {
 export interface HistoryEntry {
   date: string
   ist: number
+  /** Ist je Mitarbeiter (Name klein geschrieben) — Grundlage für den Verlauf in "Mein Team". Ältere Einträge haben es nicht. */
+  by?: Record<string, number>
 }
 
 /**
@@ -205,15 +207,21 @@ export interface HistoryEntry {
  * Mutiert `history` nicht — gibt ein neues, sortiertes Array zurück.
  */
 export function recordSnapshot(
-  rows: Pick<EmployeeRow, "ist">[],
+  rows: (Pick<EmployeeRow, "ist"> & { name?: string })[],
   history: HistoryEntry[],
   today: string = new Date().toISOString().slice(0, 10)
 ): HistoryEntry[] {
   const totalIst = rows.reduce((s, r) => s + Number(r.ist || 0), 0)
+  const by: Record<string, number> = {}
+  for (const r of rows) {
+    const key = r.name?.trim().toLowerCase()
+    if (key) by[key] = (by[key] ?? 0) + Number(r.ist || 0)
+  }
   const next = history.map((h) => ({ ...h }))
   const existing = next.find((h) => h.date === today)
-  if (existing) existing.ist = totalIst
-  else next.push({ date: today, ist: totalIst })
+  const hasBy = Object.keys(by).length > 0
+  if (existing) { existing.ist = totalIst; if (hasBy) existing.by = by }
+  else next.push(hasBy ? { date: today, ist: totalIst, by } : { date: today, ist: totalIst })
   next.sort((a, b) => a.date.localeCompare(b.date))
   return next
 }
