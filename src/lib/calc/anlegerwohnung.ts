@@ -1,15 +1,21 @@
 // Anlegerwohnungs-Rechner — 1:1-Abbild von "DAS IMMO EXCEL - mit Maximalkreditbetrag.xlsx".
 // Eingaben, Formeln und Ausgaben entsprechen dem Excel-Blatt (Zellbezüge in den Kommentaren).
 
-export const KAUFVERTRAG_PCT = 0.015
-export const NOTAR_PAUSCHAL = 1000
-export const EINTRAGUNG_PCT = 0.011
-export const GRESTG_PCT = 0.035
-export const MAKLER_PCT = 0.036
+// Standard-Kaufnebenkosten (Excel-Werte): Kaufvertrag 1,25 % + 20 % USt = 1,5 %, Makler 3 % + 20 % USt = 3,6 %
+export interface KaufnebenkostenSaetze {
+  kaufvertragPct: number // netto, zzgl. USt
+  notar: number // pauschal in €
+  eintragungPct: number
+  grunderwerbsteuerPct: number
+  maklerPct: number // netto, zzgl. USt
+  ustPct: number
+}
+export const KAUFNEBENKOSTEN_DEFAULTS: KaufnebenkostenSaetze = {
+  kaufvertragPct: 1.25, notar: 1000, eintragungPct: 1.1, grunderwerbsteuerPct: 3.5, maklerPct: 3, ustPct: 20,
+}
 export const KREDITVERTRAG_PCT = 0.03
 export const KREDIT_EINTRAGUNG_PCT = 0.012
 export const KREDIT_EINTRAGUNG_AUFSCHLAG = 1.2 // + 20 % Steuern
-export const KREDIT_PUFFER = 50 // "max. 90 % + 50 €"
 export const STEIGERUNG = 1.02 // Miete und Wohnungswert p.a.
 export const AFA_ANTEIL = 0.8
 export const AFA_SATZ = 0.015
@@ -23,6 +29,7 @@ export interface AnlegerwohnungEingabe {
   zinsPct: number // G4, z. B. 3.75
   grenzsteuerPct: number // G7, z. B. 40
   eigenmittel: number | null // C25, null = leer
+  kaufnebenkosten: KaufnebenkostenSaetze
 }
 
 export interface AnlegerwohnungJahr {
@@ -74,16 +81,18 @@ function pmt(zinsPctPa: number, monate: number, betrag: number): number {
 
 export function berechneAnlegerwohnung(e: AnlegerwohnungEingabe): AnlegerwohnungErgebnis {
   const kp = e.nettokaufpreis
-  const kaufvertrag = kp * KAUFVERTRAG_PCT
-  const notar = NOTAR_PAUSCHAL
-  const eintragung = kp * EINTRAGUNG_PCT
-  const grunderwerbsteuer = kp * GRESTG_PCT
-  const makler = kp * MAKLER_PCT
+  const k = e.kaufnebenkosten
+  const ust = 1 + k.ustPct / 100
+  const kaufvertrag = kp * (k.kaufvertragPct / 100) * ust
+  const notar = k.notar
+  const eintragung = kp * (k.eintragungPct / 100)
+  const grunderwerbsteuer = kp * (k.grunderwerbsteuerPct / 100)
+  const makler = kp * (k.maklerPct / 100) * ust
   const summeOhneKreditkosten = kp + kaufvertrag + notar + eintragung + grunderwerbsteuer + makler
   const kaufnebenkosten = summeOhneKreditkosten - kp
 
   const faktor = 1 - KREDITVERTRAG_PCT - KREDIT_EINTRAGUNG_AUFSCHLAG * KREDIT_EINTRAGUNG_PCT
-  const maxKredit = kp * (e.maxKreditPct / 100) + KREDIT_PUFFER
+  const maxKredit = kp * (e.maxKreditPct / 100)
   const mindestEigenmittel = summeOhneKreditkosten - maxKredit * faktor
   const eingesetzteEigenmittel = Math.min(summeOhneKreditkosten, Math.max(mindestEigenmittel, e.eigenmittel ?? 0))
   const kreditbetrag = Math.max(0, Math.min(maxKredit, (summeOhneKreditkosten - eingesetzteEigenmittel) / faktor))
