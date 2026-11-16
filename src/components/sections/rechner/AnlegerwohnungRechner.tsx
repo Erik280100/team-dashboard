@@ -7,7 +7,7 @@ import { kreditFormatPct } from "@/lib/calc/kredit"
 import { berechneAnlegerwohnung } from "@/lib/calc/anlegerwohnung"
 import { Feld, ZeilePos } from "@/components/sections/rechner/fields"
 
-const eur = (n: number) => n.toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €"
+const eur = (n: number) => Math.round(n).toLocaleString("de-AT") + " €"
 
 function Kachel({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -20,8 +20,6 @@ function Kachel({ label, value, sub }: { label: string; value: string; sub?: str
     </Card>
   )
 }
-
-const CHECKLISTE = ["Betriebskostenaufstellung", "Nutzwertgutachten", "Energieausweis", "Hausverwaltung"]
 
 export function AnlegerwohnungRechner() {
   const [maxKredit, setMaxKredit] = useState("90")
@@ -65,8 +63,16 @@ export function AnlegerwohnungRechner() {
             <Feld label="Zinssatz p.a." value={zins} onChange={setZins} suffix="%" step={0.05} />
             <Feld label="Grenzsteuersatz" value={grenzsteuer} onChange={setGrenzsteuer} suffix="%" />
             <div className="flex flex-col gap-1">
-              <Feld label="Eigenmittel (leer = Minimum)" value={eigenmittel} onChange={setEigenmittel} suffix="€" step={1000} />
-              <span className="text-[11px] text-muted-foreground">{erg.eigenmittelHinweis}</span>
+              <Feld label="Eigenmittel" value={eigenmittel.trim() === "" ? String(Math.round(erg.eingesetzteEigenmittel)) : eigenmittel}
+                onChange={setEigenmittel} suffix="€" step={1000} />
+              <span className="text-[11px] text-muted-foreground">
+                {eigenmittel.trim() === "" ? "automatisch berechnet (Minimum) – zum Überschreiben eintragen" : erg.eigenmittelHinweis}
+                {eigenmittel.trim() !== "" && (
+                  <button type="button" onClick={() => setEigenmittel("")} className="ml-2 underline hover:text-foreground">
+                    zurücksetzen
+                  </button>
+                )}
+              </span>
             </div>
           </div>
         </CardContent>
@@ -150,15 +156,6 @@ export function AnlegerwohnungRechner() {
               </tfoot>
             </table>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold">Brauch ich vom Makler</h3>
-          <ul className="list-disc pl-5 text-sm">
-            {CHECKLISTE.map((c) => <li key={c}>{c}</li>)}
-          </ul>
         </CardContent>
       </Card>
     </div>
