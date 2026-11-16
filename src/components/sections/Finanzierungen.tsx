@@ -1,18 +1,16 @@
 // Finanzierungen-Sektion — Tab-Switcher analog zu Rechner.tsx: "Offene Abwicklungen"
 // (ehemals alleinige Finanzierungen-Sektion, siehe finanzierungen/OffeneAbwicklungen.tsx)
 // und der hierher umgesiedelte Finanzierungsrechner (ehemals Tab in Rechner.tsx).
-import { lazy, useState } from "react"
+import { useState } from "react"
 import { PillTabs } from "@/components/ui/dark"
 import { OffeneAbwicklungen } from "@/components/sections/finanzierungen/OffeneAbwicklungen"
+import { KreditRechner } from "@/components/sections/rechner/KreditRechner"
+import { ImmoPortfolioRechner } from "@/components/sections/rechner/ImmoPortfolioRechner"
+import { AnlegerwohnungRechner } from "@/components/sections/rechner/AnlegerwohnungRechner"
+import { UmschuldungsRechner } from "@/components/sections/rechner/UmschuldungsRechner"
 import type { Beschaeftigung } from "@/lib/data/finanzierung"
 import type { FinanzierungArt, FinanzierungCase } from "@/types/dashboard"
 import type { RosterEntry } from "@/lib/calc/struktur"
-
-const KreditRechner = lazy(() => import("@/components/sections/rechner/KreditRechner").then((m) => ({ default: m.KreditRechner })))
-const ImmoPortfolioRechner = lazy(() => import("@/components/sections/rechner/ImmoPortfolioRechner").then((m) => ({ default: m.ImmoPortfolioRechner })))
-
-const AnlegerwohnungRechner = lazy(() => import("@/components/sections/rechner/AnlegerwohnungRechner").then((m) => ({ default: m.AnlegerwohnungRechner })))
-const UmschuldungsRechner = lazy(() => import("@/components/sections/rechner/UmschuldungsRechner").then((m) => ({ default: m.UmschuldungsRechner })))
 
 type FinanzierungenTab = "offen" | "umschuldung" | "rechner" | "immo" | "immoGmbh"
 
