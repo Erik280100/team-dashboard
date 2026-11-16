@@ -428,7 +428,7 @@ export function KreditRechner() {
               <p className="mt-1 text-sm text-muted-foreground">
                 Gesamtaufwand ohne Tilgungsträger (volle Laufzeit):{" "}
                 <strong className="tabular-nums text-foreground">{kreditFormatEUR(tt.gesamtaufwandVollaufzeit)}</strong>. Gesamtaufwand
-                mit Tilgungsträger (Kreditraten bis zur Ablöse + einbezahlte Prämien + Vorfälligkeitsentschädigung):{" "}
+                mit Tilgungsträger (Kreditraten bis zur Ablöse + einbezahlte Prämien + Pönale):{" "}
                 <strong className="tabular-nums text-foreground">{kreditFormatEUR(tt.gesamtaufwandMitTraeger)}</strong>. Zinsersparnis
                 allein (Teilgröße, ohne die einbezahlten Prämien gegenzurechnen):{" "}
                 <strong className="tabular-nums text-foreground">{kreditFormatEUR(tt.zinsersparnis)}</strong>.
@@ -437,7 +437,7 @@ export function KreditRechner() {
                 Modellrechnung mit {perfPct.toLocaleString("de-AT")} % p.a. angenommener Performance, Werte nicht garantiert — bei
                 vorzeitiger Auflösung kann der Rückkaufswert unter dem dargestellten Fondswert liegen. Die Kreditrate läuft bis zur
                 Ablöse unverändert weiter, die Sparrate kommt zusätzlich zur Monatsrate hinzu. Enthält eine pauschale
-                Vorfälligkeitsentschädigung von 1 % der bei Ablöse offenen Restschuld ({kreditFormatEUR(tt.vorfaelligkeitsentschaedigung)},
+                Pönale von 1 % der bei Ablöse offenen Restschuld ({kreditFormatEUR(tt.vorfaelligkeitsentschaedigung)},
                 § 20 Abs 3 HIKrG bei Fixzinsvereinbarung).
                 {tt.rueckkaufVorJahr15 && (
                   <>

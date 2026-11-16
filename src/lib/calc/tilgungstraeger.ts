@@ -24,7 +24,7 @@ export interface TilgungstraegerErgebnis {
   /** Gesamtaufwand (alle Raten) bei planmäßigem Durchlaufen der vollen Kreditlaufzeit, ohne Tilgungsträger. */
   gesamtaufwandVollaufzeit: number
   /** Gesamtaufwand bei Ablöse über den Tilgungsträger: Kreditraten bis zur Ablöse + einbezahlte
-   *  FLV-Prämien + Vorfälligkeitsentschädigung. Die am Schnittpunkt verbleibende Restschuld wird
+   *  FLV-Prämien + Pönale. Die am Schnittpunkt verbleibende Restschuld wird
    *  aus dem FLV-Guthaben (bereits in den Prämien enthalten) getilgt und daher nicht separat gezählt. */
   gesamtaufwandMitTraeger: number
   /** gesamtaufwandVollaufzeit − gesamtaufwandMitTraeger — der tatsächliche Vorteil in Euro. */
@@ -125,7 +125,7 @@ export function berechneTilgungstraeger(
   // wenn er über den Tilgungsträger abgelöst wird? Bis zum Ablösemonat werden ganz normal
   // `abIndex` Kreditraten bezahlt; die dann noch offene Restschuld wird aus dem FLV-Guthaben
   // getilgt — das ist bereits durch die einbezahlten Prämien abgedeckt und wird daher nicht
-  // nochmals als Kosten gezählt, nur die Prämien selbst und die Vorfälligkeitsentschädigung.
+  // nochmals als Kosten gezählt, nur die Prämien selbst und die Pönale.
   const restschuldBeiAbloese = restschuldMonate[Math.min(abIndex, restschuldMonate.length - 1)]
   const vorfaelligkeitsentschaedigung = restschuldBeiAbloese * 0.01
   const gesamtaufwandVollaufzeit = plan.gesamtaufwand

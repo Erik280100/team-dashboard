@@ -69,7 +69,7 @@ export function berechneUmschuldung(e: UmschuldungEingabe): UmschuldungErgebnis 
   const kostenPositionen: KostenPosition[] = []
   if (e.vfeAktiv) {
     kostenPositionen.push({
-      label: "Vorfälligkeitsentschädigung",
+      label: "Pönale",
       betrag: vfe,
       hinweis: `${e.vfePct.toLocaleString("de-AT")} % der Restschuld`,
     })

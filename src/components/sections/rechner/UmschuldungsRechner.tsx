@@ -155,7 +155,7 @@ export function UmschuldungsRechner() {
             <div className="flex flex-col gap-2">
               <label className="flex items-center gap-1.5 text-sm">
                 <input type="checkbox" checked={vfeAktiv} onChange={(e) => setVfeAktiv(e.target.checked)} className="size-4" />
-                Vorfälligkeitsentschädigung berücksichtigen
+                Pönale berücksichtigen
               </label>
               <label className="flex items-center gap-1.5 text-sm">
                 <input type="checkbox" checked={kostenMitfinanziert} onChange={(e) => setKostenMitfinanziert(e.target.checked)} className="size-4" />
@@ -176,7 +176,7 @@ export function UmschuldungsRechner() {
           {saetzeOffen && (
             <div className="flex flex-col gap-3">
               <div className={FELD_GRID}>
-                <SatzFeld label="Vorfälligkeitsentschädigung" value={vfePct} onChange={setVfePct} />
+                <SatzFeld label="Pönale" value={vfePct} onChange={setVfePct} />
                 <SatzFeld label="Kreditvertragserstellung" value={String(saetze.kreditvertragserstellungPct)} onChange={satzSetter("kreditvertragserstellungPct")} />
                 <SatzFeld label="Pfandrechtseintragung" value={String(saetze.pfandrechtPct)} onChange={satzSetter("pfandrechtPct")} />
                 <SatzFeld label="Nebengebührensicherstellung" value={String(saetze.nebengebuehrensicherstellungPct)} onChange={satzSetter("nebengebuehrensicherstellungPct")} />
@@ -334,7 +334,7 @@ export function UmschuldungsRechner() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Modellrechnung mit gleichbleibender Annuität und festem Zinssatz. Die Vorfälligkeitsentschädigung ist bei
+        Modellrechnung mit gleichbleibender Annuität und festem Zinssatz. Die Pönale ist bei
         Fixzinsvereinbarung auf 1 % der vorzeitig zurückgezahlten Restschuld begrenzt (§ 20 Abs 3 HIKrG), bei variablem
         Zins fällt sie nicht an. Pfandrechtskosten können entfallen, wenn die Bank das bestehende Pfandrecht übernimmt.
         Die Gesamtaufwand-Zeile des neuen Kredits enthält bar zu zahlende Umschuldungskosten. Keine Anlage- oder Finanzberatung.
