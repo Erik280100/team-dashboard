@@ -381,7 +381,7 @@
   --foreground: #ffffff;
   --card-foreground: #ffffff;
   --muted-foreground: rgba(255, 255, 255, 0.78);
-  --background: rgba(255, 255, 255, 0.1);
+  --background: rgba(255, 255, 255, 0.12);
   --card: rgba(255, 255, 255, 0.06);
   --muted: rgba(255, 255, 255, 0.07);
   --border: rgba(255, 255, 255, 0.14);
@@ -392,6 +392,15 @@
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.1);
   background: linear-gradient(160deg, #16323f 0%, #0b1f2a 100%);
+}
+.calc-dark input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.calc-dark input[type="number"]::-webkit-inner-spin-button,
+.calc-dark input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .calc-dark [data-slot="card"] ::placeholder {
   color: rgba(255, 255, 255, 0.55);

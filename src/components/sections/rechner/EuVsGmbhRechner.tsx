@@ -11,7 +11,7 @@ import {
   autoAfaJaehrlich, berechneEu, berechneGmbh, berechneGruendungsVergleich, berechneSchwellenreihe,
   type GemeinsameEingabe, type GmbhSpezifischeEingabe,
 } from "@/lib/calc/gmbhVsEu"
-import { Feld, Regler, ZeilePos } from "@/components/sections/rechner/fields"
+import { Feld, Regler, ZeilePos, LABEL_CLASS } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 export function EuVsGmbhRechner() {
@@ -94,7 +94,7 @@ export function EuVsGmbhRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Betriebsdaten (für beide Rechtsformen gleich)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} />
+            <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} stepper />
             <Feld label="Betriebsausgaben ohne SV/AfA/Gehalt (€/Jahr)" value={betriebsausgaben} onChange={setBetriebsausgaben} step={500} min={0} />
             <Feld label="Sonstige AfA — Büro, Geräte etc. (€/Jahr)" value={sonstigeAfaJahr} onChange={setSonstigeAfaJahr} step={100} min={0} />
           </div>
@@ -104,7 +104,7 @@ export function EuVsGmbhRechner() {
               <Feld label="Anschaffungswert (€)" value={autoAnschaffungswert} onChange={setAutoAnschaffungswert} step={1000} min={0} />
               <Feld label="Nutzungsdauer (Jahre, min. 8)" value={autoNutzungsdauerJahre} onChange={setAutoNutzungsdauerJahre} step={1} min={8} />
               <Feld label="Privater Nutzungsanteil (%)" value={autoPrivatanteilPct} onChange={setAutoPrivatanteilPct} step={5} suffix="%" min={0} />
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Jährliche AfA (gedeckelt bei 40.000 € Anschaffungswert)
                 <div className="text-sm text-foreground">{kreditFormatEUR(autoAfaJaehrlich(n(autoAnschaffungswert), n(autoNutzungsdauerJahre)))}/Jahr</div>
               </div>

@@ -1,10 +1,49 @@
 import { cn } from "@/lib/utils"
 
 // Gemeinsame Bausteine der Rechner-Oberflächen (Eingabefeld, Regler, Ergebniszeile, Zahlen-Parser).
-export const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
+export const INPUT_CLASS = "h-11 rounded-lg border border-input bg-background px-4 text-base tabular-nums text-center shadow-sm transition-colors focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 disabled:opacity-40 disabled:cursor-not-allowed"
+export const LABEL_CLASS = "text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+
+function decimals(step: number) {
+  const s = String(step)
+  const i = s.indexOf(".")
+  return i < 0 ? 0 : s.length - i - 1
+}
+
+// Zahlenfeld mit runden −/+ Buttons (für die Hauptwerte eines Rechners).
+export function Stepper({
+  value, onChange, step = 1, min = 0, max, disabled, id, className,
+}: {
+  value: string
+  onChange: (v: string) => void
+  step?: number
+  min?: number
+  max?: number
+  disabled?: boolean
+  id?: string
+  className?: string
+}) {
+  const num = Number(String(value).replace(",", ".")) || 0
+  const d = decimals(step)
+  const set = (n: number) => {
+    let v = n
+    if (min !== undefined) v = Math.max(min, v)
+    if (max !== undefined) v = Math.min(max, v)
+    onChange(String(+v.toFixed(d)))
+  }
+  const btn = "flex size-10 shrink-0 items-center justify-center rounded-full bg-[#00798c] text-lg font-bold leading-none text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
+      <button type="button" aria-label="Verringern" disabled={disabled} className={btn} onClick={() => set(num - step)}>−</button>
+      <input id={id} type="number" min={min} max={max} step={step} value={value} disabled={disabled}
+        onChange={(e) => onChange(e.target.value)} className={cn(INPUT_CLASS, "min-w-0 flex-1")} />
+      <button type="button" aria-label="Erhöhen" disabled={disabled} className={btn} onClick={() => set(num + step)}>+</button>
+    </div>
+  )
+}
 
 export function Feld({
-  label, value, onChange, suffix, step = 1, min, className,
+  label, value, onChange, suffix, step = 1, min, max, className, stepper,
 }: {
   label: string
   value: string
@@ -12,14 +51,20 @@ export function Feld({
   suffix?: string
   step?: number
   min?: number
+  max?: number
   className?: string
+  stepper?: boolean
 }) {
   return (
-    <label className={cn("flex flex-col gap-1 text-xs text-muted-foreground", className)}>
+    <label className={cn("flex flex-col gap-1.5", LABEL_CLASS, className)}>
       {label}
-      <div className="flex items-center gap-1.5">
-        <input type="number" min={min} step={step} value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_CLASS} />
-        {suffix && <span className="text-xs">{suffix}</span>}
+      <div className="flex items-center gap-2">
+        {stepper ? (
+          <Stepper value={value} onChange={onChange} step={step} min={min ?? 0} max={max} className="flex-1" />
+        ) : (
+          <input type="number" min={min} max={max} step={step} value={value} onChange={(e) => onChange(e.target.value)} className={cn(INPUT_CLASS, "min-w-0 flex-1")} />
+        )}
+        {suffix && <span className="text-xs normal-case tracking-normal">{suffix}</span>}
       </div>
     </label>
   )
@@ -35,12 +80,12 @@ export function SatzFeld({
   step?: number
 }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+    <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
       {label}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <input type="number" step={step} value={value} onChange={(e) => onChange(e.target.value)}
-          className={cn(INPUT_CLASS, "w-24")} />
-        <span className="text-xs">{suffix}</span>
+          className={cn(INPUT_CLASS, "w-28")} />
+        <span className="text-xs normal-case tracking-normal">{suffix}</span>
       </div>
     </label>
   )
@@ -56,7 +101,7 @@ export function Regler({
 }) {
   const num = Math.min(100, Math.max(0, Number(value) || 0))
   return (
-    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+    <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
       <div className="flex items-center justify-between">
         <span>{label}</span>
         <span className="tabular-nums text-sm font-semibold text-foreground">{num.toFixed(0)} %</span>

@@ -21,7 +21,7 @@ import {
   CY_KOEST_SATZ_OPTIONEN, DEFAULTS_ZYPERN, berechneDreiWegeSchwellenreihe, berechneZypernGruendungsVergleich,
   berechneZypernLtd, type ZypernSpezifischeEingabe,
 } from "@/lib/calc/zypernLtd"
-import { Feld, Regler, ZeilePos, INPUT_CLASS, PillGroup } from "@/components/sections/rechner/fields"
+import { Feld, Regler, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 const MIETE_PRESETS: { value: string; label: string }[] = [
@@ -145,7 +145,7 @@ export function RechtsformVergleichRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Betriebsdaten (für alle drei Rechtsformen gleich)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} />
+            <Feld label="Umsatz (€/Jahr)" value={umsatz} onChange={setUmsatz} step={1000} min={0} stepper />
             <Feld label="Betriebsausgaben ohne SV/AfA/Gehalt (€/Jahr)" value={betriebsausgaben} onChange={setBetriebsausgaben} step={500} min={0} />
             <Feld label="Sonstige AfA — Büro, Geräte etc. (€/Jahr)" value={sonstigeAfaJahr} onChange={setSonstigeAfaJahr} step={100} min={0} />
           </div>
@@ -155,7 +155,7 @@ export function RechtsformVergleichRechner() {
               <Feld label="Anschaffungswert (€)" value={autoAnschaffungswert} onChange={setAutoAnschaffungswert} step={1000} min={0} />
               <Feld label="Nutzungsdauer (Jahre, min. 8)" value={autoNutzungsdauerJahre} onChange={setAutoNutzungsdauerJahre} step={1} min={8} />
               <Feld label="Privater Nutzungsanteil (%)" value={autoPrivatanteilPct} onChange={setAutoPrivatanteilPct} step={5} suffix="%" min={0} />
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Jährliche AfA (gedeckelt bei 40.000 € Anschaffungswert)
                 <div className="text-sm text-foreground">{kreditFormatEUR(autoAfaJaehrlich(n(autoAnschaffungswert), n(autoNutzungsdauerJahre)))}/Jahr</div>
               </div>
@@ -244,7 +244,7 @@ export function RechtsformVergleichRechner() {
               hint="Als Non-Dom 0 % SDC auf Dividenden (die ersten 17 Steuerjahre) — nur 2,65 % GESY fällt an"
             />
             <Feld label="Zinssatz auf thesaurierten Gewinn (%/Jahr)" value={zypernVerzinsungThesaurierungPct} onChange={setZypernVerzinsungThesaurierungPct} step={0.5} suffix="%" min={0} />
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Zypriotischer KöSt-Satz
               <PillGroup
                 value={zypernKoeStSatzPct as never}
@@ -257,7 +257,7 @@ export function RechtsformVergleichRechner() {
           <div>
             <h4 className="mb-2 text-xs font-semibold text-muted-foreground">Wohnen (2 Personen)</h4>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Miete Zypern (€/Monat)
                 <div className="flex flex-wrap items-center gap-2">
                   <input type="number" min={0} step={50} value={mieteZypernMonat} onChange={(e) => setMieteZypernMonat(e.target.value)} className={cn(INPUT_CLASS, "w-24")} />

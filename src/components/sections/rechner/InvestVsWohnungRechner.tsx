@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { berechneInvestVsWohnung, type InvestVsWohnungEingabe } from "@/lib/calc/investVsWohnung"
-import { Feld, ZeilePos, INPUT_CLASS, PillGroup } from "@/components/sections/rechner/fields"
+import { Feld, ZeilePos, INPUT_CLASS, PillGroup, LABEL_CLASS } from "@/components/sections/rechner/fields"
 import { n } from "@/components/sections/rechner/numbers"
 
 const DEPOT_RENDITE_PRESETS = [5, 6, 7]
@@ -90,8 +90,8 @@ export function InvestVsWohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eigenmittel &amp; Zeitraum</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} min={0} />
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} step={1000} min={0} stepper />
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Anlagehorizont (Jahre)
               <div className="flex flex-wrap items-center gap-2">
                 <input type="number" min={1} max={40} step={1} value={horizontJahre}
@@ -107,7 +107,7 @@ export function InvestVsWohnungRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Szenario A — Depot</h3>
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
             Rendite (% p.a.)
             <div className="flex flex-wrap items-center gap-2">
               <input type="number" min={0} step={0.1} value={depotRenditePa} onChange={(e) => setDepotRenditePa(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />
@@ -130,8 +130,8 @@ export function InvestVsWohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Szenario B — Anlegerwohnung</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} />
-            <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} />
+            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} stepper />
+            <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} stepper />
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
             <Feld label="Leerstand/Mietausfall (%)" value={leerstandPct} onChange={setLeerstandPct} step={0.5} suffix="%" min={0} />
             <Feld label="Bewirtschaftung (€/Monat, heute)" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />
@@ -162,7 +162,7 @@ export function InvestVsWohnungRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Kredit</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Laufzeit (Jahre)
               <div className="flex flex-wrap items-center gap-2">
                 <input type="number" min={5} max={40} step={1} value={kreditLaufzeitJahre}
@@ -173,13 +173,13 @@ export function InvestVsWohnungRechner() {
               </div>
             </label>
             <Feld label="Sollzinssatz (% p.a.)" value={kreditZinsPct} onChange={setKreditZinsPct} step={0.05} suffix="%" min={0} />
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Kreditbetrag / Rate
               <div className="text-sm text-foreground">
                 {kreditFormatEUR(wohnung.kreditbetrag)} · {kreditFormatEUR(wohnung.rate)}/Monat
               </div>
             </div>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Beleihungsquote
               <div className="text-sm text-foreground">{kreditFormatPct(wohnung.beleihungsquotePct, 0)}</div>
             </div>
@@ -201,7 +201,7 @@ export function InvestVsWohnungRechner() {
               </div>
             </label>
             <Feld label="Verkaufskosten (%)" value={verkaufskostenPct} onChange={setVerkaufskostenPct} step={0.5} suffix="%" min={0} />
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               ImmoESt-Satz (%)
               <input type="number" min={0} step={1} value={immoEstPct}
                 onChange={(e) => setImmoEstPct(e.target.value)} className={cn(INPUT_CLASS, "w-20")} />

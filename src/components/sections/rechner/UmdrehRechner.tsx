@@ -6,6 +6,7 @@ import { useConfirm } from "@/hooks/useConfirm"
 import { calcUmdreh, UM_EH_ALT, UM_EH_NEU } from "@/lib/calc/umdreh"
 import { ehFormatEUR } from "@/lib/calc/eh"
 import { cn } from "@/lib/utils"
+import { INPUT_CLASS, LABEL_CLASS } from "@/components/sections/rechner/fields"
 
 // Zahlenfelder werden als Rohtext gehalten, damit das Inputfeld auch leer sein
 // kann — bei der Berechnung wird ein leeres Feld intern als 0 behandelt.
@@ -73,23 +74,23 @@ export function UmdrehRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingabe</h3>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Prämie (€)
               <input type="number" min={0} step={10} value={inputs.praemie}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => set("praemie", e.target.value)}
-                className="h-9 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+                className={INPUT_CLASS} />
             </label>
             {([
               ["Einheiten alt", "ehAlt"],
               ["Einheiten neu", "ehNeu"],
             ] as const).map(([label, key]) => (
-              <label key={key} className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label key={key} className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 {label}
                 <input type="number" min={0} step={0.01} value={inputs[key]}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => set(key, e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+                  className={INPUT_CLASS} />
               </label>
             ))}
           </div>
@@ -100,12 +101,12 @@ export function UmdrehRechner() {
               ["FK-Stufe alt (€/EH)", "fkAlt"],
               ["FK-Stufe neu (€/EH)", "fkNeu"],
             ] as const).map(([label, key]) => (
-              <label key={key} className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label key={key} className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 {label}
                 <input type="number" min={0} step={0.1} value={inputs[key]}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => set(key, e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+                  className={INPUT_CLASS} />
               </label>
             ))}
           </div>

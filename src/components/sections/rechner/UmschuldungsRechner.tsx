@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { KREDIT_DEFAULTS, kreditFormatEUR, kreditFormatPct, type KreditSaetze } from "@/lib/calc/kredit"
 import { VFE_DEFAULT_PCT, berechneUmschuldung } from "@/lib/calc/umschuldung"
-import { INPUT_CLASS, SatzFeld } from "@/components/sections/rechner/fields"
+import { INPUT_CLASS, SatzFeld, LABEL_CLASS } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 
@@ -85,22 +85,22 @@ export function UmschuldungsRechner() {
           <CardContent className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold">Bestehender Kredit</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Noch offener Betrag (€)
                 <input type="number" min={0} step={1000} value={restschuld}
                   onChange={(e) => setRestschuld(e.target.value)} className={INPUT_CLASS} />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Sollzinssatz (% p.a.)
                 <input type="number" min={0} max={20} step={0.05} value={zinsAlt}
                   onChange={(e) => setZinsAlt(e.target.value)} className={INPUT_CLASS} />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Restlaufzeit (Jahre)
                 <input type="number" min={0} max={40} step={1} value={restJahre}
                   onChange={(e) => setRestJahre(e.target.value)} className={INPUT_CLASS} />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 zusätzliche Monate
                 <input type="number" min={0} max={11} step={1} value={restMonate}
                   onChange={(e) => setRestMonate(e.target.value)} className={INPUT_CLASS} />
@@ -117,12 +117,12 @@ export function UmschuldungsRechner() {
           <CardContent className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold">Neuer Kredit</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Sollzinssatz (% p.a.)
                 <input type="number" min={0} max={20} step={0.05} value={zinsNeu}
                   onChange={(e) => setZinsNeu(e.target.value)} className={INPUT_CLASS} />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Laufzeit (Jahre)
                 <input type="number" min={1} max={40} step={1}
                   value={laufzeitNeu ?? String(Math.round(restJahreExakt * 10) / 10)}

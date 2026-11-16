@@ -13,12 +13,10 @@ import {
   berechneTilgungsplan, effektivzinsPct, kreditFormatEUR, kreditFormatPct, type KreditSaetze,
 } from "@/lib/calc/kredit"
 import { berechneTilgungstraeger } from "@/lib/calc/tilgungstraeger"
-import { PillGroup, SatzFeld } from "@/components/sections/rechner/fields"
+import { Feld, INPUT_CLASS, LABEL_CLASS, PillGroup, SatzFeld } from "@/components/sections/rechner/fields"
 
 const LAUFZEIT_PRESETS = [15, 20, 25, 30, 35]
 const PERF_PRESETS = [3, 6, 9]
-
-const INPUT_CLASS = "h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
 
 export function KreditRechner() {
   const [kaufpreis, setKaufpreis] = useState("400000")
@@ -149,28 +147,16 @@ export function KreditRechner() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Kaufpreis (€)
-              <input type="number" min={0} step={1000} value={kaufpreis}
-                onChange={(e) => setKaufpreis(e.target.value)} className={INPUT_CLASS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Eigenmittel (€)
-              <input type="number" min={0} step={1000} value={eigenmittel}
-                onChange={(e) => setEigenmittel(e.target.value)} className={INPUT_CLASS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Sollzinssatz (% p.a.)
-              <input type="number" min={0} max={20} step={0.05} value={zinssatz}
-                onChange={(e) => setZinssatz(e.target.value)} className={INPUT_CLASS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} min={0} step={1000} stepper />
+            <Feld label="Eigenmittel (€)" value={eigenmittel} onChange={setEigenmittel} min={0} step={1000} stepper />
+            <Feld label="Sollzinssatz (% p.a.)" value={zinssatz} onChange={setZinssatz} min={0} max={20} step={0.05} stepper />
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Laufzeit (Jahre)
               <div className="flex flex-wrap items-center gap-2">
                 <input type="number" min={1} max={40} step={1} value={laufzeit}
                   onChange={(e) => setLaufzeit(e.target.value)}
-                  className={cn(INPUT_CLASS, "w-20")} />
+                  className={cn(INPUT_CLASS, "w-24")} />
                 <div className="flex flex-wrap gap-1.5">
                   {LAUFZEIT_PRESETS.map((p) => (
                     <button key={p} type="button" onClick={() => setLaufzeit(String(p))}
@@ -209,22 +195,18 @@ export function KreditRechner() {
               wie der Kredit. Zeigt, ab wann das Guthaben die Restschuld übersteigt.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Sparrate (€/Monat)
-              <input type="number" min={0} step={25} value={sparrate} placeholder="z. B. 300"
-                onChange={(e) => setSparrate(e.target.value)} className={INPUT_CLASS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Feld label="Sparrate (€/Monat)" value={sparrate} onChange={setSparrate} min={0} step={25} stepper />
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               <span className="flex items-center gap-1.5">
                 <input type="checkbox" checked={dynamikAn} onChange={(e) => setDynamikAn(e.target.checked)} className="size-4" />
                 Dynamik p.a. (%)
               </span>
               <input type="number" min={0} step={0.5} value={dynamikPct} disabled={!dynamikAn}
                 onChange={(e) => setDynamikPct(e.target.value)}
-                className={cn(INPUT_CLASS, "w-24 disabled:opacity-50")} />
+                className={cn(INPUT_CLASS, "w-28")} />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2 lg:col-span-2">
+            <label className={cn("flex flex-col gap-1.5 sm:col-span-2 lg:col-span-2", LABEL_CLASS)}>
               Performance (% p.a.)
               <div className="flex flex-wrap items-end gap-3">
                 <PillGroup
@@ -233,7 +215,7 @@ export function KreditRechner() {
                   onChange={(v) => selectPerfPreset(Number(v))}
                 />
                 <input type="number" step={0.1} placeholder="eigene, z. B. 5,5" value={customPerf}
-                  onChange={(e) => onCustomPerf(e.target.value)} className={cn(INPUT_CLASS, "w-32")} />
+                  onChange={(e) => onCustomPerf(e.target.value)} className={cn(INPUT_CLASS, "w-40")} />
               </div>
             </label>
           </div>

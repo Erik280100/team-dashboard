@@ -88,7 +88,7 @@ export function HoldingImmobilienRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Kapitalherkunft</h3>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Feld label="Verfügbarer Gewinn vor Steuer (€)" value={verfuegbarerGewinnVorSteuer} onChange={setVerfuegbarerGewinnVorSteuer} step={5000} min={0} />
+            <Feld label="Verfügbarer Gewinn vor Steuer (€)" value={verfuegbarerGewinnVorSteuer} onChange={setVerfuegbarerGewinnVorSteuer} step={5000} min={0} stepper />
             <Feld label="Grenzsteuersatz Einzelunternehmer (%)" value={euGrenzsteuersatzPct} onChange={setEuGrenzsteuersatzPct} step={1} suffix="%" min={0} />
             <Feld label="Grenzsteuersatz auf laufende Vermietungseinkünfte, privat (%)" value={grenzsteuersatzVermietungPct} onChange={setGrenzsteuersatzVermietungPct} step={1} suffix="%" min={0} />
           </div>
@@ -107,8 +107,8 @@ export function HoldingImmobilienRechner() {
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Immobilie (zur Vermietung)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} />
-            <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} />
+            <Feld label="Kaufpreis (€)" value={kaufpreis} onChange={setKaufpreis} step={5000} min={0} stepper />
+            <Feld label="Miete (€/Monat)" value={mieteMonat} onChange={setMieteMonat} step={25} min={0} stepper />
             <Feld label="Mietindexierung (% p.a.)" value={indexierungPct} onChange={setIndexierungPct} step={0.1} suffix="%" />
             <Feld label="Leerstand/Mietausfall (%)" value={leerstandPct} onChange={setLeerstandPct} step={0.5} suffix="%" min={0} />
             <Feld label="Bewirtschaftung (€/Monat, heute)" value={bewirtschaftungMonat} onChange={setBewirtschaftungMonat} step={5} min={0} />

@@ -6,6 +6,7 @@ import { Bar } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { Feld, INPUT_CLASS, LABEL_CLASS } from "@/components/sections/rechner/fields"
 import {
   ENTNAHME_BIS_ALTER, ERWERBSBEGINN_ALTER, FLV_VERSICHERUNGSSTEUER, KOSTEN_PA, PENSION_PROFILE, berechnePension,
   type PensionInput, type RisikoProfil,
@@ -15,9 +16,6 @@ import { RR_PRODUCT_COLORS, rrFormatEUR } from "@/lib/calc/rendite"
 const COLOR_STAAT = "#4FC3D9"
 const COLOR_LUECKE = "#E2685B"
 const COLOR_WUNSCH = "#E7A94C"
-
-const INPUT_CLS =
-  "h-8 w-28 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm"
 
 const fmtPct = (x: number) => (x * 100).toFixed(2).replace(".", ",").replace(/0$/, "").replace(/,$/, "") + " %"
 
@@ -122,37 +120,13 @@ export function PensionsRechner() {
         <CardContent>
          <form className="flex flex-col gap-4" onSubmit={berechnen}>
           <h3 className="text-sm font-semibold">Eingaben</h3>
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Aktuelles Alter
-              <input type="number" min={16} max={80} step={1} value={alter}
-                onChange={(e) => setAlter(e.target.value)} className={INPUT_CLS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Gewünschtes Pensionsalter
-              <input type="number" min={50} max={ENTNAHME_BIS_ALTER - 1} step={1} value={pensionsalter}
-                onChange={(e) => setPensionsalter(e.target.value)} className={INPUT_CLS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Aktuelles Nettoeinkommen (€/Monat)
-              <input type="number" min={0} step={100} value={netto}
-                onChange={(e) => setNetto(e.target.value)} className={INPUT_CLS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Gewünschte Pension (€/Monat)
-              <input type="number" min={0} step={100} value={wunsch}
-                onChange={(e) => setWunsch(e.target.value)} className={INPUT_CLS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Inflation (% p.a.)
-              <input type="number" min={0} step={0.1} value={inflation}
-                onChange={(e) => setInflation(e.target.value)} className={INPUT_CLS} />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Lebenserwartung (Entnahme bis Alter)
-              <input type="number" min={60} max={110} step={1} value={entnahmeBis}
-                onChange={(e) => setEntnahmeBis(e.target.value)} className={INPUT_CLS} />
-            </label>
+          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+            <Feld label="Aktuelles Alter" value={alter} onChange={setAlter} min={16} max={80} step={1} stepper />
+            <Feld label="Gewünschtes Pensionsalter" value={pensionsalter} onChange={setPensionsalter} min={50} max={ENTNAHME_BIS_ALTER - 1} step={1} stepper />
+            <Feld label="Aktuelles Nettoeinkommen (€/Monat)" value={netto} onChange={setNetto} min={0} step={100} stepper />
+            <Feld label="Gewünschte Pension (€/Monat)" value={wunsch} onChange={setWunsch} min={0} step={100} stepper />
+            <Feld label="Inflation (% p.a.)" value={inflation} onChange={setInflation} min={0} step={0.1} stepper />
+            <Feld label="Lebenserwartung (Entnahme bis Alter)" value={entnahmeBis} onChange={setEntnahmeBis} min={60} max={110} step={1} stepper />
           </div>
           <div className="flex flex-col gap-1.5">
             <div className="text-xs text-muted-foreground">Risikoprofil</div>
@@ -170,10 +144,10 @@ export function PensionsRechner() {
                   {PENSION_PROFILE[k].label} · {fmtPct(PENSION_PROFILE[k].rendite)} p.a.
                 </button>
               ))}
-              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <label className={cn("flex items-center gap-2", LABEL_CLASS)}>
                 oder eigene Rendite (% p.a.)
                 <input type="number" min={0} max={20} step={0.1} placeholder="z. B. 5,5" value={eigeneRendite}
-                  onChange={(e) => setEigeneRendite(e.target.value)} className={INPUT_CLS} />
+                  onChange={(e) => setEigeneRendite(e.target.value)} className={cn(INPUT_CLASS, "w-32")} />
               </label>
             </div>
           </div>

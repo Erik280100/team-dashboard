@@ -5,6 +5,7 @@ import { Line } from "react-chartjs-2"
 import type { Plugin } from "chart.js"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { INPUT_CLASS, LABEL_CLASS, Stepper } from "@/components/sections/rechner/fields"
 import {
   RR_FLATEX_ORDER_EUR, RR_FLATEX_TER_PA_PCT, RR_PRODUCT_COLORS, rrFormatAxis, rrFormatEUR, rrMaxEntnahme,
   simulateFLVVerlauf, simulateFondsdepotVerlauf,
@@ -52,31 +53,6 @@ function ProductDot({ colorKey }: { colorKey: RRProductKey }) {
 
 function productCardStyle(colorKey: RRProductKey): CSSProperties {
   return { borderTopColor: RR_PRODUCT_COLORS[colorKey].line, borderTopWidth: 3 }
-}
-
-function Stepper({
-  value, onChange, step, id, disabled,
-}: {
-  value: string
-  onChange: (v: string) => void
-  step: number
-  id: string
-  disabled?: boolean
-}) {
-  const numValue = Number(value) || 0
-  return (
-    <div className="flex items-center gap-1">
-      <button type="button" disabled={disabled} className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-        onClick={() => onChange(String(Math.max(0, numValue - step)))}>−</button>
-      <input
-        id={id} type="number" min={0} step={step} value={value} disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-center text-sm tabular-nums disabled:opacity-40 disabled:cursor-not-allowed"
-      />
-      <button type="button" disabled={disabled} className="flex size-8 items-center justify-center rounded-md border text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-        onClick={() => onChange(String(numValue + step))}>+</button>
-    </div>
-  )
 }
 
 export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermögensverwaltung sind nur für Admins sichtbar. */ isAdmin?: boolean }) {
@@ -270,26 +246,26 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
         <CardContent className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold">Eingaben</h3>
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               <label htmlFor="rrMonat">Monatliche Einzahlung (€)</label>
               <Stepper id="rrMonat" value={monat} onChange={setMonat} step={25} />
             </div>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Laufzeit (Jahre)
               <input type="number" min={jahreMin} max={jahreMax} step={1} value={jahre}
                 onChange={(e) => setJahre(e.target.value)}
-                className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+                className={cn(INPUT_CLASS, "w-28")} />
             </label>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               <label className="flex items-center gap-1.5">
                 <input type="checkbox" checked={waEnabled} onChange={(e) => setWaEnabled(e.target.checked)} className="size-4" />
                 Wertanpassung p.a. (%)
               </label>
               <input type="number" min={0} step={0.5} value={waPct} disabled={!waEnabled}
                 onChange={(e) => setWaPct(e.target.value)}
-                className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm disabled:opacity-50" />
+                className={cn(INPUT_CLASS, "w-28")} />
             </div>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               <label className="flex items-center gap-1.5">
                 <input type="checkbox" checked={entnahmeEnabled}
                   onChange={(e) => setEntnahmeEnabled(e.target.checked)} className="size-4 disabled:opacity-50" />
@@ -300,10 +276,10 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
                 <input id="rrEntnahmeJahre" type="number" min={1} max={50} step={1} value={entnahmeJahre}
                   disabled={!entnahmeEnabled}
                   onChange={(e) => setEntnahmeJahre(e.target.value)}
-                  className="h-8 w-24 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm disabled:opacity-50" />
+                  className={cn(INPUT_CLASS, "w-28")} />
               </label>
             </div>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <div className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               <label htmlFor="rrEntnahmeMonat">Monatliche Entnahme (€, netto)</label>
               <Stepper id="rrEntnahmeMonat" value={entnahmeMonatEingabe} onChange={setEntnahmeMonatEingabe} step={100}
                 disabled={!entnahmeEnabled} />
@@ -315,11 +291,11 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
               options={PERF_PRESETS.map((p) => ({ value: String(p) as never, label: `${p} %` }))}
               onChange={(v) => selectPerfPreset(Number(v))}
             />
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               Eigene Performance (% p.a.)
               <input type="number" step={0.1} placeholder="z. B. 5,5" value={customPerf}
                 onChange={(e) => onCustomPerf(e.target.value)}
-                className="h-8 w-32 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+                className={cn(INPUT_CLASS, "w-36")} />
             </label>
           </div>
         </CardContent>
@@ -329,11 +305,11 @@ export function RenditeRechner({ isAdmin = false }: { /** Fondssparer und Vermö
         <Card style={productCardStyle("fondsdepot")}>
           <CardContent className="flex flex-col gap-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold"><ProductDot colorKey="fondsdepot" />Depot</h3>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
               agE-/Dividendenrendite (% p.a.)
               <input type="number" min={0} step={0.1} value={ageRendite}
                 onChange={(e) => setAgeRendite(e.target.value)}
-                className="h-8 w-32 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm" />
+                className={cn(INPUT_CLASS, "w-36")} />
             </label>
             <div className="text-[10.5px] font-bold uppercase tracking-wide text-[#64DDA3]">KESt-pflichtig (27,5 %)</div>
           </CardContent>

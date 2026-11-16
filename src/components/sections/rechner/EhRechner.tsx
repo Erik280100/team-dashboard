@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
 import { DARK_CARD, DARK_OPTION, DARK_SELECT, DARK_TILE } from "@/components/ui/dark"
 import { cn } from "@/lib/utils"
+import { INPUT_CLASS, LABEL_CLASS } from "@/components/sections/rechner/fields"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
@@ -28,7 +29,7 @@ const GROUP_ACCENT: Record<EhGroup["id"], string> = {
 }
 
 /** Eingabefelder auf den dunklen Gruppenkarten. */
-const EH_INPUT = "rounded-md border border-white/35 bg-white/[.12] text-white placeholder:text-white/65 [color-scheme:dark] transition-colors focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25"
+const EH_INPUT = "rounded-lg border border-white/35 bg-white/[.12] text-white placeholder:text-white/65 [color-scheme:dark] transition-colors focus:outline-none focus:border-[#64DDA3] focus:ring-2 focus:ring-[#64DDA3]/25"
 
 function defaultG(): Record<string, string> {
   const g: Record<string, string> = {}
@@ -141,7 +142,7 @@ export function EhRechner({
                   {it.gLabel} ({it.gUnit})
                   <input
                     type="number" min={0} step={1} max={it.gMax}
-                    className={cn("h-8 w-20 px-2 text-sm", EH_INPUT)}
+                    className={cn("h-11 w-24 px-3 text-base text-center tabular-nums", EH_INPUT)}
                     value={g[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setG((s) => ({ ...s, [it.id]: e.target.value }))}
@@ -151,13 +152,13 @@ export function EhRechner({
                 <div />
               )}
               {it.disabled ? (
-                <input type="text" disabled value={it.disabledNote} className="h-8 w-28 rounded-md border border-white/15 bg-white/5 px-2 text-sm text-white/70" />
+                <input type="text" disabled value={it.disabledNote} className="h-11 w-32 rounded-lg border border-white/15 bg-white/5 px-3 text-base text-white/70" />
               ) : (
                 <label className="flex flex-col gap-1 text-xs text-white/90">
                   {it.jLabel}
                   <input
                     type="number" min={0} step={10}
-                    className={cn("h-8 w-28 px-2 text-sm", EH_INPUT)}
+                    className={cn("h-11 w-32 px-3 text-base text-center tabular-nums", EH_INPUT)}
                     value={j[it.id] ?? ""}
                     onFocus={(e) => e.target.select()}
                     onChange={(e) => setJ((s) => ({ ...s, [it.id]: e.target.value }))}
@@ -190,7 +191,7 @@ export function EhRechner({
             </label>
             <input
               type="number" min={0} step={0.5}
-              className={cn("ml-2 h-7 w-16 shrink-0 px-2 text-[12.5px]", EH_INPUT)}
+              className={cn("ml-2 h-9 w-20 shrink-0 px-2 text-sm text-center", EH_INPUT)}
               value={mult[group.id] ?? ""}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setMult((s) => ({ ...s, [group.id]: e.target.value }))}
@@ -318,11 +319,11 @@ export function EhRechner({
               </div>
             )}
             {sales.length > 0 && (
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <label className={cn("flex flex-col gap-1.5", LABEL_CLASS)}>
                 Name des Kunden (optional, gilt für alle Produkte)
                 <input
                   type="text"
-                  className="h-8 rounded-md border border-input bg-background focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/25 transition-colors px-2 text-sm text-foreground"
+                  className={INPUT_CLASS}
                   value={kunde}
                   onChange={(e) => setKunde(e.target.value)}
                 />
