@@ -393,12 +393,12 @@
   border-color: rgba(255, 255, 255, 0.1);
   background: linear-gradient(160deg, #16323f 0%, #0b1f2a 100%);
 }
-.calc-dark input[type="number"] {
+.calc-dark input[type="number"]:not(.num-spin) {
   -moz-appearance: textfield;
   appearance: textfield;
 }
-.calc-dark input[type="number"]::-webkit-inner-spin-button,
-.calc-dark input[type="number"]::-webkit-outer-spin-button {
+.calc-dark input[type="number"]:not(.num-spin)::-webkit-inner-spin-button,
+.calc-dark input[type="number"]:not(.num-spin)::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }

@@ -191,7 +191,7 @@ export function EhRechner({
             </label>
             <input
               type="number" min={0} step={0.5}
-              className={cn("ml-2 h-9 w-20 shrink-0 px-2 text-sm text-center", EH_INPUT)}
+              className={cn("num-spin ml-2 h-9 w-20 shrink-0 px-2 text-sm text-center", EH_INPUT)}
               value={mult[group.id] ?? ""}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setMult((s) => ({ ...s, [group.id]: e.target.value }))}
