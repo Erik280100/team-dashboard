@@ -12,7 +12,7 @@ export const DARK_INPUT = "border-white/35 bg-white/[.12] text-white placeholder
 
 export const DARK_SELECT = "border-white/35 bg-white/[.12] text-white [&>svg]:text-white/80"
 /** Option-Elemente bleiben auf hellem Popup-Hintergrund lesbar. */
-export const DARK_OPTION = "text-foreground"
+export const DARK_OPTION = "bg-white text-[#0b1f2a]"
 export const DARK_TILE = "rounded-[12px] border border-white/10 bg-white/[.04]"
 
 export const DARK_TABLE = {
