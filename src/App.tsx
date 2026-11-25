@@ -7,6 +7,7 @@
 // Komponente von ConfirmProvider statt in App (analog dazu, wie Kalender.tsx
 // useConfirm() bereits als Kind-Komponente nutzt).
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react"
+import { PillTabs } from "@/components/ui/dark"
 import { AlarmClock, ChevronDown } from "lucide-react"
 import { ConfirmProvider, useConfirm } from "@/hooks/useConfirm"
 import { isGstOrHigher, PLAN_IDS, sbFind, sbRoster, sbScopedTree, withDefaultPlanRates, type PlanId } from "@/lib/calc/struktur"
@@ -56,7 +57,6 @@ const Training = lazy(() => import("@/components/sections/Training").then((m) =>
 const Finanzierungen = lazy(() => import("@/components/sections/Finanzierungen").then((m) => ({ default: m.Finanzierungen })))
 const Partner = lazy(() => import("@/components/sections/Partner").then((m) => ({ default: m.Partner })))
 const MeinBoard = lazy(() => import("@/components/sections/MeinBoard").then((m) => ({ default: m.MeinBoard })))
-const Konten = lazy(() => import("@/components/sections/Konten").then((m) => ({ default: m.Konten })))
 const Einstellungen = lazy(() => import("@/components/sections/Einstellungen").then((m) => ({ default: m.Einstellungen })))
 const StrukturBaum = lazy(() => import("@/components/sections/struktur/StrukturBaum").then((m) => ({ default: m.StrukturBaum })))
 const Statistik = lazy(() => import("@/components/sections/Statistik").then((m) => ({ default: m.Statistik })))
@@ -75,14 +75,34 @@ function preloadSections() {
     () => import("@/components/sections/Guide"), () => import("@/components/sections/Kalender"),
     () => import("@/components/sections/Training"), () => import("@/components/sections/Finanzierungen"),
     () => import("@/components/sections/Partner"), () => import("@/components/sections/MeinBoard"),
-    () => import("@/components/sections/Konten"), () => import("@/components/sections/Einstellungen"),
+    () => import("@/components/sections/Einstellungen"),
     () => import("@/components/sections/struktur/StrukturBaum"), () => import("@/components/sections/Statistik"),
     () => import("@/components/sections/Planung"), () => import("@/components/sections/Umsatz"),
   ]
   for (const load of loaders) load().catch(() => { /* nur Vorladen — beim echten Öffnen greift die normale Fehlerbehandlung */ })
 }
 
-const SECTION_LABELS: Record<SectionId, string> = {
+/** Strukturbaum und Karrierepläne teilen sich einen Sidebar-Punkt; dieser Umschalter wechselt zwischen den beiden Sektionen. */
+type StrukturView = "struktur" | "me" | "plans"
+function StrukturTabs({ section, view, onChange, className }: {
+  section: SectionId; view: "me" | "plans"; onChange: (s: SectionId, v: "me" | "plans") => void; className?: string
+}) {
+  const value: StrukturView = section === "karriere" ? view : "struktur"
+  return (
+    <PillTabs
+      className={className}
+      tabs={[
+        { id: "struktur" as const, label: "Strukturbaum" },
+        { id: "me" as const, label: "Mein Karrierestand" },
+        { id: "plans" as const, label: "Karrierepläne" },
+      ]}
+      value={value}
+      onChange={(v) => (v === "struktur" ? onChange("struktur", view) : onChange("karriere", v))}
+    />
+  )
+}
+
+const SECTION_LABELS:Record<SectionId, string> = {
   overview: "Dashboard",
   team: "Mitarbeiter",
   struktur: "Strukturbaum",
@@ -129,6 +149,8 @@ function ArchiveStatusCard({
 function AppShell({ auth }: { auth: UseAuthResult }) {
   const confirm = useConfirm()
   const { section, navigateTo } = useHashSection()
+  const [karriereView, setKarriereView] = useState<"me" | "plans">("me")
+  const switchStruktur = (s: SectionId, v: "me" | "plans") => { setKarriereView(v); navigateTo(s) }
   useEffect(() => {
     const id = window.setTimeout(preloadSections, 1500) // erst nachdem die erste Sektion angezeigt wird
     return () => window.clearTimeout(id)
@@ -630,7 +652,10 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 />
               )}
               {section === id && id === "karriere" && (
-                <Karriere merged={merged} planRates={withDefaultPlanRates(orgChart.planRates)} myName={myName} />
+                <div className="flex flex-col gap-4">
+                  <StrukturTabs section={section} view={karriereView} onChange={switchStruktur} />
+                  <Karriere merged={merged} planRates={withDefaultPlanRates(orgChart.planRates)} myName={myName} view={karriereView} />
+                </div>
               )}
               {section === id && id === "guide" && <Guide />}
               {section === id && id === "kalender" && (
@@ -687,6 +712,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   isAdmin={seesAll}
                 />
               )}
+              {section === id && id === "struktur" && <StrukturTabs section={section} view={karriereView} onChange={switchStruktur} className="mb-4" />}
               {section === id && id === "struktur" && (
                 archiveLoading ? (
                   <ArchiveStatusCard month={archiveMonth!} errored={archiveErrored} onBack={() => setArchiveMonth(null)} />
@@ -704,8 +730,7 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                 )
               )}
               {section === id && id === "statistik" && (seesAll || auth.isLead) && <Statistik archive={archive} />}
-              {section === id && id === "konten" && seesAll &&<Konten employees={dashboard.employees} readOnly={auth.isViewer} />}
-              {section === id && id === "einstellungen" && <Einstellungen auth={auth} name={myName} avatarVersion={dashboard.employees.find((e) => e.id === auth.employeeId)?.avatarVersion} />}
+              {section === id && id === "einstellungen" && <Einstellungen auth={auth} name={myName} avatarVersion={dashboard.employees.find((e) => e.id === auth.employeeId)?.avatarVersion} employees={dashboard.employees} showKonten={seesAll} />}
             </section>
           ))}
           </Suspense>

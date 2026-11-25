@@ -122,16 +122,19 @@ interface KarriereProps {
   merged: MergedRow[]
   planRates: Record<PlanId, Record<string, number>>
   myName?: string
+  /** Gesetzt: die Reiter liegen außerhalb (Strukturbaum-Seite), hier wird nur die gewählte Ansicht gezeigt. */
+  view?: "me" | "plans"
 }
 
-/** Reiter "Mein Karrierestand" (persönlich) und die Karrierepläne. */
-export function Karriere({ merged, planRates, myName }: KarriereProps) {
+/** "Mein Karrierestand" (persönlich) und die Karrierepläne. */
+export function Karriere({ merged, planRates, myName, view }: KarriereProps) {
   const [tab, setTab] = useState<"me" | "plans">("me")
   const tabs = [{ id: "me", label: "Mein Karrierestand" }, { id: "plans", label: "Karrierepläne" }] as const
+  const current = view ?? tab
   return (
     <div className="flex flex-col gap-4">
-      <PillTabs tabs={[...tabs]} value={tab} onChange={setTab} />
-      {tab === "me" ? <MeinKarrierestand merged={merged} planRates={planRates} myName={myName} /> : <KarrierePlaene />}
+      {!view && <PillTabs tabs={[...tabs]} value={tab} onChange={setTab} />}
+      {current === "me" ? <MeinKarrierestand merged={merged} planRates={planRates} myName={myName} /> : <KarrierePlaene />}
     </div>
   )
 }

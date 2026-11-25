@@ -1,7 +1,7 @@
 // Hauptnavigation — Äquivalent zur .sidebar-Nav aus der früheren Einzeldatei-App.
 import {
-  LayoutDashboard, Users, Network, BarChart3, CalendarRange, Calculator, TrendingUp, BookOpen, Calendar, Landmark, Link2, X,
-  KanbanSquare, Dumbbell, UserCog, Settings, FilePlus2, ExternalLink, Receipt,
+  LayoutDashboard, Users, Network, BarChart3, CalendarRange, Calculator, BookOpen, Calendar, Landmark, Link2, X,
+  KanbanSquare, Dumbbell, Settings, FilePlus2, ExternalLink, Receipt,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -15,11 +15,9 @@ const NAV_ITEMS: { id: SectionId; label: string; icon: LucideIcon; access?: "adm
   { id: "umsatz", label: "Umsatzverfolgung", icon: Receipt },
   { id: "finanzierungen", label: "Finanzierungen", icon: Landmark },
   { id: "struktur", label: "Strukturbaum", icon: Network },
-  { id: "karriere", label: "Karrierepläne", icon: TrendingUp },
   { id: "kalender", label: "Anwesenheitsliste", icon: Calendar },
   { id: "training", label: "Training", icon: Dumbbell },
   { id: "statistik", label: "Statistik", icon: BarChart3, access: "lead" },
-  { id: "konten", label: "Konten", icon: UserCog, access: "admin" },
 ]
 
 /** Untere Gruppe (über "Neue Analyse starten" und "Mein Board"). */
@@ -57,7 +55,8 @@ export function Sidebar({
   )
   const renderItem = (item: (typeof NAV_ITEMS)[number]) => {
     const Icon = item.icon
-    const active = section === item.id
+    // Karrierepläne liegen als Tab unter "Strukturbaum" und halten dessen Eintrag aktiv.
+    const active = section === item.id || (item.id === "struktur" && section === "karriere")
     return (
       <button
         key={item.id}
