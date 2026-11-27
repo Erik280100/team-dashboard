@@ -38,7 +38,7 @@ export interface PartnerCompany {
  * (abgeschnitten/verdoppelt), daher wird der Link aus dem Anzeigetext
  * abgeleitet statt übernommen. */
 export function telHref(label: string): string {
-  const digitsAndPlus = label.replace(/[^\d+]/g, "")
+  const digitsAndPlus = label.replace(/\(0\)/g, "").replace(/[^\d+]/g, "")
   if (digitsAndPlus.startsWith("00")) return `+${digitsAndPlus.slice(2)}`
   if (digitsAndPlus.startsWith("+")) return digitsAndPlus
   if (digitsAndPlus.startsWith("0")) return `+43${digitsAndPlus.slice(1)}`
@@ -88,6 +88,7 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
           { kind: "tel", label: "004940 226 337 – 854" },
           { kind: "mobil", label: "0043 664 310 76 70" },
         ],
+        emails: ["c.moser@allcura-versicherung.at"],
       },
     ],
   },
@@ -122,6 +123,13 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
           { kind: "tel", label: "059009588", note: "Gesundheitsversicherung" },
           { kind: "tel", label: "059009581", note: "Gewerbeversicherung" },
         ],
+        emails: [
+          "maklerschaden@allianz.at",
+          "invoicing.at@allianz.com",
+          "person@allianz.at",
+          "gesundheitsversicherung@allianz.at",
+          "salessupport@allianz.at",
+        ],
       },
     ],
   },
@@ -142,9 +150,31 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["katja.gruenstetter@arag.at"],
       },
       {
+        name: "Angebote",
+        phones: [{ kind: "tel", label: "01 531 02 1450" }],
+        emails: ["offerte@arag.at"],
+      },
+      {
         name: "Allgemeine Anfragen",
         phones: [{ kind: "tel", label: "01531021600" }],
         emails: ["info@arag.at"],
+      },
+    ],
+  },
+  {
+    id: "cp-immobilien", name: "C&P Immobilien", initials: "CP",
+    legalName: "C&P Immobilien AG · Brauquartier 11, Top 1, 8055 Graz",
+    badge: "Immobilien", sparten: ["sonstige"],
+    description: "Immobilien als Kapitalanlage.",
+    contacts: [
+      {
+        name: "Alexander Grassl",
+        phones: [{ kind: "mobil", label: "+43 664 927 77 86" }],
+        emails: ["a.grassl@cp-ag.at"],
+      },
+      {
+        name: "Zentrale",
+        phones: [{ kind: "tel", label: "+43 5 0464 0" }],
       },
     ],
   },
@@ -174,8 +204,13 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       },
       {
         name: "Stefan Jungwirth", role: "Backoffice",
-        phones: [{ kind: "tel", label: "015123352" }],
+        phones: [{ kind: "tel", label: "01 512 33 52 11" }],
         emails: ["stefan-jungwirth@continentale.at"],
+      },
+      {
+        name: "Allgemeine Anfragen",
+        phones: [{ kind: "tel", label: "015123352" }],
+        emails: ["office@continentale.at"],
       },
     ],
   },
@@ -189,6 +224,51 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         name: "Martin Prandl", role: "Key Account Manager",
         phones: [{ kind: "mobil", label: "+43 664 3210 268" }],
         emails: ["martin.prandl@corum-am.com"],
+      },
+    ],
+  },
+  {
+    id: "diem", name: "Diem Client Partner", initials: "DC",
+    legalName: "Diem Client Partner AG · Dianastraße 5, CH-8002 Zürich",
+    badge: "Asset Mgmt", sparten: ["sonstige"],
+    description: "Vermögensverwaltung. Website: clientpartner.ch",
+    contacts: [
+      {
+        name: "Sascha Peier", role: "CEO & Partner",
+        phones: [{ kind: "tel", label: "+41 438885583" }],
+        emails: ["s.peier@clientpartner.ch"],
+      },
+      {
+        name: "Gabriel Uyumaz", role: "Fixed Income Analyst",
+        phones: [{ kind: "tel", label: "+41 438885534" }],
+        emails: ["g.uyumaz@clientpartner.ch"],
+      },
+    ],
+  },
+  {
+    id: "easybank", name: "easybank", initials: "EB",
+    legalName: "easybank Service Center · Wiedner Gürtel 11, 1100 Wien",
+    badge: "Bank", sparten: ["sonstige"],
+    description: "Bank- und Wertpapierservices. Website: easybank.at",
+    contacts: [
+      {
+        name: "Service Center",
+        phones: [{ kind: "tel", label: "+43 (0) 570 05 – 500" }],
+        emails: [
+          "easy@easybank.at",
+          "brokerage@easybank.at",
+        ],
+      },
+      {
+        name: "Wertpapierservices",
+        phones: [
+          { kind: "tel", label: "+43 662 2070 255" },
+          { kind: "tel", label: "+43 662 2070 270" },
+        ],
+        emails: [
+          "b2b@easybank.at",
+          "orderb2b@easybank.at",
+        ],
       },
     ],
   },
@@ -212,9 +292,12 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["manuel.gassner@ergo-versicherung.at"],
       },
       {
-        name: "Elisabeth Hinterleitner", role: "Vetriebszentrale Steiermark",
+        name: "Elisabeth Hinterleitner", role: "Vertriebszentrale Steiermark",
         phones: [{ kind: "tel", label: "+43/316/712 207 – 4262" }],
-        emails: ["elisabeth.hinterleitner@ergo-versicherung.at"],
+        emails: [
+          "elisabeth.hinterleitner@ergo-versicherung.at",
+          "vz.graz@ergo-versicherung.at",
+        ],
       },
       {
         name: "Makler ServiceLine / Schaden / Rechtsberatung",
@@ -222,6 +305,24 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
           { kind: "tel", label: "+43 127444-6440", note: "Schaden / ServiceLine" },
           { kind: "tel", label: "0800 224422", note: "Rechtsberatung & Inkasso" },
         ],
+        emails: [
+          "makler@ergo-versicherung.at",
+          "rechtsberatung@ergo-versicherung.at",
+          "rs.inkasso@ergo-versicherung.at",
+        ],
+      },
+      {
+        name: "Backoffice / Vertragsservice",
+        phones: [{ kind: "tel", label: "+43 127444-6580", note: "Anträge" }],
+        emails: [
+          "antraege@ergo-versicherung.at",
+          "kundenservice@ergo-versicherung.at",
+        ],
+      },
+      {
+        name: "IT-Unterstützung & Portal",
+        phones: [{ kind: "tel", label: "+43 127444-6666" }],
+        emails: ["it-servicedesk@ergo-versicherung.at"],
       },
     ],
   },
@@ -232,9 +333,9 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     description: "KFZ- und Sachversicherungen.",
     contacts: [
       {
-        name: "Rene Tretnik", role: "Maklerbetreuer",
+        name: "Rene Dretnik", role: "Maklerbetreuer",
         phones: [{ kind: "mobil", label: "0664-888-106-52" }],
-        emails: ["rene.tretnik@euroherc.at"],
+        emails: ["rene.dretnik@euroherc.at"],
       },
       {
         name: "Allgemeine Anfragen Graz",
@@ -256,7 +357,24 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       {
         name: "Serviceteam Österreich",
         phones: [{ kind: "tel", label: "0800 20 40 74" }],
-        emails: ["team-AUT@dialog-leben.at"],
+        emails: [
+          "team-AUT@dialog-leben.at",
+          "info@dialog-leben.at",
+          "angebote@dialog-leben.at",
+        ],
+      },
+      {
+        name: "Fachabteilungen",
+        phones: [
+          { kind: "tel", label: "+49 821 319-1270", note: "Eingereichte Anträge" },
+          { kind: "tel", label: "+49 821 319-1280", note: "Bestand & Beitragszahlung" },
+          { kind: "tel", label: "+49 821 319-1144", note: "Leistungsbearbeitung" },
+          { kind: "tel", label: "+49 821 319-0", note: "Verkaufsunterlagen, Anträge, AVB" },
+        ],
+        emails: [
+          "leistung@dialog-leben.at",
+          "material@dialog-leben.at",
+        ],
       },
     ],
   },
@@ -268,22 +386,23 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     contacts: [
       {
         name: "Iris Bründlinger", role: "Regionale Vertriebsmanagerin",
-        phones: [{ kind: "tel", label: "050 330-78006" }],
+        phones: [
+          { kind: "tel", label: "050 330-78006" },
+          { kind: "mobil", label: "+43 664 8402644" },
+        ],
         emails: ["i.bruendlinger@donauversicherung.at"],
       },
       {
         name: "Andreas Kornpointner", role: "Lebensversicherung",
-        phones: [{ kind: "tel", label: "0664/60139-72108" }],
+        phones: [{ kind: "mobil", label: "0664/60139-72108" }],
         emails: ["a.kornpointner@donauversicherung.at"],
       },
       {
-        name: "Thomas Kurz", role: "Allgemeine Anfragen Graz",
-        phones: [{ kind: "tel", label: "Tel: 05033073805" }],
-        emails: ["t.kurz@donauversicherung.at"],
-      },
-      {
-        name: "Backoffice Salzburg",
-        emails: ["makler.sbg@donauversicherung.at", "schaden@donauversicherung.at"],
+        name: "Backoffice Salzburg / Allgemeine Anfragen",
+        emails: [
+          "makler.sbg@donauversicherung.at",
+          "schaden@donauversicherung.at",
+        ],
       },
     ],
   },
@@ -315,22 +434,21 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["jakob.kostmann@generali.com"],
       },
       {
-        name: "Daniel Schmidt", role: "Maklerbetreuer",
+        name: "Kundenservice",
         phones: [
-          { kind: "mobil", label: "+43 (664) 780 036 85" },
-          { kind: "tel", label: "+43 316/782-652" },
+          { kind: "tel", label: "+43 316 80560", note: "Steiermark" },
+          { kind: "tel", label: "+43 463 58290", note: "Kärnten" },
         ],
-        emails: ["daniel.schmidt@uniqa.at"],
-      },
-      {
-        name: "ALLE Anfragen",
-        emails: ["partnerservice.sued@uniqa.at"],
+        emails: [
+          "uav.stmk.at@generali.com",
+          "uav.ktn.at@generali.com",
+        ],
       },
     ],
   },
   {
     id: "golden-gates", name: "Golden Gates Austria", initials: "GG",
-    legalName: "Golden Gates Austria · 5020 Salzburg",
+    legalName: "Golden Gates Austria · Eberhard-Fugger-Straße 21, 5020 Salzburg",
     badge: "Leben / Vorsorge", sparten: ["leben"],
     description: "Personenversicherungen und betriebliche Altersvorsorge.",
     contacts: [
@@ -359,16 +477,26 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     contacts: [
       {
         name: "Lisa Tödtling", role: "Vertriebsdirektion Österreich",
-        phones: [{ kind: "tel", label: "316 80 376842" }],
+        phones: [{ kind: "tel", label: "0316 80 376842" }],
         emails: ["Lisa.Toedtling@grawe.at"],
       },
+    ],
+  },
+  {
+    id: "hagel", name: "Österreichische Hagelversicherung", initials: "HG",
+    legalName: "Österreichische Hagelversicherung · Lerchengasse 3–5, 1080 Wien",
+    badge: "Agrar / Sach", sparten: ["sach"],
+    description: "Agrarversicherungen. Portal: portal.hagel.at",
+    contacts: [
       {
-        name: "Matthias Kargl", role: "Maklerbetreuer",
-        phones: [
-          { kind: "tel", label: "Tel: 0316 80 34 22 41" },
-          { kind: "mobil", label: "Mobil: 0664 450 23 96" },
-        ],
-        emails: ["matthias.kargl@merkur.at"],
+        name: "Matthias Hedegger",
+        phones: [{ kind: "mobil", label: "+43 (664) 2843645" }],
+        emails: ["hedegger@hagel.at"],
+      },
+      {
+        name: "Franz Gappmayer",
+        phones: [{ kind: "mobil", label: "0680 / 2477343" }],
+        emails: ["gappmayer@hagel.at"],
       },
     ],
   },
@@ -408,21 +536,37 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       {
         name: "Jörg Scheriau", role: "Verkaufsleiter Sachversicherungen",
         phones: [
-          { kind: "tel", label: "Tel: +43 (0) 50 222 5545" },
+          { kind: "tel", label: "+43 (0) 50 222 5545" },
           { kind: "mobil", label: "0664 80 47 45 545" },
         ],
         emails: ["joerg.scheriau@helvetia.at"],
       },
       {
         name: "Kevin Fraiß", role: "Verkaufsleiter Personenversicherung",
-        phones: [{ kind: "tel", label: "Tel: 050 222 5767" }],
+        phones: [{ kind: "tel", label: "050 222 5767" }],
         emails: ["kevin.fraiss@helvetia.at"],
       },
       {
-        name: "Daniel Kolitsch / Kerstin Hackl", role: "Administratives (Interventionen, Auskünfte)",
-        phones: [
-          { kind: "tel", label: "Tel: 050 222 5553", note: "Sachvers." },
-          { kind: "tel", label: "Tel: 050 222 5551", note: "Personenvers." },
+        name: "Daniel Kolitsch", role: "Administratives (Interventionen, Auskünfte)",
+        phones: [{ kind: "tel", label: "050 222 5553" }],
+        emails: ["daniel.kolitsch@helvetia.at"],
+      },
+      {
+        name: "Kerstin Hackl", role: "Administratives (Interventionen, Auskünfte)",
+        phones: [{ kind: "tel", label: "050 222 5551" }],
+        emails: ["kerstin.hackl@helvetia.at"],
+      },
+      {
+        name: "Paul Lackner", role: "Administratives (Interventionen, Auskünfte)",
+        phones: [{ kind: "tel", label: "050 222 5554" }],
+        emails: ["paul.lackner@helvetia.at"],
+      },
+      {
+        name: "Service-Postfächer",
+        emails: [
+          "vd-graz@helvetia.at",
+          "schaden@helvetia.at",
+          "leben@helvetia.at",
         ],
       },
     ],
@@ -442,30 +586,36 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
   },
   {
     id: "merkur-vers", name: "Merkur Versicherung", initials: "MV",
-    legalName: "Merkur Versicherung · Innsbrucker Bundesstraße 67, 5020 Salzburg",
+    legalName: "Merkur Versicherung · Conrad-von-Hötzendorf-Straße 84, 8010 Graz",
     badge: "Kranken / Unfall", sparten: ["kranken", "sach"],
     description: "Kranken-, Unfall- und Pflegeversicherungen.",
     contacts: [
       {
-        name: "Matthias Kargl", role: "Maklerbetreuer",
-        phones: [
-          { kind: "tel", label: "Tel: 0316 80 34 22 41" },
-          { kind: "mobil", label: "0664 450 23 96" },
-        ],
-        emails: ["matthias.kargl@merkur.at"],
+        name: "Christian Blaskovic", role: "Key Account Manager Großverbindungen",
+        phones: [{ kind: "mobil", label: "+43 664 888 545 99" }],
+        emails: ["christian.blaskovic@merkur.at"],
       },
       {
-        name: "Harald Schelch", role: "Leitung Partnervertrieb Ost",
-        phones: [
-          { kind: "tel", label: "Tel: 0316 80 34-27 07" },
-          { kind: "mobil", label: "0664 96 78 017" },
-        ],
-        emails: ["harald.schelch@merkur.at"],
+        name: "Elisabeth Frithum", role: "Key Account Managerin Großverbindungen",
+        phones: [{ kind: "mobil", label: "+43 664 884 271 81" }],
+        emails: ["elisabeth.frithum@merkur.at"],
       },
       {
-        name: "Wolfgang Ganhör", role: "Partnerbetreuung Innendienst",
-        phones: [{ kind: "mobil", label: "Tel.: 0664/42 15 924" }],
-        emails: ["wolfgang.ganhoer@merkur.at"],
+        name: "Romana Bitzinger", role: "Vertriebsassistenz",
+        phones: [{ kind: "tel", label: "+43 316 8083 2642" }],
+        emails: ["gvb.team@merkur.at"],
+      },
+      {
+        name: "Service Center & Schaden",
+        phones: [
+          { kind: "tel", label: "+43 316 8034 2021", note: "Service Center" },
+          { kind: "tel", label: "+43 316 8034", note: "Servicehotline Rückfragen" },
+        ],
+        emails: [
+          "partnerservice@merkur.at",
+          "merkur@merkur.at",
+          "leistung@merkur.at",
+        ],
       },
     ],
   },
@@ -478,20 +628,20 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       {
         name: "Christian Blaskovic", role: "Key Account Manager / Direktion Großverbindungen",
         phones: [
-          { kind: "tel", label: "Tel.: +43 5 04487-240" },
-          { kind: "mobil", label: "Mobil: +43 664 888 545 99" },
+          { kind: "tel", label: "+43 5 04487-466" },
+          { kind: "mobil", label: "+43 664 888 545 99" },
         ],
-        emails: ["christian.blaskovic@merkur-leben.at"],
+        emails: ["christian.blaskovic@merkur.at"],
       },
       {
         name: "Katrin Rebernig", role: "Vertriebsassistentin Großverbindungen",
-        phones: [{ kind: "tel", label: "Tel.: +43 5 04487-244" }],
-        emails: ["katrin.rebernig@merkur-leben.at"],
+        phones: [{ kind: "tel", label: "+43 5 04487-244" }],
+        emails: ["katrin.rebernig@merkur.at"],
       },
       {
         name: "Daniela Leitner", role: "Vertriebsassistentin Großverbindungen",
-        phones: [{ kind: "tel", label: "Tel: +43 5 04 487-242" }],
-        emails: ["daniela.leitner@merkur-leben.at"],
+        phones: [{ kind: "tel", label: "+43 5 04 487-242" }],
+        emails: ["daniela.leitner@merkur.at"],
       },
     ],
   },
@@ -504,18 +654,47 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       {
         name: "Michael Brunner",
         phones: [
-          { kind: "tel", label: "Tel. 0 50 665 1541" },
-          { kind: "mobil", label: "Mobil. 664 6212672" },
+          { kind: "tel", label: "0 50 665 1541" },
+          { kind: "mobil", label: "0664 6212672" },
         ],
         emails: ["michael.brunner@muki.com"],
       },
       {
-        name: "Abteilungstelefone",
+        name: "Vertragsabteilungen",
         phones: [
-          { kind: "tel", label: "05 0665-5100", note: "Kranken Vertrag" },
-          { kind: "tel", label: "05 0665-5150", note: "Unfall Vertrag" },
-          { kind: "tel", label: "05 0665-5300", note: "KFZ Vertrag" },
-          { kind: "tel", label: "05 0665-5600", note: "Vertriebspartner-Service" },
+          { kind: "tel", label: "05 0665-5100", note: "Kranken" },
+          { kind: "tel", label: "05 0665-5150", note: "Unfall" },
+          { kind: "tel", label: "05 0665-5300", note: "KFZ" },
+          { kind: "tel", label: "05 0665-5302", note: "Haushalt/Eigenheim" },
+        ],
+        emails: [
+          "kranken@muki.com",
+          "unfall@muki.com",
+          "kfz@muki.com",
+          "elementar@muki.com",
+        ],
+      },
+      {
+        name: "Leistungsabteilungen",
+        phones: [
+          { kind: "tel", label: "05 0665-5000", note: "Kranken / Unfall" },
+          { kind: "tel", label: "05 0665-5301", note: "KFZ Haftpflicht" },
+          { kind: "tel", label: "05 0665-5304", note: "KFZ Kasko" },
+          { kind: "tel", label: "05 0665-5303", note: "Haushalt/Eigenheim" },
+        ],
+        emails: [
+          "leistung-kranken@muki.com",
+          "leistung-unfall@muki.com",
+          "kfz-schaden@muki.com",
+          "leistung-elementar@muki.com",
+        ],
+      },
+      {
+        name: "Vertriebspartner-Service",
+        phones: [{ kind: "tel", label: "05 0665-5600" }],
+        emails: [
+          "vertriebspartner-service@muki.com",
+          "versicherung@muki.com",
         ],
       },
     ],
@@ -532,7 +711,7 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
           { kind: "tel", label: "Tel: +49 551 9976 780" },
           { kind: "tel", label: "Tel: +49 551 9976 778", note: "Service 2" },
         ],
-        emails: ["vertriebsservice@mylife-leben.de"],
+        emails: ["vertriebsservice@mylife-leben.de", "service@mylife-leben.de"],
       },
     ],
   },
@@ -555,6 +734,11 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         phones: [{ kind: "tel", label: "059 808-2395" }],
         emails: ["marina.faschingbauer@oebv.com"],
       },
+      {
+        name: "Anna Kasper", role: "Backoffice",
+        phones: [{ kind: "tel", label: "059808-2395" }],
+        emails: ["makler@oebv.com"],
+      },
     ],
   },
   {
@@ -566,7 +750,24 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       {
         name: "Harald Gruber", role: "Chief Commercial Officer",
         phones: [{ kind: "mobil", label: "Mobil: + 49 157 855 18 343" }],
-        emails: ["harald.gruber@passportcard.de"],
+        emails: ["harald.gruber@passportcard.de", "vertrieb@passportcard.de"],
+      },
+    ],
+  },
+  {
+    id: "pericon", name: "Pericon", initials: "PE",
+    legalName: "Pericon GmbH · Hartenaugasse 6a, 8010 Graz",
+    badge: "Sonstige", sparten: ["sonstige"],
+    description: "Partnergesellschaft in Graz.",
+    contacts: [
+      {
+        name: "Stefan Koller",
+        emails: ["stefan.koller@pericon.at"],
+      },
+      {
+        name: "Zentrale",
+        phones: [{ kind: "tel", label: "+43 316 44 50 44" }],
+        emails: ["info@pericon.at"],
       },
     ],
   },
@@ -594,7 +795,10 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     contacts: [
       {
         name: "Karin Pokorny", role: "Maklerverwaltung",
-        phones: [{ kind: "tel", label: "+43 (0) 1 810 5333 560" }],
+        phones: [
+          { kind: "tel", label: "+43 (0) 1 810 5333 560" },
+          { kind: "tel", label: "+43 (0) 1 810 5333539" },
+        ],
         emails: ["Karin.Pokorny@ruv.at"],
       },
     ],
@@ -607,7 +811,10 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     contacts: [
       {
         name: "Gerhard Kantner", role: "Gebietsbetreuer",
-        phones: [{ kind: "mobil", label: "Mobil: 0664 818 34 39" }],
+        phones: [
+          { kind: "tel", label: "050100-26910" },
+          { kind: "mobil", label: "0664 818 34 39" },
+        ],
         emails: ["gerhard.kantner@sbausparkasse.at"],
       },
     ],
@@ -621,7 +828,7 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       {
         name: "Gericke Stefan",
         phones: [{ kind: "tel", label: "0049 (0) 221 / 91 409 40" }],
-        emails: ["stefan.gericke@srcmail.de"],
+        emails: ["stefan.gericke@srcmail.de", "sport@srcmail.de"],
       },
     ],
   },
@@ -632,12 +839,9 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     description: "Unternehmensberatung und Versicherungsdienstleistungen.",
     contacts: [
       {
-        name: "Rudolf Hinterleitner", role: "Unternehmensberater – Versicherungsagent",
-        phones: [
-          { kind: "tel", label: "+ 43 (0)5 0171017" },
-          { kind: "mobil", label: "Mobil: +43 660 50 66 007" },
-        ],
-        emails: ["r.hinterleitner@myservo.at"],
+        name: "Kein direkter Ansprechpartner (lt. Gesellschaft)",
+        phones: [{ kind: "tel", label: "0043 (0)5 0171017" }],
+        emails: ["office@myservo.at"],
       },
     ],
   },
@@ -656,12 +860,25 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         emails: ["daniel.schmidt@uniqa.at"],
       },
       {
-        name: "Service & Schaden",
-        phones: [
-          { kind: "tel", label: "017 1607 811", note: "Service" },
-          { kind: "tel", label: "0810/955165", note: "KFZ Gutachtenbeauftragung" },
+        name: "Alle Anfragen",
+        phones: [{ kind: "tel", label: "0316/782-652" }],
+        emails: ["partnerservice.sued@uniqa.at"],
+      },
+      {
+        name: "Schaden / Storno / Regulierung",
+        emails: [
+          "schaden@uniqa.at",
+          "storno@uniqa.at",
+          "ah-regulierung@uniqa.at",
         ],
-        emails: ["partnerservice.sued@uniqa.at", "schaden@uniqa.at"],
+      },
+      {
+        name: "KFZ Gutachtenbeauftragung",
+        phones: [
+          { kind: "tel", label: "0810/955165" },
+          { kind: "tel", label: "01/21175-1458" },
+        ],
+        emails: ["kfz.besichtigungshotline@uniqa.at"],
       },
     ],
   },
@@ -678,7 +895,7 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       },
       {
         name: "Maklerbetreuung Innendienst",
-        phones: [{ kind: "tel", label: "01 716 07-811" }],
+        phones: [{ kind: "tel", label: "01 716 07-811", note: "Service-Nummer" }],
         emails: ["serviceteam3@vav.at", "schaden@vav.at"],
       },
     ],
@@ -692,30 +909,40 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
       {
         name: "Mario Manhart", role: "Maklerservice",
         phones: [
-          { kind: "tel", label: "Tel: 050 350 43215" },
-          { kind: "mobil", label: "Mobil: 0664 32 25 831" },
+          { kind: "tel", label: "050 350 43215" },
+          { kind: "mobil", label: "0664 32 25 831" },
         ],
         emails: ["m.manhart@wienerstaedtische.at"],
       },
       {
         name: "Yvonne Mauko", role: "Verkaufsunterstützung / Konsumentengeschäft",
-        phones: [{ kind: "tel", label: "Tel: + 43 50 350 43 389" }],
+        phones: [
+          { kind: "tel", label: "+43 50 350 43 389" },
+          { kind: "tel", label: "+43 50 350 43 400" },
+        ],
+        emails: ["partner-stmk@wienerstaedtische.at"],
       },
       {
         name: "Ines Wintschnig", role: "Backoffice / Partnervertrieb",
-        phones: [{ kind: "tel", label: "Tel: + 43 50 350 43 009" }],
+        phones: [{ kind: "tel", label: "+43 50 350 43 009" }],
+        emails: ["partner-stmk@wienerstaedtische.at"],
       },
       {
         name: "Richard Neumann", role: "Firmengeschäft (Gewerbegeschäft)",
-        phones: [{ kind: "tel", label: "Tel: +43 50 350 43 370" }],
-        emails: ["gewerbe-stmk@wienerstaedtische.at"],
+        phones: [
+          { kind: "tel", label: "+43 50 350 43 370" },
+          { kind: "tel", label: "+43 50 350 43 414", note: "Gewerbegeschäft" },
+        ],
+        emails: [
+          "partner-stmk@wienerstaedtische.at",
+          "gewerbe-stmk@wienerstaedtische.at",
+        ],
       },
       {
         name: "Schaden / Bestand",
         emails: [
           "Scu.leistung@wienerstaedtische.at",
           "bestandsauskunft@wienerstaedtische.at",
-          "partner-stmk@wienerstaedtische.at",
         ],
       },
     ],
@@ -733,6 +960,24 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
           { kind: "mobil", label: "Mobil: 0664 60139 69213" },
         ],
         emails: ["j.pfingstner@wienerverein.at"],
+      },
+      {
+        name: "Servicecenter",
+        phones: [{ kind: "tel", label: "050 350 69200" }],
+        emails: ["grazost@wienerverein.at"],
+      },
+    ],
+  },
+  {
+    id: "wunderlich", name: "Wunderlich – Financial Consulting", initials: "WU",
+    legalName: "Wunderlich Financial Consulting GmbH · Erlenstr. 27, CH-2555 Brügg",
+    badge: "Sonstige", sparten: ["sonstige"],
+    description: "Financial Consulting. Website: wunderlich-consulting.net",
+    contacts: [
+      {
+        name: "Claus Wunderlich",
+        phones: [{ kind: "tel", label: "+49 7121 3811870" }],
+        emails: ["office@wunderlich-consulting.net"],
       },
     ],
   },
@@ -752,6 +997,16 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
         phones: [{ kind: "tel", label: "057070 / 250-62" }],
         emails: ["MBT5@wuestenrot.at"],
       },
+      {
+        name: "Service-Postfächer",
+        emails: [
+          "fkc5@wuestenrot.at",
+          "office@wuestenrot.at",
+          "vertrag@wuestenrot.at",
+          "schaden@wuestenrot.at",
+          "leistung@wuestenrot.at",
+        ],
+      },
     ],
   },
   {
@@ -762,8 +1017,14 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     contacts: [
       {
         name: "Stefan Otto", role: "Vertriebsdirektion Österreich",
-        phones: [{ kind: "tel", label: "01/8121656" }],
-        emails: ["STEFAN.OTTO@wwk.at"],
+        phones: [
+          { kind: "tel", label: "01/8121656" },
+          { kind: "mobil", label: "0664 1003013" },
+        ],
+        emails: [
+          "STEFAN.OTTO@wwk.at",
+          "vd.oesterreich@wwk.at",
+        ],
       },
     ],
   },
@@ -774,23 +1035,39 @@ export const PARTNER_COMPANIES: PartnerCompany[] = [
     description: "Vollsortiment: Sach, KFZ, Leben, Gewerbe, Rechtsschutz.",
     contacts: [
       {
-        name: "Johannes Schinwald", role: "Maklerbetreung",
-        phones: [{ kind: "mobil", label: "Mobil: 0664 83 76 945" }],
+        name: "Johannes Schinwald", role: "Maklerbetreuung",
+        phones: [{ kind: "mobil", label: "0664 83 76 945" }],
         emails: ["johannes.schinwald@at.zurich.com"],
       },
       {
-        name: "Christian Seiringer", role: "Spezialist Gewerbeversicherung",
-        phones: [{ kind: "mobil", label: "Mobil: +43 664 88115377" }],
-        emails: ["christian.seiringer@at.zurich.com"],
+        name: "Nicole Stöger", role: "Maklerbetreuung Sachversicherung",
+        phones: [{ kind: "mobil", label: "+43 664 88115377" }],
       },
       {
-        name: "Nicole Stöger", role: "Maklerbetreung Sachversicherung",
-        phones: [{ kind: "mobil", label: "Mobil: +43 664 88115013" }],
+        name: "Birgit Kurz", role: "Maklerbetreuung Sachversicherung",
+        phones: [{ kind: "mobil", label: "+43 664 88115013" }],
       },
       {
-        name: "Maklerservice",
-        phones: [{ kind: "tel", label: "+43 1 50125-1305" }],
-        emails: ["maklerservice.west@at.zurich.com", "leistung@at.zurich.com"],
+        name: "Beatrix Etschmeier", role: "LIFE-Spezialistin (Personenversicherung & BAV)",
+        phones: [{ kind: "mobil", label: "+43 664 88115155" }],
+        emails: ["beatriz.etschmeier@at.zurich.com"],
+      },
+      {
+        name: "Robert Santner", role: "Spezialist Gewerbeversicherung",
+        phones: [{ kind: "mobil", label: "+43 664 8532017" }],
+      },
+      {
+        name: "Thomas Strasser", role: "Spezialist Gewerbeversicherung",
+        phones: [{ kind: "mobil", label: "+43 664 8532088" }],
+      },
+      {
+        name: "Maklerservice / Leistung / Firmenofferte",
+        phones: [{ kind: "tel", label: "+43 1 50125-1305", note: "Maklerservice" }],
+        emails: [
+          "maklerservice.west@at.zurich.com",
+          "leistung@at.zurich.com",
+          "firmenofferte.sbg@at.zurich.com",
+        ],
       },
     ],
   },

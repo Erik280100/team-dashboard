@@ -93,6 +93,7 @@ export const PARTNER_VERMITTLERNUMMERN: PartnerVermittlernummer[] = [
         lines: [
           { label: "Einmalige AP", value: "520/8586" },
           { label: "Laufende Provision", value: "520/9350" },
+          { label: "VEP Nr. Europa", value: "9500274" },
         ],
       },
     ],
@@ -105,7 +106,7 @@ export const PARTNER_VERMITTLERNUMMERN: PartnerVermittlernummer[] = [
   },
   {
     id: "golden-gates", name: "Golden Gates Austria", initials: "GG",
-    legalName: "Golden Gates Austria · 5020 Salzburg",
+    legalName: "Golden Gates Austria · Eberhard-Fugger-Straße 21, 5020 Salzburg",
     badge: "Leben / Vorsorge", sparten: ["leben"],
     sections: [{ lines: [{ label: "Vermittlernummer", value: "GG06335" }] }],
   },
@@ -157,6 +158,7 @@ export const PARTNER_VERMITTLERNUMMERN: PartnerVermittlernummer[] = [
         lines: [
           { label: "Einmalige AP", value: "R 99573 WJ" },
           { label: "Laufende Provision", value: "R99181W4" },
+          { label: "Rahmenvertragsnummer", value: "2900011209", note: "Immer auf dem Antrag vermerken" },
         ],
       },
     ],
@@ -209,7 +211,7 @@ export const PARTNER_VERMITTLERNUMMERN: PartnerVermittlernummer[] = [
   },
   {
     id: "merkur-vers", name: "Merkur Versicherung", initials: "MV",
-    legalName: "Merkur Versicherung · Innsbrucker Bundesstraße 67, 5020 Salzburg",
+    legalName: "Merkur Versicherung · Conrad-von-Hötzendorf-Straße 84, 8010 Graz",
     badge: "Kranken / Unfall", sparten: ["kranken", "sach"],
     sections: [{ lines: [{ label: "Einmalige AP", value: "25602" }] }],
   },
@@ -222,6 +224,31 @@ export const PARTNER_VERMITTLERNUMMERN: PartnerVermittlernummer[] = [
         lines: [
           { label: "Einmalige AP + Fondsparplan", value: "14382" },
           { label: "Laufende Provision", value: "32772" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "hagel", name: "Österreichische Hagelversicherung", initials: "HG",
+    legalName: "Österreichische Hagelversicherung · Lerchengasse 3–5, 1080 Wien",
+    badge: "Agrar / Sach", sparten: ["sach"],
+    sections: [
+      {
+        lines: [
+          { label: "Vermittlernummer", value: "805119" },
+        ],
+      },
+    ],
+  },
+  {
+    id: "hansemerkur", name: "HanseMerkur", initials: "HM",
+    legalName: "HanseMerkur Reiseversicherung AG · Dannebergplatz 19/9, 1030 Wien",
+    badge: "Reiseversicherung", sparten: ["sonstige"],
+    sections: [
+      {
+        lines: [
+          { label: "Agenturnummer", value: "4775391" },
+          { label: "Buchungslink-ID", value: "BA 708" },
         ],
       },
     ],
@@ -312,6 +339,8 @@ export const PARTNER_VERMITTLERNUMMERN: PartnerVermittlernummer[] = [
         lines: [
           { label: "Vermittlernummer", value: "397464 S 7" },
           { label: "Laufende Provision (nur UV, SV)", value: "345943L3" },
+          { label: "Provisionskonto HOST", value: "345943" },
+          { label: "Provisionskonto SAP", value: "1930015651" },
         ],
       },
     ],
@@ -324,6 +353,7 @@ export const PARTNER_VERMITTLERNUMMERN: PartnerVermittlernummer[] = [
   },
   {
     id: "wunderlich", name: "Wunderlich – Financial Consulting", initials: "WU",
+    legalName: "Wunderlich Financial Consulting GmbH · Erlenstr. 27, CH-2555 Brügg",
     badge: "Sonstige", sparten: ["sonstige"],
     sections: [{ lines: [{ label: "Vermittlernummer", value: "5331" }] }],
   },
