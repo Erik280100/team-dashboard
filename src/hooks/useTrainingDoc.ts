@@ -16,16 +16,24 @@ export interface UseTrainingDocResult extends TrainingDoc {
   assign: (topic: TrainingTopic, fkId: string | null) => void
   /** Gesamte Einteilung (Themen und Zuteilungen) löschen. */
   reset: () => void
+  /** true, sobald der Stand vom Server da ist; vorher wird nicht geschrieben. */
+  ready: boolean
+  /** Laden oder Speichern in der Cloud fehlgeschlagen (null = alles in Ordnung). */
+  error: "load" | "save" | null
 }
 
 export function useTrainingDoc(enabled: boolean, day: TrainingDay): UseTrainingDocResult {
   const [doc, setDocState] = useState<TrainingDoc>(EMPTY)
+  const [isReady, setIsReady] = useState(false)
+  const [error, setError] = useState<UseTrainingDocResult["error"]>(null)
   const ready = useRef(false)
   const dayRef = useRef(day)
   dayRef.current = day
 
   useEffect(() => {
     ready.current = false
+    setIsReady(false)
+    setError(null)
     setDocState(EMPTY) // beim Tageswechsel nicht kurz die Einteilung des anderen Tages zeigen
     if (!enabled) return
     const ref = trainingDocRef(day)
@@ -39,20 +47,32 @@ export function useTrainingDoc(enabled: boolean, day: TrainingDay): UseTrainingD
         const data = (snap.data() ?? {}) as Partial<TrainingDoc>
         setDocState({ topics: data.topics ?? {}, assignments: data.assignments ?? {} })
         ready.current = true
+        setIsReady(true)
       },
-      (err) => console.warn("Training: Cloud-Verbindung fehlgeschlagen", err)
+      (err) => {
+        console.warn("Training: Cloud-Verbindung fehlgeschlagen", err)
+        ready.current = false
+        setIsReady(false)
+        setError("load")
+      }
     )
   }, [enabled, day])
 
   const write = useCallback((data: Record<string, unknown>, merge = true) => {
     const ref = trainingDocRef(dayRef.current)
     if (!ref || !ready.current) return
-    (merge ? setDoc(ref, data, { merge: true }) : setDoc(ref, data)).catch((err) =>
-      console.warn("Training: Cloud-Speichern fehlgeschlagen", err)
+    const writtenDay = dayRef.current
+    ;(merge ? setDoc(ref, data, { merge: true }) : setDoc(ref, data)).then(
+      () => { if (dayRef.current === writtenDay) setError((e) => (e === "save" ? null : e)) },
+      (err) => {
+        console.warn("Training: Cloud-Speichern fehlgeschlagen", err)
+        if (dayRef.current === writtenDay) setError("save") // Firestore liefert danach wieder den Serverstand
+      }
     )
   }, [])
 
   const setTopic = useCallback((traineeId: string, topic: TrainingTopic | null) => {
+    if (!ready.current) return // nichts anzeigen, was nicht gespeichert wird
     setDocState((d) => {
       const topics = { ...d.topics }
       if (topic) topics[traineeId] = topic
@@ -63,6 +83,7 @@ export function useTrainingDoc(enabled: boolean, day: TrainingDay): UseTrainingD
   }, [write])
 
   const assign = useCallback((topic: TrainingTopic, fkId: string | null) => {
+    if (!ready.current) return
     setDocState((d) => {
       const assignments = { ...d.assignments }
       if (fkId) assignments[topic] = fkId
@@ -73,9 +94,10 @@ export function useTrainingDoc(enabled: boolean, day: TrainingDay): UseTrainingD
   }, [write])
 
   const reset = useCallback(() => {
+    if (!ready.current) return
     setDocState(EMPTY)
     write({ topics: {}, assignments: {} }, false)
   }, [write])
 
-  return { ...doc, setTopic, assign, reset }
+  return { ...doc, setTopic, assign, reset, ready: isReady, error }
 }

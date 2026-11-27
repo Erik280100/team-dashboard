@@ -54,7 +54,7 @@ function Avatar({ name }: { name: string }) {
 }
 
 export function Training({
-  day, onDayChange, roster, employees, attendance, topics, assignments, setTopic, assign, reset, canEdit, fullView,
+  day, onDayChange, roster, employees, attendance, topics, assignments, setTopic, assign, reset, canEdit: mayEdit, fullView, ready, syncError, unreadable,
 }: {
   /** Trainingstag: Freitag oder Samstag (je Tag eigene Anwesenheit und eigene Einteilung). */
   day: TrainingDay
@@ -74,8 +74,15 @@ export function Training({
   canEdit: boolean
   /** true: Anwesenheit aller ist geladen (Führungskräfte, Admin, Lesemodus). false: nur das Ergebnis der Einteilung zeigen. */
   fullView: boolean
+  /** Einteilung ist vom Server geladen; vorher ist nichts änderbar. */
+  ready: boolean
+  /** Laden/Speichern der Einteilung fehlgeschlagen. */
+  syncError: "load" | "save" | null
+  /** Namen, deren Anwesenheit nicht lesbar ist: werden nicht (per Standardwert) als anwesend gezählt. */
+  unreadable: string[]
 }) {
   const confirm = useConfirm()
+  const canEdit = mayEdit && ready
 
   const { leads, trainees } = useMemo(() => {
     const ids = idByName(employees)
@@ -105,7 +112,9 @@ export function Training({
       for (const id of Object.keys(topics)) { const name = nameById.get(id); if (name) trainees.push({ id, name, manager: managerOf(name) }) }
       return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
     }
+    const hidden = new Set(unreadable.map((n) => n.trim().toLowerCase()))
     for (const r of roster) {
+      if (hidden.has(r.name.trim().toLowerCase())) continue
       const a = getAttendanceEntry(attendance, r.name)
       if (!(day === "fr" ? a.trainingFr : a.trainingSa)) continue
       const id = ids.get(r.name.trim().toLowerCase())
@@ -114,7 +123,7 @@ export function Training({
       else trainees.push({ id, name: r.name, manager: managerOf(r.name) })
     }
     return { leads: leads.sort(byName), trainees: trainees.sort(byName) }
-  }, [roster, employees, attendance, day, fullView, assignments, topics])
+  }, [roster, employees, attendance, day, fullView, assignments, topics, unreadable])
 
   const leadName = useMemo(() => new Map(leads.map((l) => [l.id, l.name])), [leads])
   const trainerOf = (t: Person) => {
@@ -201,6 +210,13 @@ export function Training({
           </>
         }
       >
+        {(syncError || (fullView && unreadable.length > 0)) && (
+          <div role="alert" className="mb-3 rounded-lg border border-red-400/60 bg-red-400/15 px-3 py-2 text-sm text-red-100">
+            {syncError === "load" && <p>Die Einteilung konnte nicht geladen werden. Änderungen sind gesperrt, bitte Seite neu laden bzw. den Admin informieren.</p>}
+            {syncError === "save" && <p>Die letzte Änderung wurde nicht gespeichert, andere sehen sie nicht. Bitte den Admin informieren.</p>}
+            {fullView && unreadable.length > 0 && <p>Anwesenheit nicht lesbar (hier ausgeblendet): {unreadable.join(", ")}</p>}
+          </div>
+        )}
         <div className={cn("grid gap-3", fullView ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
           <KpiTile icon={GraduationCap} label="Trainees" value={trainees.length} sub={fullView ? "anwesend" : "eingeteilt"} />
           <KpiTile icon={UserCheck} label="Führungskräfte" value={leads.length} sub={fullView ? "anwesend" : "als Trainer"} />

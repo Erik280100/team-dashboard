@@ -48,10 +48,12 @@ function strip<T>(data: Record<string, unknown>, metaKey: string): T {
 export function subscribeEmployeeDocs<T>(
   sub: string, key: string, metaKey: string, employees: readonly EmployeeMeta[],
   onData: (entries: Record<string, T>, ready: boolean) => void,
-  onError: (err: unknown) => void,
+  /** `failed` = Namen der Mitarbeiter, deren Dokument bisher nicht gelesen werden konnte. */
+  onError: (err: unknown, failed: string[]) => void,
 ): () => void {
   const entries = new Map<string, T>()
   const confirmed = new Set<string>()
+  const failed = new Set<string>()
   const emit = () => {
     const out: Record<string, T> = {}
     for (const e of employees) if (entries.has(e.id)) out[e.name] = entries.get(e.id) as T
@@ -71,7 +73,10 @@ export function subscribeEmployeeDocs<T>(
       if (snap.metadata.hasPendingWrites) return
       if (!snap.metadata.fromCache) confirmed.add(e.id)
       emit()
-    }, onError)
+    }, (err) => {
+      failed.add(e.name)
+      onError(err, [...failed])
+    })
   })
   return () => unsubs.forEach((u) => u())
 }

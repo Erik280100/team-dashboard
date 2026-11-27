@@ -31,6 +31,8 @@ export interface UseAttendanceDocResult {
   attendance: Record<string, AttendanceEntry>
   setAttendanceEntry: (name: string, patch: Partial<AttendanceEntry>) => void
   resetAttendance: () => void
+  /** Namen, deren Anwesenheit nicht gelesen werden konnte (fehlende Berechtigung o. Ä.). */
+  readErrors: string[]
 }
 
 export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): UseAttendanceDocResult {
@@ -41,6 +43,7 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
   const employees = empRef.current.list
 
   const [attendance, setAttendance] = useState<Record<string, AttendanceEntry>>({})
+  const [readErrors, setReadErrors] = useState<string[]>([])
   const attendanceReady = useRef(false)
   const latest = useRef(attendance)
   latest.current = attendance
@@ -49,13 +52,17 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
 
   useEffect(() => {
     attendanceReady.current = false
+    setReadErrors([])
     return subscribeEmployeeDocs<AttendanceEntry>(
       "attendance", "current", "__none__", employees,
       (entries, ready) => {
         setAttendance(entries)
         attendanceReady.current = ready
       },
-      (err) => console.warn("Anwesenheit: Cloud-Verbindung fehlgeschlagen", err)
+      (err, failed) => {
+        console.warn("Anwesenheit: Cloud-Verbindung fehlgeschlagen", err)
+        setReadErrors(failed)
+      }
     )
   }, [employees])
 
@@ -97,5 +104,5 @@ export function useAttendanceDoc(employeesIn: readonly EmployeeMeta[] = []): Use
     }
   }, [])
 
-  return { attendance, setAttendanceEntry, resetAttendance }
+  return { attendance, setAttendanceEntry, resetAttendance, readErrors }
 }

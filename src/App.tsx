@@ -681,6 +681,9 @@ function AppShell({ auth }: { auth: UseAuthResult }) {
                   reset={training.reset}
                   canEdit={auth.isAdmin || auth.isLead}
                   fullView={canSeeTraining}
+                  ready={training.ready}
+                  syncError={training.error}
+                  unreadable={trainingAttendance.readErrors}
                 />
               )}
               {section === id && id === "finanzierungen" && (

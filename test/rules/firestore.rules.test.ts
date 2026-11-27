@@ -117,13 +117,12 @@ describe.skipIf(!emulator)("Firestore Security Rules", () => {
         await assertFails(updateDoc(doc(who, "employees", "m1", "private", "account"), { accountPending: false }))
       }
     })
-    it("Bonus setzen nur Vorgesetzte/Admin, nicht die Person selbst", async () => {
-      await assertFails(updateDoc(doc(as("member", "m1"), "employees", "m1"), { bonus: 500 }))
-      await assertSucceeds(updateDoc(doc(as("member", "m1"), "employees", "m1"), { atIst: 3 }))
-      await assertSucceeds(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { bonus: 500 }))
+    it("Bonus setzen die Person selbst, Vorgesetzte und Admin, Fremde nicht", async () => {
+      await assertSucceeds(updateDoc(doc(as("member", "m1"), "employees", "m1"), { bonus: 500 }))
+      await assertSucceeds(updateDoc(doc(as("lead", "lead"), "employees", "m1"), { bonus: 600 }))
       await assertSucceeds(updateDoc(doc(as("admin"), "employees", "lead"), { bonus: 500 }))
-      // Fuehrungskraft darf den eigenen Bonus nicht aendern (sie ist nicht ihr eigener Vorgesetzter)
-      await assertFails(updateDoc(doc(as("lead", "lead"), "employees", "lead"), { bonus: 600 }))
+      await assertSucceeds(updateDoc(doc(as("lead", "lead"), "employees", "lead"), { bonus: 600 }))
+      await assertFails(updateDoc(doc(as("lead", "lead"), "employees", "other"), { bonus: 500 }))
     })
     it("Admin liest alles, nur Admin legt an/loescht", async () => {
       await assertSucceeds(getDoc(doc(as("admin"), "employees", "other")))
