@@ -24,7 +24,7 @@ export const CHECKLIST: DocGroup[] = [
     id: "allgemein",
     title: "Allgemein",
     items: [
-      { id: "ausweis", label: "Ausweiskopien" },
+      { id: "ausweis", label: "Ausweiskopie" },
       { id: "antrag", label: "Finanzierungsantrag", hint: "FCCM" },
       { id: "kontoauszuege", label: "Kontoauszüge der letzten 6 Monate" },
       { id: "meldezettel", label: "Meldezettel" },
